@@ -45,11 +45,13 @@
     "release": "npm test && npm publish"
   },
   "dependencies": {
+    "c12": "^2.0.1",
     "citty": "^0.1.6",
     "hookable": "^5.5.3",
     "nunjucks": "^3.2.4",
     "pathe": "^1.1.2",
-    "unctx": "^2.4.1"
+    "unctx": "^2.4.1",
+    "unrouting": "^0.3.0"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",

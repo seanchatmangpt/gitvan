@@ -1,3 +1,4 @@
+```js
 // src/composables/git.mjs
 // GitVan v2 — useGit()
 // - POSIX-first. No external deps. ESM.
@@ -13,7 +14,24 @@ import { useGitVan, tryUseGitVan } from "../core/context.mjs";
 
 const execFile = promisify(_execFile);
 
-// bindContext is now imported from ../core/context.mjs
+// Resolve cwd/env from context once to avoid unctx async pitfalls
+function bindContext() {
+  // Prefer strict `use` if available within a `withGitVan` call
+  let ctx;
+  try {
+    ctx = useGitVan?.();
+  } catch {
+    ctx = tryUseGitVan?.();
+  }
+  const cwd = (ctx && ctx.cwd) || process.cwd();
+  const env = {
+    TZ: "UTC",
+    LANG: "C",
+    ...process.env,
+    ...(ctx && ctx.env ? ctx.env : {}),
+  };
+  return { ctx, cwd, env };
+}
 
 async function runGit(args, { cwd, env, maxBuffer = 12 * 1024 * 1024 } = {}) {
   const { stdout } = await execFile("git", args, { cwd, env, maxBuffer });
@@ -29,7 +47,7 @@ function toArr(x) {
 }
 
 export function useGit() {
-  const bound = bindGitContext();
+  const bound = bindContext();
   const base = {
     cwd: bound.cwd,
     env: bound.env,
@@ -75,12 +93,7 @@ export function useGit() {
       return runGit(["merge-base", a, b], base);
     },
     async revList(args = ["--max-count=50", "HEAD"]) {
-      const argArray = toArr(args);
-      // Ensure we always have a commit reference
-      if (argArray.length === 1 && argArray[0].startsWith('--')) {
-        argArray.push('HEAD');
-      }
-      return runGit(["rev-list", ...argArray], base);
+      return runGit(["rev-list", ...toArr(args)], base);
     },
 
     // ---------- Write helpers (happy path) ----------
@@ -158,3 +171,4 @@ export function useGit() {
     },
   };
 }
+```

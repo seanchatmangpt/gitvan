@@ -47,10 +47,12 @@
 // ✅ CORRECT: Use Claude Code's Task tool for parallel agent execution
 [Single Message]:
   Task("Research agent", "Analyze requirements and patterns...", "researcher")
-  Task("Coder agent", "Implement core features...", "coder")
-  Task("Tester agent", "Create comprehensive tests...", "tester")
+  Task("Coder agent", "Implement core features using 80/20 technique...", "coder")
+  Task("Tester agent", "Create comprehensive tests using 80/20 technique...", "tester")
   Task("Reviewer agent", "Review code quality...", "reviewer")
   Task("Architect agent", "Design system architecture...", "system-architect")
+  Task("Tester agent", "Run comprehensive tests...", "tester")
+
 ```
 
 **MCP tools are ONLY for coordination setup:**
@@ -136,6 +138,8 @@ This project uses SPARC (Specification, Pseudocode, Architecture, Refinement, Co
 ### Migration & Planning
 `migration-planner`, `swarm-init`
 
+THERE IS NO 'analyst' use 'researcher' instead
+
 ## 🎯 Claude Code vs MCP Tools
 
 ### Claude Code Handles ALL EXECUTION:
@@ -192,10 +196,7 @@ Flow-Nexus extends MCP capabilities with 70+ cloud-based orchestration tools:
 
 **Key MCP Tool Categories:**
 - **Swarm & Agents**: `swarm_init`, `swarm_scale`, `agent_spawn`, `task_orchestrate`
-- **Sandboxes**: `sandbox_create`, `sandbox_execute`, `sandbox_upload` (cloud execution)
 - **Templates**: `template_list`, `template_deploy` (pre-built project templates)
-- **Neural AI**: `neural_train`, `neural_patterns`, `seraphina_chat` (AI assistant)
-- **GitHub**: `github_repo_analyze`, `github_pr_manage` (repository management)
 - **Real-time**: `execution_stream_subscribe`, `realtime_subscribe` (live monitoring)
 - **Storage**: `storage_upload`, `storage_list` (cloud file management)
 
@@ -218,20 +219,20 @@ Flow-Nexus extends MCP capabilities with 70+ cloud-based orchestration tools:
 ```javascript
 // Single message with all agent spawning via Claude Code's Task tool
 [Parallel Agent Execution]:
-  Task("Backend Developer", "Build REST API with Express. Use hooks for coordination.", "backend-dev")
-  Task("Frontend Developer", "Create React UI. Coordinate with backend via memory.", "coder")
-  Task("Database Architect", "Design PostgreSQL schema. Store schema in memory.", "code-analyzer")
-  Task("Test Engineer", "Write Jest tests. Check memory for API contracts.", "tester")
-  Task("DevOps Engineer", "Setup Docker and CI/CD. Document in memory.", "cicd-engineer")
-  Task("Security Auditor", "Review authentication. Report findings via hooks.", "reviewer")
+  Task("Test Runner", "Run Vitest tests to identify failing components. Use hooks for coordination.", "tester")
+  Task("GitVan Core Developer", "Fix failing composables using 80/20 technique. Coordinate via memory.", "backend-dev")
+  Task("CLI Engineer", "Fix citty CLI issues found by tests. Store fixes in memory.", "coder")
+  Task("Template Specialist", "Fix Nunjucks template failures. Check memory for error patterns.", "code-analyzer")
+  Task("Plugin Architect", "Fix hookable plugin system based on test failures. Document fixes in memory.", "cicd-engineer")
+  Task("Git Integration Expert", "Fix Git-native storage issues. Report findings via hooks.", "reviewer")
   
   // All todos batched together
   TodoWrite { todos: [...8-10 todos...] }
   
   // All file operations together
-  Write "backend/server.js"
-  Write "frontend/App.jsx"
-  Write "database/schema.sql"
+  Write "src/composables/git.mjs"
+  Write "src/cli/commands.mjs"
+  Write "src/runtime/hooks.mjs"
 ```
 
 ## 📋 Agent Coordination Protocol
@@ -271,26 +272,26 @@ npx claude-flow@alpha hooks session-end --export-metrics true
 // Step 2: Claude Code Task tool spawns ACTUAL agents that do the work
 [Single Message - Parallel Agent Execution]:
   // Claude Code's Task tool spawns real agents concurrently
-  Task("Research agent", "Analyze API requirements and best practices. Check memory for prior decisions.", "researcher")
-  Task("Coder agent", "Implement REST endpoints with authentication. Coordinate via hooks.", "coder")
-  Task("Database agent", "Design and implement database schema. Store decisions in memory.", "code-analyzer")
-  Task("Tester agent", "Create comprehensive test suite with 90% coverage.", "tester")
-  Task("Reviewer agent", "Review code quality and security. Document findings.", "reviewer")
+  Task("Test Runner", "Run Vitest tests to identify failing GitVan components. Check memory for test patterns.", "tester")
+  Task("Composables Fixer", "Fix failing useGit/useTemplate composables using 80/20 technique. Coordinate via hooks.", "coder")
+  Task("CLI Fixer", "Fix citty CLI command failures found by tests. Store fixes in memory.", "code-analyzer")
+  Task("Hook System Fixer", "Fix hookable plugin system based on test failures. Document fixes.", "reviewer")
+  Task("Git Integration Fixer", "Fix Git-native storage issues with refs/notes. Report findings via hooks.", "researcher")
   
   // Batch ALL todos in ONE call
   TodoWrite { todos: [
-    {id: "1", content: "Research API patterns", status: "in_progress", priority: "high"},
-    {id: "2", content: "Design database schema", status: "in_progress", priority: "high"},
-    {id: "3", content: "Implement authentication", status: "pending", priority: "high"},
-    {id: "4", content: "Build REST endpoints", status: "pending", priority: "high"},
-    {id: "5", content: "Write unit tests", status: "pending", priority: "medium"},
-    {id: "6", content: "Integration tests", status: "pending", priority: "medium"},
-    {id: "7", content: "API documentation", status: "pending", priority: "low"},
-    {id: "8", content: "Performance optimization", status: "pending", priority: "low"}
+    {id: "1", content: "Run test suite to identify failures", status: "in_progress", priority: "high"},
+    {id: "2", content: "Fix composables test failures", status: "in_progress", priority: "high"},
+    {id: "3", content: "Fix CLI command issues", status: "pending", priority: "high"},
+    {id: "4", content: "Fix hook system failures", status: "pending", priority: "high"},
+    {id: "5", content: "Fix Git integration tests", status: "pending", priority: "medium"},
+    {id: "6", content: "Fix template rendering tests", status: "pending", priority: "medium"},
+    {id: "7", content: "Fix plugin system tests", status: "pending", priority: "low"},
+    {id: "8", content: "Fix daemon integration tests", status: "pending", priority: "low"}
   ]}
   
   // Parallel file operations
-  Bash "mkdir -p app/{src,tests,docs,config}"
+  Bash "npm test" // Run tests first to see what's broken
   Write "app/package.json"
   Write "app/src/server.js"
   Write "app/tests/server.test.js"
@@ -373,3 +374,15 @@ NEVER create files unless they're absolutely necessary for achieving your goal.
 ALWAYS prefer editing an existing file to creating a new one.
 NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
 Never save working files, text/mds and tests to the root folder.
+
+### Trust Building Protocol
+1. **Under-promise, over-deliver**
+2. **Show actual test output**
+3. **Admit when things are untested**
+4. **Verify before claiming success**
+
+**REMEMBER:**
+- Writing a file to disk DOES NOT mean it works
+- Finishing a TODO is NOT enough without verification
+- Agent completion reports are NOT proof of functionality
+- You MUST verify with London BDD and actual command execution

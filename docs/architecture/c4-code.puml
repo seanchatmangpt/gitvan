@@ -1,0 +1,242 @@
+@startuml GitVan v2 Code Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title GitVan v2 Code Architecture - Module Structure & Key Classes
+
+package "src/composables" {
+    class "ctx.mjs" {
+        +GV: Context (unctx)
+        +withGitVan(ctx, fn)
+        +useGitVan()
+    }
+
+    class "git.mjs" {
+        +useGit(): GitComposable
+        +run(args): string
+        +repoRun(args): string
+        +listWorktrees(): Worktree[]
+        +worktreeId(): string
+        +noteAdd(ref, msg, sha)
+        +setRef(ref, sha)
+        +delRef(ref)
+    }
+
+    class "template.mjs" {
+        +useTemplate(opts): TemplateComposable
+        +render(template, data): string
+        +renderToFile(template, out, data)
+        -env(root, opts): NunjucksEnvironment
+    }
+
+    class "exec.mjs" {
+        +useExec(): ExecComposable
+        +cli(cmd, args, env)
+        +js(modulePath, exportName, input)
+        +tmpl(spec)
+    }
+}
+
+package "src/runtime" {
+    class "exec.mjs" {
+        +runExec(spec): ExecResult
+        -handleCli(spec)
+        -handleJs(spec)
+        -handleLlm(spec)
+        -handleTmpl(spec)
+        -handleJob(spec)
+    }
+
+    class "daemon.mjs" {
+        +startDaemon(opts, registry, sel)
+        -loopWorktree(opts, registry, wt)
+        -recentShas(n): string[]
+    }
+
+    class "locks.mjs" {
+        +acquireLock(key, sha): string | null
+        +releaseLock(ref): void
+        +worktreeLockRef(locksRoot, wtId, eventId, sha): string
+    }
+
+    class "events.mjs" {
+        +loadJobsFromFS(cwd): Map<string, Job>
+        +loadEventsFromFS(cwd): Event[]
+        -walk(dir): string[]
+        -normRun(payload)
+    }
+
+    class "match.mjs" {
+        +eventFires(note, sha, meta): boolean
+        -commitMeta(sha): CommitMetadata
+        -evalLeaf(leaf, checks): boolean
+        -glob(pat, str): boolean
+    }
+
+    class "receipt.mjs" {
+        +writeReceipt(options): void
+    }
+
+    class "define.mjs" {
+        +defineJob(def): JobDefinition
+        +defineConfig(c): Config
+        +definePlugin(p): Plugin
+    }
+
+    class "options.mjs" {
+        +defaults: DefaultOptions
+    }
+}
+
+package "src" {
+    class "cli.mjs" {
+        +jobList: Command
+        +jobRun: Command
+        +eventList: Command
+        +daemonStart: Command
+        +worktreeList: Command
+        +main: Command
+    }
+}
+
+package "types" {
+    interface "Exec" {
+        'cli' | 'js' | 'llm' | 'job' | 'tmpl'
+    }
+
+    interface "ExecSpec" {
+        exec: Exec
+        // Type-specific properties
+    }
+
+    interface "JobDefinition" {
+        kind: string
+        meta: object
+        run(): Promise<ExecResult>
+    }
+
+    interface "Worktree" {
+        path: string
+        branch: string
+        head: string
+        isMain: boolean
+    }
+}
+
+' Dependencies between composables
+"ctx.mjs" ..> "git.mjs" : provides context
+"ctx.mjs" ..> "template.mjs" : provides context
+"ctx.mjs" ..> "exec.mjs" : provides context
+
+' Runtime module dependencies
+"exec.mjs" --> "template.mjs" : uses for tmpl exec
+"daemon.mjs" --> "exec.mjs" : executes jobs
+"daemon.mjs" --> "locks.mjs" : manages locks
+"daemon.mjs" --> "match.mjs" : checks events
+"daemon.mjs" --> "receipt.mjs" : writes results
+"daemon.mjs" --> "events.mjs" : loads definitions
+
+"events.mjs" --> "define.mjs" : uses job definitions
+"match.mjs" --> "git.mjs" : reads commit data
+
+' CLI dependencies
+"cli.mjs" --> "daemon.mjs" : starts daemon
+"cli.mjs" --> "events.mjs" : loads jobs/events
+"cli.mjs" --> "exec.mjs" : runs single jobs
+"cli.mjs" --> "options.mjs" : default configuration
+
+note right of "exec.mjs"
+  **5 Exec Types Implementation:**
+
+  ```javascript
+  export async function runExec(spec) {
+    switch (spec.exec) {
+      case 'cli':
+        return spawnSync(spec.cmd, spec.args, {
+          cwd: gv.root, env: {...gv.env, ...spec.env}
+        })
+      case 'js':
+        const mod = await import(spec.module)
+        return await mod[spec.export](spec.input)
+      case 'llm':
+        return await fetch(ollama, {
+          body: JSON.stringify({
+            model: spec.model,
+            prompt: spec.prompt
+          })
+        })
+      case 'tmpl':
+        const t = useTemplate()
+        return t.renderToFile(spec.template, spec.out)
+      case 'job':
+        return await gv.jobs.get(spec.name).run()
+    }
+  }
+  ```
+end note
+
+note left of "git.mjs"
+  **Worktree-Aware Git Operations:**
+
+  ```javascript
+  export function useGit() {
+    const gv = useGitVan()
+
+    // Worktree-specific operations
+    const run = (args) =>
+      execSync(`git -C "${gv.worktreeRoot}" ${args}`)
+
+    // Repository-wide operations
+    const repoRun = (args) =>
+      execSync(`git -C "${gv.repoRoot}" ${args}`)
+
+    return {
+      run, repoRun,
+      listWorktrees(),
+      worktreeId: () =>
+        gv.worktreeRoot.replace(/[:/\\]/g, '-'),
+      noteAdd: (ref, msg, sha) =>
+        repoRun(`notes --ref=${ref} add -m '${msg}' ${sha}`)
+    }
+  }
+  ```
+end note
+
+note bottom of "template.mjs"
+  **Nunjucks Template Integration:**
+
+  ```javascript
+  export function useTemplate(opts = {}) {
+    const gv = useGitVan()
+    const env = new nunjucks.Environment(
+      new nunjucks.FileSystemLoader([gv.root, ...opts.paths]),
+      { autoescape: opts.autoescape }
+    )
+
+    // Custom filters
+    env.addFilter('json', v => JSON.stringify(v, null, 2))
+    env.addFilter('slug', s =>
+      String(s).toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '')
+    )
+
+    return {
+      render: (template, data) =>
+        env.render(template, {
+          nowISO: gv.now(),
+          git: gv,
+          ...data
+        }),
+      renderToFile: (template, out, data) => {
+        const content = render(template, data)
+        fs.writeFileSync(out, content)
+        return { path: out, bytes: content.length }
+      }
+    }
+  }
+  ```
+end note
+
+@enduml

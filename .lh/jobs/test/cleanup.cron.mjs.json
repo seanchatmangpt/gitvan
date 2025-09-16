@@ -1,0 +1,18 @@
+{
+    "sourceFile": "jobs/test/cleanup.cron.mjs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1758048492161,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1758048492161,
+            "name": "Commit-0",
+            "content": "// jobs/test/cleanup.cron.mjs\n// GitVan v2 — Cleanup Cron Job\n// Demonstrates cron job functionality\n\nimport { defineJob } from \"../../src/jobs/define.mjs\";\nimport { useGit } from \"../../src/composables/git.mjs\";\nimport { promises as fs } from \"node:fs\";\nimport { join } from \"pathe\";\n\nexport default defineJob({\n  cron: \"0 2 * * *\", // Run daily at 2 AM\n  meta: {\n    desc: \"Daily cleanup job that removes temporary files\",\n    tags: [\"cleanup\", \"maintenance\"],\n  },\n  async run({ ctx }) {\n    const git = useGit();\n\n    ctx.logger.log(\"Running daily cleanup job\");\n\n    const tempDir = join(ctx.root, \"temp\");\n    const artifacts = [];\n\n    try {\n      // Check if temp directory exists\n      await fs.access(tempDir);\n\n      // List files in temp directory\n      const files = await fs.readdir(tempDir);\n      const oldFiles = files.filter((file) => {\n        // Simple heuristic: files older than 7 days\n        return file.includes(\"old\") || file.includes(\"temp\");\n      });\n\n      // Remove old files\n      for (const file of oldFiles) {\n        const filePath = join(tempDir, file);\n        await fs.unlink(filePath);\n        artifacts.push(`Removed: ${file}`);\n        ctx.logger.log(`Removed old file: ${file}`);\n      }\n\n      if (oldFiles.length === 0) {\n        ctx.logger.log(\"No old files found to clean up\");\n      }\n    } catch (error) {\n      if (error.code === \"ENOENT\") {\n        ctx.logger.log(\"Temp directory does not exist, nothing to clean\");\n      } else {\n        throw error;\n      }\n    }\n\n    return {\n      ok: true,\n      artifacts,\n      message: `Cleaned up ${artifacts.length} files`,\n    };\n  },\n});\n"
+        }
+    ]
+}

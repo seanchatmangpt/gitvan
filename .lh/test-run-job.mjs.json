@@ -1,0 +1,18 @@
+{
+    "sourceFile": "test-run-job.mjs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1758048492138,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1758048492138,
+            "name": "Commit-0",
+            "content": "// test-run-job.mjs\n// Test running an actual job\n\nimport { jobCLI } from \"./src/cli/job.mjs\";\n\nasync function testRunJob() {\n  console.log(\"=== GitVan Job Execution Test ===\\n\");\n\n  try {\n    // Test running the simple test job\n    console.log(\"1. Running test:simple job...\");\n    const result = await jobCLI(\"run\", {\n      id: \"test:simple\",\n      payload: { test: \"data\", timestamp: new Date().toISOString() },\n    });\n\n    console.log(\"Job execution result:\");\n    console.log(`  Duration: ${result.duration}ms`);\n    console.log(`  Fingerprint: ${result.fingerprint}`);\n    console.log(`  Artifacts: ${result.artifacts.length}`);\n\n    if (result.artifacts.length > 0) {\n      result.artifacts.forEach((artifact) => {\n        console.log(`    - ${artifact}`);\n      });\n    }\n\n    console.log(\"\\n✅ Job execution test completed successfully!\");\n  } catch (error) {\n    console.error(\"❌ Job execution test failed:\", error.message);\n    console.error(error.stack);\n  }\n}\n\ntestRunJob();\n"
+        }
+    ]
+}

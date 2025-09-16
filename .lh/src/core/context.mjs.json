@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/core/context.mjs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1758047531802,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1758047531802,
+            "name": "Commit-0",
+            "content": "// Core context module for GitVan\n// Provides context management with deterministic environment and unctx async safety\n\nimport { useGitVan as _useGitVan, withGitVan } from \"../composables/ctx.mjs\";\n\nexport { withGitVan };\n\nexport function useGitVan() {\n  return _useGitVan();\n}\n\nexport function tryUseGitVan() {\n  try {\n    return _useGitVan();\n  } catch {\n    return null;\n  }\n}\n\n/**\n * Resolve cwd/env from context once to avoid unctx async pitfalls\n * This function captures the context immediately to prevent loss after await calls\n *\n * @deprecated Use useGitVan() directly in useGit() instead\n * @returns {Object} { ctx, cwd, env } - Context with deterministic environment\n */\nexport function bindContext() {\n  // Prefer strict `use` if available within a `withGitVan` call\n  let ctx;\n  try {\n    ctx = useGitVan?.();\n  } catch {\n    ctx = tryUseGitVan?.();\n  }\n\n  const cwd = (ctx && ctx.cwd) || process.cwd();\n\n  // Set up deterministic environment with UTC timezone and C locale\n  const env = {\n    ...process.env,\n    TZ: \"UTC\",\n    LANG: \"C\",\n    ...(ctx && ctx.env ? ctx.env : {}),\n  };\n\n  return { ctx, cwd, env };\n}\n"
+        }
+    ]
+}

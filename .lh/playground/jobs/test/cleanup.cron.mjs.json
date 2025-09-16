@@ -1,0 +1,18 @@
+{
+    "sourceFile": "playground/jobs/test/cleanup.cron.mjs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1758049591937,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1758049591937,
+            "name": "Commit-0",
+            "content": "import { defineJob } from \"gitvan/define\";\nimport { useGit } from \"gitvan/useGit\";\nimport { promises as fs } from \"node:fs\";\nimport { join } from \"pathe\";\n\nexport default defineJob({\n  meta: {\n    desc: \"Clean up temporary files and old artifacts\",\n    tags: [\"cleanup\", \"maintenance\"],\n  },\n  cron: \"0 2 * * *\", // Run daily at 2 AM\n  async run({ ctx }) {\n    const git = useGit();\n    const artifacts = [];\n\n    // Clean up dist directory\n    const distDir = join(ctx.root, \"dist\");\n    try {\n      const files = await fs.readdir(distDir);\n      const oldFiles = files.filter((file) => {\n        // Simple heuristic: files older than 7 days\n        return (\n          file.includes(\"old\") ||\n          file.includes(\"temp\") ||\n          file.includes(\"backup\")\n        );\n      });\n\n      for (const file of oldFiles) {\n        const filePath = join(distDir, file);\n        await fs.unlink(filePath);\n        artifacts.push(`Removed: ${file}`);\n        ctx.logger.log(`Removed old file: ${file}`);\n      }\n\n      if (oldFiles.length === 0) {\n        artifacts.push(\"No old files found to clean up\");\n        ctx.logger.log(\"No old files found to clean up\");\n      }\n    } catch (error) {\n      if (error.code === \"ENOENT\") {\n        artifacts.push(\"Dist directory does not exist\");\n        ctx.logger.log(\"Dist directory does not exist\");\n      } else {\n        throw error;\n      }\n    }\n\n    return {\n      ok: true,\n      artifacts,\n      data: {\n        cleanedFiles: artifacts.length,\n        timestamp: ctx.nowISO,\n      },\n    };\n  },\n});\n"
+        }
+    ]
+}

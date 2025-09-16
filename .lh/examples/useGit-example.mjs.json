@@ -1,0 +1,18 @@
+{
+    "sourceFile": "examples/useGit-example.mjs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1758047531802,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1758047531802,
+            "name": "Commit-0",
+            "content": "// examples/useGit-example.mjs\n// Example demonstrating the fixed useGit composable\n\nimport { useGit } from \"../src/composables/git.mjs\";\nimport { withGitVan } from \"../src/composables/ctx.mjs\";\n\nasync function demonstrateUseGit() {\n  console.log(\"=== useGit Demonstration ===\\n\");\n\n  // Example 1: Basic usage without context\n  console.log(\"1. Basic usage:\");\n  const git = useGit();\n  console.log(\"Working directory:\", git.cwd);\n  console.log(\"Environment TZ:\", git.env.TZ);\n  console.log(\"Environment LANG:\", git.env.LANG);\n  console.log(\"\");\n\n  // Example 2: Usage with context\n  console.log(\"2. Usage with context:\");\n  const mockContext = {\n    cwd: \"/custom/repo/path\",\n    env: {\n      CUSTOM_VAR: \"custom-value\",\n      TZ: \"America/New_York\", // This should be overridden by useGit\n    },\n    now: () => \"2024-01-01T12:00:00.000Z\",\n  };\n\n  await withGitVan(mockContext, async () => {\n    const gitWithContext = useGit();\n    console.log(\"Context working directory:\", gitWithContext.cwd);\n    console.log(\"Context environment TZ:\", gitWithContext.env.TZ); // Should be UTC\n    console.log(\"Context environment LANG:\", gitWithContext.env.LANG); // Should be C\n    console.log(\n      \"Context environment CUSTOM_VAR:\",\n      gitWithContext.env.CUSTOM_VAR,\n    );\n    console.log(\"Context nowISO:\", gitWithContext.nowISO());\n    console.log(\"\");\n  });\n\n  // Example 3: Repository operations (if in a git repo)\n  console.log(\"3. Repository operations:\");\n  try {\n    const currentBranch = await git.getCurrentBranch();\n    console.log(\"Current branch:\", currentBranch);\n\n    const isClean = await git.isClean();\n    console.log(\"Repository is clean:\", isClean);\n\n    const commitCount = await git.getCommitCount();\n    console.log(\"Commit count:\", commitCount);\n  } catch (error) {\n    console.log(\"Not in a git repository or error:\", error.message);\n  }\n\n  console.log(\"\\n=== Demonstration Complete ===\");\n}\n\n// Run the demonstration\ndemonstrateUseGit().catch(console.error);\n"
+        }
+    ]
+}

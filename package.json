@@ -16,15 +16,23 @@
       "types": "./types/index.d.ts"
     },
     "./define": {
-      "import": "./src/runtime/define.mjs",
+      "import": "./define.mjs",
+      "types": "./types/index.d.ts"
+    },
+    "./useGit": {
+      "import": "./useGit.mjs",
+      "types": "./types/index.d.ts"
+    },
+    "./useTemplate": {
+      "import": "./useTemplate.mjs",
+      "types": "./types/index.d.ts"
+    },
+    "./daemon": {
+      "import": "./daemon.mjs",
       "types": "./types/index.d.ts"
     },
     "./composables": {
       "import": "./src/composables/index.mjs",
-      "types": "./types/index.d.ts"
-    },
-    "./daemon": {
-      "import": "./src/runtime/daemon.mjs",
       "types": "./types/index.d.ts"
     },
     "./runtime": {
@@ -54,6 +62,7 @@
     "klona": "^2.0.6",
     "nunjucks": "^3.2.4",
     "pathe": "^1.1.2",
+    "tinyglobby": "^0.2.15",
     "unctx": "^2.4.1",
     "unrouting": "^0.0.1"
   },

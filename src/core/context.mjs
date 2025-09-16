@@ -1,19 +1,19 @@
 // Core context module for GitVan
 // Provides context management with deterministic environment and unctx async safety
 
-import { useGitVan as _useGitVan, withGitVan } from '../composables/ctx.mjs'
+import { useGitVan as _useGitVan, withGitVan } from "../composables/ctx.mjs";
 
-export { withGitVan }
+export { withGitVan };
 
 export function useGitVan() {
-  return _useGitVan()
+  return _useGitVan();
 }
 
 export function tryUseGitVan() {
   try {
-    return _useGitVan()
+    return _useGitVan();
   } catch {
-    return null
+    return null;
   }
 }
 
@@ -21,6 +21,7 @@ export function tryUseGitVan() {
  * Resolve cwd/env from context once to avoid unctx async pitfalls
  * This function captures the context immediately to prevent loss after await calls
  *
+ * @deprecated Use useGitVan() directly in useGit() instead
  * @returns {Object} { ctx, cwd, env } - Context with deterministic environment
  */
 export function bindContext() {

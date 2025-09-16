@@ -1,0 +1,18 @@
+{
+    "sourceFile": "playground/gitvan.config.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1758049591936,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1758049591936,
+            "name": "Commit-0",
+            "content": "export default {\n  root: process.cwd(),\n  jobs: { dir: \"jobs\" },\n  templates: { engine: \"nunjucks\", dirs: [\"templates\"] },\n  receipts: { ref: \"refs/notes/gitvan/results\" },\n  hooks: {\n    \"job:before\"({ id, payload }) {\n      console.log(`[playground] 🚀 Starting job: ${id}`);\n      if (payload && Object.keys(payload).length > 0) {\n        console.log(`[playground]   Payload:`, payload);\n      }\n    },\n    \"job:after\"({ id, result }) {\n      console.log(`[playground] ✅ Job done: ${id}`, result?.ok ? \"OK\" : \"ERR\");\n      if (result?.artifacts?.length > 0) {\n        console.log(`[playground]   Artifacts: ${result.artifacts.length}`);\n      }\n    },\n    \"job:error\"({ id, error }) {\n      console.log(`[playground] ❌ Job failed: ${id}`, error.message);\n    },\n    \"lock:acquire\"({ id }) {\n      console.log(`[playground] 🔒 Lock acquired: ${id}`);\n    },\n    \"lock:release\"({ id }) {\n      console.log(`[playground] 🔓 Lock released: ${id}`);\n    },\n    \"receipt:write\"({ id }) {\n      console.log(`[playground] 📝 Receipt written: ${id}`);\n    },\n  },\n};\n"
+        }
+    ]
+}

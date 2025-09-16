@@ -1,0 +1,18 @@
+{
+    "sourceFile": "playground/package.json",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1758049591877,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1758049591877,
+            "name": "Commit-0",
+            "content": "{\n  \"name\": \"gitvan-playground\",\n  \"type\": \"module\",\n  \"private\": true,\n  \"scripts\": {\n    \"dev\": \"vite-node dev.mjs\",\n    \"list\": \"node -e \\\"import('./dev.mjs').then(m=>m.list())\\\"\",\n    \"run:changelog\": \"node -e \\\"import('./dev.mjs').then(m=>m.run('docs:changelog'))\\\"\",\n    \"run:simple\": \"node -e \\\"import('./dev.mjs').then(m=>m.run('test:simple'))\\\"\",\n    \"run:cleanup\": \"node -e \\\"import('./dev.mjs').then(m=>m.run('test:cleanup'))\\\"\",\n    \"daemon\": \"node -e \\\"import('./dev.mjs').then(m=>m.startDaemon())\\\"\",\n    \"status\": \"node -e \\\"import('./dev.mjs').then(m=>m.status())\\\"\"\n  },\n  \"devDependencies\": {\n    \"vite-node\": \"^1.6.0\",\n    \"gitvan\": \"link:..\"\n  }\n}\n"
+        }
+    ]
+}

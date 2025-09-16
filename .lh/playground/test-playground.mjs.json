@@ -1,0 +1,18 @@
+{
+    "sourceFile": "playground/test-playground.mjs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1758049591937,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1758049591937,
+            "name": "Commit-0",
+            "content": "#!/usr/bin/env node\n// playground/test-playground.mjs\n// Comprehensive test of GitVan playground functionality\n\nimport {\n  list,\n  run,\n  startDaemon,\n  stopDaemon,\n  status,\n  stats,\n  receipts,\n} from \"./dev.mjs\";\n\nasync function testPlayground() {\n  console.log(\"🧪 GitVan Playground - Comprehensive Test\");\n  console.log(\"=\".repeat(50));\n\n  try {\n    // 1. Test job discovery\n    console.log(\"\\n1️⃣ Testing job discovery...\");\n    await list();\n\n    // 2. Test job execution\n    console.log(\"\\n2️⃣ Testing job execution...\");\n\n    console.log(\"Running docs:changelog job...\");\n    await run(\"docs:changelog\");\n\n    console.log(\"Running test:simple job...\");\n    await run(\"test:simple\");\n\n    // 3. Test daemon functionality\n    console.log(\"\\n3️⃣ Testing daemon functionality...\");\n    await startDaemon();\n    await status();\n    await stopDaemon();\n\n    // 4. Test statistics\n    console.log(\"\\n4️⃣ Testing job statistics...\");\n    await stats();\n\n    // 5. Test receipts\n    console.log(\"\\n5️⃣ Testing git receipts...\");\n    await receipts();\n\n    // 6. Show generated files\n    console.log(\"\\n6️⃣ Generated files:\");\n    const { promises: fs } = await import(\"node:fs\");\n    const { join } = await import(\"pathe\");\n\n    try {\n      const distFiles = await fs.readdir(\"dist\");\n      for (const file of distFiles) {\n        const filePath = join(\"dist\", file);\n        const stats = await fs.stat(filePath);\n        console.log(`  📄 ${file} (${stats.size} bytes)`);\n      }\n    } catch (error) {\n      console.log(\"  No dist directory found\");\n    }\n\n    console.log(\"\\n✅ All playground tests completed successfully!\");\n    console.log(\"\\n🎉 GitVan Jobs System is working perfectly!\");\n  } catch (error) {\n    console.error(\"❌ Playground test failed:\", error.message);\n    console.error(error.stack);\n    process.exit(1);\n  }\n}\n\n// Run the test\ntestPlayground();\n"
+        }
+    ]
+}

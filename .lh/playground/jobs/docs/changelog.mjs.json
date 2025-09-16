@@ -1,0 +1,18 @@
+{
+    "sourceFile": "playground/jobs/docs/changelog.mjs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1758049591936,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1758049591936,
+            "name": "Commit-0",
+            "content": "import { defineJob } from \"gitvan/define\";\nimport { useGit } from \"gitvan/useGit\";\nimport { useTemplate } from \"gitvan/useTemplate\";\n\nexport default defineJob({\n  meta: { desc: \"Render changelog from git log\" },\n  async run({ ctx }) {\n    const git = useGit();\n    const template = await useTemplate();\n\n    // Get recent commits\n    const logOutput = await git.log(\"%h%x09%s\", [\"-n\", \"30\"]);\n    const lines = logOutput.split(\"\\n\").filter(Boolean);\n\n    const commits = lines.map((line) => {\n      const [hash, subject] = line.split(\"\\t\");\n      return { hash, subject };\n    });\n\n    // Render template to file\n    const outputPath = await template.renderToFile(\n      \"changelog.njk\",\n      \"dist/CHANGELOG.md\",\n      {\n        commits,\n        generatedAt: ctx.nowISO,\n        totalCommits: commits.length,\n      },\n    );\n\n    return {\n      ok: true,\n      artifacts: [outputPath],\n      data: {\n        commitsProcessed: commits.length,\n        outputPath,\n      },\n    };\n  },\n});\n"
+        }
+    ]
+}

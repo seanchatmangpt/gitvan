@@ -1,0 +1,18 @@
+{
+    "sourceFile": "playground/README.md",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1758049591877,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1758049591877,
+            "name": "Commit-0",
+            "content": "# GitVan Playground\n\nThis is a throwaway app to dogfood GitVan jobs system.\n\n## Quick Start\n\n```bash\ncd playground\npnpm install\npnpm dev          # starts daemon + watch\n```\n\n## Available Commands\n\n```bash\npnpm list         # List all discovered jobs\npnpm run:changelog # Run changelog generation job\npnpm run:simple   # Run simple status report job\npnpm run:cleanup  # Run cleanup job\npnpm daemon       # Start daemon only\npnpm status       # Show daemon status\n```\n\n## Jobs\n\n- **docs:changelog** - Generates CHANGELOG.md from git log\n- **test:simple** - Creates a simple status report\n- **test:cleanup** - Cron job that cleans up old files (runs daily at 2 AM)\n- **alerts:release** - Event-driven job that triggers on new tags\n\n## Features Demonstrated\n\n- ✅ Job discovery from filesystem\n- ✅ Template rendering with Nunjucks\n- ✅ Git operations and repository info\n- ✅ Cron scheduling\n- ✅ Event-driven jobs\n- ✅ Custom hooks integration\n- ✅ Receipt generation\n- ✅ Lock management\n- ✅ Hot reload with vite-node\n\n## File Structure\n\n```\nplayground/\n├── package.json           # Dependencies and scripts\n├── gitvan.config.js       # GitVan configuration\n├── dev.mjs               # Main development runner\n├── jobs/\n│   ├── docs/\n│   │   └── changelog.mjs  # Changelog generation job\n│   ├── test/\n│   │   ├── simple.mjs     # Simple status job\n│   │   └── cleanup.cron.mjs # Cron cleanup job\n│   └── alerts/\n│       └── release.evt.mjs # Event-driven release job\n└── templates/\n    └── changelog.njk     # Nunjucks template\n```\n\n## Testing the System\n\n1. **Start the playground**: `pnpm dev`\n2. **List jobs**: `pnpm list`\n3. **Run a job**: `pnpm run:changelog`\n4. **Check output**: `cat dist/CHANGELOG.md`\n5. **View receipts**: `git notes --ref=refs/notes/gitvan/results show HEAD`\n6. **Test hot reload**: Edit a job file and see it reload automatically\n\nThis playground exercises the entire GitVan jobs system end-to-end!\n"
+        }
+    ]
+}

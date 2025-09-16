@@ -6,16 +6,47 @@
 // - Happy path only. No retries. No shell string interpolation.
 // - 80/20 commands + a few primitives used by locks/receipts.
 
-import { execFile as _execFile } from "node:child_process";
+import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import path from "node:path";
-import { bindContext } from "../core/context.mjs";
+import { useGitVan, tryUseGitVan } from "../core/context.mjs";
 
-const execFile = promisify(_execFile);
+const execFileAsync = promisify(execFile);
 
 async function runGit(args, { cwd, env, maxBuffer = 12 * 1024 * 1024 } = {}) {
-  const { stdout } = await execFile("git", args, { cwd, env, maxBuffer });
-  return stdout.trim();
+  try {
+    const { stdout } = await execFileAsync("git", args, {
+      cwd,
+      env,
+      maxBuffer,
+    });
+    return stdout.trim();
+  } catch (error) {
+    // Handle specific cases for empty repositories
+    const command = `git ${args.join(" ")}`;
+    const errorMsg = error.message || "";
+    const stderr = error.stderr || "";
+    const fullError = `${errorMsg} ${stderr}`;
+
+    // Handle empty repository cases for rev-list commands
+    if (
+      args[0] === "rev-list" &&
+      (fullError.includes("ambiguous argument") ||
+        fullError.includes("unknown revision") ||
+        fullError.includes("not in the working tree") ||
+        fullError.includes("fatal: ambiguous argument"))
+    ) {
+      return ""; // Return empty string for empty repo
+    }
+
+    // Re-throw with more context for other errors
+    const newError = new Error(`Command failed: ${command}\n${error.message}`);
+    newError.originalError = error;
+    newError.command = command;
+    newError.args = args;
+    newError.stderr = error.stderr;
+    throw newError;
+  }
 }
 
 async function runGitVoid(args, opts) {
@@ -27,11 +58,27 @@ function toArr(x) {
 }
 
 export function useGit() {
-  const bound = bindContext();
-  const base = {
-    cwd: bound.cwd,
-    env: bound.env,
+  // Get context from unctx - this must be called synchronously
+  let ctx;
+  try {
+    ctx = useGitVan();
+  } catch {
+    ctx = tryUseGitVan?.() || null;
+  }
+
+  // Resolve working directory
+  const cwd = (ctx && ctx.cwd) || process.cwd();
+
+  // Set up deterministic environment with UTC timezone and C locale
+  // Context env should not override TZ and LANG for determinism
+  const env = {
+    ...process.env,
+    ...(ctx && ctx.env ? ctx.env : {}),
+    TZ: "UTC", // Always override to UTC for determinism
+    LANG: "C", // Always override to C locale for determinism
   };
+
+  const base = { cwd, env };
 
   return {
     // Context properties (exposed for testing)
@@ -51,6 +98,10 @@ export function useGit() {
       return runGit(["rev-parse", "--git-dir"], base);
     },
     nowISO() {
+      // Use context-provided time if available, otherwise fall back to env or current time
+      if (ctx && typeof ctx.now === "function") {
+        return ctx.now();
+      }
       const forced = process.env.GITVAN_NOW;
       return forced || new Date().toISOString();
     },
@@ -58,7 +109,9 @@ export function useGit() {
     // ---------- Read-only helpers ----------
     async log(format = "%h%x09%s", extra = []) {
       const extraArgs =
-        typeof extra === "string" ? extra.split(/\s+/).filter(Boolean) : toArr(extra);
+        typeof extra === "string"
+          ? extra.split(/\s+/).filter(Boolean)
+          : toArr(extra);
       return runGit(["log", `--pretty=${format}`, ...extraArgs], base);
     },
     async statusPorcelain() {
@@ -78,8 +131,8 @@ export function useGit() {
     async revList(args = ["--max-count=50", "HEAD"]) {
       const argArray = toArr(args);
       // Ensure we always have a commit reference
-      if (argArray.length === 1 && argArray[0].startsWith('--')) {
-        argArray.push('HEAD');
+      if (argArray.length === 1 && argArray[0].startsWith("--")) {
+        argArray.push("HEAD");
       }
       return runGit(["rev-list", ...argArray], base);
     },
@@ -106,10 +159,16 @@ export function useGit() {
     // ---------- Notes (receipts) ----------
     async noteAdd(ref, message, sha = "HEAD") {
       // git will create the notes ref if needed
-      await runGitVoid(["notes", `--ref=${ref}`, "add", "-m", message, sha], base);
+      await runGitVoid(
+        ["notes", `--ref=${ref}`, "add", "-f", "-m", message, sha],
+        base,
+      );
     },
     async noteAppend(ref, message, sha = "HEAD") {
-      await runGitVoid(["notes", `--ref=${ref}`, "append", "-m", message, sha], base);
+      await runGitVoid(
+        ["notes", `--ref=${ref}`, "append", "-m", message, sha],
+        base,
+      );
     },
     async noteShow(ref, sha = "HEAD") {
       return runGit(["notes", `--ref=${ref}`, "show", sha], base);
@@ -118,26 +177,33 @@ export function useGit() {
     // ---------- Atomic ref create (locks) ----------
     // Uses stdin protocol to atomically create a ref if absent.
     async updateRefCreate(ref, valueSha) {
-      // Equivalent to: echo "create <ref> <sha>" | git update-ref --stdin
-      // Using execFile without shell: write via env var and small wrapper.
-      // Simpler: rely on single create op by running update-ref directly per ref.
-      // Note: Git does not expose "create" outside stdin, so we approximate by
-      // using `symbolic-ref` for new symbols or fallback to update-ref with failure check.
-      // Pragmatic approach: if ref exists, this should fail the use-case. We check first.
+      // Check if ref exists first
       try {
         await runGitVoid(["show-ref", "--verify", "--quiet", ref], base);
-        // exists -> signal failure
+        // Ref exists, return false to indicate failure
         return false;
       } catch {
-        // not exists -> create pointing to valueSha
-        await runGitVoid(["update-ref", ref, valueSha], base);
-        return true;
+        // Ref doesn't exist, try to create it
+        try {
+          await runGitVoid(["update-ref", ref, valueSha], base);
+          return true;
+        } catch (error) {
+          // If creation failed due to race condition, check if it exists now
+          try {
+            await runGitVoid(["show-ref", "--verify", "--quiet", ref], base);
+            return false; // Someone else created it
+          } catch {
+            throw error; // Real error, re-throw
+          }
+        }
       }
     },
 
     // ---------- Plumbing ----------
     async hashObject(filePath, { write = false } = {}) {
-      const abs = path.isAbsolute(filePath) ? filePath : path.join(base.cwd, filePath);
+      const abs = path.isAbsolute(filePath)
+        ? filePath
+        : path.join(base.cwd, filePath);
       const args = ["hash-object"];
       if (write) args.push("-w");
       args.push("--", abs);
@@ -147,7 +213,44 @@ export function useGit() {
       return runGit(["write-tree"], base);
     },
     async catFilePretty(sha) {
-      return runGit(["cat-file", "-p", sha], base);
+      try {
+        return runGit(["cat-file", "-p", sha], base);
+      } catch (error) {
+        // Handle common error cases gracefully
+        if (error.message.includes("Not a valid object name")) {
+          throw new Error(`Object ${sha} not found`);
+        }
+        throw error;
+      }
+    },
+
+    // ---------- Utility methods ----------
+    async isClean() {
+      const status = await this.statusPorcelain();
+      return status.trim() === "";
+    },
+    async hasUncommittedChanges() {
+      const status = await this.statusPorcelain();
+      return status.trim() !== "";
+    },
+    async getCurrentBranch() {
+      try {
+        return await this.branch();
+      } catch (error) {
+        // Handle detached HEAD state
+        if (error.message.includes("detached HEAD")) {
+          return "HEAD";
+        }
+        throw error;
+      }
+    },
+    async getCommitCount(branch = "HEAD") {
+      try {
+        const result = await runGit(["rev-list", "--count", branch], base);
+        return parseInt(result, 10) || 0;
+      } catch {
+        return 0;
+      }
     },
 
     // ---------- Generic runner (escape hatch) ----------

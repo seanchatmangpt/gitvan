@@ -1,0 +1,22 @@
+{
+    "sourceFile": "jobs/dev/diary.mjs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1758048054863,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1758048492172,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -0,0 +1,15 @@\n+import { defineJob } from \"../../src/jobs/define.mjs\";\n+import { useTemplate } from \"../../src/composables/template.mjs\";\n+\n+export default defineJob({\n+  kind: \"atomic\",\n+  meta: { desc: \"Create daily dev diary entry\" },\n+  async run() {\n+    const t = useTemplate();\n+    const out = `dist/diary/${Date.now()}.md`;\n+    t.renderToFile(\"templates/dev-diary.njk\", out, {\n+      title: \"Daily Dev Diary\",\n+    });\n+    return { ok: true, artifact: out };\n+  },\n+});\n"
+                }
+            ],
+            "date": 1758048054863,
+            "name": "Commit-0",
+            "content": "import { defineJob } from \"../../src/runtime/define-job.mjs\";\nimport { useTemplate } from \"../../src/composables/template.mjs\";\n\nexport default defineJob({\n  kind: \"atomic\",\n  meta: { desc: \"Create daily dev diary entry\" },\n  async run() {\n    const t = useTemplate();\n    const out = `dist/diary/${Date.now()}.md`;\n    t.renderToFile(\"templates/dev-diary.njk\", out, {\n      title: \"Daily Dev Diary\",\n    });\n    return { ok: true, artifact: out };\n  },\n});\n"
+        }
+    ]
+}

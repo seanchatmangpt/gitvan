@@ -1,0 +1,18 @@
+{
+    "sourceFile": "package.json",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1758049591877,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1758049591877,
+            "name": "Commit-0",
+            "content": "{\n  \"name\": \"gitvan\",\n  \"version\": \"2.0.0\",\n  \"type\": \"module\",\n  \"description\": \"GitVan v2 - AI-powered Git workflow automation with composables and Nunjucks templates\",\n  \"repository\": \"sac/gitvan\",\n  \"license\": \"MIT\",\n  \"main\": \"./src/index.mjs\",\n  \"types\": \"./types/index.d.ts\",\n  \"bin\": {\n    \"gitvan\": \"./bin/gitvan.mjs\"\n  },\n  \"exports\": {\n    \".\": {\n      \"import\": \"./src/index.mjs\",\n      \"types\": \"./types/index.d.ts\"\n    },\n    \"./define\": {\n      \"import\": \"./define.mjs\",\n      \"types\": \"./types/index.d.ts\"\n    },\n    \"./useGit\": {\n      \"import\": \"./useGit.mjs\",\n      \"types\": \"./types/index.d.ts\"\n    },\n    \"./useTemplate\": {\n      \"import\": \"./useTemplate.mjs\",\n      \"types\": \"./types/index.d.ts\"\n    },\n    \"./daemon\": {\n      \"import\": \"./daemon.mjs\",\n      \"types\": \"./types/index.d.ts\"\n    },\n    \"./composables\": {\n      \"import\": \"./src/composables/index.mjs\",\n      \"types\": \"./types/index.d.ts\"\n    },\n    \"./runtime\": {\n      \"import\": \"./src/runtime/boot.mjs\",\n      \"types\": \"./types/index.d.ts\"\n    }\n  },\n  \"scripts\": {\n    \"dev\": \"node src/cli.mjs\",\n    \"build\": \"echo 'Pure JS - no build needed'\",\n    \"test\": \"vitest\",\n    \"lint\": \"eslint src/\",\n    \"lint:fix\": \"eslint src/ --fix\",\n    \"typecheck\": \"tsc --noEmit\",\n    \"cli\": \"node bin/gitvan.mjs\",\n    \"gitvan\": \"node bin/gitvan.mjs\",\n    \"clean\": \"rm -rf node_modules dist\",\n    \"release\": \"npm test && npm publish\"\n  },\n  \"dependencies\": {\n    \"c12\": \"^2.0.4\",\n    \"citty\": \"^0.1.6\",\n    \"currency.js\": \"^2.0.4\",\n    \"defu\": \"^6.1.4\",\n    \"hookable\": \"^5.5.3\",\n    \"inflection\": \"^3.0.2\",\n    \"klona\": \"^2.0.6\",\n    \"nunjucks\": \"^3.2.4\",\n    \"pathe\": \"^1.1.2\",\n    \"tinyglobby\": \"^0.2.15\",\n    \"unctx\": \"^2.4.1\",\n    \"unrouting\": \"^0.0.1\"\n  },\n  \"devDependencies\": {\n    \"@types/node\": \"^20.14.0\",\n    \"@types/nunjucks\": \"^3.2.6\",\n    \"@vitest/coverage-v8\": \"^2.0.5\",\n    \"eslint\": \"^9.33.0\",\n    \"eslint-config-unjs\": \"^0.5.0\",\n    \"prettier\": \"^3.6.2\",\n    \"tempy\": \"^3.1.0\",\n    \"typescript\": \"^5.5.0\",\n    \"vitest\": \"^2.1.9\"\n  },\n  \"engines\": {\n    \"node\": \">=18.0.0\",\n    \"pnpm\": \">=8.0.0\"\n  },\n  \"packageManager\": \"pnpm@9.7.1\",\n  \"keywords\": [\n    \"git\",\n    \"ai\",\n    \"automation\",\n    \"llm\",\n    \"workflow\",\n    \"repository\",\n    \"intelligence\",\n    \"devtools\"\n  ]\n}\n"
+        }
+    ]
+}

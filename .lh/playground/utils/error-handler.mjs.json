@@ -1,0 +1,18 @@
+{
+    "sourceFile": "playground/utils/error-handler.mjs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1758052882220,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1758052882220,
+            "name": "Commit-0",
+            "content": "// playground/utils/error-handler.mjs\nexport class GitVanError extends Error {\n  constructor(message, code, context = {}) {\n    super(message);\n    this.name = \"GitVanError\";\n    this.code = code;\n    this.context = context;\n    this.timestamp = new Date().toISOString();\n  }\n}\n\nexport class GitOperationError extends GitVanError {\n  constructor(message, gitCommand, context = {}) {\n    super(message, \"GIT_OPERATION_ERROR\", { gitCommand, ...context });\n    this.name = \"GitOperationError\";\n  }\n}\n\nexport class FileSystemError extends GitVanError {\n  constructor(message, filePath, context = {}) {\n    super(message, \"FILE_SYSTEM_ERROR\", { filePath, ...context });\n    this.name = \"FileSystemError\";\n  }\n}\n\nexport class ValidationError extends GitVanError {\n  constructor(message, field, value, context = {}) {\n    super(message, \"VALIDATION_ERROR\", { field, value, ...context });\n    this.name = \"ValidationError\";\n  }\n}\n\nexport class ExternalServiceError extends GitVanError {\n  constructor(message, service, context = {}) {\n    super(message, \"EXTERNAL_SERVICE_ERROR\", { service, ...context });\n    this.name = \"ExternalServiceError\";\n  }\n}\n\nexport function createErrorHandler(ctx) {\n  return {\n    handleGitError(error, command) {\n      ctx.logger.error(`Git operation failed: ${command}`, error.message);\n      throw new GitOperationError(error.message, command, {\n        originalError: error,\n        stderr: error.stderr,\n        stdout: error.stdout,\n      });\n    },\n\n    handleFileSystemError(error, filePath) {\n      ctx.logger.error(\n        `File system operation failed: ${filePath}`,\n        error.message,\n      );\n      throw new FileSystemError(error.message, filePath, {\n        originalError: error,\n        code: error.code,\n      });\n    },\n\n    handleValidationError(message, field, value) {\n      ctx.logger.error(`Validation failed: ${field}`, message);\n      throw new ValidationError(message, field, value);\n    },\n\n    handleExternalServiceError(error, service) {\n      ctx.logger.error(`External service failed: ${service}`, error.message);\n      throw new ExternalServiceError(error.message, service, {\n        originalError: error,\n        statusCode: error.statusCode,\n        response: error.response,\n      });\n    },\n  };\n}\n"
+        }
+    ]
+}

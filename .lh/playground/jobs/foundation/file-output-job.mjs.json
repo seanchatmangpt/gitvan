@@ -1,0 +1,18 @@
+{
+    "sourceFile": "playground/jobs/foundation/file-output-job.mjs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1758052882220,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1758052882220,
+            "name": "Commit-0",
+            "content": "// playground/jobs/foundation/file-output-job.mjs\nimport { defineJob } from \"gitvan/define\";\nimport { useGit } from \"gitvan/useGit\";\nimport { promises as fs } from \"node:fs\";\nimport { join } from \"pathe\";\n\nexport default defineJob({\n  meta: {\n    desc: \"Generate a greeting file with repository information\",\n    tags: [\"hello\", \"file-output\", \"example\", \"foundation\"],\n  },\n  async run({ ctx, payload }) {\n    const git = useGit();\n\n    // Gather repository information\n    const head = await git.head();\n    const branch = await git.getCurrentBranch();\n    const isClean = await git.isClean();\n    const commitCount = await git.getCommitCount();\n\n    const reportData = {\n      timestamp: ctx.nowISO,\n      repository: {\n        head: head.substring(0, 8),\n        branch,\n        isClean,\n        commitCount,\n      },\n      payload: payload || {},\n      environment: {\n        nodeVersion: process.version,\n        platform: process.platform,\n      },\n    };\n\n    // Create JSON report\n    const outputPath = join(\n      ctx.root,\n      \"dist\",\n      \"foundation\",\n      \"greeting-report.json\",\n    );\n    await fs.mkdir(join(ctx.root, \"dist\", \"foundation\"), { recursive: true });\n    await fs.writeFile(outputPath, JSON.stringify(reportData, null, 2));\n\n    return {\n      ok: true,\n      artifacts: [outputPath],\n      data: reportData,\n    };\n  },\n});\n"
+        }
+    ]
+}

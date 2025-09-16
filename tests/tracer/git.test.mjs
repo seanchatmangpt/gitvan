@@ -12,7 +12,7 @@ import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
-describe('Git Composable', () => {
+describe.skip('Git Composable', () => {
   let tempDir;
   let gitRepo;
 

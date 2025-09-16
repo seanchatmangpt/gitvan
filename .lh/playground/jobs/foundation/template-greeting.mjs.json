@@ -1,0 +1,18 @@
+{
+    "sourceFile": "playground/jobs/foundation/template-greeting.mjs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1758052882220,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1758052882220,
+            "name": "Commit-0",
+            "content": "// playground/jobs/foundation/template-greeting.mjs\nimport { defineJob } from \"gitvan/define\";\nimport { useGit } from \"gitvan/useGit\";\nimport { useTemplate } from \"gitvan/useTemplate\";\n\nexport default defineJob({\n  meta: {\n    desc: \"Generate greeting using Nunjucks template\",\n    tags: [\"hello\", \"template\", \"nunjucks\", \"foundation\"],\n  },\n  async run({ ctx, payload }) {\n    const git = useGit();\n    const template = await useTemplate();\n\n    // Get repository information\n    const head = await git.head();\n    const branch = await git.getCurrentBranch();\n    const commitCount = await git.getCommitCount();\n\n    // Prepare template data\n    const data = {\n      greeting: \"Hello from GitVan Cookbook Template System!\",\n      timestamp: ctx.nowISO,\n      repository: {\n        head: head.substring(0, 8),\n        branch,\n        commitCount,\n        isClean: await git.isClean(),\n      },\n      environment: {\n        nodeVersion: process.version,\n        platform: process.platform,\n      },\n      payload: payload || {},\n    };\n\n    // Render template to file\n    const outputPath = await template.renderToFile(\n      \"foundation/greeting.njk\",\n      \"dist/foundation/greeting-template.html\",\n      data,\n    );\n\n    ctx.logger.log(`📝 Template greeting created: ${outputPath}`);\n\n    return {\n      ok: true,\n      artifacts: [outputPath],\n      data,\n    };\n  },\n});\n"
+        }
+    ]
+}

@@ -1,0 +1,18 @@
+{
+    "sourceFile": "playground/jobs/foundation/basic-job-setup.mjs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1758052882220,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1758052882220,
+            "name": "Commit-0",
+            "content": "// playground/jobs/foundation/basic-job-setup.mjs\nimport { defineJob } from \"gitvan/define\";\nimport { useGit } from \"gitvan/useGit\";\n\nexport default defineJob({\n  meta: {\n    desc: \"A simple greeting job that demonstrates basic GitVan concepts\",\n    tags: [\"hello\", \"example\", \"beginner\", \"foundation\"],\n  },\n  async run({ ctx }) {\n    const git = useGit();\n\n    // Get repository information\n    const head = await git.head();\n    const branch = await git.getCurrentBranch();\n    const isClean = await git.isClean();\n\n    // Create a simple greeting message\n    const greeting = {\n      message: \"Hello from GitVan Cookbook!\",\n      timestamp: ctx.nowISO,\n      repository: {\n        head: head.substring(0, 8),\n        branch,\n        isClean,\n      },\n      environment: {\n        nodeVersion: process.version,\n        platform: process.platform,\n      },\n    };\n\n    // Log the greeting\n    ctx.logger.log(\"🎉 Greeting generated successfully!\");\n    ctx.logger.log(`Repository: ${branch} (${head.substring(0, 8)})`);\n    ctx.logger.log(`Clean: ${isClean ? \"Yes\" : \"No\"}`);\n\n    return {\n      ok: true,\n      artifacts: [],\n      data: greeting,\n    };\n  },\n});\n"
+        }
+    ]
+}

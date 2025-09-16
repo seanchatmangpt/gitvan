@@ -3,11 +3,15 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 1,
             "patches": [
                 {
                     "date": 1758049591937,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1758052882222,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -65,9 +65,9 @@\n     hooks: createJobHooks({ hooks: cfg.hooks }),\n   });\n \n   const result = await runner.runJob(job, {\n-    payload: options.payload || {},\n+    payload: options.payload || options || {},\n     force: options.force || false,\n   });\n \n   console.log(\"Job execution result:\");\n"
                 }
             ],
             "date": 1758049591937,

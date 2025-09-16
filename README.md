@@ -1,8 +1,8 @@
 # GitVan v2
 
-**Git-Native Automation with Composables and Templates**
+**Git-Native Job System with Composables**
 
-GitVan v2 is a lean, single-package JavaScript solution that transforms your Git repository into an intelligent automation platform. Built with modern composables, Nunjucks templates, and Git-native storage, it provides zero-configuration workflow automation with Vue-inspired ergonomics.
+GitVan v2 is a Git-native job system that transforms your Git repository into an intelligent automation platform. Built with modern composables, Nunjucks templates, and Git-native storage, it provides zero-configuration workflow automation with Vue-inspired ergonomics.
 
 ## 🚀 Quick Start
 
@@ -23,16 +23,21 @@ gitvan daemon start
 ## ✨ Key Features
 
 ### 🎯 **Composables-First API**
-- **Vue-inspired ergonomics** with `useGit()`, `useTemplate()`, `useExec()`
+- **Vue-inspired ergonomics** with `useGit()`, `useTemplate()`
 - **Automatic dependency injection** using unctx
 - **Context isolation** for concurrent execution
 
-### 📝 **Five Execution Types**
-- **`cli`** - Shell command execution with environment control
-- **`js`** - JavaScript module execution with import resolution  
-- **`llm`** - Language model integration (Ollama, OpenAI, etc.)
-- **`job`** - Recursive job execution for composition
-- **`tmpl`** - Nunjucks template rendering with Git context
+### 🔄 **Git-Native Job System**
+- **Filesystem discovery** of jobs in `jobs/` directory
+- **Multiple job types**: on-demand, cron, event-driven
+- **Atomic execution** with Git refs for locking
+- **Auditable receipts** stored in Git notes
+
+### 📝 **Advanced Template System**
+- **Nunjucks templates** with Git context injection
+- **Inflection filters** for string transformations
+- **Deterministic rendering** with cached environments
+- **File and string output** support
 
 ### 🌳 **Git-Native Storage**
 - **Git refs** for distributed locking across worktrees
@@ -54,16 +59,23 @@ src/
 │   ├── ctx.mjs          # Context management (unctx)
 │   ├── git.mjs          # Git operations composable
 │   ├── template.mjs     # Nunjucks template composable
-│   ├── exec.mjs         # Execution composable
 │   └── index.mjs        # Composable exports
-├── runtime/              # Core runtime engine
-│   ├── boot.mjs         # Context bootstrapping
+├── jobs/                 # Job system implementation
 │   ├── define.mjs       # Job definition system
-│   ├── daemon.mjs       # Worktree-scoped daemon
-│   ├── events.mjs       # Event discovery and routing
-│   ├── locks.mjs        # Distributed locking
-│   └── receipt.mjs      # Execution receipts
-└── cli.mjs              # Command-line interface
+│   ├── scan.mjs         # Filesystem job discovery
+│   ├── runner.mjs       # Job execution engine
+│   ├── cron.mjs         # Cron scheduler
+│   ├── events.mjs       # Event-driven jobs
+│   ├── daemon.mjs       # Background daemon
+│   └── hooks.mjs        # Lifecycle hooks
+├── config/               # Configuration system
+│   ├── defaults.mjs     # Default configuration
+│   ├── loader.mjs      # Configuration loading
+│   └── runtime-config.mjs # Runtime normalization
+├── utils/                # Utility functions
+│   └── nunjucks-config.mjs # Template configuration
+└── cli/                  # Command-line interface
+    └── job.mjs          # Job management commands
 ```
 
 ## 📦 Installation
@@ -96,14 +108,23 @@ pnpm dev
 
 ## 🎮 Usage
 
-### Basic Job Execution
+### Job Management
 
 ```bash
-# Run a specific job
-gitvan run docs:changelog
-
 # List available jobs
-gitvan list
+gitvan job list
+
+# Run a specific job
+gitvan job run --name docs:changelog
+
+# Run job with payload
+gitvan job run --name foundation:template-greeting --payload '{"custom": "value"}'
+
+# Show job details
+gitvan job show docs:changelog
+
+# Plan job execution (dry run)
+gitvan job plan docs:changelog
 ```
 
 ### Daemon Management
@@ -122,14 +143,14 @@ gitvan daemon status
 gitvan daemon stop
 ```
 
-### Event Discovery
+### Lock Management
 
 ```bash
-# List discovered events
-gitvan event list
+# List active job locks
+gitvan job locks
 
-# List all worktrees
-gitvan worktree list
+# Unlock a specific job
+gitvan job unlock docs:changelog
 ```
 
 ## 🔧 Job Definition
@@ -138,34 +159,43 @@ Jobs are defined using the `defineJob()` pattern with composables:
 
 ```javascript
 // jobs/docs/changelog.mjs
-import { defineJob } from '../../src/runtime/define.mjs'
-import { useGit } from '../../src/composables/git.mjs'
-import { useTemplate } from '../../src/composables/template.mjs'
+import { defineJob } from "gitvan/define";
+import { useGit } from "gitvan/useGit";
+import { useTemplate } from "gitvan/useTemplate";
 
 export default defineJob({
-  kind: 'atomic',
   meta: { 
-    desc: 'Generate CHANGELOG.md', 
-    schedule: '0 3 * * *' 
+    desc: "Generate CHANGELOG.md from git log",
+    tags: ["documentation", "changelog"]
   },
-  async run() {
-    const git = useGit()
-    const t = useTemplate()
+  async run({ ctx, payload }) {
+    const git = useGit();
+    const template = await useTemplate();
     
-    const commits = git.run('log --pretty=%h%x09%s -n 50').split('\n')
-    t.renderToFile('templates/changelog.njk', 'dist/CHANGELOG.md', { commits })
+    // Get commits
+    const logOutput = await git.log("%h%x09%s", ["-n", "50"]);
+    const commits = logOutput.split("\n").filter(Boolean);
     
-    return { ok: true, artifact: 'dist/CHANGELOG.md' }
+    // Render template to file
+    const outputPath = await template.renderToFile(
+      "changelog.njk",
+      "dist/CHANGELOG.md",
+      { commits, generatedAt: ctx.nowISO }
+    );
+    
+    return {
+      ok: true,
+      artifacts: [outputPath]
+    };
   }
-})
+});
 ```
 
 ### Job Types
 
-- **`atomic`** - Single execution unit
-- **`composite`** - Multiple steps with dependencies
-- **`sequence`** - Sequential execution
-- **`parallel`** - Concurrent execution
+- **On-demand** - Manual execution via CLI
+- **Cron** - Scheduled execution (`.cron.mjs` suffix)
+- **Event-driven** - Triggered by Git events (`.evt.mjs` suffix)
 
 ## 🎨 Template System
 
@@ -174,16 +204,24 @@ GitVan includes first-class Nunjucks template support with Git context injection
 ```njk
 <!-- templates/changelog.njk -->
 # Changelog
-Generated: {{ nowISO }}
 
-{% for line in commits %}
-- {{ line }}
+Generated at: {{ generatedAt }}
+Total commits: {{ commits.length }}
+
+## Recent Changes
+
+{% for commit in commits %}
+- **{{ commit.split('\t')[0] }}** {{ commit.split('\t')[1] }}
 {% endfor %}
+
+---
+*Generated by GitVan Jobs System*
 ```
 
 ### Template Features
-- **Git context injection** - `{{ git.branch() }}`, `{{ git.head() }}`
-- **Deterministic helpers** - `{{ nowISO }}`, `{{ formatDate() }}`
+- **Git context injection** - Access to repository information
+- **Inflection filters** - `titleize`, `camelize`, `underscore`, etc.
+- **Deterministic helpers** - `nowISO`, `formatDate()`
 - **File output** - Render directly to files
 - **Include/extends** - Full Nunjucks functionality
 
@@ -194,82 +232,100 @@ Create `gitvan.config.js` in your project root:
 ```javascript
 export default {
   // Repository settings
-  repo: {
-    defaultBranch: "main",
-    notesRef: "refs/notes/gitvan",
-    signing: { require: true }
+  root: process.cwd(),
+  
+  // Job configuration
+  jobs: {
+    dir: "jobs"
   },
-
-  // LLM configuration
-  llm: {
-    baseURL: "http://localhost:11434", // Ollama
-    model: "llama3.2",
-    temperature: 0.2
+  
+  // Template configuration
+  templates: {
+    engine: "nunjucks",
+    dirs: ["templates"]
   },
-
-  // Event-driven automation
-  events: [
-    {
-      id: "daily-summary",
-      workflow: "cron",
-      schedule: "0 18 * * *",
-      run: { type: "cookbook", recipe: "dev-diary" }
+  
+  // Receipts configuration
+  receipts: {
+    ref: "refs/notes/gitvan/results"
+  },
+  
+  // Custom hooks
+  hooks: {
+    "job:after": (payload, result) => {
+      console.log(`Job completed: ${payload.jobId}`);
     }
-  ]
-}
+  }
+};
 ```
 
 ## 🔌 Composables API
 
 ### `useGit()`
 ```javascript
-const git = useGit()
-git.run('log --oneline -10')        // Execute git command
-git.branch()                        // Current branch
-git.head()                          // Current HEAD
-git.note('refs/notes/test', 'msg')  // Add git note
+const git = useGit();
+
+// Basic Git operations
+await git.run("log --oneline -10");
+await git.head();                    // Current HEAD
+await git.getCurrentBranch();        // Current branch
+await git.isClean();                 // Working directory status
+
+// Git notes
+await git.noteAdd("refs/notes/test", "message");
+await git.noteShow("refs/notes/test");
+
+// Atomic operations
+await git.updateRefCreate("refs/gitvan/lock/job-id", commitSha);
 ```
 
 ### `useTemplate()`
 ```javascript
-const t = useTemplate()
-t.render('template.njk', { data })           // Render to string
-t.renderToFile('template.njk', 'out.md', {}) // Render to file
-```
+const template = await useTemplate();
 
-### `useExec()`
-```javascript
-const exec = useExec()
-exec.cli('npm', ['test'])                    // CLI execution
-exec.js('./script.mjs', 'default', {})       // JS execution
-exec.tmpl({ template: 'test.njk', data: {} }) // Template execution
+// Render to string
+const html = await template.renderString("Hello {{ name }}!", { name: "World" });
+
+// Render to file
+const outputPath = await template.renderToFile(
+  "template.njk",
+  "dist/output.html",
+  { data: "value" }
+);
 ```
 
 ## 🎯 Event System
 
-GitVan discovers events through file system conventions:
+GitVan supports event-driven jobs with Git-native predicates:
 
-```
-events/
-├── cron/
-│   └── 0_9_*_*_*.mjs          # Daily at 9 AM
-├── merge-to/
-│   └── main.mjs               # On merge to main
-├── push-to/
-│   └── feature/*.mjs          # On push to feature/*
-└── message/
-    └── release.mjs            # On commit message "release"
-```
-
-### Event Handler Example
 ```javascript
-// events/merge-to/main.mjs
-export default async function handler({ payload, git, meta }) {
-  const git = useGit()
-  // Deploy to production
-  return { ok: true, action: 'deploy' }
-}
+// jobs/alerts/release.evt.mjs
+import { defineJob } from "gitvan/define";
+
+export default defineJob({
+  meta: {
+    desc: "Notify on new releases",
+    tags: ["alerts", "releases"]
+  },
+  on: {
+    any: [
+      { tagCreate: true },
+      { semverTag: true }
+    ]
+  },
+  async run({ ctx, payload }) {
+    // Handle release notification
+    return { ok: true };
+  }
+});
 ```
+
+### Event Predicates
+- **`tagCreate`** - New tag created
+- **`semverTag`** - Semantic version tag
+- **`branchCreate`** - New branch created
+- **`mergeTo`** - Merge to specific branch
+- **`pushTo`** - Push to specific branch pattern
 
 ## 🚀 Performance
 
@@ -291,10 +347,26 @@ GitVan v2 is optimized for speed and efficiency:
 
 ## 📚 Documentation
 
-- **[Specifications](./specs/)** - Complete system specifications
-- **[API Contracts](./specs/docs/API_CONTRACTS.md)** - Detailed API documentation
-- **[Architecture Decisions](./specs/docs/ARCHITECTURE_DECISIONS.md)** - Design rationale
-- **[Implementation Guide](./specs/docs/IMPLEMENTATION_GUIDE.md)** - Development guide
+### Core Documentation
+- **[Playground Guide](./docs/playground/)** - Complete developer guide for the playground application
+- **[Cookbook](./docs/cookbook/)** - Practical recipes and patterns for common use cases
+
+### Playground Documentation
+- **[Playground README](./docs/playground/README.md)** - Main developer guide
+- **[Job Examples](./docs/playground/job-examples.md)** - Detailed job examples and patterns
+- **[Testing Guide](./docs/playground/testing-guide.md)** - Testing strategies and best practices
+- **[Architecture Guide](./docs/playground/architecture-guide.md)** - System architecture overview
+- **[Troubleshooting Guide](./docs/playground/troubleshooting-guide.md)** - Common issues and solutions
+
+### Cookbook Recipes
+- **[Foundation Recipes](./docs/cookbook/foundation/)** - Basic job setup, configuration, templates, error handling
+- **[Documentation Recipes](./docs/cookbook/documentation/)** - Changelog generation, documentation automation
+- **[CI/CD Recipes](./docs/cookbook/cicd/)** - Build automation, deployment workflows
+
+### API Reference
+- **[Composables API](./src/composables/)** - `useGit`, `useTemplate`, context management
+- **[Job System API](./src/jobs/)** - Job definition, execution, scheduling
+- **[Configuration API](./src/config/)** - Configuration loading and normalization
 
 ## 🧪 Testing
 
@@ -304,12 +376,42 @@ pnpm test
 
 # Run specific test suites
 pnpm test composables
-pnpm test runtime
-pnpm test cli
+pnpm test jobs
+pnpm test config
+
+# Run E2E tests
+pnpm test playground-e2e
+pnpm test playground-cookbook-e2e
 
 # Run with coverage
 pnpm test --coverage
 ```
+
+## 🎮 Playground
+
+The GitVan playground is a self-contained example application that demonstrates all features:
+
+```bash
+# Navigate to playground
+cd playground
+
+# Install dependencies
+pnpm install
+
+# Start development mode
+pnpm dev
+
+# Run specific jobs
+pnpm run:changelog
+pnpm run:simple
+```
+
+The playground includes:
+- **Foundation jobs** - Basic setup, file output, templates, error handling
+- **Documentation jobs** - Advanced changelog generation
+- **CI/CD jobs** - Build automation workflows
+- **Event-driven jobs** - Release notifications
+- **Comprehensive E2E tests** - Full system validation
 
 ## 🤝 Contributing
 
@@ -342,6 +444,7 @@ GitVan v2 is inspired by:
 - **Git** for the powerful foundation
 - **Nunjucks** for template rendering
 - **unctx** for context management
+- **Nitro** for configuration patterns
 
 ---
 

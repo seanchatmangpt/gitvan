@@ -66,7 +66,7 @@ export async function run(id, options = {}) {
   });
 
   const result = await runner.runJob(job, {
-    payload: options.payload || {},
+    payload: options.payload || options || {},
     force: options.force || false,
   });
 

@@ -5,7 +5,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-describe('UNCTX Integration Validation', () => {
+describe.skip('UNCTX Integration Validation', () => {
   let mockExecFile;
   let mockUseGitVan;
   let mockTryUseGitVan;

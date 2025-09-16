@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/config/defaults.mjs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1758046934640,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1758046934640,
+            "name": "Commit-0",
+            "content": "// src/config/defaults.mjs\n// GitVan v2 — Minimal, deterministic defaults\n// Engine is fixed to Nunjucks for consistency and performance\n\nexport const GitVanDefaults = {\n  // General\n  debug: false,\n  logLevel: 3,\n\n  // Dirs\n  rootDir: process.cwd(),\n  buildDir: \".gitvan\",\n  output: {\n    dir: \"{{ rootDir }}/.out\",\n    distDir: \"{{ rootDir }}/dist\",\n  },\n\n  // Features\n  jobs: { dir: \"jobs\" }, // scan jobs/**/*.mjs\n  templates: { dirs: [\"templates\"], autoescape: false, noCache: true },\n  receipts: { ref: \"refs/notes/gitvan/results\" },\n\n  // Policy\n  policy: {\n    requireSignedCommits: false,\n    allowUnsignedReceipts: true,\n  },\n\n  // Runtime config bag (serializable only)\n  runtimeConfig: {\n    app: {},\n    gitvan: {\n      notesRef: \"refs/notes/gitvan/results\",\n    },\n  },\n\n  // Time injector (optional). If omitted, no ambient time is injected.\n  now: undefined,\n\n  // Hooks (hookable)\n  hooks: {},\n};\n"
+        }
+    ]
+}

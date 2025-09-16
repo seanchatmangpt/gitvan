@@ -1,0 +1,18 @@
+{
+    "sourceFile": "gitvan.config.js",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1758046934640,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1758046934640,
+            "name": "Commit-0",
+            "content": "/**\n * GitVan Configuration\n *\n * This is the main configuration file for GitVan.\n * It defines repository settings, LLM configuration, cookbook installations,\n * and automated workflow events.\n */\n\nexport default defineGitVanConfig({\n  // Only override when needed\n  jobs: { dir: \"jobs\" },\n  templates: { dirs: [\"templates\"], autoescape: false, noCache: true },\n  receipts: { ref: \"refs/notes/gitvan/audit\" },\n  policy: { requireSignedCommits: true, allowUnsignedReceipts: true },\n  now: () => \"2027-01-01T00:00:00Z\",\n  runtimeConfig: {\n    app: { name: \"demo\" },\n    gitvan: { notesRef: \"refs/notes/gitvan/audit\" },\n  },\n});\n"
+        }
+    ]
+}

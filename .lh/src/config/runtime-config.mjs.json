@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/config/runtime-config.mjs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1758046934652,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1758046934652,
+            "name": "Commit-0",
+            "content": "// src/config/runtime-config.mjs\n// GitVan v2 — Runtime configuration normalization\n// Ensures runtime config is serializable and provides fallback values\n\nimport defu from \"defu\";\n\n/**\n * Normalize runtime configuration for serialization and fallback values\n * @param {Object} config - Configuration object\n * @returns {Object} Normalized runtime configuration\n */\nexport function normalizeRuntimeConfig(config) {\n  const base = {\n    app: {},\n    gitvan: {\n      notesRef: config.receipts?.ref || \"refs/notes/gitvan/results\",\n    },\n  };\n  const runtimeConfig = defu(config.runtimeConfig || {}, base);\n\n  // Ensure all nested objects exist before processing\n  if (!runtimeConfig.app) runtimeConfig.app = {};\n  if (!runtimeConfig.gitvan) runtimeConfig.gitvan = {};\n\n  _provideFallbackValues(runtimeConfig);\n  _checkSerializable(runtimeConfig);\n  return runtimeConfig;\n}\n\n/**\n * Provide fallback values for undefined/null values\n * @param {Object} obj - Object to process\n */\nfunction _provideFallbackValues(obj) {\n  for (const k in obj) {\n    const v = obj[k];\n    if (v === undefined || v === null) {\n      obj[k] = \"\";\n    } else if (typeof v === \"object\" && v !== null) {\n      _provideFallbackValues(v);\n    }\n  }\n}\n\n/**\n * Check if runtime config values are serializable\n * @param {Object} obj - Object to check\n * @param {string[]} path - Current path for error reporting\n */\nfunction _checkSerializable(obj, path = []) {\n  if (_isPrimitive(obj)) return;\n  for (const k in obj) {\n    const v = obj[k];\n    if (v == null || _isPrimitive(v)) continue;\n    if (Array.isArray(v)) {\n      v.forEach((item, i) => _checkSerializable(item, [...path, `${k}[${i}]`]));\n    } else if (_isPOJO(v)) {\n      _checkSerializable(v, [...path, k]);\n    } else {\n      // warn once per path; keep simple\n      console.warn(\n        `Runtime config \\`${[...path, k].join(\".\")}\\` may not serialize. Use only strings, numbers, booleans, arrays, and plain objects.`,\n      );\n    }\n  }\n}\n\n/**\n * Check if value is primitive\n * @param {any} v - Value to check\n * @returns {boolean} True if primitive\n */\nfunction _isPrimitive(v) {\n  return (\n    typeof v === \"string\" || typeof v === \"number\" || typeof v === \"boolean\"\n  );\n}\n\n/**\n * Check if value is plain object\n * @param {any} v - Value to check\n * @returns {boolean} True if plain object\n */\nfunction _isPOJO(v) {\n  return (\n    typeof v === \"object\" &&\n    v &&\n    (v.constructor === Object || !v.constructor?.name)\n  );\n}\n"
+        }
+    ]
+}

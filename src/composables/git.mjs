@@ -9,11 +9,9 @@
 import { execFile as _execFile } from "node:child_process";
 import { promisify } from "node:util";
 import path from "node:path";
-import { useGitVan, tryUseGitVan } from "../core/context.mjs";
+import { bindContext } from "../core/context.mjs";
 
 const execFile = promisify(_execFile);
-
-// bindContext is now imported from ../core/context.mjs
 
 async function runGit(args, { cwd, env, maxBuffer = 12 * 1024 * 1024 } = {}) {
   const { stdout } = await execFile("git", args, { cwd, env, maxBuffer });
@@ -29,13 +27,16 @@ function toArr(x) {
 }
 
 export function useGit() {
-  const bound = bindGitContext();
+  const bound = bindContext();
   const base = {
     cwd: bound.cwd,
     env: bound.env,
   };
 
   return {
+    // Context properties (exposed for testing)
+    cwd: base.cwd,
+    env: base.env,
     // ---------- Repo info ----------
     async branch() {
       return runGit(["rev-parse", "--abbrev-ref", "HEAD"], base);

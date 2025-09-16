@@ -88,10 +88,9 @@ This project uses SPARC (Specification, Pseudocode, Architecture, Refinement, Co
 - `npx claude-flow sparc concurrent <mode> "<tasks-file>"` - Multi-task processing
 
 ### Build Commands
-- `npm run build` - Build project
-- `npm run test` - Run tests
-- `npm run lint` - Linting
-- `npm run typecheck` - Type checking
+- `pnpm run build` - Build project
+- `pnpm run test` - Run tests
+- `pnpm run lint` - Linting
 
 ## SPARC Workflow Phases
 
@@ -291,7 +290,7 @@ npx claude-flow@alpha hooks session-end --export-metrics true
   ]}
   
   // Parallel file operations
-  Bash "npm test" // Run tests first to see what's broken
+  Bash "pnpm test" // Run tests first to see what's broken
   Write "app/package.json"
   Write "app/src/server.js"
   Write "app/tests/server.test.js"
@@ -386,3 +385,5 @@ Never save working files, text/mds and tests to the root folder.
 - Finishing a TODO is NOT enough without verification
 - Agent completion reports are NOT proof of functionality
 - You MUST verify with London BDD and actual command execution
+
+ALWAYS USE pnpm not npm

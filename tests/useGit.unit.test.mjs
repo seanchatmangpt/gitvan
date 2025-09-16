@@ -12,6 +12,26 @@ vi.mock('node:child_process', () => ({
   execFile: mockExecFile
 }));
 
+// Mock the context module BEFORE importing anything else
+vi.mock('../src/core/context.mjs', () => {
+  const mockContext = {
+    cwd: '/test/repo',
+    env: {
+      ...process.env,
+      TZ: 'UTC',
+      LANG: 'C',
+      NODE_ENV: 'test'
+    }
+  };
+
+  return {
+    useGitVan: vi.fn(() => mockContext),
+    tryUseGitVan: vi.fn(() => mockContext),
+    withGitVan: vi.fn((context, fn) => fn()),
+    bindContext: vi.fn(() => mockContext) // This was missing!
+  };
+});
+
 // Import useGit - this will be dynamically imported in each test
 let useGit;
 
@@ -32,7 +52,17 @@ describe('useGit() Unit Tests', () => {
     // Mock context module
     vi.doMock('../src/core/context.mjs', () => ({
       useGitVan: vi.fn(() => mockContext),
-      tryUseGitVan: vi.fn(() => mockContext)
+      tryUseGitVan: vi.fn(() => mockContext),
+      bindContext: vi.fn(() => {
+        const cwd = (mockContext && mockContext.cwd) || process.cwd();
+        const env = {
+          ...process.env,
+          TZ: "UTC",
+          LANG: "C",
+          ...(mockContext && mockContext.env ? mockContext.env : {}),
+        };
+        return { ctx: mockContext, cwd, env };
+      })
     }));
 
     // Default successful execFile response
@@ -68,7 +98,16 @@ describe('useGit() Unit Tests', () => {
       // Mock context to throw error and return null
       vi.doMock('../src/core/context.mjs', () => ({
         useGitVan: vi.fn(() => { throw new Error('No context'); }),
-        tryUseGitVan: vi.fn(() => null)
+        tryUseGitVan: vi.fn(() => null),
+        bindContext: vi.fn(() => {
+          const cwd = process.cwd();
+          const env = {
+            ...process.env,
+            TZ: "UTC",
+            LANG: "C",
+          };
+          return { ctx: null, cwd, env };
+        })
       }));
 
       const gitModule = await import('../src/composables/git.mjs');
@@ -82,7 +121,16 @@ describe('useGit() Unit Tests', () => {
       // Mock empty context
       vi.doMock('../src/core/context.mjs', () => ({
         useGitVan: vi.fn(() => ({})),
-        tryUseGitVan: vi.fn(() => null)
+        tryUseGitVan: vi.fn(() => null),
+        bindContext: vi.fn(() => {
+          const cwd = process.cwd();
+          const env = {
+            ...process.env,
+            TZ: "UTC",
+            LANG: "C",
+          };
+          return { ctx: {}, cwd, env };
+        })
       }));
 
       const gitModule = await import('../src/composables/git.mjs');

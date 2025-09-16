@@ -23,7 +23,9 @@ const mockContext = {
 
 vi.mock('../src/core/context.mjs', () => ({
   useGitVan: vi.fn(() => mockContext),
-  tryUseGitVan: vi.fn(() => mockContext)
+  tryUseGitVan: vi.fn(() => mockContext),
+  withGitVan: vi.fn((context, fn) => fn()),
+  bindContext: vi.fn(() => mockContext) // This was missing!
 }));
 
 const { useGit } = await import('../src/composables/git.mjs');

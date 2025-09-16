@@ -3,7 +3,33 @@
  * Tests for useGit, useTemplate, useExec composables
  */
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+
+// Mock child_process before importing composables
+vi.mock('node:child_process', () => ({
+  execFile: vi.fn()
+}));
+
+// Mock the context module
+vi.mock('../src/core/context.mjs', () => {
+  const mockContext = {
+    cwd: '/test/repo',
+    env: {
+      ...process.env,
+      TZ: 'UTC',
+      LANG: 'C',
+      TEST: 'true'
+    }
+  };
+
+  return {
+    useGitVan: vi.fn(() => mockContext),
+    tryUseGitVan: vi.fn(() => mockContext),
+    withGitVan: vi.fn((context, fn) => fn()),
+    bindContext: vi.fn(() => mockContext)
+  };
+});
+
 import { withGitVan, useGitVan } from '../src/composables/ctx.mjs'
 import { useGit } from '../src/composables/git.mjs'
 import { useTemplate } from '../src/composables/template.mjs'

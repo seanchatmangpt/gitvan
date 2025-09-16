@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 11,
+            "activePatchIndex": 14,
             "patches": [
                 {
                     "date": 1758043526263,
@@ -52,6 +52,18 @@
                 {
                     "date": 1758043800951,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -271,28 +271,28 @@\n \n // Step 2: Claude Code Task tool spawns ACTUAL agents that do the work\n [Single Message - Parallel Agent Execution]:\n   // Claude Code's Task tool spawns real agents concurrently\n-  Task(\"Research agent\", \"Analyze API requirements and best practices. Check memory for prior decisions.\", \"researcher\")\n-  Task(\"Coder agent\", \"Implement REST endpoints with authentication. Coordinate via hooks.\", \"coder\")\n-  Task(\"Database agent\", \"Design and implement database schema. Store decisions in memory.\", \"code-analyzer\")\n-  Task(\"Tester agent\", \"Create comprehensive test suite with 90% coverage.\", \"tester\")\n-  Task(\"Reviewer agent\", \"Review code quality and security. Document findings.\", \"reviewer\")\n+  Task(\"Test Runner\", \"Run Vitest tests to identify failing GitVan components. Check memory for test patterns.\", \"tester\")\n+  Task(\"Composables Fixer\", \"Fix failing useGit/useTemplate composables using 80/20 technique. Coordinate via hooks.\", \"coder\")\n+  Task(\"CLI Fixer\", \"Fix citty CLI command failures found by tests. Store fixes in memory.\", \"code-analyzer\")\n+  Task(\"Hook System Fixer\", \"Fix hookable plugin system based on test failures. Document fixes.\", \"reviewer\")\n+  Task(\"Git Integration Fixer\", \"Fix Git-native storage issues with refs/notes. Report findings via hooks.\", \"researcher\")\n   \n   // Batch ALL todos in ONE call\n   TodoWrite { todos: [\n-    {id: \"1\", content: \"Research API patterns\", status: \"in_progress\", priority: \"high\"},\n-    {id: \"2\", content: \"Design database schema\", status: \"in_progress\", priority: \"high\"},\n-    {id: \"3\", content: \"Implement authentication\", status: \"pending\", priority: \"high\"},\n-    {id: \"4\", content: \"Build REST endpoints\", status: \"pending\", priority: \"high\"},\n-    {id: \"5\", content: \"Write unit tests\", status: \"pending\", priority: \"medium\"},\n-    {id: \"6\", content: \"Integration tests\", status: \"pending\", priority: \"medium\"},\n-    {id: \"7\", content: \"API documentation\", status: \"pending\", priority: \"low\"},\n-    {id: \"8\", content: \"Performance optimization\", status: \"pending\", priority: \"low\"}\n+    {id: \"1\", content: \"Run test suite to identify failures\", status: \"in_progress\", priority: \"high\"},\n+    {id: \"2\", content: \"Fix composables test failures\", status: \"in_progress\", priority: \"high\"},\n+    {id: \"3\", content: \"Fix CLI command issues\", status: \"pending\", priority: \"high\"},\n+    {id: \"4\", content: \"Fix hook system failures\", status: \"pending\", priority: \"high\"},\n+    {id: \"5\", content: \"Fix Git integration tests\", status: \"pending\", priority: \"medium\"},\n+    {id: \"6\", content: \"Fix template rendering tests\", status: \"pending\", priority: \"medium\"},\n+    {id: \"7\", content: \"Fix plugin system tests\", status: \"pending\", priority: \"low\"},\n+    {id: \"8\", content: \"Fix daemon integration tests\", status: \"pending\", priority: \"low\"}\n   ]}\n   \n   // Parallel file operations\n-  Bash \"mkdir -p app/{src,tests,docs,config}\"\n+  Bash \"npm test\" // Run tests first to see what's broken\n   Write \"app/package.json\"\n   Write \"app/src/server.js\"\n   Write \"app/tests/server.test.js\"\n   Write \"app/docs/API.md\"\n"
+                },
+                {
+                    "date": 1758044476720,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -384,5 +384,6 @@\n **REMEMBER:**\n - Writing a file to disk DOES NOT mean it works\n - Finishing a TODO is NOT enough without verification\n - Agent completion reports are NOT proof of functionality\n-- You MUST verify with London BDD and actual command execution\n\\ No newline at end of file\n+- You MUST verify with London BDD and actual command execution\n+\n"
+                },
+                {
+                    "date": 1758044483766,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -386,5 +386,5 @@\n - Finishing a TODO is NOT enough without verification\n - Agent completion reports are NOT proof of functionality\n - You MUST verify with London BDD and actual command execution\n \n-ALWAYS \n\\ No newline at end of file\n+ALWAYS USE pnpm\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1758044499774,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -290,9 +290,9 @@\n     {id: \"8\", content: \"Fix daemon integration tests\", status: \"pending\", priority: \"low\"}\n   ]}\n   \n   // Parallel file operations\n-  Bash \"npm test\" // Run tests first to see what's broken\n+  Bash \"pnpm test\" // Run tests first to see what's broken\n   Write \"app/package.json\"\n   Write \"app/src/server.js\"\n   Write \"app/tests/server.test.js\"\n   Write \"app/docs/API.md\"\n"
                 }
             ],
             "date": 1758043526263,

@@ -45,13 +45,17 @@
     "release": "npm test && npm publish"
   },
   "dependencies": {
-    "c12": "^2.0.1",
+    "c12": "^2.0.4",
     "citty": "^0.1.6",
+    "currency.js": "^2.0.4",
+    "defu": "^6.1.4",
     "hookable": "^5.5.3",
+    "inflection": "^3.0.2",
+    "klona": "^2.0.6",
     "nunjucks": "^3.2.4",
     "pathe": "^1.1.2",
     "unctx": "^2.4.1",
-    "unrouting": "^0.3.0"
+    "unrouting": "^0.0.1"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",
@@ -60,8 +64,9 @@
     "eslint": "^9.33.0",
     "eslint-config-unjs": "^0.5.0",
     "prettier": "^3.6.2",
+    "tempy": "^3.1.0",
     "typescript": "^5.5.0",
-    "vitest": "^2.0.5"
+    "vitest": "^2.1.9"
   },
   "engines": {
     "node": ">=18.0.0",

@@ -36,9 +36,9 @@ export function bindContext() {
 
   // Set up deterministic environment with UTC timezone and C locale
   const env = {
+    ...process.env,
     TZ: "UTC",
     LANG: "C",
-    ...process.env,
     ...(ctx && ctx.env ? ctx.env : {}),
   };
 

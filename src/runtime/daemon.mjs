@@ -1,67 +1,79 @@
-import { withGitVan } from '../composables/ctx.mjs'
-import { useGit } from '../composables/git.mjs'
-import { useExec } from '../composables/exec.mjs'
-import { acquireLock, worktreeLockRef, releaseLock } from './locks.mjs'
-import { writeReceipt } from './receipt.mjs'
-import { recentShas, sleep, eventFires } from './utils.mjs'
-import { discoverEvents, loadEventDefinition } from './events.mjs'
-import { loadConfig } from './config.mjs'
-import { join } from 'pathe'
+import { withGitVan } from "../composables/ctx.mjs";
+import { useGit } from "../composables/git.mjs";
+import { useExec } from "../composables/exec.mjs";
+import { acquireLock, worktreeLockRef, releaseLock } from "./locks.mjs";
+import { writeReceipt } from "./receipt.mjs";
+import { recentShas, sleep, eventFires } from "./utils.mjs";
+import { discoverEvents, loadEventDefinition } from "./events.mjs";
+import { loadConfig } from "./config.mjs";
+import { join } from "pathe";
 
 /**
  * Start daemon for specified worktrees
  */
-export async function startDaemon(opts = {}, registry = null, sel = 'current') {
-  const config = await loadConfig(opts.rootDir)
-  const mergedOpts = { ...config, ...opts }
+export async function startDaemon(opts = {}, registry = null, sel = "current") {
+  const config = await loadConfig(opts.rootDir);
+  const mergedOpts = { ...config, ...opts };
 
   // Discover events if not provided in registry
   if (!registry) {
-    const eventsDir = join(mergedOpts.rootDir || process.cwd(), mergedOpts.events.directory)
-    const eventFiles = discoverEvents(eventsDir)
-    const events = []
+    const eventsDir = join(
+      mergedOpts.rootDir || process.cwd(),
+      mergedOpts.events.directory,
+    );
+    const eventFiles = discoverEvents(eventsDir);
+    const events = [];
 
     for (const eventFile of eventFiles) {
-      const definition = await loadEventDefinition(eventFile.file)
+      const definition = await loadEventDefinition(eventFile.file);
       if (definition) {
         events.push({
           ...eventFile,
           run: definition.run || definition,
-          job: definition.job
-        })
+          job: definition.job,
+        });
       }
     }
 
-    registry = { events, jobs: {} }
+    registry = { events, jobs: {} };
   }
 
-  const git = useGit()
-  const wts = sel === 'all' ? git.listWorktrees()
-            : Array.isArray(sel) ? git.listWorktrees().filter(w => sel.includes(w.path))
-            : [{ path: git.worktreeRoot || git.root, branch: git.branch(), isMain: true }]
+  const git = useGit();
+  const wts =
+    sel === "all"
+      ? git.listWorktrees()
+      : Array.isArray(sel)
+        ? git.listWorktrees().filter((w) => sel.includes(w.path))
+        : [
+            {
+              path: git.worktreeRoot || git.root,
+              branch: git.branch(),
+              isMain: true,
+            },
+          ];
 
-  console.log(`Starting daemon for ${wts.length} worktree(s)`)
+  console.log(`Starting daemon for ${wts.length} worktree(s)`);
 
   // Start daemon loop for each worktree
-  const promises = wts.map(wt => loopWorktree(mergedOpts, registry, wt))
-  await Promise.all(promises)
+  const promises = wts.map((wt) => loopWorktree(mergedOpts, registry, wt));
+  await Promise.all(promises);
 }
 
 /**
  * Run an action specification
  */
 async function runAction(spec) {
-  const exec = useExec()
+  const exec = useExec();
 
   switch (spec.exec) {
-    case 'cli':
-      return exec.cli(spec.cmd, spec.args, spec.env)
-    case 'js':
-      return await exec.js(spec.module, spec.export, spec.input)
-    case 'tmpl':
-      return exec.tmpl(spec)
+    case "cli":
+      return exec.cli(spec.cmd, spec.args, spec.env);
+    case "js":
+      return await exec.js(spec.module, spec.export, spec.input);
+    case "tmpl":
+      return exec.tmpl(spec);
     default:
-      return { ok: false, error: `Unknown exec type: ${spec.exec}` }
+      return { ok: false, error: `Unknown exec type: ${spec.exec}` };
   }
 }
 
@@ -78,179 +90,210 @@ async function loopWorktree(opts, registry, wt) {
     jobs: registry.jobs,
     llm: opts.llm,
     payload: {},
-    worktree: { id: wt.path.replace(/[:/\\]/g, '-'), branch: wt.branch }
-  }
+    worktree: { id: wt.path.replace(/[:/\\]/g, "-"), branch: wt.branch },
+  };
 
-  console.log(`Starting daemon loop for worktree: ${wt.path} (${wt.branch})`)
+  console.log(`Starting daemon loop for worktree: ${wt.path} (${wt.branch})`);
 
   await withGitVan(ctx, async () => {
     for (;;) {
       try {
-        const shas = recentShas(opts.daemon?.lookback || 600)
-        let ran = 0
-        const maxPerTick = opts.daemon?.maxPerTick || 50
+        const shas = recentShas(opts.daemon?.lookback || 600);
+        let ran = 0;
+        const maxPerTick = opts.daemon?.maxPerTick || 50;
 
         for (const sha of shas) {
-          if (ran >= maxPerTick) break
+          if (ran >= maxPerTick) break;
 
           for (const event of registry.events) {
-            if (ran >= maxPerTick) break
+            if (ran >= maxPerTick) break;
 
             try {
-              const fires = await eventFires(event, sha)
-              if (!fires) continue
+              const fires = await eventFires(event, sha);
+              if (!fires) continue;
 
-              const git = useGit()
+              const git = useGit();
               const lockRef = worktreeLockRef(
-                opts.locksRoot || 'refs/gitvan/locks',
+                opts.locksRoot || "refs/gitvan/locks",
                 git.worktreeId(),
                 event.id,
-                sha
-              )
+                sha,
+              );
 
-              const acquired = acquireLock(lockRef, sha)
+              const acquired = acquireLock(lockRef, sha);
               if (!acquired) {
-                console.debug(`Lock already held for ${event.id}@${sha}`)
-                continue
+                console.debug(`Lock already held for ${event.id}@${sha}`);
+                continue;
               }
 
-              console.log(`Processing ${event.id} for commit ${sha.slice(0, 8)}`)
+              console.log(
+                `Processing ${event.id} for commit ${sha.slice(0, 8)}`,
+              );
 
-              let res
+              let res;
               if (event.job && registry.jobs[event.job]) {
                 // Run named job
-                res = await registry.jobs[event.job].run({ payload: ctx.payload })
+                res = await registry.jobs[event.job].run({
+                  payload: ctx.payload,
+                });
               } else if (event.run) {
                 // Run inline action
-                res = await runAction(event.run)
+                res = await runAction(event.run);
               } else {
-                console.warn(`No action defined for event ${event.id}`)
-                continue
+                console.warn(`No action defined for event ${event.id}`);
+                continue;
               }
 
               writeReceipt({
-                resultsRef: opts.resultsRef || 'refs/notes/gitvan/results',
+                resultsRef: opts.resultsRef || "refs/notes/gitvan/results",
                 id: `${event.id}@${git.worktreeId()}`,
-                status: res.ok ? 'OK' : 'ERROR',
+                status: res.ok ? "OK" : "ERROR",
                 commit: sha,
-                action: event.job ? 'job' : (event.run?.exec || 'unknown'),
+                action: event.job ? "job" : event.run?.exec || "unknown",
                 result: res,
                 artifact: res.artifact,
                 meta: {
                   worktree: wt.path,
                   branch: wt.branch,
                   eventType: event.type,
-                  pattern: event.pattern
-                }
-              })
+                  pattern: event.pattern,
+                },
+              });
 
-              releaseLock(lockRef)
-              ran++
-
+              releaseLock(lockRef);
+              ran++;
             } catch (err) {
-              console.error(`Error processing event ${event.id} for ${sha}:`, err.message)
+              console.error(
+                `Error processing event ${event.id} for ${sha}:`,
+                err.message,
+              );
             }
           }
         }
 
-        await sleep(opts.daemon?.pollMs || 1500)
-
+        await sleep(opts.daemon?.pollMs || 1500);
       } catch (err) {
-        console.error(`Error in daemon loop for ${wt.path}:`, err.message)
-        await sleep(5000) // Wait longer on errors
+        console.error(`Error in daemon loop for ${wt.path}:`, err.message);
+        await sleep(5000); // Wait longer on errors
       }
     }
-  })
+  });
 }
 
 // Legacy GitVanDaemon class for backward compatibility
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
-import { execSync } from 'node:child_process'
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { execSync } from "node:child_process";
 
 export class GitVanDaemon {
   constructor(worktreePath) {
-    this.worktreePath = worktreePath
-    this.pidFile = join(worktreePath, '.git', 'gitvan.pid')
-    this.lockFile = join(worktreePath, '.git', 'gitvan.lock')
+    this.worktreePath = worktreePath;
+    this.pidFile = join(worktreePath, ".git", "gitvan.pid");
+    this.lockFile = join(worktreePath, ".git", "gitvan.lock");
   }
 
   start() {
     if (this.isRunning()) {
-      throw new Error(`Daemon already running for worktree: ${this.worktreePath}`)
+      throw new Error(
+        `Daemon already running for worktree: ${this.worktreePath}`,
+      );
     }
 
-    const pid = process.pid
-    writeFileSync(this.pidFile, String(pid))
+    const pid = process.pid;
+    writeFileSync(this.pidFile, String(pid));
 
     // Setup graceful shutdown
-    process.on('SIGTERM', () => this.stop())
-    process.on('SIGINT', () => this.stop())
+    process.on("SIGTERM", () => this.stop());
+    process.on("SIGINT", () => this.stop());
 
-    console.log(`GitVan daemon started for worktree: ${this.worktreePath} (PID: ${pid})`)
+    console.log(
+      `GitVan daemon started for worktree: ${this.worktreePath} (PID: ${pid})`,
+    );
 
     // Start new daemon implementation
-    return startDaemon({}, null, [{ path: this.worktreePath, branch: 'main', isMain: true }])
+    return startDaemon({}, null, [
+      { path: this.worktreePath, branch: "main", isMain: true },
+    ]);
   }
 
   stop() {
     if (existsSync(this.pidFile)) {
       try {
-        const pid = parseInt(readFileSync(this.pidFile, 'utf8'))
+        const pid = parseInt(readFileSync(this.pidFile, "utf8"));
         if (pid === process.pid) {
-          process.exit(0)
+          process.exit(0);
         }
       } catch (err) {
-        console.warn('Error stopping daemon:', err.message)
+        console.warn("Error stopping daemon:", err.message);
       }
     }
   }
 
   isRunning() {
-    if (!existsSync(this.pidFile)) return false
+    if (!existsSync(this.pidFile)) return false;
 
     try {
-      const pid = parseInt(readFileSync(this.pidFile, 'utf8'))
+      const pid = parseInt(readFileSync(this.pidFile, "utf8"));
       // Check if process exists
-      process.kill(pid, 0)
-      return true
+      process.kill(pid, 0);
+      return true;
     } catch (err) {
       // Process doesn't exist, clean up stale pid file
       try {
         if (existsSync(this.pidFile)) {
-          execSync(`rm -f ${this.pidFile}`)
+          execSync(`rm -f ${this.pidFile}`);
         }
       } catch (cleanupErr) {
-        console.warn('Error cleaning up stale pid file:', cleanupErr.message)
+        console.warn("Error cleaning up stale pid file:", cleanupErr.message);
       }
-      return false
+      return false;
     }
   }
 
   getLock(name) {
-    return new WorktreeLock(this.worktreePath, name)
+    return new WorktreeLock(this.worktreePath, name);
   }
 }
 
 class WorktreeLock {
   constructor(worktreePath, name) {
-    this.lockFile = join(worktreePath, '.git', `gitvan-${name}.lock`)
+    this.lockFile = join(worktreePath, ".git", `gitvan-${name}.lock`);
   }
 
   acquire() {
     if (existsSync(this.lockFile)) {
-      return false
+      return false;
     }
-    writeFileSync(this.lockFile, String(process.pid))
-    return true
+    writeFileSync(this.lockFile, String(process.pid));
+    return true;
   }
 
   release() {
     try {
       if (existsSync(this.lockFile)) {
-        execSync(`rm -f ${this.lockFile}`)
+        execSync(`rm -f ${this.lockFile}`);
       }
     } catch (err) {
-      console.warn('Error releasing lock:', err.message)
+      console.warn("Error releasing lock:", err.message);
     }
   }
+}
+
+// Additional exports for CLI
+export async function daemonStatus() {
+  return {
+    running: false,
+    pid: null,
+    uptime: null,
+    worktrees: [],
+    jobs: {
+      active: 0,
+      completed: 0,
+      failed: 0,
+    },
+  };
+}
+
+export async function stopDaemon() {
+  // Implementation for stopping daemon
+  console.log("Daemon stop functionality not fully implemented");
 }

@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/schemas/job.zod.mjs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1758057329146,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1758057329146,
+            "name": "Commit-0",
+            "content": "/**\n * GitVan v2 Job Schema - Zod validation for job definitions\n * Defines the structure and validation rules for GitVan jobs\n */\n\nimport { z } from \"zod\";\nimport { EventPredicate } from \"./event.zod.mjs\";\n\n// Job metadata schema\nexport const JobMeta = z.object({\n  id: z.string().optional(),\n  desc: z.string().optional(),\n  tags: z.array(z.string()).optional(),\n  version: z.string().optional(),\n  author: z.string().optional(),\n  priority: z.number().min(0).max(10).optional(),\n});\n\n// Job definition schema\nexport const JobDef = z.object({\n  id: z.string().optional(),\n  kind: z.enum([\"atomic\", \"batch\", \"daemon\"]).default(\"atomic\"),\n  cron: z.string().optional(),\n  meta: JobMeta.optional(),\n  on: EventPredicate.optional(),\n  run: z.function(),\n  mode: z.enum([\"on-demand\", \"cron\", \"event\"]).optional(),\n  filename: z.string().optional(),\n  filePath: z.string().optional(),\n  version: z.string().optional(),\n\n  // Execution options\n  timeout: z.number().positive().optional(),\n  retries: z.number().min(0).max(5).optional(),\n  parallel: z.boolean().optional(),\n\n  // Environment options\n  env: z.record(z.string(), z.string()).optional(),\n  cwd: z.string().optional(),\n});\n\n// Job execution context schema\nexport const JobContext = z.object({\n  id: z.string(),\n  job: JobDef,\n  startTime: z.string(),\n  worktree: z.string(),\n  branch: z.string(),\n  commit: z.string().optional(),\n  env: z.record(z.string(), z.any()).optional(),\n});\n\n// Job execution result schema\nexport const JobResult = z.object({\n  success: z.boolean(),\n  output: z.any().optional(),\n  error: z.string().optional(),\n  artifacts: z.array(z.string()).default([]),\n  duration: z.number().optional(),\n  exitCode: z.number().optional(),\n});\n"
+        }
+    ]
+}

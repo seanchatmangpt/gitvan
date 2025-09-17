@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/schemas/event.zod.mjs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1758057329146,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1758057329146,
+            "name": "Commit-0",
+            "content": "/**\n * GitVan v2 Event Schema - Zod validation for event predicates\n * Defines the structure and validation rules for event predicates\n */\n\nimport { z } from \"zod\";\n\n// Base event predicate schema with recursive support for any/all\nexport const EventPredicate = z.object({\n  // Logical operators\n  any: z.lazy(() => z.array(EventPredicate)).optional(),\n  all: z.lazy(() => z.array(EventPredicate)).optional(),\n\n  // Tag-based predicates\n  tagCreate: z.string().optional(),\n  semverTag: z.boolean().optional(),\n  tagPrefix: z.string().optional(),\n  tagSuffix: z.string().optional(),\n\n  // Merge/branch predicates\n  mergeTo: z.string().optional(),\n  branchCreate: z.string().optional(),\n  mergeFrom: z.string().optional(),\n  pullRequest: z.boolean().optional(),\n\n  // Path-based predicates\n  pathChanged: z.array(z.string()).optional(),\n  pathAdded: z.array(z.string()).optional(),\n  pathModified: z.array(z.string()).optional(),\n  pathDeleted: z.array(z.string()).optional(),\n\n  // Commit-based predicates\n  message: z.string().optional(),\n  authorEmail: z.string().optional(),\n  authorName: z.string().optional(),\n  signed: z.boolean().optional(),\n  commitType: z.string().optional(),\n  commitScope: z.string().optional(),\n});\n\n// Event metadata schema\nexport const EventMetadata = z.object({\n  // Basic info\n  timestamp: z.string().optional(),\n  commit: z.string().optional(),\n  branch: z.string().optional(),\n\n  // File changes\n  filesChanged: z.array(z.string()).optional(),\n  filesAdded: z.array(z.string()).optional(),\n  filesModified: z.array(z.string()).optional(),\n  filesDeleted: z.array(z.string()).optional(),\n\n  // Tags\n  tagsCreated: z.array(z.string()).optional(),\n\n  // Merge info\n  mergedTo: z.string().optional(),\n  mergedFrom: z.string().optional(),\n  branchCreated: z.string().optional(),\n\n  // Commit info\n  message: z.string().optional(),\n  authorEmail: z.string().optional(),\n  authorName: z.string().optional(),\n  signed: z.boolean().optional(),\n\n  // Pull request info\n  pullRequest: z\n    .object({\n      number: z.number(),\n      title: z.string(),\n      state: z.string(),\n    })\n    .optional(),\n});\n\n// Event definition schema\nexport const EventDefinition = z.object({\n  id: z.string().optional(),\n  name: z.string().optional(),\n  description: z.string().optional(),\n  on: EventPredicate,\n  run: z.function(),\n  meta: z\n    .object({\n      tags: z.array(z.string()).optional(),\n      priority: z.number().optional(),\n    })\n    .optional(),\n});\n"
+        }
+    ]
+}

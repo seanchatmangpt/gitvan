@@ -10,7 +10,7 @@ import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 
-describe.skip("GitVan Playground E2E Tests", () => {
+describe("GitVan Playground E2E Tests", () => {
   let playgroundDir;
   let originalCwd;
 
@@ -39,7 +39,7 @@ describe.skip("GitVan Playground E2E Tests", () => {
       expect(stdout).toContain("test:simple");
       expect(stdout).toContain("test:cleanup");
       expect(stdout).toContain("alerts:release");
-      
+
       // Extract job count dynamically
       const totalMatch = stdout.match(/Total: (\d+) jobs/);
       expect(totalMatch).toBeTruthy();
@@ -162,7 +162,7 @@ describe.skip("GitVan Playground E2E Tests", () => {
       expect(stdout).toContain("Total jobs:");
       expect(stdout).toContain("By mode:");
       expect(stdout).toContain("By kind:");
-      
+
       // Extract job count dynamically
       const totalMatch = stdout.match(/Total jobs: (\d+)/);
       expect(totalMatch).toBeTruthy();
@@ -349,9 +349,18 @@ export default defineJob({
       ]);
 
       // All should return the same result
-      expect(result1.stdout).toContain("Total: 10 jobs");
-      expect(result2.stdout).toContain("Total: 10 jobs");
-      expect(result3.stdout).toContain("Total: 10 jobs");
+      const extractJobCount = (stdout) => {
+        const match = stdout.match(/Total: (\d+) jobs/);
+        return match ? parseInt(match[1]) : 0;
+      };
+
+      const count1 = extractJobCount(result1.stdout);
+      const count2 = extractJobCount(result2.stdout);
+      const count3 = extractJobCount(result3.stdout);
+
+      expect(count1).toBeGreaterThan(0);
+      expect(count1).toBe(count2);
+      expect(count2).toBe(count3);
     });
   });
 

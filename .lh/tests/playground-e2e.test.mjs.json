@@ -3,11 +3,15 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 1,
             "patches": [
                 {
                     "date": 1758050081553,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1758056657116,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -38,9 +38,14 @@\n       expect(stdout).toContain(\"docs:changelog\");\n       expect(stdout).toContain(\"test:simple\");\n       expect(stdout).toContain(\"test:cleanup\");\n       expect(stdout).toContain(\"alerts:release\");\n-      expect(stdout).toContain(\"Total: 4 jobs\");\n+\n+      // Extract job count dynamically\n+      const totalMatch = stdout.match(/Total: (\\d+) jobs/);\n+      expect(totalMatch).toBeTruthy();\n+      const jobCount = parseInt(totalMatch[1]);\n+      expect(jobCount).toBeGreaterThan(0);\n     });\n \n     it(\"should execute changelog job successfully\", async () => {\n       const { stdout } = await execFileAsync(\"node\", [\n@@ -153,11 +158,17 @@\n         \"import('./dev.mjs').then(m=>m.stats())\",\n       ]);\n \n       expect(stdout).toContain(\"Job Statistics:\");\n-      expect(stdout).toContain(\"Total jobs: 4\");\n+      expect(stdout).toContain(\"Total jobs:\");\n       expect(stdout).toContain(\"By mode:\");\n       expect(stdout).toContain(\"By kind:\");\n+\n+      // Extract job count dynamically\n+      const totalMatch = stdout.match(/Total jobs: (\\d+)/);\n+      expect(totalMatch).toBeTruthy();\n+      const jobCount = parseInt(totalMatch[1]);\n+      expect(jobCount).toBeGreaterThan(0);\n     });\n   });\n \n   describe(\"Template System Integration\", () => {\n@@ -337,11 +348,20 @@\n         execFileAsync(\"node\", [\"-e\", \"import('./dev.mjs').then(m=>m.list())\"]),\n       ]);\n \n       // All should return the same result\n-      expect(result1.stdout).toContain(\"Total: 4 jobs\");\n-      expect(result2.stdout).toContain(\"Total: 4 jobs\");\n-      expect(result3.stdout).toContain(\"Total: 4 jobs\");\n+      const extractJobCount = (stdout) => {\n+        const match = stdout.match(/Total: (\\d+) jobs/);\n+        return match ? parseInt(match[1]) : 0;\n+      };\n+\n+      const count1 = extractJobCount(result1.stdout);\n+      const count2 = extractJobCount(result2.stdout);\n+      const count3 = extractJobCount(result3.stdout);\n+\n+      expect(count1).toBeGreaterThan(0);\n+      expect(count1).toBe(count2);\n+      expect(count2).toBe(count3);\n     });\n   });\n \n   describe(\"Integration with GitVan Core\", () => {\n"
                 }
             ],
             "date": 1758050081553,

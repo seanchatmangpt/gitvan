@@ -64,7 +64,8 @@
     "pathe": "^1.1.2",
     "tinyglobby": "^0.2.15",
     "unctx": "^2.4.1",
-    "unrouting": "^0.0.1"
+    "unrouting": "^0.0.1",
+    "zod": "^4.1.8"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",

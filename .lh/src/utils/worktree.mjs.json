@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/utils/worktree.mjs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1758057329128,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1758057329128,
+            "name": "Commit-0",
+            "content": "/**\n * GitVan v2 Worktree Utilities - Git worktree detection and scoping\n * Provides worktree-aware operations for multi-worktree environments\n */\n\nimport { useGit } from \"../composables/git.mjs\";\nimport { createHash } from \"node:crypto\";\n\n/**\n * Get comprehensive worktree information\n * @returns {Promise<object>} Worktree info object\n */\nexport async function getWorktreeInfo() {\n  const git = useGit();\n\n  try {\n    const commonDir = await git.run(\"rev-parse --git-common-dir\");\n    const worktree = await git.run(\"rev-parse --show-toplevel\");\n    const head = await git.head();\n    const branch = await git.getCurrentBranch();\n\n    return {\n      commonDir: commonDir.trim(),\n      worktree: worktree.trim(),\n      branch: branch.trim(),\n      head: head.trim(),\n    };\n  } catch (error) {\n    throw new Error(`Failed to get worktree info: ${error.message}`);\n  }\n}\n\n/**\n * Generate unique worktree key for locking and identification\n * @returns {Promise<string>} Unique worktree key\n */\nexport async function worktreeKey() {\n  const { commonDir, worktree, branch } = await getWorktreeInfo();\n  return `${commonDir}#${worktree}#${branch}`;\n}\n\n/**\n * Check if current directory is a git worktree\n * @returns {Promise<boolean>} True if worktree\n */\nexport async function isWorktree() {\n  try {\n    const git = useGit();\n    await git.run(\"rev-parse --is-inside-work-tree\");\n    return true;\n  } catch {\n    return false;\n  }\n}\n\n/**\n * Get all worktrees for the repository\n * @returns {Promise<Array>} Array of worktree objects\n */\nexport async function listWorktrees() {\n  const git = useGit();\n\n  try {\n    const output = await git.run(\"worktree list --porcelain\");\n    const worktrees = [];\n    let current = {};\n\n    for (const line of output.split(\"\\n\")) {\n      if (line.startsWith(\"worktree \")) {\n        if (current.path) worktrees.push(current);\n        current = { path: line.substring(9) };\n      } else if (line.startsWith(\"HEAD \")) {\n        current.head = line.substring(5);\n      } else if (line.startsWith(\"branch \")) {\n        current.branch = line.substring(7);\n      } else if (line.startsWith(\"detached\")) {\n        current.detached = true;\n      }\n    }\n\n    if (current.path) worktrees.push(current);\n    return worktrees;\n  } catch {\n    // Fallback to single worktree\n    const info = await getWorktreeInfo();\n    return [\n      {\n        path: info.worktree,\n        head: info.head,\n        branch: info.branch,\n      },\n    ];\n  }\n}\n\n/**\n * Get worktree-specific lock reference\n * @param {string} lockName - Lock name\n * @returns {Promise<string>} Worktree-specific lock ref\n */\nexport async function getWorktreeLockRef(lockName) {\n  const key = await worktreeKey();\n  const keyHash = createHash(\"sha256\").update(key).digest(\"hex\").slice(0, 8);\n  return `refs/gitvan/locks/${lockName}-${keyHash}`;\n}\n"
+        }
+    ]
+}

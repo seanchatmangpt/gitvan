@@ -1,42 +1,89 @@
-// src/config/defaults.mjs
-// GitVan v2 — Minimal, deterministic defaults
-// Engine is fixed to Nunjucks for consistency and performance
+/**
+ * GitVan v2 Default Configuration
+ * Production-ready defaults for GitVan deployment
+ */
 
 export const GitVanDefaults = {
-  // General
-  debug: false,
-  logLevel: 3,
-
-  // Dirs
+  // Root directory
   rootDir: process.cwd(),
-  buildDir: ".gitvan",
-  output: {
-    dir: "{{ rootDir }}/.out",
-    distDir: "{{ rootDir }}/dist",
+
+  // Job configuration
+  jobs: {
+    dir: "jobs",
+    scan: {
+      patterns: [
+        "jobs/**/*.mjs",
+        "jobs/**/*.cron.mjs", 
+        "jobs/**/*.evt.mjs",
+        "jobs/**/*.js"
+      ],
+      ignore: [
+        "node_modules/**",
+        ".git/**",
+        "**/*.test.*",
+        "**/*.spec.*"
+      ]
+    }
   },
 
-  // Features
-  jobs: { dir: "jobs" }, // scan jobs/**/*.mjs
-  templates: { dirs: ["templates"], autoescape: false, noCache: true },
-  receipts: { ref: "refs/notes/gitvan/results" },
-
-  // Policy
-  policy: {
-    requireSignedCommits: false,
-    allowUnsignedReceipts: true,
+  // Template configuration
+  templates: {
+    engine: "nunjucks",
+    dirs: ["templates"],
+    autoescape: false,
+    noCache: false,
+    filters: ["inflection", "json", "slug"]
   },
 
-  // Runtime config bag (serializable only)
-  runtimeConfig: {
-    app: {},
-    gitvan: {
-      notesRef: "refs/notes/gitvan/results",
-    },
+  // Receipt configuration
+  receipts: {
+    ref: "refs/notes/gitvan/results",
+    enabled: true,
+    compress: false
   },
 
-  // Time injector (optional). If omitted, no ambient time is injected.
-  now: undefined,
+  // Lock configuration
+  locks: {
+    ref: "refs/gitvan/locks",
+    timeout: 30000,
+    retries: 3
+  },
 
-  // Hooks (hookable)
+  // AI configuration
+  ai: {
+    provider: "ollama",
+    model: "qwen3-coder:30b",
+    baseUrl: process.env.OLLAMA_BASE_URL || "http://localhost:11434",
+    temperature: 0.7,
+    maxTokens: 4096,
+    defaults: {
+      temperature: 0.7,
+      top_p: 0.8,
+      top_k: 20,
+      repeat_penalty: 1.05
+    }
+  },
+
+  // Runtime configuration
+  runtime: {
+    timezone: "UTC",
+    locale: "en-US",
+    deterministic: true,
+    sandbox: true
+  },
+
+  // Hooks configuration
   hooks: {},
+
+  // Daemon configuration
+  daemon: {
+    pollMs: 1500,
+    lookback: 600,
+    maxPerTick: 50
+  },
+
+  // Events configuration
+  events: {
+    directory: "events"
+  }
 };

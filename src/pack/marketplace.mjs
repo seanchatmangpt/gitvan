@@ -3,62 +3,66 @@
  * Implements REST conventions, pagination, filtering, and user experience features
  */
 
-import { PackRegistry } from './registry.mjs';
-import { createLogger } from '../utils/logger.mjs';
-import { z } from 'zod';
+import { PackRegistry } from "./registry.mjs";
+import { createLogger } from "../utils/logger.mjs";
+import { z } from "zod";
 
 // Input validation schemas
 const BrowseOptionsSchema = z.object({
   query: z.string().optional(),
-  filters: z.object({
-    capability: z.string().optional(),
-    tag: z.string().optional(),
-    category: z.string().optional(),
-    author: z.string().optional(),
-    license: z.string().optional()
-  }).optional(),
-  sort: z.enum(['relevance', 'downloads', 'rating', 'name', 'updated']).optional(),
+  filters: z
+    .object({
+      capability: z.string().optional(),
+      tag: z.string().optional(),
+      category: z.string().optional(),
+      author: z.string().optional(),
+      license: z.string().optional(),
+    })
+    .optional(),
+  sort: z
+    .enum(["relevance", "downloads", "rating", "name", "updated"])
+    .optional(),
   limit: z.number().min(1).max(100).optional(),
-  page: z.number().min(1).optional()
+  page: z.number().min(1).optional(),
 });
 
 const QuickstartCategories = {
   docs: {
-    name: 'Documentation',
-    description: 'Documentation and content generation packs',
-    packs: ['builtin/docs-enterprise']
+    name: "Documentation",
+    description: "Documentation and content generation packs",
+    packs: ["builtin/docs-enterprise"],
   },
   next: {
-    name: 'Next.js',
-    description: 'Next.js application templates and configurations',
-    packs: ['builtin/next-minimal']
+    name: "Next.js",
+    description: "Next.js application templates and configurations",
+    packs: ["builtin/next-minimal"],
   },
   compliance: {
-    name: 'Compliance & Governance',
-    description: 'Quality management and compliance frameworks',
-    packs: ['builtin/docs-enterprise']
+    name: "Compliance & Governance",
+    description: "Quality management and compliance frameworks",
+    packs: ["builtin/docs-enterprise"],
   },
   enterprise: {
-    name: 'Enterprise',
-    description: 'Enterprise-grade templates and workflows',
-    packs: ['builtin/docs-enterprise']
+    name: "Enterprise",
+    description: "Enterprise-grade templates and workflows",
+    packs: ["builtin/docs-enterprise"],
   },
   dev: {
-    name: 'Development',
-    description: 'Development tools and utilities',
-    packs: ['builtin/nodejs-basic', 'builtin/next-minimal']
+    name: "Development",
+    description: "Development tools and utilities",
+    packs: ["builtin/nodejs-basic", "builtin/next-minimal"],
   },
   mobile: {
-    name: 'Mobile',
-    description: 'Mobile application development',
-    packs: ['gv/react-native', 'gv/flutter', 'gv/ionic', 'gv/expo']
-  }
+    name: "Mobile",
+    description: "Mobile application development",
+    packs: ["gv/react-native", "gv/flutter", "gv/ionic", "gv/expo"],
+  },
 };
 
 export class Marketplace {
   constructor(options = {}) {
     this.options = options;
-    this.logger = createLogger('pack:marketplace');
+    this.logger = createLogger("pack:marketplace");
     this.registry = null; // Lazy initialization
     this.cache = new Map();
     this.cacheTimeout = options.cacheTimeout || 300000; // 5 minutes
@@ -79,11 +83,11 @@ export class Marketplace {
       throw new Error(`Invalid browse options: ${error.message}`);
     }
 
-    const cacheKey = this.generateCacheKey('browse', options);
+    const cacheKey = this.generateCacheKey("browse", options);
     const cached = this.getFromCache(cacheKey);
 
     if (cached) {
-      this.logger.debug('Using cached browse results');
+      this.logger.debug("Using cached browse results");
       return cached;
     }
 
@@ -92,7 +96,10 @@ export class Marketplace {
     await registry.refreshIndex();
 
     // Perform search
-    const searchResults = await registry.search(options.query, options.filters || {});
+    const searchResults = await registry.search(
+      options.query,
+      options.filters || {}
+    );
 
     // Format and paginate results
     const formatted = this.formatResults(searchResults, options);
@@ -104,11 +111,11 @@ export class Marketplace {
   }
 
   async inspect(packId) {
-    if (!packId || typeof packId !== 'string') {
-      throw new Error('Invalid pack ID');
+    if (!packId || typeof packId !== "string") {
+      throw new Error("Invalid pack ID");
     }
 
-    const cacheKey = this.generateCacheKey('inspect', { packId });
+    const cacheKey = this.generateCacheKey("inspect", { packId });
     const cached = this.getFromCache(cacheKey);
 
     if (cached) {
@@ -139,7 +146,11 @@ export class Marketplace {
     const resultsArray = Array.isArray(results) ? results : [];
 
     // Apply sorting
-    const sorted = this.sortResults(resultsArray, options.sort || 'relevance', options.query);
+    const sorted = this.sortResults(
+      resultsArray,
+      options.sort || "relevance",
+      options.query
+    );
 
     const formatted = {
       total: sorted.length,
@@ -148,12 +159,14 @@ export class Marketplace {
       limit,
       query: options.query,
       filters: options.filters || {},
-      sort: options.sort || 'relevance',
-      packs: []
+      sort: options.sort || "relevance",
+      packs: [],
     };
 
     // Paginate and format pack info
-    formatted.packs = sorted.slice(start, end).map(pack => this.formatPackInfo(pack, false));
+    formatted.packs = sorted
+      .slice(start, end)
+      .map((pack) => this.formatPackInfo(pack, false));
 
     // Add metadata
     formatted.hasNext = page < formatted.pages;
@@ -167,21 +180,24 @@ export class Marketplace {
   sortResults(results, sortBy, query) {
     return results.sort((a, b) => {
       switch (sortBy) {
-        case 'relevance':
-          return this.calculateRelevanceScore(b, query) - this.calculateRelevanceScore(a, query);
+        case "relevance":
+          return (
+            this.calculateRelevanceScore(b, query) -
+            this.calculateRelevanceScore(a, query)
+          );
 
-        case 'downloads':
+        case "downloads":
           return (b.downloads || 0) - (a.downloads || 0);
 
-        case 'rating':
+        case "rating":
           const ratingDiff = (b.rating || 0) - (a.rating || 0);
           if (ratingDiff !== 0) return ratingDiff;
           return (b.reviews || 0) - (a.reviews || 0); // Secondary sort by review count
 
-        case 'name':
+        case "name":
           return (a.name || a.id).localeCompare(b.name || b.id);
 
-        case 'updated':
+        case "updated":
           const aTime = new Date(a.lastModified || 0).getTime();
           const bTime = new Date(b.lastModified || 0).getTime();
           return bTime - aTime;
@@ -205,16 +221,16 @@ export class Marketplace {
     if (pack.id.toLowerCase() === q) score += 1000;
 
     // Exact name match
-    if ((pack.name || '').toLowerCase() === q) score += 500;
+    if ((pack.name || "").toLowerCase() === q) score += 500;
 
     // Name starts with query
-    if ((pack.name || '').toLowerCase().startsWith(q)) score += 200;
+    if ((pack.name || "").toLowerCase().startsWith(q)) score += 200;
 
     // Name contains query
-    if ((pack.name || '').toLowerCase().includes(q)) score += 100;
+    if ((pack.name || "").toLowerCase().includes(q)) score += 100;
 
     // Description contains query
-    if ((pack.description || '').toLowerCase().includes(q)) score += 50;
+    if ((pack.description || "").toLowerCase().includes(q)) score += 50;
 
     // Tags contain query
     const tags = pack.tags || [];
@@ -251,7 +267,7 @@ export class Marketplace {
       license: pack.license,
       downloads: pack.downloads || 0,
       rating: pack.rating || 0,
-      reviews: pack.reviews || 0
+      reviews: pack.reviews || 0,
     };
 
     if (!detailed) {
@@ -275,7 +291,7 @@ export class Marketplace {
         jobs: pack.provides?.jobs?.length || 0,
         events: pack.provides?.events?.length || 0,
         scaffolds: pack.provides?.scaffolds?.length || 0,
-        commands: pack.provides?.commands?.length || 0
+        commands: pack.provides?.commands?.length || 0,
       },
       size: pack.size,
       lastModified: pack.lastModified,
@@ -287,23 +303,23 @@ export class Marketplace {
       security: {
         verified: pack.security?.verified || false,
         signed: pack.security?.signed || false,
-        scanned: pack.security?.scanned || false
-      }
+        scanned: pack.security?.scanned || false,
+      },
     };
   }
 
   async quickstart(category) {
-    if (!category || typeof category !== 'string') {
-      throw new Error('Category is required');
+    if (!category || typeof category !== "string") {
+      throw new Error("Category is required");
     }
 
     const categoryInfo = QuickstartCategories[category];
     if (!categoryInfo) {
-      const available = Object.keys(QuickstartCategories).join(', ');
+      const available = Object.keys(QuickstartCategories).join(", ");
       throw new Error(`Unknown category: ${category}. Available: ${available}`);
     }
 
-    const cacheKey = this.generateCacheKey('quickstart', { category });
+    const cacheKey = this.generateCacheKey("quickstart", { category });
     const cached = this.getFromCache(cacheKey);
 
     if (cached) {
@@ -317,21 +333,24 @@ export class Marketplace {
       name: categoryInfo.name,
       description: categoryInfo.description,
       packs: [],
-      total: 0
+      total: 0,
     };
 
     // Return simple pack information without loading full pack details
     for (const packId of categoryInfo.packs) {
       results.packs.push({
         id: packId,
-        name: packId.replace('builtin/', '').replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        name: packId
+          .replace("builtin/", "")
+          .replace("-", " ")
+          .replace(/\b\w/g, (l) => l.toUpperCase()),
         description: `Built-in ${categoryInfo.name.toLowerCase()} pack`,
-        version: '1.0.0',
+        version: "1.0.0",
         downloads: 0,
         rating: 5,
-        tags: [category.toLowerCase(), 'builtin'],
-        author: 'GitVan',
-        license: 'MIT'
+        tags: [category.toLowerCase(), "builtin"],
+        author: "GitVan",
+        license: "MIT",
       });
     }
 
@@ -351,21 +370,23 @@ export class Marketplace {
   }
 
   async getCategories() {
-    const categories = Object.entries(QuickstartCategories).map(([id, info]) => ({
-      id,
-      name: info.name,
-      description: info.description,
-      packCount: info.packs.length
-    }));
+    const categories = Object.entries(QuickstartCategories).map(
+      ([id, info]) => ({
+        id,
+        name: info.name,
+        description: info.description,
+        packCount: info.packs.length,
+      })
+    );
 
     return {
       categories,
-      total: categories.length
+      total: categories.length,
     };
   }
 
   async getFeatured() {
-    const cacheKey = this.generateCacheKey('featured', {});
+    const cacheKey = this.generateCacheKey("featured", {});
     const cached = this.getFromCache(cacheKey);
 
     if (cached) {
@@ -373,10 +394,10 @@ export class Marketplace {
     }
 
     // Get top packs by downloads and rating
-    const allPacks = await this.getRegistry().search('', {});
+    const allPacks = await this.getRegistry().search("", {});
 
     const featured = allPacks
-      .filter(pack => {
+      .filter((pack) => {
         // Feature packs with good rating and decent download count
         return (pack.rating || 0) >= 4.0 && (pack.downloads || 0) >= 100;
       })
@@ -387,11 +408,11 @@ export class Marketplace {
         return bScore - aScore;
       })
       .slice(0, 12)
-      .map(pack => this.formatPackInfo(pack, false));
+      .map((pack) => this.formatPackInfo(pack, false));
 
     const result = {
       featured,
-      total: featured.length
+      total: featured.length,
     };
 
     // Cache for shorter time since featured should be more dynamic
@@ -401,7 +422,7 @@ export class Marketplace {
   }
 
   async getStats() {
-    const cacheKey = this.generateCacheKey('stats', {});
+    const cacheKey = this.generateCacheKey("stats", {});
     const cached = this.getFromCache(cacheKey);
 
     if (cached) {
@@ -418,16 +439,21 @@ export class Marketplace {
 
     const packs = Object.values(index.packs);
     const totalPacks = packs.length;
-    const totalDownloads = packs.reduce((sum, pack) => sum + (pack.downloads || 0), 0);
-    const totalRatings = packs.filter(pack => pack.rating > 0);
-    const averageRating = totalRatings.length > 0
-      ? totalRatings.reduce((sum, pack) => sum + pack.rating, 0) / totalRatings.length
-      : 0;
+    const totalDownloads = packs.reduce(
+      (sum, pack) => sum + (pack.downloads || 0),
+      0
+    );
+    const totalRatings = packs.filter((pack) => pack.rating > 0);
+    const averageRating =
+      totalRatings.length > 0
+        ? totalRatings.reduce((sum, pack) => sum + pack.rating, 0) /
+          totalRatings.length
+        : 0;
 
     // Get category breakdown
     const categories = {};
     for (const pack of packs) {
-      const category = pack.category || 'uncategorized';
+      const category = pack.category || "uncategorized";
       categories[category] = (categories[category] || 0) + 1;
     }
 
@@ -440,7 +466,7 @@ export class Marketplace {
     }
 
     const topTags = Object.entries(tagCounts)
-      .sort(([,a], [,b]) => b - a)
+      .sort(([, a], [, b]) => b - a)
       .slice(0, 10)
       .map(([tag, count]) => ({ tag, count }));
 
@@ -450,7 +476,7 @@ export class Marketplace {
       averageRating: Math.round(averageRating * 100) / 100,
       categories,
       topTags,
-      lastUpdated: index.lastUpdated || Date.now()
+      lastUpdated: index.lastUpdated || Date.now(),
     };
 
     // Cache stats for longer since they change less frequently
@@ -479,7 +505,7 @@ export class Marketplace {
   setCache(key, data, timeout = this.cacheTimeout) {
     this.cache.set(key, {
       data,
-      expires: Date.now() + timeout
+      expires: Date.now() + timeout,
     });
 
     // Clean up expired entries periodically

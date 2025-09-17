@@ -1,0 +1,109 @@
+{
+  "name": "gitvan",
+  "version": "2.0.0",
+  "description": "Git-native development automation platform with AI-powered workflows",
+  "type": "module",
+  "main": "src/index.mjs",
+  "bin": {
+    "gitvan": "bin/gitvan.mjs"
+  },
+  "exports": {
+    ".": { 
+      "import": "./src/index.mjs", 
+      "types": "./types/index.d.ts" 
+    },
+    "./define": { 
+      "import": "./src/define.mjs", 
+      "types": "./types/index.d.ts" 
+    },
+    "./composables": { 
+      "import": "./src/composables/index.mjs", 
+      "types": "./types/index.d.ts" 
+    },
+    "./daemon": { 
+      "import": "./src/runtime/daemon.mjs", 
+      "types": "./types/index.d.ts" 
+    },
+    "./runtime": { 
+      "import": "./src/runtime/config.mjs", 
+      "types": "./types/index.d.ts" 
+    },
+    "./types": "./types/index.d.ts"
+  },
+  "files": [
+    "src/",
+    "bin/",
+    "types/",
+    "templates/",
+    "packs/",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "git",
+    "automation",
+    "development",
+    "cli",
+    "templates",
+    "jobs",
+    "hooks",
+    "ai",
+    "workflow",
+    "cicd",
+    "devops"
+  ],
+  "author": "GitVan Team",
+  "license": "MIT",
+  "homepage": "https://github.com/seanchatmangpt/gitvan",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/seanchatmangpt/gitvan.git"
+  },
+  "bugs": {
+    "url": "https://github.com/seanchatmangpt/gitvan/issues"
+  },
+  "dependencies": {
+    "hookable": "^5.5.3",
+    "nunjucks": "^3.2.4",
+    "unctx": "^2.4.1",
+    "citty": "^0.1.6",
+    "pathe": "^2.0.3",
+    "unrouting": "^0.0.1",
+    "consola": "^3.2.3",
+    "gray-matter": "^4.0.3",
+    "inflection": "^3.0.2",
+    "js-yaml": "^4.1.0",
+    "json5": "^2.2.3",
+    "lru-cache": "^11.2.1",
+    "zod": "^4.1.9",
+    "tinyglobby": "^0.2.15",
+    "defu": "^6.1.4",
+    "klona": "^2.0.6"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.15",
+    "@types/nunjucks": "^3.2.6",
+    "eslint": "^9.35.0",
+    "eslint-config-unjs": "^0.5.0",
+    "vitest": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "dev": "node bin/gitvan.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest --coverage",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "types": "echo 'TypeScript definitions only'",
+    "build": "echo 'No build step needed - pure ESM'",
+    "release": "npm publish --access public",
+    "release:beta": "npm publish --tag beta --access public",
+    "prepublishOnly": "npm run test && npm run lint"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

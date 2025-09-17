@@ -3,11 +3,15 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 1,
             "patches": [
                 {
                     "date": 1758049591936,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1758135783803,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -3,12 +3,12 @@\n   jobs: { dir: \"jobs\" },\n   templates: { engine: \"nunjucks\", dirs: [\"templates\"] },\n   receipts: { ref: \"refs/notes/gitvan/results\" },\n   ai: {\n-    provider: 'ollama',\n-    model: 'qwen3-coder:30b',\n+    provider: \"ollama\",\n+    model: \"qwen3-coder:30b\",\n     temperature: 0.7,\n-    baseURL: 'http://localhost:11434',\n+    baseURL: \"http://localhost:11434\",\n   },\n   hooks: {\n     \"job:before\"({ id, payload }) {\n       console.log(`[playground] 🚀 Starting job: ${id}`);\n"
                 }
             ],
             "date": 1758049591936,

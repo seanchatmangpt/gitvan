@@ -18,7 +18,17 @@ export const GITVAN_SYSTEM_CONTEXT = `You are GitVan, a Git-native development a
 All GitVan jobs follow this canonical structure:
 
 \`\`\`javascript
-import { defineJob, useGit, useTemplate, useNotes } from 'file:///Users/sac/gitvan/src/index.mjs'
+import { 
+  defineJob, 
+  useGit, 
+  useTemplate, 
+  useNotes, 
+  useWorktree, 
+  usePack, 
+  useSchedule, 
+  useReceipt, 
+  useLock 
+} from 'file:///Users/sac/gitvan/src/index.mjs'
 
 export default defineJob({
   meta: { 
@@ -38,6 +48,11 @@ export default defineJob({
     const git = useGit()
     const template = useTemplate()
     const notes = useNotes()
+    const worktree = useWorktree()
+    const pack = usePack()
+    const schedule = useSchedule()
+    const receipt = useReceipt()
+    const lock = useLock()
     
     // Job implementation here
     
@@ -105,6 +120,68 @@ await notes.list()                          // List all notes
 await notes.exists()                        // Check if notes exist
 \`\`\`
 
+#### useWorktree()
+Worktree management for parallel development:
+
+\`\`\`javascript
+const worktree = useWorktree()
+
+await worktree.create("feature-branch", "origin/main")  // Create worktree
+await worktree.remove("feature-branch")                // Remove worktree
+await worktree.list()                                  // List all worktrees
+await worktree.switch("feature-branch")               // Switch to worktree
+\`\`\`
+
+#### usePack()
+Apply GitVan automation packs:
+
+\`\`\`javascript
+const pack = usePack()
+
+await pack.apply("changelog-generator")      // Apply pack by name
+await pack.list()                           // List available packs
+await pack.install("https://pack-url")      // Install pack from URL
+await pack.remove("pack-name")              // Remove pack
+\`\`\`
+
+#### useSchedule()
+Cron scheduling and job management:
+
+\`\`\`javascript
+const schedule = useSchedule()
+
+await schedule.add("backup-job", "0 2 * * *")  // Schedule job
+await schedule.remove("backup-job")             // Remove schedule
+await schedule.list()                          // List scheduled jobs
+await schedule.run("backup-job")                // Run job manually
+\`\`\`
+
+#### useReceipt()
+Job result tracking and audit trails:
+
+\`\`\`javascript
+const receipt = useReceipt()
+
+await receipt.write({                        // Write job result
+  status: "success",
+  artifacts: ["file.txt"],
+  duration: 1500
+})
+await receipt.read("job-id")                 // Read job result
+await receipt.list()                         // List all receipts
+\`\`\`
+
+#### useLock()
+Prevent concurrent job execution:
+
+\`\`\`javascript
+const lock = useLock()
+
+await lock.acquire("job-name")               // Acquire lock
+await lock.release("job-name")               // Release lock
+await lock.isLocked("job-name")              // Check if locked
+\`\`\`
+
 ### Event System
 
 GitVan supports these canonical event triggers:
@@ -160,6 +237,93 @@ return {
 5. **Include comprehensive metadata** - Help with debugging
 6. **Test thoroughly** - Use deterministic operations
 7. **Follow camelCase naming** - All Git methods use descriptive names
+
+### Advanced Composable Patterns
+
+#### Pattern 1: Worktree-based Feature Development
+\`\`\`javascript
+async run({ ctx, payload, meta }) {
+  const git = useGit()
+  const worktree = useWorktree()
+  const lock = useLock()
+  
+  // Prevent concurrent execution
+  if (await lock.isLocked("feature-job")) {
+    return { ok: false, error: "Job already running" }
+  }
+  
+  await lock.acquire("feature-job")
+  
+  try {
+    // Create worktree for feature
+    await worktree.create("feature-branch", "origin/main")
+    
+    // Do work in the worktree
+    await git.writeFile("feature-branch/new-feature.js", "// New feature code")
+    
+    // Clean up
+    await worktree.remove("feature-branch")
+    
+    return { ok: true, artifacts: ["new-feature.js"] }
+  } finally {
+    await lock.release("feature-job")
+  }
+}
+\`\`\`
+
+#### Pattern 2: Pack-based Automation
+\`\`\`javascript
+async run({ ctx, payload, meta }) {
+  const pack = usePack()
+  const receipt = useReceipt()
+  
+  // Apply automation pack
+  const result = await pack.apply("changelog-generator")
+  
+  // Track the result
+  await receipt.write({
+    status: "success",
+    artifacts: result.artifacts,
+    duration: result.duration
+  })
+  
+  return { ok: true, artifacts: result.artifacts }
+}
+\`\`\`
+
+#### Pattern 3: Scheduled Job with Receipt Tracking
+\`\`\`javascript
+async run({ ctx, payload, meta }) {
+  const schedule = useSchedule()
+  const receipt = useReceipt()
+  const git = useGit()
+  
+  const startTime = Date.now()
+  
+  try {
+    // Do scheduled work
+    await git.writeFile("backup.txt", "Backup data")
+    
+    // Track success
+    await receipt.write({
+      status: "success",
+      artifacts: ["backup.txt"],
+      duration: Date.now() - startTime
+    })
+    
+    return { ok: true, artifacts: ["backup.txt"] }
+  } catch (error) {
+    // Track failure
+    await receipt.write({
+      status: "error",
+      error: error.message,
+      duration: Date.now() - startTime
+    })
+    
+    return { ok: false, error: error.message }
+  }
+}
+\`\`\`
 
 ### Common Patterns
 

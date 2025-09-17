@@ -48,14 +48,10 @@ export async function createAIProvider(config = {}) {
  */
 async function createOllamaProvider(aiConfig) {
   try {
-    const { Ollama } = await import("ollama-ai-provider-v2");
+    const { ollama } = await import("ollama-ai-provider-v2");
 
-    const provider = new Ollama({
-      model: aiConfig.model || "qwen3-coder:30b",
-      baseURL: aiConfig.baseURL || "http://localhost:11434",
-      temperature: aiConfig.temperature || 0.7,
-      ...aiConfig.options,
-    });
+    // Use the simple ollama function with model name
+    const provider = ollama(aiConfig.model || "qwen3-coder:30b");
 
     logger.info(
       `Ollama provider created with model: ${
@@ -121,10 +117,13 @@ async function createAnthropicProvider(aiConfig) {
  * @returns {object} Mock provider
  */
 function createMockProvider(aiConfig) {
-  const mockProvider = customProvider({
+  logger.info("Creating simple mock provider");
+
+  return {
     provider: "mock",
     model: aiConfig.model || "mock-model",
     specificationVersion: "v2",
+
     async doGenerate({ prompt }) {
       logger.info("Mock provider generating text with GitVan context");
 
@@ -208,21 +207,8 @@ function createMockProvider(aiConfig) {
           },
         });
       } else {
-        responseText = JSON.stringify({
-          meta: {
-            desc: `Generated job for: ${promptText.substring(0, 50)}...`,
-            tags: ["ai-generated", "automation"],
-            author: "GitVan AI",
-            version: "1.0.0",
-          },
-          implementation: {
-            operations: [{ type: "log", description: "Execute task" }],
-            returnValue: {
-              success: "Task completed successfully",
-              artifacts: ["output.txt"],
-            },
-          },
-        });
+        // For explain commands, return a simple explanation
+        responseText = `This is a GitVan job that performs automated tasks. It uses GitVan composables like useGit(), useTemplate(), and useNotes() to interact with the Git repository and file system. The job follows GitVan's defineJob() pattern and includes proper error handling and artifact reporting.`;
       }
 
       return {
@@ -232,14 +218,7 @@ function createMockProvider(aiConfig) {
         warnings: [],
       };
     },
-  });
-
-  // Add the properties we need for detection
-  mockProvider.provider = "mock";
-  mockProvider.model = aiConfig.model || "mock-model";
-  mockProvider.doGenerate = mockProvider.doGenerate;
-
-  return mockProvider;
+  };
 }
 
 /**

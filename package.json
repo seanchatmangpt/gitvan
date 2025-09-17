@@ -29,6 +29,8 @@
   "author": "GitVan Team",
   "license": "MIT",
   "dependencies": {
+    "@babel/parser": "^7.28.4",
+    "@babel/traverse": "^7.28.4",
     "@iarna/toml": "^2.2.5",
     "@types/prompts": "^2.4.9",
     "ai": "^5.0.45",

@@ -4,9 +4,10 @@ export default {
   templates: { engine: "nunjucks", dirs: ["templates"] },
   receipts: { ref: "refs/notes/gitvan/results" },
   ai: {
-    provider: 'mock',
-    model: 'mock-model',
+    provider: "ollama",
+    model: "qwen3-coder:30b",
     temperature: 0.7,
+    baseURL: "http://localhost:11434",
   },
   hooks: {
     "job:before"({ id, payload }) {

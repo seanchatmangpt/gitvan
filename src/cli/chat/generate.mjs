@@ -69,10 +69,21 @@ The generated code must be production-ready and functional.`;
       config,
     });
 
-    // Determine file path
-    const id =
-      input.id ||
-      `chat-${fingerprint({ t: Date.now(), prompt: input.prompt })}`;
+    // Determine file path - use AI-generated name if available
+    let id;
+    if (input.id) {
+      id = input.id;
+    } else if (result.spec?.meta?.name) {
+      // Use AI-generated job name
+      id = result.spec.meta.name;
+    } else if (result.spec?.name) {
+      // Use AI-generated job name (flat structure)
+      id = result.spec.name;
+    } else {
+      // Fallback to fingerprint
+      id = `chat-${fingerprint({ t: Date.now(), prompt: input.prompt })}`;
+    }
+
     const subdir = input.kind === "event" ? "events/chat" : "jobs/chat";
     const filename = `${id}${input.kind === "event" ? ".evt.mjs" : ".mjs"}`;
     const relPath = input.path || join(subdir, filename);
@@ -83,7 +94,13 @@ The generated code must be production-ready and functional.`;
     console.log("✅ Generated WORKING GitVan job:");
     console.log(`  File: ${outPath}`);
     console.log(`  Mode: ${input.kind === "event" ? "event" : "on-demand"}`);
-    console.log(`  Summary: ${result.spec.implementation.returnValue.success}`);
+    console.log(
+      `  Summary: ${
+        result.spec?.meta?.desc ||
+        result.spec?.desc ||
+        "Job generated successfully"
+      }`
+    );
     console.log(`  Working: ${result.working ? "YES" : "NO"}`);
     console.log();
     console.log("📄 Generated source code:");

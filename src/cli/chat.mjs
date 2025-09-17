@@ -70,6 +70,8 @@ async function draftSpec(config, args) {
       throw new Error("Prompt required for draft command");
     }
 
+    console.log("🤖 Analyzing your request...");
+
     const input = ChatInput.parse({
       prompt: prompt,
       kind: args.kind || "job",
@@ -80,17 +82,19 @@ async function draftSpec(config, args) {
       },
     });
 
+    console.log("🔍 Checking AI availability...");
     // Check AI availability
     const availability = await checkAIAvailability(config);
     if (!availability.available) {
-      console.log("AI not available, using wizard fallback...");
+      console.log("⚠️  AI not available, using wizard fallback...");
       return await designWizard(config, args);
     }
 
+    console.log("📝 Generating job specification...");
     // Generate spec using AI
     const result = await generateSpec(input, config);
 
-    console.log("Generated specification:");
+    console.log("✅ Generated specification:");
     console.log(JSON.stringify(result.spec, null, 2));
   } catch (error) {
     logger.error("Failed to draft spec:", error.message);
@@ -111,6 +115,8 @@ async function generateFiles(config, args) {
       throw new Error("Prompt required for generate command");
     }
 
+    console.log("🤖 Analyzing your request...");
+    
     const input = ChatInput.parse({
       prompt: prompt,
       kind: args.kind || "job",
@@ -121,15 +127,18 @@ async function generateFiles(config, args) {
       },
     });
 
+    console.log("📝 Building comprehensive prompt...");
+    
     // Generate files
+    console.log("⚡ Generating job with AI...");
     const result = await generateJobFiles(input, config);
 
-    console.log("Generated files:");
+    console.log("✅ Generated files:");
     console.log(`  File: ${result.filePath}`);
     console.log(`  Mode: ${result.mode}`);
     console.log(`  Summary: ${result.summary}`);
     console.log();
-    console.log("Source code:");
+    console.log("📄 Source code:");
     console.log(result.source);
   } catch (error) {
     logger.error("Failed to generate files:", error.message);
@@ -369,13 +378,17 @@ async function generateSpec(input, config) {
  * @returns {Promise<object>} Generated files
  */
 async function generateJobFiles(input, config, writeFile = true) {
+  console.log("🔧 Rendering template with context...");
   const prompt = await buildJobPrompt(input);
 
+  console.log("🧠 Sending request to AI model...");
   const result = await generateText({
     prompt,
     model: input.options?.model,
     config,
   });
+
+  console.log("🧹 Cleaning up AI output...");
 
   // Clean up AI output - remove markdown code blocks
   let cleanedOutput = result.output;
@@ -386,11 +399,13 @@ async function generateJobFiles(input, config, writeFile = true) {
   cleanedOutput = cleanedOutput.replace(/^```\s*\n?/i, "");
   cleanedOutput = cleanedOutput.replace(/\n?```\s*$/i, "");
 
+  console.log("✅ Validating generated code...");
   // Validate cleaned code
-  if (!/defineJob\s*\(/.test(cleanedOutput)) {
+  if (!/export\s+default\s*\{/.test(cleanedOutput) && !/async\s+run\s*\(/.test(cleanedOutput)) {
     throw new Error("Generated output is not a valid GitVan job module");
   }
 
+  console.log("📁 Determining file path...");
   // Determine file path
   const id =
     input.id || `chat-${fingerprint({ t: Date.now(), prompt: input.prompt })}`;
@@ -400,6 +415,7 @@ async function generateJobFiles(input, config, writeFile = true) {
 
   let outPath = null;
   if (writeFile) {
+    console.log("💾 Writing file to disk...");
     outPath = writeFileSafe(config.rootDir, relPath, cleanedOutput);
   } else {
     outPath = join(config.rootDir, relPath);

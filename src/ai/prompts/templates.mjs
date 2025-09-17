@@ -17,7 +17,7 @@ You are an expert GitVan developer creating a production-ready job module. Follo
 ## GitVan Architecture Guidelines
 
 ### 1. Job Structure
-- Use \`defineJob()\` from "gitvan/define"
+- Export a default object with \`run\` function
 - Include comprehensive \`meta\` object with description and tags
 - Implement proper error handling and logging
 - Return structured results with \`artifacts\` array
@@ -50,9 +50,7 @@ You are an expert GitVan developer creating a production-ready job module. Follo
 ## Generated Job Template
 
 \`\`\`javascript
-import { defineJob } from "gitvan/define"
-
-export default defineJob({
+export default {
   meta: { 
     desc: "{{ desc | default('Generated job') }}", 
     tags: {{ tags | default("[]") | safe }},
@@ -63,15 +61,23 @@ export default defineJob({
   {% if on %}on: {{ on | safe }},{% endif %}
   {% if schedule %}schedule: "{{ schedule }}",{% endif %}
   async run({ ctx, payload, meta }) {
-    const { useGit } = await import("gitvan/composables/git")
-    const { useTemplate } = await import("gitvan/composables/template")
-    const { usePack } = await import("gitvan/composables/pack")
-    
-    const git = useGit()
-    const template = await useTemplate()
-    const pack = await usePack()
-    
     try {
+      // Import GitVan composables (available when running in GitVan context)
+      let git, template, pack
+      try {
+        const gitModule = await import("gitvan/composables/git")
+        const templateModule = await import("gitvan/composables/template")
+        const packModule = await import("gitvan/composables/pack")
+        git = gitModule.useGit()
+        template = await templateModule.useTemplate()
+        pack = await packModule.usePack()
+      } catch (importError) {
+        console.log("GitVan composables not available, running in standalone mode")
+        git = null
+        template = null
+        pack = null
+      }
+      
       // Job implementation
       {{ body | default("// TODO: implement job logic") }}
       
@@ -89,7 +95,7 @@ export default defineJob({
       }
     }
   }
-})
+}
 \`\`\`
 
 ## Implementation Guidelines

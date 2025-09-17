@@ -7,6 +7,8 @@ import { Pack } from './pack.mjs';
 import { PackApplier } from './applier.mjs';
 import { PackPlanner } from './planner.mjs';
 import { createLogger } from '../utils/logger.mjs';
+import { isUpdateAvailable, isGreaterThan, cleanVersion } from '../utils/version.mjs';
+import { RegistryClient } from '../utils/registry.mjs';
 import { join, resolve } from 'pathe';
 import { existsSync, readFileSync, writeFileSync, rmSync, readdirSync } from 'node:fs';
 
@@ -17,6 +19,7 @@ export class PackManager {
     this.applier = new PackApplier(options);
     this.planner = new PackPlanner(options);
     this.installedPacks = new Map();
+    this.registry = new RegistryClient(options.registry || {});
   }
 
   async loadInstalled(targetDir) {
@@ -338,17 +341,81 @@ export class PackManager {
 
     const updates = [];
 
-    // This would check remote registries for newer versions
-    // For now, just return placeholder structure
+    // Check each installed pack for updates
     for (const [id, receipt] of this.installedPacks) {
-      updates.push({
-        id,
-        currentVersion: receipt.version,
-        latestVersion: 'unknown', // Would fetch from registry
-        updateAvailable: false
-      });
+      try {
+        const currentVersion = cleanVersion(receipt.version);
+        const latestVersion = await this.registry.getLatestVersion(id);
+
+        if (latestVersion) {
+          const cleanLatestVersion = cleanVersion(latestVersion);
+          const updateAvailable = isUpdateAvailable(currentVersion, cleanLatestVersion);
+
+          updates.push({
+            id,
+            currentVersion,
+            latestVersion: cleanLatestVersion,
+            updateAvailable,
+            updateType: this.getUpdateType(currentVersion, cleanLatestVersion)
+          });
+
+          this.logger.debug(`${id}: ${currentVersion} -> ${cleanLatestVersion} (${updateAvailable ? 'update available' : 'up to date'})`);
+        } else {
+          // Package not found in registry
+          updates.push({
+            id,
+            currentVersion,
+            latestVersion: 'not found',
+            updateAvailable: false,
+            updateType: 'none',
+            error: 'Package not found in registry'
+          });
+
+          this.logger.warn(`Package ${id} not found in registry`);
+        }
+      } catch (error) {
+        this.logger.error(`Failed to check updates for ${id}: ${error.message}`);
+
+        updates.push({
+          id,
+          currentVersion: receipt.version,
+          latestVersion: 'error',
+          updateAvailable: false,
+          updateType: 'none',
+          error: error.message
+        });
+      }
     }
 
     return updates;
+  }
+
+  /**
+   * Determine the type of update (major, minor, patch)
+   * @param {string} currentVersion - Current version
+   * @param {string} latestVersion - Latest version
+   * @returns {string} Update type
+   */
+  getUpdateType(currentVersion, latestVersion) {
+    try {
+      if (!isGreaterThan(latestVersion, currentVersion)) {
+        return 'none';
+      }
+
+      const current = currentVersion.split('.').map(n => parseInt(n, 10));
+      const latest = latestVersion.split('.').map(n => parseInt(n, 10));
+
+      if (latest[0] > current[0]) {
+        return 'major';
+      } else if (latest[1] > current[1]) {
+        return 'minor';
+      } else if (latest[2] > current[2]) {
+        return 'patch';
+      }
+
+      return 'unknown';
+    } catch (error) {
+      return 'unknown';
+    }
   }
 }

@@ -144,8 +144,32 @@ async function generateFiles(config, args) {
  */
 async function previewChanges(config, args) {
   try {
-    console.log("Preview functionality not implemented in this version");
-    console.log("Use 'generate' command to see proposed changes");
+    const prompt = args.prompt || args.arg0;
+    if (!prompt) {
+      throw new Error("Prompt required for preview command");
+    }
+
+    const input = ChatInput.parse({
+      prompt: prompt,
+      kind: args.kind || "job",
+      options: {
+        temperature: args.temp ? parseFloat(args.temp) : 0.7,
+        model: args.model,
+      },
+    });
+
+    // Generate the job without writing to file
+    const result = await generateJobFiles(input, config, false);
+
+    console.log("Preview:");
+    console.log(`  Job Type: ${input.kind}`);
+    console.log(`  Mode: ${result.mode}`);
+    console.log(`  Summary: ${result.summary}`);
+    console.log();
+    console.log("Generated Code:");
+    console.log(result.source);
+    console.log();
+    console.log("Note: Use 'generate' command to create the actual file");
   } catch (error) {
     logger.error("Failed to preview changes:", error.message);
     throw error;
@@ -160,12 +184,33 @@ async function previewChanges(config, args) {
  */
 async function applyChanges(config, args) {
   try {
-    if (!args.id) {
-      throw new Error("Generated ID required for apply command");
+    const prompt = args.prompt || args.arg0;
+    if (!prompt) {
+      throw new Error("Prompt required for apply command");
     }
 
-    console.log("Apply functionality not implemented in this version");
-    console.log("Use 'generate' command and manually copy the output");
+    const name = args.name || args.id;
+    if (!name) {
+      throw new Error("Job name required for apply command (use --name)");
+    }
+
+    const input = ChatInput.parse({
+      prompt: prompt,
+      kind: args.kind || "job",
+      id: name,
+      options: {
+        temperature: args.temp ? parseFloat(args.temp) : 0.7,
+        model: args.model,
+      },
+    });
+
+    // Generate and apply the job
+    const result = await generateJobFiles(input, config);
+
+    console.log(`Applied job: ${name}`);
+    console.log(`  File: ${result.filePath}`);
+    console.log(`  Mode: ${result.mode}`);
+    console.log(`  Summary: ${result.summary}`);
   } catch (error) {
     logger.error("Failed to apply changes:", error.message);
     throw error;
@@ -180,14 +225,51 @@ async function applyChanges(config, args) {
  */
 async function explainJob(config, args) {
   try {
-    if (!args.job) {
+    const jobPath = args.job || args.arg0;
+    if (!jobPath) {
       throw new Error("Job path required for explain command");
     }
 
-    console.log(
-      "Job explanation functionality not implemented in this version",
+    // Find the job file
+    const { findJobFile, loadJobDefinition } = await import(
+      "../runtime/jobs.mjs"
     );
-    console.log("Use 'list' command to see available jobs");
+    const jobFile = findJobFile(config.rootDir, jobPath);
+
+    if (!jobFile) {
+      throw new Error(`Job not found: ${jobPath}`);
+    }
+
+    // Load the job definition
+    const definition = await loadJobDefinition(jobFile);
+
+    if (!definition) {
+      throw new Error(`Failed to load job definition: ${jobPath}`);
+    }
+
+    // Generate explanation using AI
+    const prompt = `Explain this GitVan job in plain English:
+
+File: ${jobPath}
+Code:
+${JSON.stringify(definition, null, 2)}
+
+Provide a clear explanation of:
+1. What this job does
+2. When it runs
+3. What inputs it expects
+4. What outputs it produces
+5. Any important configuration details`;
+
+    const { generateText } = await import("../ai/provider.mjs");
+    const result = await generateText({ prompt, config });
+
+    console.log("Job Analysis:");
+    console.log(`  Job: ${jobPath}`);
+    console.log(`  File: ${jobFile}`);
+    console.log();
+    console.log("Explanation:");
+    console.log(result.output);
   } catch (error) {
     logger.error("Failed to explain job:", error.message);
     throw error;
@@ -219,14 +301,12 @@ async function showHelp() {
   console.log();
   console.log("  draft <prompt>              Generate job/event specification");
   console.log("  generate <prompt>           Generate complete job/event file");
+  console.log("  preview <prompt>            Preview changes before applying");
   console.log(
-    "  preview <prompt>            Preview changes (not implemented)",
+    "  apply <prompt>              Apply generated changes to filesystem",
   );
   console.log(
-    "  apply <prompt>              Apply generated changes (not implemented)",
-  );
-  console.log(
-    "  explain <job-path>          Explain existing job (not implemented)",
+    "  explain <job-path>          Explain existing job in plain English",
   );
   console.log(
     "  design <requirements>       Interactive design wizard (not implemented)",
@@ -244,10 +324,14 @@ async function showHelp() {
     "  --model <name>              AI model name (default: qwen3-coder:30b)",
   );
   console.log("  --output <path>             Output file path (generate only)");
+  console.log("  --name <name>               Job name (apply only)");
   console.log();
   console.log("Examples:");
   console.log('  gitvan chat draft "Create a backup job"');
   console.log('  gitvan chat generate "Create a cleanup job" --kind job');
+  console.log('  gitvan chat preview "Create a logging job"');
+  console.log('  gitvan chat apply "Create a test job" --name "my-test-job"');
+  console.log('  gitvan chat explain "test/simple"');
   console.log(
     '  gitvan chat draft "Create a push event" --kind event --temp 0.5',
   );
@@ -280,9 +364,10 @@ async function generateSpec(input, config) {
  * Generate job files using AI
  * @param {object} input - Chat input
  * @param {object} config - GitVan config
+ * @param {boolean} writeFile - Whether to write file to disk (default: true)
  * @returns {Promise<object>} Generated files
  */
-async function generateJobFiles(input, config) {
+async function generateJobFiles(input, config, writeFile = true) {
   const prompt = buildJobPrompt(input);
 
   const result = await generateText({
@@ -312,7 +397,12 @@ async function generateJobFiles(input, config) {
   const filename = `${id}${input.kind === "event" ? ".evt.mjs" : ".mjs"}`;
   const relPath = input.path || join(subdir, filename);
 
-  const outPath = writeFileSafe(config.rootDir, relPath, cleanedOutput);
+  let outPath = null;
+  if (writeFile) {
+    outPath = writeFileSafe(config.rootDir, relPath, cleanedOutput);
+  } else {
+    outPath = join(config.rootDir, relPath);
+  }
 
   return ChatOutput.parse({
     ok: true,

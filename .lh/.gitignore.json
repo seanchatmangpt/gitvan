@@ -3,11 +3,15 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 1,
             "patches": [
                 {
                     "date": 1758056389334,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1758073074617,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -0,0 +1,94 @@\n+# Dependencies\n+node_modules/\n+.pnpm-store/\n+.pnpm-debug.log*\n+\n+# Build outputs\n+dist/\n+build/\n+*.tsbuildinfo\n+coverage/\n+\n+# Environment files\n+.env\n+.env.local\n+.env.production\n+.env.test\n+*.env*\n+\n+# Logs\n+*.log*\n+logs/\n+.pnpm-debug.log*\n+npm-debug.log*\n+yarn-debug.log*\n+yarn-error.log*\n+\n+# IDE and editor files\n+.vscode/\n+.idea/\n+*.swp\n+*.swo\n+*~\n+.DS_Store\n+.eslintcache\n+\n+# GitVan specific\n+.gitvan/\n+.gitvan.local.js\n+gitvan.local.config.js\n+.gitvan-cache/\n+\n+# Claude Flow generated files\n+.claude/settings.local.json\n+.mcp.json\n+claude-flow.config.json\n+.swarm/\n+.hive-mind/\n+memory/claude-flow-data.json\n+memory/sessions/*\n+!memory/sessions/README.md\n+memory/agents/*\n+!memory/agents/README.md\n+coordination/memory_bank/*\n+coordination/subtasks/*\n+coordination/orchestration/*\n+*.db\n+*.db-journal\n+*.db-wal\n+*.sqlite\n+*.sqlite-journal\n+*.sqlite-wal\n+claude-flow\n+claude-flow.bat\n+claude-flow.ps1\n+hive-mind-prompt-*.txt\n+\n+# Testing\n+.nyc_output/\n+coverage/\n+test-results/\n+playwright-report/\n+\n+# Temporary files\n+tmp/\n+temp/\n+*.tmp\n+*.temp\n+\n+# OS generated files\n+.DS_Store\n+.DS_Store?\n+._*\n+.Spotlight-V100\n+.Trashes\n+ehthumbs.db\n+Thumbs.db\n+\n+# Package manager\n+.yarn/\n+.yarn-integrity\n+yarn.lock\n+package-lock.json\n+\n+.lh\n\\ No newline at end of file\n"
                 }
             ],
             "date": 1758056389334,

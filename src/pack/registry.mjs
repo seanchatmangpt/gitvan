@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { execSync } from 'node:child_process';
 import { promisify } from 'node:util';
 import { exec } from 'node:child_process';
+import { setTimeout } from 'node:timers/promises';
 
 const execAsync = promisify(exec);
 
@@ -44,6 +45,13 @@ export class PackRegistry {
     this.maxRetries = options.maxRetries || 3;
     this.index = null;
     this.rateLimiter = new Map();
+    this.githubToken = process.env.GITHUB_TOKEN || options.githubToken;
+    this.githubApiCache = new Map();
+    this.githubApiRateLimit = {
+      limit: 5000,
+      remaining: 5000,
+      reset: Date.now() + (60 * 60 * 1000) // 1 hour from now
+    };
 
     this.initializeCache();
     this.initializeBuiltins();
@@ -308,54 +316,84 @@ export class PackRegistry {
   }
 
   async resolveGitHub(packId) {
-    const [org, repo] = packId.split('/');
-    const cacheKey = `github-${org}-${repo}`;
+    const parsed = this.parseGitHubPackId(packId);
+    if (!parsed) {
+      this.logger.error(`Invalid GitHub pack ID format: ${packId}`);
+      return null;
+    }
+
+    const { owner, repo, ref, path: subPath } = parsed;
+    const cacheKey = this.generateGitHubCacheKey(owner, repo, ref, subPath);
     const cachedPath = join(this.cacheDir, cacheKey);
 
+    // Check cache first
     if (existsSync(cachedPath)) {
       this.logger.debug(`Found GitHub pack in cache: ${cachedPath}`);
       return cachedPath;
     }
 
     try {
+      // Check rate limits before making API calls
+      await this.checkGitHubRateLimit();
+
+      // Fetch repository metadata from GitHub API
+      const repoMetadata = await this.fetchGitHubRepoMetadata(owner, repo);
+      if (!repoMetadata) {
+        this.logger.error(`Repository not found or not accessible: ${owner}/${repo}`);
+        return null;
+      }
+
       this.logger.info(`Fetching GitHub pack: ${packId}`);
 
       // Create cache directory
       mkdirSync(cachedPath, { recursive: true });
 
-      // Clone the repository
-      const cloneUrl = `https://github.com/${org}/${repo}.git`;
+      // Determine the clone URL and reference
+      const cloneUrl = this.githubToken
+        ? `https://${this.githubToken}@github.com/${owner}/${repo}.git`
+        : `https://github.com/${owner}/${repo}.git`;
 
-      await execAsync(`git clone --depth 1 ${cloneUrl} ${cachedPath}`, {
-        timeout: this.timeout
+      // Clone with specific reference if provided
+      let cloneCmd = `git clone --depth 1`;
+      if (ref && ref !== 'main' && ref !== 'master') {
+        cloneCmd += ` --branch ${ref}`;
+      }
+      cloneCmd += ` ${cloneUrl} ${cachedPath}`;
+
+      await execAsync(cloneCmd, {
+        timeout: this.timeout,
+        env: {
+          ...process.env,
+          GIT_TERMINAL_PROMPT: '0' // Disable interactive prompts
+        }
       });
 
-      // Check if it's a valid GitVan pack
+      // Handle subdirectory paths
+      if (subPath) {
+        const subDir = join(cachedPath, subPath);
+        if (!existsSync(subDir)) {
+          throw new Error(`Subdirectory not found: ${subPath}`);
+        }
+
+        // Move subdirectory contents to cache root
+        const tempDir = join(cachedPath, '..', `${cacheKey}-temp`);
+        execSync(`mv "${subDir}" "${tempDir}"`);
+        rmSync(cachedPath, { recursive: true, force: true });
+        execSync(`mv "${tempDir}" "${cachedPath}"`);
+      }
+
+      // Validate pack structure
       const manifestPath = join(cachedPath, 'pack.json');
       if (!existsSync(manifestPath)) {
         // Look for pack.json in subdirectories (monorepo support)
-        const entries = readdirSync(cachedPath, { withFileTypes: true });
-        let foundManifest = false;
-
-        for (const entry of entries) {
-          if (entry.isDirectory()) {
-            const subManifestPath = join(cachedPath, entry.name, 'pack.json');
-            if (existsSync(subManifestPath)) {
-              // Move the pack to the root level
-              const tempDir = join(cachedPath, '..', `${cacheKey}-temp`);
-              execSync(`mv ${join(cachedPath, entry.name)} ${tempDir}`);
-              rmSync(cachedPath, { recursive: true, force: true });
-              execSync(`mv ${tempDir} ${cachedPath}`);
-              foundManifest = true;
-              break;
-            }
-          }
-        }
-
+        const foundManifest = await this.findPackManifest(cachedPath, cacheKey);
         if (!foundManifest) {
-          throw new Error('No pack.json found in repository');
+          throw new Error('No pack.json found in repository or subdirectories');
         }
       }
+
+      // Enhance manifest with GitHub metadata
+      await this.enhanceManifestWithGitHubData(cachedPath, repoMetadata, owner, repo);
 
       this.logger.info(`Successfully cached GitHub pack: ${packId}`);
       return cachedPath;
@@ -630,6 +668,240 @@ export class PackRegistry {
       }
     } catch (e) {
       this.logger.error(`Failed to clear cache:`, e);
+    }
+  }
+
+  parseGitHubPackId(packId) {
+    // Support formats:
+    // owner/repo
+    // owner/repo#ref (branch/tag/commit)
+    // owner/repo/path/to/pack
+    // owner/repo#ref/path/to/pack
+
+    if (!packId || typeof packId !== 'string') {
+      return null;
+    }
+
+    // Handle different formats
+    let owner, repo, ref = 'main', path = null;
+
+    if (packId.includes('#')) {
+      // Format: owner/repo#ref or owner/repo#ref/path
+      const [beforeRef, afterRef] = packId.split('#');
+      const beforeParts = beforeRef.split('/');
+
+      if (beforeParts.length < 2) {
+        return null;
+      }
+
+      [owner, repo] = beforeParts;
+
+      if (afterRef.includes('/')) {
+        // Format: owner/repo#ref/path
+        const afterRefParts = afterRef.split('/');
+        ref = afterRefParts[0];
+        path = afterRefParts.slice(1).join('/');
+      } else {
+        // Format: owner/repo#ref
+        ref = afterRef;
+      }
+    } else {
+      // Format: owner/repo or owner/repo/path
+      const parts = packId.split('/');
+
+      if (parts.length < 2) {
+        return null;
+      }
+
+      const [ownerPart, repoPart, ...pathParts] = parts;
+      owner = ownerPart;
+      repo = repoPart;
+
+      if (pathParts.length > 0) {
+        path = pathParts.join('/');
+      }
+    }
+
+    // Validate owner and repo
+    if (!owner || !repo || owner.length === 0 || repo.length === 0) {
+      return null;
+    }
+
+    return {
+      owner,
+      repo,
+      ref,
+      path
+    };
+  }
+
+  generateGitHubCacheKey(owner, repo, ref, subPath) {
+    let key = `github-${owner}-${repo}`;
+    if (ref && ref !== 'main') {
+      key += `-${ref}`;
+    }
+    if (subPath) {
+      key += `-${subPath.replace(/\//g, '-')}`;
+    }
+    return key;
+  }
+
+  async checkGitHubRateLimit() {
+    const now = Date.now();
+
+    // Reset rate limit if window has expired
+    if (now > this.githubApiRateLimit.reset) {
+      this.githubApiRateLimit = {
+        limit: this.githubToken ? 5000 : 60,
+        remaining: this.githubToken ? 5000 : 60,
+        reset: now + (60 * 60 * 1000)
+      };
+    }
+
+    // If we're near the limit, wait
+    if (this.githubApiRateLimit.remaining < 10) {
+      const waitTime = this.githubApiRateLimit.reset - now;
+      this.logger.warn(`GitHub rate limit nearly exceeded, waiting ${waitTime}ms`);
+      await setTimeout(Math.min(waitTime, 60000)); // Max 1 minute wait
+    }
+  }
+
+  async fetchGitHubRepoMetadata(owner, repo) {
+    const cacheKey = `${owner}/${repo}`;
+
+    // Check API cache first
+    if (this.githubApiCache.has(cacheKey)) {
+      const cached = this.githubApiCache.get(cacheKey);
+      if (Date.now() - cached.timestamp < 5 * 60 * 1000) { // 5 minute cache
+        return cached.data;
+      }
+    }
+
+    try {
+      const url = `https://api.github.com/repos/${owner}/${repo}`;
+      const headers = {
+        'Accept': 'application/vnd.github.v3+json',
+        'User-Agent': 'GitVan-Pack-Registry/1.0'
+      };
+
+      if (this.githubToken) {
+        headers['Authorization'] = `token ${this.githubToken}`;
+      }
+
+      const response = await fetch(url, { headers });
+
+      // Update rate limit from headers
+      if (response.headers.get('x-ratelimit-remaining')) {
+        this.githubApiRateLimit.remaining = parseInt(response.headers.get('x-ratelimit-remaining'));
+        this.githubApiRateLimit.reset = parseInt(response.headers.get('x-ratelimit-reset')) * 1000;
+      }
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null; // Repository not found
+        }
+        if (response.status === 403) {
+          this.logger.error('GitHub API rate limit exceeded or access forbidden');
+          return null; // Return null instead of throwing to match expected behavior
+        }
+        this.logger.error(`GitHub API error: ${response.status} ${response.statusText}`);
+        return null;
+      }
+
+      const data = await response.json();
+
+      // Cache the result
+      this.githubApiCache.set(cacheKey, {
+        data,
+        timestamp: Date.now()
+      });
+
+      return data;
+    } catch (error) {
+      this.logger.error(`Failed to fetch GitHub metadata for ${owner}/${repo}:`, error.message);
+      return null;
+    }
+  }
+
+  async findPackManifest(repoPath, cacheKey) {
+    const entries = readdirSync(repoPath, { withFileTypes: true });
+
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        const subManifestPath = join(repoPath, entry.name, 'pack.json');
+        if (existsSync(subManifestPath)) {
+          // Move the pack to the root level
+          const tempDir = join(repoPath, '..', `${cacheKey}-temp`);
+          execSync(`mv "${join(repoPath, entry.name)}" "${tempDir}"`);
+          rmSync(repoPath, { recursive: true, force: true });
+          execSync(`mv "${tempDir}" "${repoPath}"`);
+          return true;
+        }
+
+        // Recursively search subdirectories (up to 3 levels deep)
+        const subEntries = readdirSync(join(repoPath, entry.name), { withFileTypes: true });
+        for (const subEntry of subEntries) {
+          if (subEntry.isDirectory()) {
+            const deepManifestPath = join(repoPath, entry.name, subEntry.name, 'pack.json');
+            if (existsSync(deepManifestPath)) {
+              // Move the pack to the root level
+              const tempDir = join(repoPath, '..', `${cacheKey}-temp`);
+              execSync(`mv "${join(repoPath, entry.name, subEntry.name)}" "${tempDir}"`);
+              rmSync(repoPath, { recursive: true, force: true });
+              execSync(`mv "${tempDir}" "${repoPath}"`);
+              return true;
+            }
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  async enhanceManifestWithGitHubData(packPath, repoMetadata, owner, repo) {
+    const manifestPath = join(packPath, 'pack.json');
+    if (!existsSync(manifestPath)) {
+      return;
+    }
+
+    try {
+      const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+
+      // Enhance with GitHub metadata
+      const enhanced = {
+        ...manifest,
+        github: {
+          owner,
+          repo,
+          stars: repoMetadata.stargazers_count,
+          forks: repoMetadata.forks_count,
+          issues: repoMetadata.open_issues_count,
+          lastUpdated: repoMetadata.updated_at,
+          defaultBranch: repoMetadata.default_branch,
+          license: repoMetadata.license?.spdx_id,
+          homepage: repoMetadata.homepage,
+          cloneUrl: repoMetadata.clone_url,
+          language: repoMetadata.language
+        },
+        // Update description if not present
+        description: manifest.description || repoMetadata.description || '',
+        // Update license if not present
+        license: manifest.license || repoMetadata.license?.spdx_id || 'Unknown',
+        // Add GitHub-specific tags
+        tags: [
+          ...(manifest.tags || []),
+          'github',
+          ...(repoMetadata.topics || [])
+        ].filter((tag, index, arr) => arr.indexOf(tag) === index), // Remove duplicates
+        // Update last modified
+        lastModified: new Date(repoMetadata.updated_at).getTime()
+      };
+
+      writeFileSync(manifestPath, JSON.stringify(enhanced, null, 2));
+      this.logger.debug(`Enhanced manifest with GitHub metadata for ${owner}/${repo}`);
+    } catch (error) {
+      this.logger.warn(`Failed to enhance manifest with GitHub data:`, error.message);
     }
   }
 

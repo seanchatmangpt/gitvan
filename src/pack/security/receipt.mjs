@@ -1,9 +1,10 @@
 import { createHash } from 'node:crypto';
 import { writeFileSync, unlinkSync } from 'node:fs';
-import { join } from 'pathe';
+import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { useGit } from '../../composables/git.mjs';
 import { createLogger } from '../../utils/logger.mjs';
+import { CryptoManager } from '../../utils/crypto.mjs';
 
 export class ReceiptManager {
   constructor(options = {}) {
@@ -11,6 +12,19 @@ export class ReceiptManager {
     this.logger = createLogger('pack:receipt');
     this.git = useGit();
     this.receiptsRef = options.receiptsRef || 'refs/notes/gitvan/pack-receipts';
+
+    // Initialize crypto manager
+    this.crypto = new CryptoManager(options.gitvanDir || '.gitvan');
+
+    // Auto-generate keys if signing is enabled and no keys exist
+    if (options.sign && !this.crypto.hasKeyPair()) {
+      try {
+        this.crypto.generateKeyPair();
+        this.logger.info('Generated new Ed25519 key pair for receipt signing');
+      } catch (error) {
+        this.logger.warn('Failed to generate key pair:', error.message);
+      }
+    }
   }
 
   async create(pack, operation, status, details = {}) {
@@ -220,24 +234,71 @@ export class ReceiptManager {
   }
 
   async signReceipt(receipt) {
-    // Mock implementation - would integrate with actual signing service
-    return {
-      algorithm: 'mock-sha256',
-      signature: this.hashObject(receipt).slice(0, 16),
-      timestamp: new Date().toISOString()
-    };
+    try {
+      // Ensure we have a key pair
+      if (!this.crypto.hasKeyPair()) {
+        throw new Error('No signing key available. Run with --generate-keys or ensure keys exist.');
+      }
+
+      // Create receipt copy without signature for signing
+      const receiptToSign = { ...receipt };
+      delete receiptToSign.signature;
+      delete receiptToSign.integrity; // Remove integrity as it will be computed after signing
+
+      // Sign using Ed25519
+      const signatureInfo = this.crypto.sign(receiptToSign);
+
+      // Add additional metadata
+      return {
+        ...signatureInfo,
+        keyFingerprint: this.crypto.getPublicKeyFingerprint(),
+        receiptId: receipt.id,
+        receiptVersion: receipt.version
+      };
+    } catch (error) {
+      this.logger.error('Failed to sign receipt:', error.message);
+      throw new Error(`Receipt signing failed: ${error.message}`);
+    }
   }
 
   async verifySignature(receipt) {
-    // Mock implementation - would integrate with actual verification service
-    if (receipt.signature?.algorithm === 'mock-sha256') {
-      const expectedSignature = this.hashObject({
-        ...receipt,
-        signature: null
-      }).slice(0, 16);
-      return receipt.signature.signature === expectedSignature;
+    try {
+      if (!receipt.signature) {
+        this.logger.debug('No signature found in receipt');
+        return false;
+      }
+
+      // Check if we have the required algorithm
+      if (receipt.signature.algorithm !== 'Ed25519') {
+        this.logger.warn(`Unsupported signature algorithm: ${receipt.signature.algorithm}`);
+        return false;
+      }
+
+      // Ensure we have a public key for verification
+      if (!this.crypto.hasKeyPair()) {
+        this.logger.warn('No public key available for signature verification');
+        return false;
+      }
+
+      // Prepare receipt for verification (same as signing)
+      const receiptToVerify = { ...receipt };
+      delete receiptToVerify.signature;
+      delete receiptToVerify.integrity;
+
+      // Verify using Ed25519
+      const isValid = this.crypto.verify(receiptToVerify, receipt.signature);
+
+      if (!isValid) {
+        this.logger.warn(`Invalid signature for receipt ${receipt.id}@${receipt.version}`);
+      } else {
+        this.logger.debug(`Valid signature for receipt ${receipt.id}@${receipt.version}`);
+      }
+
+      return isValid;
+    } catch (error) {
+      this.logger.error('Signature verification failed:', error.message);
+      return false;
     }
-    return true;
   }
 
   async getCurrentCommit() {
@@ -292,5 +353,46 @@ export class ReceiptManager {
     }
 
     throw new Error(`Unsupported export format: ${format}`);
+  }
+
+  /**
+   * Generate new Ed25519 key pair for signing
+   * @returns {Object} Key pair information
+   */
+  generateSigningKeys() {
+    try {
+      const keyInfo = this.crypto.generateKeyPair();
+      this.logger.info(`Generated new Ed25519 key pair:`);
+      this.logger.info(`  Public key: ${keyInfo.publicKeyPath}`);
+      this.logger.info(`  Private key: ${keyInfo.privateKeyPath}`);
+      this.logger.info(`  Key fingerprint: ${this.crypto.getPublicKeyFingerprint()}`);
+      return keyInfo;
+    } catch (error) {
+      this.logger.error('Failed to generate signing keys:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Get information about current signing keys
+   * @returns {Object} Key information or null if no keys
+   */
+  getKeyInfo() {
+    try {
+      if (!this.crypto.hasKeyPair()) {
+        return null;
+      }
+
+      return {
+        hasKeys: true,
+        publicKeyPath: this.crypto.publicKeyPath,
+        privateKeyPath: this.crypto.privateKeyPath,
+        fingerprint: this.crypto.getPublicKeyFingerprint(),
+        keysDirectory: this.crypto.keysDir
+      };
+    } catch (error) {
+      this.logger.error('Failed to get key info:', error.message);
+      return null;
+    }
   }
 }

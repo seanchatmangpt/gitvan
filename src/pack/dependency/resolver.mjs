@@ -5,6 +5,13 @@
 
 import { createLogger } from '../../utils/logger.mjs';
 import { PackRegistry } from '../registry.mjs';
+import {
+  satisfiesConstraint,
+  areConstraintsCompatible,
+  parseConstraint,
+  getVersionsMatching,
+  getSuggestedUpdate
+} from '../../utils/version.mjs';
 
 export class DependencyResolver {
   constructor(options = {}) {
@@ -176,20 +183,91 @@ export class DependencyResolver {
       }
     }
 
+    // Check if pack2 has conflicts with pack1
+    if (info2.compose?.incompatibleWith) {
+      for (const incompatible of info2.compose.incompatibleWith) {
+        if (incompatible.pack === pack1) {
+          const versionMatch = this.checkVersionConstraint(info1.version, incompatible.version);
+          if (versionMatch) {
+            return {
+              compatible: false,
+              reason: `Version conflict: ${pack2} incompatible with ${pack1}@${incompatible.version}`
+            };
+          }
+        }
+      }
+    }
+
+    // Check dependency version constraints
+    if (info1.compose?.dependencies) {
+      for (const [depPack, constraint] of Object.entries(info1.compose.dependencies)) {
+        if (depPack === pack2) {
+          if (!this.checkVersionConstraint(info2.version, constraint)) {
+            return {
+              compatible: false,
+              reason: `Dependency constraint not satisfied: ${pack1} requires ${pack2}@${constraint}, but found ${info2.version}`
+            };
+          }
+        }
+      }
+    }
+
+    // Check if pack2 depends on pack1 with version constraints
+    if (info2.compose?.dependencies) {
+      for (const [depPack, constraint] of Object.entries(info2.compose.dependencies)) {
+        if (depPack === pack1) {
+          if (!this.checkVersionConstraint(info1.version, constraint)) {
+            return {
+              compatible: false,
+              reason: `Dependency constraint not satisfied: ${pack2} requires ${pack1}@${constraint}, but found ${info1.version}`
+            };
+          }
+        }
+      }
+    }
+
     return { compatible: true };
   }
 
   checkVersionConstraint(version, constraint) {
-    // Simple version checking - would use semver in production
-    if (constraint.startsWith('^')) {
-      return version.startsWith(constraint.slice(1, constraint.indexOf('.', 1)));
+    // Use proper semver constraint checking
+    try {
+      return satisfiesConstraint(version, constraint);
+    } catch (error) {
+      this.logger.warn(`Version constraint check failed for ${version} vs ${constraint}: ${error.message}`);
+      return false;
     }
-    if (constraint.startsWith('~')) {
-      const parts = constraint.slice(1).split('.');
-      const versionParts = version.split('.');
-      return parts[0] === versionParts[0] && parts[1] === versionParts[1];
+  }
+
+  /**
+   * Find the best version that satisfies a constraint from available versions
+   * @param {string[]} availableVersions - Array of available versions
+   * @param {string} constraint - Version constraint
+   * @returns {string|null} Best matching version or null if none found
+   */
+  findBestVersion(availableVersions, constraint) {
+    try {
+      const matchingVersions = getVersionsMatching(availableVersions, constraint);
+      return matchingVersions[0] || null; // Return latest matching version
+    } catch (error) {
+      this.logger.warn(`Best version search failed for constraint ${constraint}: ${error.message}`);
+      return null;
     }
-    return version === constraint;
+  }
+
+  /**
+   * Check if two version constraints are compatible
+   * @param {string} constraint1 - First constraint
+   * @param {string} constraint2 - Second constraint
+   * @returns {boolean} Whether constraints are compatible
+   */
+  areConstraintsCompatible(constraint1, constraint2) {
+    try {
+      return areConstraintsCompatible(constraint1, constraint2);
+    } catch (error) {
+      this.logger.warn(`Constraint compatibility check failed: ${error.message}`);
+      return false;
+    }
   }
 
   async analyzeDependencyTree(packIds) {

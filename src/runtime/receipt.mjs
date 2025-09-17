@@ -1,121 +1,81 @@
-import { useGit } from '../composables/git.mjs'
+/**
+ * GitVan v2 Receipt Writing Utilities
+ * Writes structured receipts to Git notes for auditability
+ */
+
+import { useGit } from "../composables/git.mjs";
 
 /**
- * Write execution receipt to git notes
+ * Writes a structured receipt to Git notes
+ * @param {Object} receipt - Receipt data to write
+ * @param {Object} options - Receipt options
+ * @param {string} options.ref - Git notes ref (default: 'refs/notes/gitvan/results')
+ * @param {string} options.sha - Git SHA to attach note to (default: 'HEAD')
+ * @returns {Promise<void>}
  */
-export function writeReceipt(data) {
-  const {
-    resultsRef = 'refs/notes/gitvan/results',
-    id,
-    status,
-    commit,
-    action = 'job',
-    result,
-    artifact,
-    meta = {}
-  } = data
+export async function writeReceipt(
+  receipt,
+  { ref = "refs/notes/gitvan/results", sha = "HEAD" } = {}
+) {
+  const git = useGit();
+  const payload = {
+    schema: "gitvan.receipt.v1",
+    role: "receipt",
+    ts: git.nowISO(),
+    commit: await git.head(),
+    ...receipt,
+  };
 
-  const receipt = {
-    role: 'receipt',
-    id,
-    status,
-    ts: new Date().toISOString(),
-    commit,
-    action,
-    artifact,
-    meta: {
-      ...meta,
-      duration: result?.duration,
-      exitCode: result?.exitCode
-    }
-  }
-
-  // Include result details if available
-  if (result) {
-    if (result.stdout) receipt.stdout = result.stdout
-    if (result.stderr) receipt.stderr = result.stderr
-    if (result.error) receipt.error = result.error
-  }
-
-  const git = useGit()
-  const receiptJson = JSON.stringify(receipt, null, 2)
-
-  try {
-    // Try to append to existing notes first
-    git.noteAppend(resultsRef, receiptJson, commit)
-  } catch {
-    // If no existing note, create new one
-    try {
-      git.noteAdd(resultsRef, receiptJson, commit)
-    } catch (err) {
-      console.warn(`Failed to write receipt for ${id}:`, err.message)
-    }
-  }
+  // Append to avoid overwriting other receipts on the same commit
+  await git.noteAppend(ref, JSON.stringify(payload));
 }
 
 /**
- * Read receipts for a commit
+ * Reads receipts from Git notes
+ * @param {Object} options - Read options
+ * @param {string} options.ref - Git notes ref (default: 'refs/notes/gitvan/results')
+ * @param {string} options.sha - Git SHA to read notes from (default: 'HEAD')
+ * @returns {Promise<Array>} Array of receipt objects
  */
-export function readReceipts(commit = 'HEAD', resultsRef = 'refs/notes/gitvan/results') {
-  const git = useGit()
-
+export async function readReceipts({
+  ref = "refs/notes/gitvan/results",
+  sha = "HEAD",
+} = {}) {
+  const git = useGit();
   try {
-    const notesContent = git.noteShow(resultsRef, commit)
-    const receipts = []
-
-    // Split on receipt boundaries and parse each
-    const receiptTexts = notesContent.split(/(?=\{[^}]*"role":\s*"receipt")/g)
-
-    for (const receiptText of receiptTexts) {
-      const trimmed = receiptText.trim()
-      if (!trimmed) continue
-
-      try {
-        const receipt = JSON.parse(trimmed)
-        if (receipt.role === 'receipt') {
-          receipts.push(receipt)
+    const notes = await git.noteShow(ref, sha);
+    const lines = notes.split("\n").filter((line) => line.trim());
+    return lines
+      .map((line) => {
+        try {
+          return JSON.parse(line);
+        } catch {
+          return null;
         }
-      } catch {
-        // Invalid JSON, skip
-      }
-    }
-
-    return receipts
+      })
+      .filter(Boolean);
   } catch {
-    // No notes found
-    return []
+    return []; // No notes found
   }
 }
 
 /**
- * Get all receipts for a range of commits
+ * Lists all commits that have receipts
+ * @param {Object} options - List options
+ * @param {string} options.ref - Git notes ref (default: 'refs/notes/gitvan/results')
+ * @returns {Promise<Array>} Array of commit SHAs with receipts
  */
-export function readReceiptsRange(range = '-n 10', resultsRef = 'refs/notes/gitvan/results') {
-  const git = useGit()
-  const commits = git.log('%H', range).split('\n').filter(Boolean)
-  const allReceipts = []
-
-  for (const commit of commits) {
-    const receipts = readReceipts(commit, resultsRef)
-    allReceipts.push(...receipts.map(r => ({ ...r, commit })))
+export async function listReceiptCommits({
+  ref = "refs/notes/gitvan/results",
+} = {}) {
+  const git = useGit();
+  try {
+    const output = await git.run(`notes --ref=${ref} list`);
+    return output
+      .split("\n")
+      .filter((line) => line.trim())
+      .map((line) => line.split(" ")[1]);
+  } catch {
+    return []; // No notes found
   }
-
-  return allReceipts.sort((a, b) => new Date(b.ts) - new Date(a.ts))
-}
-
-/**
- * Check if event has already been processed for commit
- */
-export function hasReceipt(eventId, commit = 'HEAD', resultsRef = 'refs/notes/gitvan/results') {
-  const receipts = readReceipts(commit, resultsRef)
-  return receipts.some(r => r.id === eventId)
-}
-
-/**
- * Get receipt status for event and commit
- */
-export function getReceiptStatus(eventId, commit = 'HEAD', resultsRef = 'refs/notes/gitvan/results') {
-  const receipts = readReceipts(commit, resultsRef)
-  const receipt = receipts.find(r => r.id === eventId)
-  return receipt?.status || null
 }

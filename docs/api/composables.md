@@ -1,8 +1,8 @@
-# GitVan v2 Composables API
+# GitVan Composables API Reference
 
-GitVan v2 provides a comprehensive set of composables that enable Git-native development automation. Each composable is designed to work independently or in combination with others, providing a powerful and flexible API for building automation workflows.
+GitVan v2.0.0 provides a comprehensive set of composables for Git operations, template rendering, execution, and context management based on the actual implementation.
 
-> **📚 New Modular Architecture**: GitVan v2 composables have been refactored into a modular factory pattern. See the [Composables Documentation Index](../composables/index.md) for the new structure, [API Reference](../composables/git-api.md) for detailed function documentation, and [Migration Guide](../composables/migration-guide.md) for upgrading from the monolithic version.
+> **📚 Updated for v2.0.0**: This documentation reflects the actual implementation in the codebase, including the modular Git composable architecture, advanced template system, and execution composables.
 
 ## Table of Contents
 

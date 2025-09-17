@@ -54,6 +54,12 @@ const commands = {
 async function main() {
   const [, , command, ...args] = process.argv;
 
+  // Handle version flags
+  if (command === "--version" || command === "-v" || args.includes("--version") || args.includes("-v")) {
+    handleVersion();
+    return;
+  }
+
   if (!command || command === "help") {
     handleHelp();
     return;
@@ -675,6 +681,17 @@ async function handleLLM(subcommand = "call", ...args) {
   }
 }
 
+function handleVersion() {
+  // Read version from package.json
+  try {
+    const packageJson = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8"));
+    console.log(packageJson.version);
+  } catch (error) {
+    // Fallback to hardcoded version if package.json not found
+    console.log("2.0.0");
+  }
+}
+
 function handleHelp() {
   console.log(`
 GitVan v2 - AI-powered Git workflow automation
@@ -698,6 +715,7 @@ Usage:
   gitvan run <job-name>                                  Run a specific job (legacy)
   gitvan list                                            List available jobs (legacy)
   gitvan help                                            Show this help
+  gitvan --version                                       Show version
 
 Examples:
   gitvan init                                             Initialize GitVan in current directory

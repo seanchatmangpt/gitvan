@@ -21,7 +21,7 @@ import { cronCommand } from "./cli/cron.mjs";
 import { daemonCommand } from "./cli/daemon.mjs";
 import { eventCommand } from "./cli/event.mjs";
 import { auditCommand } from "./cli/audit.mjs";
-import { chatCommand } from "./cli/chat.mjs";
+import { chatCommand } from "./cli/chat-real.mjs";
 import { packCommand } from "./cli/pack.mjs";
 import { scaffoldCommand } from "./cli/scaffold.mjs";
 import { marketplaceCommand } from "./cli/marketplace.mjs";

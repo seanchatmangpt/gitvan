@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 11,
+            "activePatchIndex": 13,
             "patches": [
                 {
                     "date": 1758057329115,
@@ -52,6 +52,14 @@
                 {
                     "date": 1758096593591,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -10,9 +10,9 @@\n   findJobFile,\n   findAllJobs,\n   loadJobDefinition,\n } from \"./runtime/jobs.mjs\";\n-import { useGit } from \"./composables/git.mjs\";\n+import { useGit } from \"./composables/git/index.mjs\";\n import { runJobWithContext } from \"./runtime/boot.mjs\";\n import { loadConfig } from \"./runtime/config.mjs\";\n import { GitVanDefaults } from \"./config/defaults.mjs\";\n \n"
+                },
+                {
+                    "date": 1758130817987,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -53,8 +53,14 @@\n \n async function main() {\n   const [, , command, ...args] = process.argv;\n \n+  // Handle version flags\n+  if (command === \"--version\" || command === \"-v\" || args.includes(\"--version\") || args.includes(\"-v\")) {\n+    handleVersion();\n+    return;\n+  }\n+\n   if (!command || command === \"help\") {\n     handleHelp();\n     return;\n   }\n@@ -674,8 +680,19 @@\n       process.exit(1);\n   }\n }\n \n+function handleVersion() {\n+  // Read version from package.json\n+  try {\n+    const packageJson = JSON.parse(readFileSync(join(process.cwd(), \"package.json\"), \"utf8\"));\n+    console.log(packageJson.version);\n+  } catch (error) {\n+    // Fallback to hardcoded version if package.json not found\n+    console.log(\"2.0.0\");\n+  }\n+}\n+\n function handleHelp() {\n   console.log(`\n GitVan v2 - AI-powered Git workflow automation\n \n@@ -697,8 +714,9 @@\n   gitvan worktree list                                   List all worktrees\n   gitvan run <job-name>                                  Run a specific job (legacy)\n   gitvan list                                            List available jobs (legacy)\n   gitvan help                                            Show this help\n+  gitvan --version                                       Show version\n \n Examples:\n   gitvan init                                             Initialize GitVan in current directory\n   gitvan daemon start                                    Start daemon for current worktree\n"
+                },
+                {
+                    "date": 1758132848669,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -20,9 +20,9 @@\n import { cronCommand } from \"./cli/cron.mjs\";\n import { daemonCommand } from \"./cli/daemon.mjs\";\n import { eventCommand } from \"./cli/event.mjs\";\n import { auditCommand } from \"./cli/audit.mjs\";\n-import { chatCommand } from \"./cli/chat.mjs\";\n+import { chatCommand } from \"./cli/chat-real.mjs\";\n import { packCommand } from \"./cli/pack.mjs\";\n import { scaffoldCommand } from \"./cli/scaffold.mjs\";\n import { marketplaceCommand } from \"./cli/marketplace.mjs\";\n import { composeCommand } from \"./cli/compose.mjs\";\n"
                 }
             ],
             "date": 1758057329115,

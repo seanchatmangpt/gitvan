@@ -9,6 +9,9 @@
   },
   "scripts": {
     "test": "vitest",
+    "test:ai": "vitest tests/ai-commands.test.mjs",
+    "test:ai:watch": "vitest tests/ai-commands.test.mjs --watch",
+    "test:ai:coverage": "vitest tests/ai-commands.test.mjs --coverage",
     "test:docs": "node scripts/test-docs.mjs",
     "test:docs:verbose": "node scripts/test-docs.mjs --verbose",
     "test:docs:dry-run": "node scripts/test-docs.mjs --dry-run",
@@ -28,6 +31,7 @@
   "dependencies": {
     "@iarna/toml": "^2.2.5",
     "@types/prompts": "^2.4.9",
+    "ai": "^5.0.45",
     "ajv": "^8.17.1",
     "c12": "^2.0.4",
     "cacache": "^20.0.1",
@@ -46,8 +50,10 @@
     "jsonpath-plus": "^10.3.0",
     "klona": "^2.0.6",
     "lru-cache": "^11.2.1",
+    "msw": "^2.11.2",
     "node-cron": "^4.2.1",
     "nunjucks": "^3.2.4",
+    "ollama-ai-provider-v2": "^1.2.4",
     "pathe": "^2.0.3",
     "prompts": "^2.4.2",
     "tinyglobby": "^0.2.15",

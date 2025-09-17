@@ -35,42 +35,43 @@ const BrowseOptionsSchema = z.object({
 // Auto-detect packs from filesystem
 function detectPacks() {
   const packs = new Map();
-  
+
   // Look for packs in common locations
   const packDirs = [
-    join(process.cwd(), 'packs'),
-    join(process.cwd(), 'packs', 'builtin'),
-    join(process.cwd(), 'node_modules', '@gitvan', 'packs'),
+    join(process.cwd(), "packs"),
+    join(process.cwd(), "packs", "builtin"),
+    join(process.cwd(), "node_modules", "@gitvan", "packs"),
     // Also look in GitVan's builtin packs
-    join(__dirname, '..', '..', 'packs', 'builtin'),
+    join(__dirname, "..", "..", "packs", "builtin"),
   ];
-  
+
   for (const packDir of packDirs) {
     if (existsSync(packDir)) {
       try {
         const entries = readdirSync(packDir, { withFileTypes: true });
-        
+
         for (const entry of entries) {
           if (entry.isDirectory()) {
             const packPath = join(packDir, entry.name);
-            const manifestPath = join(packPath, 'pack.json');
-            
+            const manifestPath = join(packPath, "pack.json");
+
             if (existsSync(manifestPath)) {
               try {
-                const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+                const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
                 const packId = manifest.id || `builtin/${entry.name}`;
-                
+
                 packs.set(packId, {
                   id: packId,
                   name: manifest.name || entry.name,
-                  description: manifest.description || 'No description available',
+                  description:
+                    manifest.description || "No description available",
                   tags: manifest.tags || [],
                   capabilities: manifest.capabilities || [],
-                  version: manifest.version || '1.0.0',
-                  author: manifest.author || 'Unknown',
-                  license: manifest.license || 'MIT',
+                  version: manifest.version || "1.0.0",
+                  author: manifest.author || "Unknown",
+                  license: manifest.license || "MIT",
                   path: packPath,
-                  manifest
+                  manifest,
                 });
               } catch (error) {
                 // Skip invalid manifests
@@ -85,54 +86,78 @@ function detectPacks() {
       }
     }
   }
-  
+
   return Array.from(packs.values());
 }
 
 // Auto-categorize packs based on tags, categories, and capabilities
 function categorizePacks(packs) {
   const categoryMap = new Map();
-  
+
   for (const pack of packs) {
-    const tags = pack.tags.map(tag => tag.toLowerCase());
-    const capabilities = pack.capabilities.map(cap => cap.toLowerCase());
+    const tags = pack.tags.map((tag) => tag.toLowerCase());
+    const capabilities = pack.capabilities.map((cap) => cap.toLowerCase());
     const manifestCategories = pack.manifest.categories || [];
-    
+
     // Priority: 1) explicit categories from manifest, 2) tags, 3) capabilities, 4) default
     let assignedCategories = [];
-    
+
     // Use explicit categories from manifest first
     if (manifestCategories.length > 0) {
       assignedCategories = manifestCategories;
     } else {
       // Auto-categorize based on tags and capabilities
       const tagCategories = [];
-      
-      if (tags.includes('documentation') || tags.includes('docs') || tags.includes('mdbook')) {
-        tagCategories.push('docs');
+
+      if (
+        tags.includes("documentation") ||
+        tags.includes("docs") ||
+        tags.includes("mdbook")
+      ) {
+        tagCategories.push("docs");
       }
-      if (tags.includes('nextjs') || tags.includes('next')) {
-        tagCategories.push('next');
+      if (tags.includes("nextjs") || tags.includes("next")) {
+        tagCategories.push("next");
       }
-      if (tags.includes('react') || capabilities.includes('components') || capabilities.includes('ssr')) {
-        tagCategories.push('react');
+      if (
+        tags.includes("react") ||
+        capabilities.includes("components") ||
+        capabilities.includes("ssr")
+      ) {
+        tagCategories.push("react");
       }
-      if (tags.includes('mobile') || tags.includes('react-native') || tags.includes('flutter')) {
-        tagCategories.push('mobile');
+      if (
+        tags.includes("mobile") ||
+        tags.includes("react-native") ||
+        tags.includes("flutter")
+      ) {
+        tagCategories.push("mobile");
       }
-      if (tags.includes('enterprise') || tags.includes('compliance')) {
-        tagCategories.push('enterprise');
+      if (tags.includes("enterprise") || tags.includes("compliance")) {
+        tagCategories.push("enterprise");
       }
-      if (tags.includes('api') || tags.includes('server') || capabilities.includes('backend')) {
-        tagCategories.push('api');
+      if (
+        tags.includes("api") ||
+        tags.includes("server") ||
+        capabilities.includes("backend")
+      ) {
+        tagCategories.push("api");
       }
-      if (tags.includes('database') || tags.includes('db') || tags.includes('sql')) {
-        tagCategories.push('database');
+      if (
+        tags.includes("database") ||
+        tags.includes("db") ||
+        tags.includes("sql")
+      ) {
+        tagCategories.push("database");
       }
-      if (tags.includes('dev') || tags.includes('development') || tags.includes('tool')) {
-        tagCategories.push('dev');
+      if (
+        tags.includes("dev") ||
+        tags.includes("development") ||
+        tags.includes("tool")
+      ) {
+        tagCategories.push("dev");
       }
-      
+
       // If no specific categories found, use tags as categories
       if (tagCategories.length === 0) {
         assignedCategories = tags.slice(0, 3); // Use first 3 tags as categories
@@ -140,7 +165,7 @@ function categorizePacks(packs) {
         assignedCategories = tagCategories;
       }
     }
-    
+
     // Add pack to each assigned category
     for (const categoryId of assignedCategories) {
       if (!categoryMap.has(categoryId)) {
@@ -153,33 +178,63 @@ function categorizePacks(packs) {
       categoryMap.get(categoryId).packs.push(pack.id);
     }
   }
-  
+
   // Convert to object and enhance category names
   const categories = Object.fromEntries(categoryMap);
-  
+
   // Enhance category names and descriptions
   const categoryEnhancements = {
-    docs: { name: "Documentation", description: "Documentation and content generation packs" },
-    next: { name: "Next.js", description: "Next.js application templates and configurations" },
+    docs: {
+      name: "Documentation",
+      description: "Documentation and content generation packs",
+    },
+    next: {
+      name: "Next.js",
+      description: "Next.js application templates and configurations",
+    },
     react: { name: "React", description: "React applications and components" },
-    dev: { name: "Development", description: "Development tools and utilities" },
-    enterprise: { name: "Enterprise", description: "Enterprise-grade templates and workflows" },
+    dev: {
+      name: "Development",
+      description: "Development tools and utilities",
+    },
+    enterprise: {
+      name: "Enterprise",
+      description: "Enterprise-grade templates and workflows",
+    },
     mobile: { name: "Mobile", description: "Mobile application development" },
-    api: { name: "API & Server", description: "API servers and backend services" },
-    database: { name: "Database", description: "Database setup and management" },
-    scaffold: { name: "Scaffolding", description: "Project scaffolding and templates" },
-    automation: { name: "Automation", description: "Workflow automation and CI/CD" },
-    testing: { name: "Testing", description: "Testing frameworks and utilities" },
-    deployment: { name: "Deployment", description: "Deployment and DevOps tools" },
+    api: {
+      name: "API & Server",
+      description: "API servers and backend services",
+    },
+    database: {
+      name: "Database",
+      description: "Database setup and management",
+    },
+    scaffold: {
+      name: "Scaffolding",
+      description: "Project scaffolding and templates",
+    },
+    automation: {
+      name: "Automation",
+      description: "Workflow automation and CI/CD",
+    },
+    testing: {
+      name: "Testing",
+      description: "Testing frameworks and utilities",
+    },
+    deployment: {
+      name: "Deployment",
+      description: "Deployment and DevOps tools",
+    },
   };
-  
+
   for (const [categoryId, category] of Object.entries(categories)) {
     if (categoryEnhancements[categoryId]) {
       category.name = categoryEnhancements[categoryId].name;
       category.description = categoryEnhancements[categoryId].description;
     }
   }
-  
+
   return categories;
 }
 
@@ -221,18 +276,89 @@ export class Marketplace {
       return cached;
     }
 
-    // Refresh registry index if needed
-    const registry = this.getRegistry();
-    await registry.refreshIndex();
+    // Use fast auto-detection instead of heavy registry operations
+    const packs = detectPacks();
+    
+    // Apply filters
+    let filteredPacks = packs;
+    if (options.filters) {
+      filteredPacks = packs.filter(pack => {
+        if (options.filters.capability && !pack.capabilities.includes(options.filters.capability)) {
+          return false;
+        }
+        if (options.filters.tag && !pack.tags.includes(options.filters.tag)) {
+          return false;
+        }
+        if (options.filters.category && !pack.manifest.categories?.includes(options.filters.category)) {
+          return false;
+        }
+        if (options.filters.author && pack.author !== options.filters.author) {
+          return false;
+        }
+        if (options.filters.license && pack.license !== options.filters.license) {
+          return false;
+        }
+        return true;
+      });
+    }
 
-    // Perform search
-    const searchResults = await registry.search(
-      options.query,
-      options.filters || {}
-    );
+    // Apply search query
+    if (options.query) {
+      const query = options.query.toLowerCase();
+      filteredPacks = filteredPacks.filter(pack => 
+        pack.name.toLowerCase().includes(query) ||
+        pack.description.toLowerCase().includes(query) ||
+        pack.tags.some(tag => tag.toLowerCase().includes(query))
+      );
+    }
 
-    // Format and paginate results
-    const formatted = this.formatResults(searchResults, options);
+    // Apply sorting
+    if (options.sort) {
+      filteredPacks.sort((a, b) => {
+        switch (options.sort) {
+          case 'name':
+            return a.name.localeCompare(b.name);
+          case 'updated':
+            return (b.lastModified || 0) - (a.lastModified || 0);
+          default:
+            return 0;
+        }
+      });
+    }
+
+    // Apply pagination
+    const limit = options.limit || 20;
+    const page = options.page || 1;
+    const offset = (page - 1) * limit;
+    const paginatedPacks = filteredPacks.slice(offset, offset + limit);
+
+    // Format results
+    const formatted = {
+      packs: paginatedPacks.map(pack => ({
+        id: pack.id,
+        name: pack.name,
+        description: pack.description,
+        version: pack.version,
+        tags: pack.tags,
+        capabilities: pack.capabilities,
+        author: pack.author,
+        license: pack.license,
+        categories: pack.manifest.categories || []
+      })),
+      pagination: {
+        page: page,
+        limit: limit,
+        total: filteredPacks.length,
+        pages: Math.ceil(filteredPacks.length / limit)
+      },
+      facets: {
+        categories: [...new Set(packs.flatMap(p => p.manifest.categories || []))],
+        tags: [...new Set(packs.flatMap(p => p.tags))],
+        capabilities: [...new Set(packs.flatMap(p => p.capabilities))],
+        authors: [...new Set(packs.map(p => p.author).filter(Boolean))],
+        licenses: [...new Set(packs.map(p => p.license).filter(Boolean))]
+      }
+    };
 
     // Cache results
     this.setCache(cacheKey, formatted);

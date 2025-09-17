@@ -162,7 +162,7 @@ async function handleInit() {
   
   ai: {
     provider: "ollama",
-    model: "llama3.1",
+    model: "qwen3-coder:30b",
   },
   
   // Custom data available in templates

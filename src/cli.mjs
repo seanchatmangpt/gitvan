@@ -161,8 +161,8 @@ async function handleInit() {
   },
   
   ai: {
-    provider: "openai",
-    model: "gpt-4",
+    provider: "ollama",
+    model: "llama3.1",
   },
   
   // Custom data available in templates

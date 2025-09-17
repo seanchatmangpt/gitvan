@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/utils/time.mjs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1758072781171,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1758072781171,
+            "name": "Commit-0",
+            "content": "/**\n * GitVan v2 Time Utilities - Deterministic time handling for receipts and cron\n * Ensures consistent timezone handling and provides utility functions\n */\n\n/**\n * Get current time as ISO string (UTC)\n * @returns {string} ISO timestamp\n */\nexport const nowISO = () => new Date().toISOString();\n\n/**\n * Convert date to UTC\n * @param {Date|string} d - Date object or string\n * @returns {Date} UTC date\n */\nexport const toUTC = (d) => new Date(typeof d === \"string\" ? d : d.getTime());\n\n/**\n * Clamp milliseconds value within bounds\n * @param {number} ms - Milliseconds value\n * @param {number} min - Minimum value (default: 0)\n * @param {number} max - Maximum value (default: 60000)\n * @returns {number} Clamped value\n */\nexport function clampMs(ms, min = 0, max = 60_000) {\n  return Math.max(min, Math.min(ms, max));\n}\n\n/**\n * Get deterministic timestamp for receipts\n * Uses environment variable if set, otherwise current time\n * @returns {string} Deterministic timestamp\n */\nexport function getDeterministicTimestamp() {\n  return process.env.GITVAN_NOW || nowISO();\n}\n\n/**\n * Parse cron expression and get next execution time\n * Simple implementation for basic cron patterns\n * @param {string} cron - Cron expression\n * @param {Date} from - Start date (default: now)\n * @returns {Date|null} Next execution time or null if invalid\n */\nexport function getNextCronTime(cron, from = new Date()) {\n  // Basic cron parser - supports minute, hour, day, month, weekday\n  const parts = cron.trim().split(/\\s+/);\n  if (parts.length !== 5) return null;\n  \n  const [min, hour, day, month, weekday] = parts;\n  \n  // Simple implementation for common patterns\n  if (min === \"*\" && hour === \"*\" && day === \"*\" && month === \"*\" && weekday === \"*\") {\n    // Every minute\n    return new Date(from.getTime() + 60000);\n  }\n  \n  if (min === \"0\" && hour === \"*\" && day === \"*\" && month === \"*\" && weekday === \"*\") {\n    // Every hour\n    const next = new Date(from);\n    next.setMinutes(0, 0, 0);\n    next.setHours(next.getHours() + 1);\n    return next;\n  }\n  \n  // More complex patterns would need a proper cron library\n  return null;\n}\n\n"
+        }
+    ]
+}

@@ -48,6 +48,9 @@ export async function chatCommand(subcommand = "draft", args = {}) {
     case "design":
       return await designWizard(config, args);
 
+    case "help":
+      return await showHelp();
+
     default:
       throw new Error(`Unknown chat subcommand: ${subcommand}`);
   }
@@ -208,6 +211,49 @@ async function designWizard(config, args) {
 }
 
 /**
+ * Show help for chat commands
+ * @returns {Promise<void>}
+ */
+async function showHelp() {
+  console.log("GitVan Chat Commands:");
+  console.log();
+  console.log("  draft <prompt>              Generate job/event specification");
+  console.log("  generate <prompt>           Generate complete job/event file");
+  console.log(
+    "  preview <prompt>            Preview changes (not implemented)",
+  );
+  console.log(
+    "  apply <prompt>              Apply generated changes (not implemented)",
+  );
+  console.log(
+    "  explain <job-path>          Explain existing job (not implemented)",
+  );
+  console.log(
+    "  design <requirements>       Interactive design wizard (not implemented)",
+  );
+  console.log("  help                        Show this help");
+  console.log();
+  console.log("Options:");
+  console.log(
+    "  --kind <type>               Job type: job, event (default: job)",
+  );
+  console.log(
+    "  --temp <number>             Temperature 0.0-1.0 (default: 0.7)",
+  );
+  console.log(
+    "  --model <name>              AI model name (default: qwen3-coder:30b)",
+  );
+  console.log("  --output <path>             Output file path (generate only)");
+  console.log();
+  console.log("Examples:");
+  console.log('  gitvan chat draft "Create a backup job"');
+  console.log('  gitvan chat generate "Create a cleanup job" --kind job');
+  console.log(
+    '  gitvan chat draft "Create a push event" --kind event --temp 0.5',
+  );
+}
+
+/**
  * Generate job specification using AI
  * @param {object} input - Chat input
  * @param {object} config - GitVan config
@@ -245,8 +291,17 @@ async function generateJobFiles(input, config) {
     config,
   });
 
-  // Validate generated code
-  if (!/defineJob\s*\(/.test(result.output)) {
+  // Clean up AI output - remove markdown code blocks
+  let cleanedOutput = result.output;
+
+  // Remove markdown code block wrappers
+  cleanedOutput = cleanedOutput.replace(/^```javascript\s*\n?/i, "");
+  cleanedOutput = cleanedOutput.replace(/^```js\s*\n?/i, "");
+  cleanedOutput = cleanedOutput.replace(/^```\s*\n?/i, "");
+  cleanedOutput = cleanedOutput.replace(/\n?```\s*$/i, "");
+
+  // Validate cleaned code
+  if (!/defineJob\s*\(/.test(cleanedOutput)) {
     throw new Error("Generated output is not a valid GitVan job module");
   }
 
@@ -257,14 +312,14 @@ async function generateJobFiles(input, config) {
   const filename = `${id}${input.kind === "event" ? ".evt.mjs" : ".mjs"}`;
   const relPath = input.path || join(subdir, filename);
 
-  const outPath = writeFileSafe(config.rootDir, relPath, result.output);
+  const outPath = writeFileSafe(config.rootDir, relPath, cleanedOutput);
 
   return ChatOutput.parse({
     ok: true,
     id,
     mode: input.kind === "event" ? "event" : "on-demand",
     filePath: outPath,
-    source: result.output,
+    source: cleanedOutput,
     summary: "Generated via chat interface",
     model: result.model,
     modelParams: result.options,

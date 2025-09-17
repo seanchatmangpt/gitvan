@@ -19,7 +19,7 @@ export const Receipt = z.object({
   error: z.string().optional(),
   artifacts: z.array(z.string()).default([]),
   fingerprint: z.string().optional(),
-  
+
   // Additional metadata
   duration: z.number().optional(),
   worktree: z.string().optional(),
@@ -34,11 +34,13 @@ export const ReceiptCollection = z.object({
   timestamp: z.string(),
   count: z.number(),
   receipts: z.array(Receipt),
-  summary: z.object({
-    ok: z.number(),
-    error: z.number(),
-    skip: z.number(),
-  }).optional(),
+  summary: z
+    .object({
+      ok: z.number(),
+      error: z.number(),
+      skip: z.number(),
+    })
+    .optional(),
 });
 
 // Receipt query schema
@@ -52,4 +54,3 @@ export const ReceiptQuery = z.object({
   branch: z.string().optional(),
   limit: z.number().positive().optional(),
 });
-

@@ -3,11 +3,15 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 1,
             "patches": [
                 {
                     "date": 1758046934640,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1758072820011,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,42 +1,89 @@\n-// src/config/defaults.mjs\n-// GitVan v2 — Minimal, deterministic defaults\n-// Engine is fixed to Nunjucks for consistency and performance\n+/**\n+ * GitVan v2 Default Configuration\n+ * Production-ready defaults for GitVan deployment\n+ */\n \n export const GitVanDefaults = {\n-  // General\n-  debug: false,\n-  logLevel: 3,\n+  // Root directory\n+  rootDir: process.cwd(),\n \n-  // Dirs\n-  rootDir: process.cwd(),\n-  buildDir: \".gitvan\",\n-  output: {\n-    dir: \"{{ rootDir }}/.out\",\n-    distDir: \"{{ rootDir }}/dist\",\n+  // Job configuration\n+  jobs: {\n+    dir: \"jobs\",\n+    scan: {\n+      patterns: [\n+        \"jobs/**/*.mjs\",\n+        \"jobs/**/*.cron.mjs\", \n+        \"jobs/**/*.evt.mjs\",\n+        \"jobs/**/*.js\"\n+      ],\n+      ignore: [\n+        \"node_modules/**\",\n+        \".git/**\",\n+        \"**/*.test.*\",\n+        \"**/*.spec.*\"\n+      ]\n+    }\n   },\n \n-  // Features\n-  jobs: { dir: \"jobs\" }, // scan jobs/**/*.mjs\n-  templates: { dirs: [\"templates\"], autoescape: false, noCache: true },\n-  receipts: { ref: \"refs/notes/gitvan/results\" },\n+  // Template configuration\n+  templates: {\n+    engine: \"nunjucks\",\n+    dirs: [\"templates\"],\n+    autoescape: false,\n+    noCache: false,\n+    filters: [\"inflection\", \"json\", \"slug\"]\n+  },\n \n-  // Policy\n-  policy: {\n-    requireSignedCommits: false,\n-    allowUnsignedReceipts: true,\n+  // Receipt configuration\n+  receipts: {\n+    ref: \"refs/notes/gitvan/results\",\n+    enabled: true,\n+    compress: false\n   },\n \n-  // Runtime config bag (serializable only)\n-  runtimeConfig: {\n-    app: {},\n-    gitvan: {\n-      notesRef: \"refs/notes/gitvan/results\",\n-    },\n+  // Lock configuration\n+  locks: {\n+    ref: \"refs/gitvan/locks\",\n+    timeout: 30000,\n+    retries: 3\n   },\n \n-  // Time injector (optional). If omitted, no ambient time is injected.\n-  now: undefined,\n+  // AI configuration\n+  ai: {\n+    provider: \"ollama\",\n+    model: \"qwen3-coder:30b\",\n+    baseUrl: process.env.OLLAMA_BASE_URL || \"http://localhost:11434\",\n+    temperature: 0.7,\n+    maxTokens: 4096,\n+    defaults: {\n+      temperature: 0.7,\n+      top_p: 0.8,\n+      top_k: 20,\n+      repeat_penalty: 1.05\n+    }\n+  },\n \n-  // Hooks (hookable)\n+  // Runtime configuration\n+  runtime: {\n+    timezone: \"UTC\",\n+    locale: \"en-US\",\n+    deterministic: true,\n+    sandbox: true\n+  },\n+\n+  // Hooks configuration\n   hooks: {},\n-};\n+\n+  // Daemon configuration\n+  daemon: {\n+    pollMs: 1500,\n+    lookback: 600,\n+    maxPerTick: 50\n+  },\n+\n+  // Events configuration\n+  events: {\n+    directory: \"events\"\n+  }\n+};\n\\ No newline at end of file\n"
                 }
             ],
             "date": 1758046934640,

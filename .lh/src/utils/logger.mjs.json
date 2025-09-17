@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/utils/logger.mjs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1758072778987,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1758072778987,
+            "name": "Commit-0",
+            "content": "/**\n * GitVan v2 Logger - Simple, tagged console logger with configurable levels\n * Supports environment-based log level configuration\n */\n\nconst LVL = (process.env.GITVAN_LOG_LEVEL || \"info\").toLowerCase();\nconst LEVELS = { silent: 0, error: 1, warn: 2, info: 3, debug: 4 };\n\n/**\n * Create a tagged logger instance\n * @param {string} tag - Logger tag/namespace\n * @returns {object} Logger instance with level-aware methods\n */\nexport function createLogger(tag = \"gitvan\") {\n  const cur = LEVELS[LVL] ?? 3;\n  const fmt = (lvl, ...a) => console[lvl](`[${tag}]`, ...a);\n  \n  return {\n    level: LVL,\n    error: (...a) => cur >= 1 && fmt(\"error\", ...a),\n    warn: (...a) => cur >= 2 && fmt(\"warn\", ...a),\n    info: (...a) => cur >= 3 && fmt(\"log\", ...a),\n    debug: (...a) => cur >= 4 && fmt(\"log\", ...a),\n    child(sub) { \n      return createLogger(`${tag}:${sub}`); \n    }\n  };\n}\n\n// Default logger instance\nexport const logger = createLogger();\n\n"
+        }
+    ]
+}

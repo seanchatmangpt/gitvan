@@ -11,12 +11,12 @@
  */
 export function tagCreate(pred, meta) {
   if (!meta.tagsCreated?.length) return false;
-  
+
   if (typeof pred.tagCreate === "string") {
     const pattern = new RegExp(pred.tagCreate);
-    return meta.tagsCreated.some(tag => pattern.test(tag));
+    return meta.tagsCreated.some((tag) => pattern.test(tag));
   }
-  
+
   return true; // If no pattern specified, match any tag creation
 }
 
@@ -28,9 +28,9 @@ export function tagCreate(pred, meta) {
  */
 export function semverTag(pred, meta) {
   if (!pred.semverTag) return false;
-  
+
   const semverPattern = /^v?\d+\.\d+\.\d+(?:[-+].*)?$/;
-  return (meta.tagsCreated || []).some(tag => semverPattern.test(tag));
+  return (meta.tagsCreated || []).some((tag) => semverPattern.test(tag));
 }
 
 /**
@@ -41,8 +41,8 @@ export function semverTag(pred, meta) {
  */
 export function tagPrefix(pred, meta) {
   if (!pred.tagPrefix || !meta.tagsCreated?.length) return false;
-  
-  return meta.tagsCreated.some(tag => tag.startsWith(pred.tagPrefix));
+
+  return meta.tagsCreated.some((tag) => tag.startsWith(pred.tagPrefix));
 }
 
 /**
@@ -53,7 +53,6 @@ export function tagPrefix(pred, meta) {
  */
 export function tagSuffix(pred, meta) {
   if (!pred.tagSuffix || !meta.tagsCreated?.length) return false;
-  
-  return meta.tagsCreated.some(tag => tag.endsWith(pred.tagSuffix));
-}
 
+  return meta.tagsCreated.some((tag) => tag.endsWith(pred.tagSuffix));
+}

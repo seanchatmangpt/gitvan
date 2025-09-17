@@ -14,11 +14,11 @@ const BASE_URL = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
  * @param {boolean} options.stream - Whether to stream response
  * @returns {Promise<string>} Generated text
  */
-export async function generate({ 
-  model = "qwen3-coder:30b", 
-  prompt, 
-  options = {}, 
-  stream = false 
+export async function generate({
+  model = "qwen3-coder:30b",
+  prompt,
+  options = {},
+  stream = false,
 }) {
   const requestBody = {
     model,
@@ -29,22 +29,24 @@ export async function generate({
       top_p: 0.8,
       top_k: 20,
       repeat_penalty: 1.05,
-      ...options
-    }
+      ...options,
+    },
   };
 
   try {
     const response = await fetch(`${BASE_URL}/api/generate`, {
       method: "POST",
-      headers: { 
+      headers: {
         "Content-Type": "application/json",
-        "Accept": "application/json"
+        Accept: "application/json",
       },
-      body: JSON.stringify(requestBody)
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
-      throw new Error(`Ollama API error: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Ollama API error: ${response.status} ${response.statusText}`,
+      );
     }
 
     const data = await response.json();
@@ -66,7 +68,7 @@ export async function embed({ model = "qwen3-coder:30b", text }) {
     const response = await fetch(`${BASE_URL}/api/embeddings`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model, prompt: text })
+      body: JSON.stringify({ model, prompt: text }),
     });
 
     if (!response.ok) {
@@ -89,9 +91,9 @@ export async function checkModel(model = "qwen3-coder:30b") {
   try {
     const response = await fetch(`${BASE_URL}/api/tags`);
     if (!response.ok) return false;
-    
+
     const data = await response.json();
-    return data.models?.some(m => m.name === model) || false;
+    return data.models?.some((m) => m.name === model) || false;
   } catch {
     return false;
   }
@@ -107,7 +109,7 @@ export async function pullModel(model = "qwen3-coder:30b") {
     const response = await fetch(`${BASE_URL}/api/pull`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: model, stream: false })
+      body: JSON.stringify({ name: model, stream: false }),
     });
 
     if (!response.ok) {
@@ -117,4 +119,3 @@ export async function pullModel(model = "qwen3-coder:30b") {
     throw new Error(`Failed to pull model ${model}: ${error.message}`);
   }
 }
-

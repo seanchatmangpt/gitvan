@@ -5,7 +5,12 @@ import { join, extname } from "pathe";
 import { GitVanDaemon, startDaemon } from "./runtime/daemon.mjs";
 import { discoverEvents, loadEventDefinition } from "./runtime/events.mjs";
 import { readReceiptsRange } from "./runtime/receipt.mjs";
-import { discoverJobs, findJobFile, findAllJobs, loadJobDefinition } from "./runtime/jobs.mjs";
+import {
+  discoverJobs,
+  findJobFile,
+  findAllJobs,
+  loadJobDefinition,
+} from "./runtime/jobs.mjs";
 import { useGit } from "./composables/git.mjs";
 import { runJobWithContext } from "./runtime/boot.mjs";
 import { loadConfig } from "./runtime/config.mjs";
@@ -120,16 +125,24 @@ async function handlePack(action = "list", ...args) {
   const commandArgs = {
     args: {
       [action]: true,
-      ...parsedArgs
-    }
+      ...parsedArgs,
+    },
   };
 
   // Handle specific pack subcommands
-  if (action === "apply" || action === "plan" || action === "remove" || action === "update") {
+  if (
+    action === "apply" ||
+    action === "plan" ||
+    action === "remove" ||
+    action === "update"
+  ) {
     commandArgs.args.pack = parsedArgs.arg0 || parsedArgs.pack;
   }
 
-  return await packCommand.subCommands[action]?.run(commandArgs) || packCommand.run(commandArgs);
+  return (
+    (await packCommand.subCommands[action]?.run(commandArgs)) ||
+    packCommand.run(commandArgs)
+  );
 }
 
 async function handleScaffold(scaffold, ...args) {
@@ -138,22 +151,24 @@ async function handleScaffold(scaffold, ...args) {
   return await scaffoldCommand.run({ args: { scaffold, ...parsedArgs } });
 }
 
-async function handleMarketplace(action = 'browse', ...args) {
+async function handleMarketplace(action = "browse", ...args) {
   // Use new marketplace command handler
   const parsedArgs = parseArgs(args);
 
   // For search command, the first non-flag argument is the query
-  if (action === 'search' && args.length > 0 && !args[0].startsWith('--')) {
+  if (action === "search" && args.length > 0 && !args[0].startsWith("--")) {
     parsedArgs.query = args[0];
   }
 
   // For inspect command, the first non-flag argument is the pack
-  if (action === 'inspect' && args.length > 0 && !args[0].startsWith('--')) {
+  if (action === "inspect" && args.length > 0 && !args[0].startsWith("--")) {
     parsedArgs.pack = args[0];
   }
 
   if (marketplaceCommand.subCommands[action]) {
-    return await marketplaceCommand.subCommands[action].run({ args: parsedArgs });
+    return await marketplaceCommand.subCommands[action].run({
+      args: parsedArgs,
+    });
   }
 
   return await marketplaceCommand.run({ args: parsedArgs });
@@ -162,7 +177,7 @@ async function handleMarketplace(action = 'browse', ...args) {
 async function handleCompose(...args) {
   // Use new compose command handler
   const parsedArgs = parseArgs(args);
-  parsedArgs.packs = args.filter(arg => !arg.startsWith('--'));
+  parsedArgs.packs = args.filter((arg) => !arg.startsWith("--"));
   return await composeCommand.run({ args: parsedArgs });
 }
 
@@ -309,8 +324,8 @@ async function handleJob(action = "list", ...args) {
             log: console.log,
             warn: console.warn,
             error: console.error,
-            info: console.info
-          }
+            info: console.info,
+          },
         };
 
         console.log(`Running job: ${jobName}`);
@@ -360,8 +375,8 @@ async function handleRun(jobName) {
         log: console.log,
         warn: console.warn,
         error: console.error,
-        info: console.info
-      }
+        info: console.info,
+      },
     };
 
     console.log(`Running job: ${jobName}`);
@@ -425,6 +440,29 @@ async function handleLLM(subcommand = "call", ...args) {
       if (!availability.available) {
         console.log(`Message: ${availability.message}`);
       }
+      break;
+
+    case "help":
+      console.log("GitVan LLM Commands:");
+      console.log();
+      console.log("  call <prompt>              Generate text using AI");
+      console.log("  models                     Show available AI models");
+      console.log("  help                       Show this help");
+      console.log();
+      console.log("Options:");
+      console.log(
+        "  --model <name>             AI model name (default: qwen3-coder:30b)",
+      );
+      console.log(
+        "  --temp <number>            Temperature 0.0-1.0 (default: 0.7)",
+      );
+      console.log();
+      console.log("Examples:");
+      console.log('  gitvan llm call "What is GitVan?"');
+      console.log(
+        '  gitvan llm call "Generate a JavaScript function" --model qwen3-coder:30b',
+      );
+      console.log("  gitvan llm models");
       break;
 
     default:

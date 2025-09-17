@@ -3,11 +3,15 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 1,
             "patches": [
                 {
                     "date": 1758057329097,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1758072826353,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -2,11 +2,10 @@\n  * GitVan v2 Cron CLI - Cron job management commands\n  * Provides commands for listing, starting, and managing cron jobs\n  */\n \n-import { startCronScheduler } from \"../jobs/cron.mjs\";\n-import { scanJobs } from \"../jobs/scan.mjs\";\n-import { loadOptions } from \"../config/loader.mjs\";\n+import { startCronScheduler, scanJobs } from \"../jobs/cron.mjs\";\n+import { loadConfig } from \"../runtime/config.mjs\";\n import { createLogger } from \"../utils/logger.mjs\";\n \n const logger = createLogger(\"cron-cli\");\n \n@@ -16,9 +15,9 @@\n  * @param {object} args - Command arguments\n  * @returns {Promise<void>}\n  */\n export async function cronCommand(subcommand = \"list\", args = {}) {\n-  const config = await loadOptions();\n+  const config = await loadConfig();\n \n   switch (subcommand) {\n     case \"list\":\n       return await listCronJobs(config);\n@@ -43,9 +42,9 @@\n  * @returns {Promise<void>}\n  */\n async function listCronJobs(config) {\n   try {\n-    const jobs = await scanJobs({ cwd: config.rootDir });\n+    const jobs = await scanJobs({ cwd: config.rootDir || process.cwd() });\n     const cronJobs = jobs.filter((job) => job.cron);\n \n     if (cronJobs.length === 0) {\n       console.log(\"No cron jobs found\");\n@@ -55,11 +54,11 @@\n     console.log(`Found ${cronJobs.length} cron job(s):`);\n     console.log();\n \n     for (const job of cronJobs) {\n-      console.log(`📅 ${job.id || job.filename}`);\n+      console.log(`📅 ${job.id || job.name}`);\n       console.log(`   Cron: ${job.cron}`);\n-      console.log(`   File: ${job.filePath}`);\n+      console.log(`   File: ${job.relativePath}`);\n       if (job.meta?.desc) {\n         console.log(`   Desc: ${job.meta.desc}`);\n       }\n       console.log();\n@@ -77,9 +76,9 @@\n  * @returns {Promise<void>}\n  */\n async function dryRunCronJobs(config, at) {\n   try {\n-    const jobs = await scanJobs({ cwd: config.rootDir });\n+    const jobs = await scanJobs({ cwd: config.rootDir || process.cwd() });\n     const cronJobs = jobs.filter((job) => job.cron);\n     const checkTime = at ? new Date(at) : new Date();\n \n     console.log(`Dry run for ${checkTime.toISOString()}:`);\n@@ -100,9 +99,9 @@\n     }\n \n     console.log(`Jobs that would run:`);\n     for (const job of matchingJobs) {\n-      console.log(`  - ${job.id || job.filename} (${job.cron})`);\n+      console.log(`  - ${job.id || job.name} (${job.cron})`);\n     }\n   } catch (error) {\n     logger.error(\"Failed to dry run cron jobs:\", error.message);\n     throw error;\n"
                 }
             ],
             "date": 1758057329097,

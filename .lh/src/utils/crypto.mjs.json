@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/utils/crypto.mjs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1758072785037,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1758072785037,
+            "name": "Commit-0",
+            "content": "/**\n * GitVan v2 Crypto Utilities - Content hashing and fingerprinting\n * Provides deterministic hashing for receipts and content verification\n */\n\nimport { createHash } from \"node:crypto\";\n\n/**\n * Generate SHA256 hash as hex string\n * @param {string|Buffer} input - Input to hash\n * @returns {string} SHA256 hash as hex\n */\nexport function sha256Hex(input) {\n  return createHash(\"sha256\").update(input).digest(\"hex\");\n}\n\n/**\n * Generate content fingerprint for deterministic identification\n * @param {object} obj - Object to fingerprint\n * @returns {string} Short fingerprint with fp_ prefix\n */\nexport function fingerprint(obj) {\n  const stable = JSON.stringify(obj, Object.keys(obj).sort());\n  return \"fp_\" + sha256Hex(stable).slice(0, 16);\n}\n\n/**\n * Generate receipt hash for verification\n * @param {object} receipt - Receipt object\n * @returns {string} Receipt hash\n */\nexport function receiptHash(receipt) {\n  const { kind, id, status, ts, commit, action, env, outputHash, artifacts } = receipt;\n  const content = JSON.stringify({\n    kind, id, status, ts, commit, action, env, outputHash, artifacts\n  });\n  return sha256Hex(content);\n}\n\n/**\n * Generate job fingerprint for caching and identification\n * @param {object} job - Job definition\n * @returns {string} Job fingerprint\n */\nexport function jobFingerprint(job) {\n  const { id, kind, cron, meta, on, mode, filename, version } = job;\n  return fingerprint({ id, kind, cron, meta, on, mode, filename, version });\n}\n\n/**\n * Generate deterministic seed for reproducible operations\n * @param {string} base - Base string for seed\n * @param {object} context - Additional context\n * @returns {number} Deterministic seed\n */\nexport function generateSeed(base, context = {}) {\n  const content = JSON.stringify({ base, context });\n  const hash = sha256Hex(content);\n  return parseInt(hash.slice(0, 8), 16);\n}\n\n"
+        }
+    ]
+}

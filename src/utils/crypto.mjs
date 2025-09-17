@@ -30,9 +30,18 @@ export function fingerprint(obj) {
  * @returns {string} Receipt hash
  */
 export function receiptHash(receipt) {
-  const { kind, id, status, ts, commit, action, env, outputHash, artifacts } = receipt;
+  const { kind, id, status, ts, commit, action, env, outputHash, artifacts } =
+    receipt;
   const content = JSON.stringify({
-    kind, id, status, ts, commit, action, env, outputHash, artifacts
+    kind,
+    id,
+    status,
+    ts,
+    commit,
+    action,
+    env,
+    outputHash,
+    artifacts,
   });
   return sha256Hex(content);
 }
@@ -58,4 +67,3 @@ export function generateSeed(base, context = {}) {
   const hash = sha256Hex(content);
   return parseInt(hash.slice(0, 8), 16);
 }
-

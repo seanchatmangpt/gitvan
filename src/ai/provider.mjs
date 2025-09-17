@@ -223,4 +223,3 @@ async function embedWithHTTP({ model, text, config }) {
   // Implementation for generic HTTP embedding providers
   throw new Error("HTTP embedding provider not yet implemented");
 }
-

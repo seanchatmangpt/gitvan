@@ -15,19 +15,19 @@ const matchers = {
   pathAdded: PathMatchers.pathAdded,
   pathModified: PathMatchers.pathModified,
   pathDeleted: PathMatchers.pathDeleted,
-  
+
   // Tag matchers
   tagCreate: TagMatchers.tagCreate,
   semverTag: TagMatchers.semverTag,
   tagPrefix: TagMatchers.tagPrefix,
   tagSuffix: TagMatchers.tagSuffix,
-  
+
   // Merge matchers
   mergeTo: MergeMatchers.mergeTo,
   branchCreate: MergeMatchers.branchCreate,
   mergeFrom: MergeMatchers.mergeFrom,
   pullRequest: MergeMatchers.pullRequest,
-  
+
   // Commit matchers
   message: CommitMatchers.message,
   authorEmail: CommitMatchers.authorEmail,
@@ -47,21 +47,21 @@ export function matches(predicate, meta) {
   if (!predicate || typeof predicate !== "object") {
     return false;
   }
-  
+
   // Handle 'any' logic - any of the sub-predicates must match
   if (predicate.any?.length) {
-    return predicate.any.some(subPred => matches(subPred, meta));
+    return predicate.any.some((subPred) => matches(subPred, meta));
   }
-  
+
   // Handle 'all' logic - all sub-predicates must match
   if (predicate.all?.length) {
-    return predicate.all.every(subPred => matches(subPred, meta));
+    return predicate.all.every((subPred) => matches(subPred, meta));
   }
-  
+
   // Check individual matchers
   for (const [key, value] of Object.entries(predicate)) {
     if (key === "any" || key === "all") continue;
-    
+
     const matcher = matchers[key];
     if (matcher) {
       const subPred = { [key]: value };
@@ -70,7 +70,7 @@ export function matches(predicate, meta) {
       }
     }
   }
-  
+
   // If only 'all' array was present and all passed, it's a match
   return !!predicate.all?.length;
 }
@@ -90,12 +90,12 @@ export function getAvailableMatchers() {
  */
 export function validatePredicate(predicate) {
   const errors = [];
-  
+
   if (!predicate || typeof predicate !== "object") {
     errors.push("Predicate must be an object");
     return { isValid: false, errors };
   }
-  
+
   // Check for unknown matchers
   const availableMatchers = getAvailableMatchers();
   for (const key of Object.keys(predicate)) {
@@ -104,7 +104,7 @@ export function validatePredicate(predicate) {
       errors.push(`Unknown matcher: ${key}`);
     }
   }
-  
+
   // Validate 'any' and 'all' arrays
   if (predicate.any && !Array.isArray(predicate.any)) {
     errors.push("'any' must be an array");
@@ -112,10 +112,9 @@ export function validatePredicate(predicate) {
   if (predicate.all && !Array.isArray(predicate.all)) {
     errors.push("'all' must be an array");
   }
-  
+
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 }
-

@@ -13,17 +13,12 @@ export const GitVanDefaults = {
     scan: {
       patterns: [
         "jobs/**/*.mjs",
-        "jobs/**/*.cron.mjs", 
+        "jobs/**/*.cron.mjs",
         "jobs/**/*.evt.mjs",
-        "jobs/**/*.js"
+        "jobs/**/*.js",
       ],
-      ignore: [
-        "node_modules/**",
-        ".git/**",
-        "**/*.test.*",
-        "**/*.spec.*"
-      ]
-    }
+      ignore: ["node_modules/**", ".git/**", "**/*.test.*", "**/*.spec.*"],
+    },
   },
 
   // Template configuration
@@ -32,21 +27,21 @@ export const GitVanDefaults = {
     dirs: ["templates"],
     autoescape: false,
     noCache: false,
-    filters: ["inflection", "json", "slug"]
+    filters: ["inflection", "json", "slug"],
   },
 
   // Receipt configuration
   receipts: {
     ref: "refs/notes/gitvan/results",
     enabled: true,
-    compress: false
+    compress: false,
   },
 
   // Lock configuration
   locks: {
     ref: "refs/gitvan/locks",
     timeout: 30000,
-    retries: 3
+    retries: 3,
   },
 
   // AI configuration
@@ -60,8 +55,8 @@ export const GitVanDefaults = {
       temperature: 0.7,
       top_p: 0.8,
       top_k: 20,
-      repeat_penalty: 1.05
-    }
+      repeat_penalty: 1.05,
+    },
   },
 
   // Runtime configuration
@@ -69,7 +64,7 @@ export const GitVanDefaults = {
     timezone: "UTC",
     locale: "en-US",
     deterministic: true,
-    sandbox: true
+    sandbox: true,
   },
 
   // Hooks configuration
@@ -79,11 +74,11 @@ export const GitVanDefaults = {
   daemon: {
     pollMs: 1500,
     lookback: 600,
-    maxPerTick: 50
+    maxPerTick: 50,
   },
 
   // Events configuration
   events: {
-    directory: "events"
-  }
+    directory: "events",
+  },
 };

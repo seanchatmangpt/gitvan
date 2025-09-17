@@ -1,0 +1,18 @@
+{
+    "sourceFile": "jobs/chat/chat-fp_52b6f3ffbf50835c.mjs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1758072828641,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1758072828641,
+            "name": "Commit-0",
+            "content": "import { defineJob } from \"../../src/jobs/define.mjs\";\n\nexport default defineJob({\n  meta: { \n    desc: \"Simple hello world job\", \n    tags: [\"hello\", \"world\"]\n  },\n  async run({ ctx, payload }) {\n    const { useGit } = await import(\"../../src/composables/git.mjs\");\n    const { useTemplate } = await import(\"../../src/composables/template.mjs\");\n    const git = useGit();\n    const tpl = await useTemplate();\n    \n    console.log(\"Hello World!\");\n    \n    return { ok: true, artifacts: [] };\n  }\n});"
+        }
+    ]
+}

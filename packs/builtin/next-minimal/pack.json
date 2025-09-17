@@ -1,0 +1,25 @@
+{
+  "id": "builtin/next-minimal",
+  "name": "Next.js Minimal Starter",
+  "version": "1.0.0",
+  "description": "A minimal Next.js application starter pack",
+  "tags": [
+    "nextjs",
+    "react",
+    "minimal",
+    "builtin"
+  ],
+  "capabilities": [
+    "scaffold",
+    "development"
+  ],
+  "author": "GitVan",
+  "license": "MIT",
+  "modes": [
+    "scaffold",
+    "dev"
+  ],
+  "requires": {
+    "node": ">=18.0.0"
+  }
+}

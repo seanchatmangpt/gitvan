@@ -14,19 +14,18 @@ const LEVELS = { silent: 0, error: 1, warn: 2, info: 3, debug: 4 };
 export function createLogger(tag = "gitvan") {
   const cur = LEVELS[LVL] ?? 3;
   const fmt = (lvl, ...a) => console[lvl](`[${tag}]`, ...a);
-  
+
   return {
     level: LVL,
     error: (...a) => cur >= 1 && fmt("error", ...a),
     warn: (...a) => cur >= 2 && fmt("warn", ...a),
     info: (...a) => cur >= 3 && fmt("log", ...a),
     debug: (...a) => cur >= 4 && fmt("log", ...a),
-    child(sub) { 
-      return createLogger(`${tag}:${sub}`); 
-    }
+    child(sub) {
+      return createLogger(`${tag}:${sub}`);
+    },
   };
 }
 
 // Default logger instance
 export const logger = createLogger();
-

@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/utils/fs.mjs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1758072782492,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1758072782492,
+            "name": "Commit-0",
+            "content": "/**\n * GitVan v2 Safe Filesystem Utilities - Path-safe file operations\n * Prevents directory traversal attacks and ensures operations stay within bounds\n */\n\nimport { resolve, normalize, sep } from \"pathe\";\nimport { mkdirSync, writeFileSync, readFileSync, existsSync, statSync } from \"node:fs\";\n\n/**\n * Safely resolve path within root directory\n * @param {string} root - Root directory\n * @param {string} p - Path to resolve\n * @returns {string} Absolute resolved path\n * @throws {Error} If path escapes root directory\n */\nexport function resolveSafe(root, p) {\n  const abs = normalize(resolve(root, p));\n  const normRoot = normalize(resolve(root));\n  \n  if (!abs.startsWith(normRoot + sep) && abs !== normRoot) {\n    throw new Error(`Path escapes root: ${p}`);\n  }\n  \n  return abs;\n}\n\n/**\n * Safely write file within root directory\n * @param {string} root - Root directory\n * @param {string} out - Output path relative to root\n * @param {string} contents - File contents\n * @returns {string} Absolute path of written file\n */\nexport function writeFileSafe(root, out, contents) {\n  const abs = resolveSafe(root, out);\n  const dir = abs.substring(0, abs.lastIndexOf(sep));\n  \n  if (!existsSync(dir)) {\n    mkdirSync(dir, { recursive: true });\n  }\n  \n  writeFileSync(abs, contents);\n  return abs;\n}\n\n/**\n * Safely read file within root directory\n * @param {string} root - Root directory\n * @param {string} p - File path relative to root\n * @param {string} enc - Encoding (default: utf8)\n * @returns {string} File contents\n */\nexport function readFileSafe(root, p, enc = \"utf8\") {\n  return readFileSync(resolveSafe(root, p), enc);\n}\n\n/**\n * Check if path exists within root directory\n * @param {string} root - Root directory\n * @param {string} p - Path relative to root\n * @returns {boolean} True if path exists\n */\nexport function existsSafe(root, p) {\n  try {\n    const abs = resolveSafe(root, p);\n    return existsSync(abs);\n  } catch {\n    return false;\n  }\n}\n\n/**\n * Get file stats within root directory\n * @param {string} root - Root directory\n * @param {string} p - Path relative to root\n * @returns {object|null} File stats or null if not found\n */\nexport function statSafe(root, p) {\n  try {\n    const abs = resolveSafe(root, p);\n    return statSync(abs);\n  } catch {\n    return null;\n  }\n}\n\n/**\n * Ensure directory exists within root directory\n * @param {string} root - Root directory\n * @param {string} p - Directory path relative to root\n * @returns {string} Absolute path of directory\n */\nexport function ensureDirSafe(root, p) {\n  const abs = resolveSafe(root, p);\n  \n  if (!existsSync(abs)) {\n    mkdirSync(abs, { recursive: true });\n  }\n  \n  return abs;\n}\n\n"
+        }
+    ]
+}

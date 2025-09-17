@@ -4,7 +4,13 @@
  */
 
 import { resolve, normalize, sep } from "pathe";
-import { mkdirSync, writeFileSync, readFileSync, existsSync, statSync } from "node:fs";
+import {
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  existsSync,
+  statSync,
+} from "node:fs";
 
 /**
  * Safely resolve path within root directory
@@ -16,11 +22,11 @@ import { mkdirSync, writeFileSync, readFileSync, existsSync, statSync } from "no
 export function resolveSafe(root, p) {
   const abs = normalize(resolve(root, p));
   const normRoot = normalize(resolve(root));
-  
+
   if (!abs.startsWith(normRoot + sep) && abs !== normRoot) {
     throw new Error(`Path escapes root: ${p}`);
   }
-  
+
   return abs;
 }
 
@@ -34,11 +40,11 @@ export function resolveSafe(root, p) {
 export function writeFileSafe(root, out, contents) {
   const abs = resolveSafe(root, out);
   const dir = abs.substring(0, abs.lastIndexOf(sep));
-  
+
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });
   }
-  
+
   writeFileSync(abs, contents);
   return abs;
 }
@@ -92,11 +98,10 @@ export function statSafe(root, p) {
  */
 export function ensureDirSafe(root, p) {
   const abs = resolveSafe(root, p);
-  
+
   if (!existsSync(abs)) {
     mkdirSync(abs, { recursive: true });
   }
-  
+
   return abs;
 }
-

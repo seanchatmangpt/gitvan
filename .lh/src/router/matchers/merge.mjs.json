@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/router/matchers/merge.mjs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1758072789343,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1758072789343,
+            "name": "Commit-0",
+            "content": "/**\n * GitVan v2 Merge Matchers - Git merge and branch-based event predicates\n * Handles merge-to-branch and branch creation events\n */\n\n/**\n * Match merges to specific branch\n * @param {object} pred - Predicate object with mergeTo string\n * @param {object} meta - Event metadata with mergedTo string\n * @returns {boolean} True if merge target matches\n */\nexport function mergeTo(pred, meta) {\n  if (!meta.mergedTo) return false;\n  \n  const target = pred.mergeTo;\n  if (typeof target === \"string\") {\n    return meta.mergedTo === target;\n  }\n  \n  return false;\n}\n\n/**\n * Match branch creation events\n * @param {object} pred - Predicate object with branchCreate pattern\n * @param {object} meta - Event metadata with branchCreated string\n * @returns {boolean} True if created branch matches pattern\n */\nexport function branchCreate(pred, meta) {\n  if (!meta.branchCreated) return false;\n  \n  const pattern = pred.branchCreate;\n  if (!pattern) return true; // Match any branch creation if no pattern\n  \n  if (typeof pattern === \"string\") {\n    const regex = new RegExp(pattern);\n    return regex.test(meta.branchCreated);\n  }\n  \n  return false;\n}\n\n/**\n * Match merges from specific branch\n * @param {object} pred - Predicate object with mergeFrom pattern\n * @param {object} meta - Event metadata with mergedFrom string\n * @returns {boolean} True if merge source matches pattern\n */\nexport function mergeFrom(pred, meta) {\n  if (!meta.mergedFrom) return false;\n  \n  const pattern = pred.mergeFrom;\n  if (!pattern) return true; // Match any merge source if no pattern\n  \n  if (typeof pattern === \"string\") {\n    const regex = new RegExp(pattern);\n    return regex.test(meta.mergedFrom);\n  }\n  \n  return false;\n}\n\n/**\n * Match pull request events\n * @param {object} pred - Predicate object with pullRequest boolean\n * @param {object} meta - Event metadata with pullRequest object\n * @returns {boolean} True if pull request event\n */\nexport function pullRequest(pred, meta) {\n  if (!pred.pullRequest) return false;\n  \n  return !!meta.pullRequest;\n}\n\n"
+        }
+    ]
+}

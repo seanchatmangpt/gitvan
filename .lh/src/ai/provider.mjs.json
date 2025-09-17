@@ -3,11 +3,15 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 1,
             "patches": [
                 {
                     "date": 1758057329097,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1758072805796,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -222,4 +222,5 @@\n async function embedWithHTTP({ model, text, config }) {\n   // Implementation for generic HTTP embedding providers\n   throw new Error(\"HTTP embedding provider not yet implemented\");\n }\n+\n"
                 }
             ],
             "date": 1758057329097,

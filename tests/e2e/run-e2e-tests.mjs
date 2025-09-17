@@ -17,7 +17,7 @@ async function runE2ETests() {
 
   const testFiles = [
     "tests/e2e/chat-cli.test.mjs",
-    "tests/e2e/cron-cli.test.mjs", 
+    "tests/e2e/cron-cli.test.mjs",
     "tests/e2e/daemon-cli.test.mjs",
     "tests/e2e/event-cli.test.mjs",
     "tests/e2e/audit-cli.test.mjs",
@@ -31,10 +31,10 @@ async function runE2ETests() {
 
   for (const testFile of testFiles) {
     console.log(`\n📋 Running ${testFile}...`);
-    
+
     try {
       const result = await runTestFile(testFile);
-      
+
       if (result.success) {
         console.log(`✅ ${testFile} - PASSED`);
         passedTests += result.testCount;
@@ -43,7 +43,7 @@ async function runE2ETests() {
         failedTests += result.testCount;
         console.log(`   Error: ${result.error}`);
       }
-      
+
       totalTests += result.testCount;
     } catch (error) {
       console.log(`❌ ${testFile} - ERROR`);
@@ -58,8 +58,10 @@ async function runE2ETests() {
   console.log(`Total Tests: ${totalTests}`);
   console.log(`Passed: ${passedTests}`);
   console.log(`Failed: ${failedTests}`);
-  console.log(`Success Rate: ${totalTests > 0 ? ((passedTests / totalTests) * 100).toFixed(1) : 0}%`);
-  
+  console.log(
+    `Success Rate: ${totalTests > 0 ? ((passedTests / totalTests) * 100).toFixed(1) : 0}%`,
+  );
+
   if (failedTests === 0) {
     console.log("\n🎉 All E2E tests passed!");
     process.exit(0);
@@ -90,7 +92,7 @@ function runTestFile(testFile) {
     child.on("close", (code) => {
       const output = stdout + stderr;
       const testCount = (output.match(/✓|×/g) || []).length;
-      
+
       resolve({
         success: code === 0,
         testCount,

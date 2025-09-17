@@ -17,7 +17,7 @@ const logger = createLogger("job-scanner");
 export async function scanJobs(options = {}) {
   const { cwd = process.cwd() } = options;
   const jobsDir = join(cwd, "jobs");
-  
+
   const allJobs = discoverJobs(jobsDir);
   const scannedJobs = [];
 
@@ -30,7 +30,7 @@ export async function scanJobs(options = {}) {
           definition: jobDef,
           cron: jobDef.cron,
           meta: jobDef.meta || {},
-          hasRun: typeof jobDef.run === 'function'
+          hasRun: typeof jobDef.run === "function",
         });
       }
     } catch (error) {
@@ -49,8 +49,8 @@ export async function scanJobs(options = {}) {
  */
 export async function scanJobsWithCriteria(options = {}, criteria = {}) {
   const allJobs = await scanJobs(options);
-  
-  return allJobs.filter(job => {
+
+  return allJobs.filter((job) => {
     if (criteria.cron && !job.cron) return false;
     if (criteria.hasRun && !job.hasRun) return false;
     if (criteria.meta && criteria.meta.key) {
@@ -67,13 +67,14 @@ export async function scanJobsWithCriteria(options = {}, criteria = {}) {
  */
 export async function getJobStats(options = {}) {
   const jobs = await scanJobs(options);
-  
+
   const stats = {
     total: jobs.length,
-    withCron: jobs.filter(j => j.cron).length,
-    withMeta: jobs.filter(j => j.meta && Object.keys(j.meta).length > 0).length,
-    valid: jobs.filter(j => j.hasRun).length,
-    invalid: jobs.filter(j => !j.hasRun).length
+    withCron: jobs.filter((j) => j.cron).length,
+    withMeta: jobs.filter((j) => j.meta && Object.keys(j.meta).length > 0)
+      .length,
+    valid: jobs.filter((j) => j.hasRun).length,
+    invalid: jobs.filter((j) => !j.hasRun).length,
   };
 
   return stats;

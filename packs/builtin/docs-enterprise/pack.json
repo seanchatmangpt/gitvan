@@ -1,0 +1,25 @@
+{
+  "id": "builtin/docs-enterprise",
+  "name": "Enterprise Documentation",
+  "version": "1.0.0",
+  "description": "Enterprise-grade documentation starter pack",
+  "tags": [
+    "documentation",
+    "enterprise",
+    "vitepress",
+    "builtin"
+  ],
+  "capabilities": [
+    "scaffold",
+    "documentation"
+  ],
+  "author": "GitVan",
+  "license": "MIT",
+  "modes": [
+    "scaffold",
+    "docs"
+  ],
+  "requires": {
+    "node": ">=18.0.0"
+  }
+}

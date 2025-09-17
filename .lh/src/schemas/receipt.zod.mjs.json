@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/schemas/receipt.zod.mjs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1758072793089,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1758072793088,
+            "name": "Commit-0",
+            "content": "/**\n * GitVan v2 Receipt Schema - Zod validation for execution receipts\n * Defines the structure and validation rules for GitVan receipts\n */\n\nimport { z } from \"zod\";\n\n// Receipt schema for audit trail\nexport const Receipt = z.object({\n  kind: z.literal(\"workflow-receipt\"),\n  id: z.string(),\n  status: z.enum([\"OK\", \"ERROR\", \"SKIP\"]),\n  ts: z.string(),\n  commit: z.string().optional(),\n  action: z.string(),\n  env: z.record(z.string(), z.any()).optional(),\n  outputHash: z.string().optional(),\n  exitCode: z.number().optional(),\n  error: z.string().optional(),\n  artifacts: z.array(z.string()).default([]),\n  fingerprint: z.string().optional(),\n  \n  // Additional metadata\n  duration: z.number().optional(),\n  worktree: z.string().optional(),\n  branch: z.string().optional(),\n  model: z.string().optional(), // For AI-generated content\n  modelParams: z.record(z.string(), z.any()).optional(),\n});\n\n// Receipt collection schema\nexport const ReceiptCollection = z.object({\n  kind: z.literal(\"receipt-collection\"),\n  timestamp: z.string(),\n  count: z.number(),\n  receipts: z.array(Receipt),\n  summary: z.object({\n    ok: z.number(),\n    error: z.number(),\n    skip: z.number(),\n  }).optional(),\n});\n\n// Receipt query schema\nexport const ReceiptQuery = z.object({\n  since: z.string().optional(),\n  until: z.string().optional(),\n  status: z.enum([\"OK\", \"ERROR\", \"SKIP\"]).optional(),\n  action: z.string().optional(),\n  commit: z.string().optional(),\n  worktree: z.string().optional(),\n  branch: z.string().optional(),\n  limit: z.number().positive().optional(),\n});\n\n"
+        }
+    ]
+}

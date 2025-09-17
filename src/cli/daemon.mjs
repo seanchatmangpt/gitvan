@@ -126,4 +126,3 @@ async function restartCommand(args) {
     throw error;
   }
 }
-

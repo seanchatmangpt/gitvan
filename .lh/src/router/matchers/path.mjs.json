@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/router/matchers/path.mjs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1758072786327,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1758072786327,
+            "name": "Commit-0",
+            "content": "/**\n * GitVan v2 Path Matchers - File path-based event predicates\n * Handles pathChanged, pathAdded, pathModified with glob pattern matching\n */\n\n/**\n * Simple glob pattern matcher (supports * wildcard only)\n * @param {string} pattern - Glob pattern\n * @returns {RegExp} Compiled regex\n */\nfunction compileGlob(pattern) {\n  const escaped = pattern.split(\"*\").map(escapeRegex).join(\".*\");\n  return new RegExp(\"^\" + escaped + \"$\");\n}\n\n/**\n * Escape regex special characters\n * @param {string} str - String to escape\n * @returns {string} Escaped string\n */\nfunction escapeRegex(str) {\n  return str.replace(/[.*+?^${}()|[\\]\\\\]/g, \"\\\\$&\");\n}\n\n/**\n * Check if any files match the given glob patterns\n * @param {Array<string>} globs - Array of glob patterns\n * @param {Array<string>} files - Array of file paths\n * @returns {boolean} True if any file matches any pattern\n */\nfunction anyMatch(globs = [], files = []) {\n  if (!globs?.length || !files?.length) return false;\n  \n  const patterns = globs.map(compileGlob);\n  return files.some(file => patterns.some(pattern => pattern.test(file)));\n}\n\n/**\n * Match files that have changed\n * @param {object} pred - Predicate object with pathChanged array\n * @param {object} meta - Event metadata with filesChanged array\n * @returns {boolean} True if any changed file matches\n */\nexport function pathChanged(pred, meta) {\n  const files = meta.filesChanged || [];\n  return anyMatch(pred.pathChanged, files);\n}\n\n/**\n * Match files that have been added\n * @param {object} pred - Predicate object with pathAdded array\n * @param {object} meta - Event metadata with filesAdded array\n * @returns {boolean} True if any added file matches\n */\nexport function pathAdded(pred, meta) {\n  const files = meta.filesAdded || [];\n  return anyMatch(pred.pathAdded, files);\n}\n\n/**\n * Match files that have been modified\n * @param {object} pred - Predicate object with pathModified array\n * @param {object} meta - Event metadata with filesModified array\n * @returns {boolean} True if any modified file matches\n */\nexport function pathModified(pred, meta) {\n  const files = meta.filesModified || [];\n  return anyMatch(pred.pathModified, files);\n}\n\n/**\n * Match files that have been deleted\n * @param {object} pred - Predicate object with pathDeleted array\n * @param {object} meta - Event metadata with filesDeleted array\n * @returns {boolean} True if any deleted file matches\n */\nexport function pathDeleted(pred, meta) {\n  const files = meta.filesDeleted || [];\n  return anyMatch(pred.pathDeleted, files);\n}\n\n"
+        }
+    ]
+}

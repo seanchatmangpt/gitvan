@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/router/matchers/tag.mjs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1758072788183,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1758072788183,
+            "name": "Commit-0",
+            "content": "/**\n * GitVan v2 Tag Matchers - Git tag-based event predicates\n * Handles tag creation and semantic version tag detection\n */\n\n/**\n * Match created tags against pattern\n * @param {object} pred - Predicate object with tagCreate pattern\n * @param {object} meta - Event metadata with tagsCreated array\n * @returns {boolean} True if any created tag matches pattern\n */\nexport function tagCreate(pred, meta) {\n  if (!meta.tagsCreated?.length) return false;\n  \n  if (typeof pred.tagCreate === \"string\") {\n    const pattern = new RegExp(pred.tagCreate);\n    return meta.tagsCreated.some(tag => pattern.test(tag));\n  }\n  \n  return true; // If no pattern specified, match any tag creation\n}\n\n/**\n * Match semantic version tags\n * @param {object} pred - Predicate object with semverTag boolean\n * @param {object} meta - Event metadata with tagsCreated array\n * @returns {boolean} True if any created tag is semantic version\n */\nexport function semverTag(pred, meta) {\n  if (!pred.semverTag) return false;\n  \n  const semverPattern = /^v?\\d+\\.\\d+\\.\\d+(?:[-+].*)?$/;\n  return (meta.tagsCreated || []).some(tag => semverPattern.test(tag));\n}\n\n/**\n * Match tags with specific prefix\n * @param {object} pred - Predicate object with tagPrefix string\n * @param {object} meta - Event metadata with tagsCreated array\n * @returns {boolean} True if any created tag has prefix\n */\nexport function tagPrefix(pred, meta) {\n  if (!pred.tagPrefix || !meta.tagsCreated?.length) return false;\n  \n  return meta.tagsCreated.some(tag => tag.startsWith(pred.tagPrefix));\n}\n\n/**\n * Match tags with specific suffix\n * @param {object} pred - Predicate object with tagSuffix string\n * @param {object} meta - Event metadata with tagsCreated array\n * @returns {boolean} True if any created tag has suffix\n */\nexport function tagSuffix(pred, meta) {\n  if (!pred.tagSuffix || !meta.tagsCreated?.length) return false;\n  \n  return meta.tagsCreated.some(tag => tag.endsWith(pred.tagSuffix));\n}\n\n"
+        }
+    ]
+}

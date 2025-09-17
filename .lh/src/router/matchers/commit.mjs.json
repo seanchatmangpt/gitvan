@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/router/matchers/commit.mjs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1758072790616,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1758072790616,
+            "name": "Commit-0",
+            "content": "/**\n * GitVan v2 Commit Matchers - Commit message and author-based event predicates\n * Handles commit message patterns, author matching, and signature verification\n */\n\n/**\n * Match commit message against pattern\n * @param {object} pred - Predicate object with message pattern\n * @param {object} meta - Event metadata with message string\n * @returns {boolean} True if message matches pattern\n */\nexport function message(pred, meta) {\n  if (!pred.message) return false;\n  \n  const pattern = new RegExp(pred.message, \"i\"); // Case insensitive\n  return pattern.test(meta.message || \"\");\n}\n\n/**\n * Match commit author email against pattern\n * @param {object} pred - Predicate object with authorEmail pattern\n * @param {object} meta - Event metadata with authorEmail string\n * @returns {boolean} True if author email matches pattern\n */\nexport function authorEmail(pred, meta) {\n  if (!pred.authorEmail) return false;\n  \n  const pattern = new RegExp(pred.authorEmail, \"i\"); // Case insensitive\n  return pattern.test(meta.authorEmail || \"\");\n}\n\n/**\n * Match commit author name against pattern\n * @param {object} pred - Predicate object with authorName pattern\n * @param {object} meta - Event metadata with authorName string\n * @returns {boolean} True if author name matches pattern\n */\nexport function authorName(pred, meta) {\n  if (!pred.authorName) return false;\n  \n  const pattern = new RegExp(pred.authorName, \"i\"); // Case insensitive\n  return pattern.test(meta.authorName || \"\");\n}\n\n/**\n * Match signed commits\n * @param {object} pred - Predicate object with signed boolean\n * @param {object} meta - Event metadata with signed boolean\n * @returns {boolean} True if commit is signed (when required)\n */\nexport function signed(pred, meta) {\n  if (!pred.signed) return false;\n  \n  return !!meta.signed;\n}\n\n/**\n * Match commits with specific type (conventional commits)\n * @param {object} pred - Predicate object with commitType string\n * @param {object} meta - Event metadata with message string\n * @returns {boolean} True if commit type matches\n */\nexport function commitType(pred, meta) {\n  if (!pred.commitType) return false;\n  \n  const message = meta.message || \"\";\n  const typePattern = new RegExp(`^${pred.commitType}(?:\\\\(.*\\\\))?:`, \"i\");\n  return typePattern.test(message);\n}\n\n/**\n * Match commits with specific scope (conventional commits)\n * @param {object} pred - Predicate object with commitScope string\n * @param {object} meta - Event metadata with message string\n * @returns {boolean} True if commit scope matches\n */\nexport function commitScope(pred, meta) {\n  if (!pred.commitScope) return false;\n  \n  const message = meta.message || \"\";\n  const scopePattern = new RegExp(`^\\\\w+\\\\(${pred.commitScope}\\\\):`, \"i\");\n  return scopePattern.test(message);\n}\n\n"
+        }
+    ]
+}

@@ -67,11 +67,7 @@ describe("LLM CLI E2E Tests", () => {
 
   describe("llm call command", () => {
     it("should call LLM with a prompt", async () => {
-      const result = await runCliCommand([
-        "llm",
-        "call",
-        "What is GitVan?",
-      ]);
+      const result = await runCliCommand(["llm", "call", "What is GitVan?"]);
 
       expect(result.code).toBe(0);
       expect(result.stdout).toContain("GitVan");

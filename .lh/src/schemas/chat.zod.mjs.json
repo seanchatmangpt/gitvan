@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/schemas/chat.zod.mjs",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1758072796977,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1758072796977,
+            "name": "Commit-0",
+            "content": "/**\n * GitVan v2 Chat Schema - Zod validation for chat/AI interactions\n * Defines the structure and validation rules for conversational job generation\n */\n\nimport { z } from \"zod\";\n\n// Chat input schema\nexport const ChatInput = z.object({\n  prompt: z.string().min(1),\n  kind: z.enum([\"job\", \"event\", \"template\", \"config\"]).default(\"job\"),\n  id: z.string().optional(),\n  path: z.string().optional(),\n  \n  // Generation options\n  options: z.object({\n    temperature: z.number().min(0).max(2).optional(),\n    maxTokens: z.number().positive().optional(),\n    model: z.string().optional(),\n    stream: z.boolean().default(false),\n  }).optional(),\n  \n  // Context options\n  context: z.object({\n    includeExamples: z.boolean().default(true),\n    includeSchema: z.boolean().default(true),\n    includeDocs: z.boolean().default(false),\n  }).optional(),\n});\n\n// Chat output schema\nexport const ChatOutput = z.object({\n  ok: z.boolean().default(true),\n  id: z.string(),\n  mode: z.enum([\"on-demand\", \"cron\", \"event\"]).default(\"on-demand\"),\n  filePath: z.string(),\n  source: z.string(), // Generated module text\n  summary: z.string().optional(),\n  \n  // Generation metadata\n  model: z.string().optional(),\n  modelParams: z.record(z.string(), z.any()).optional(),\n  duration: z.number().optional(),\n  tokens: z.object({\n    prompt: z.number().optional(),\n    completion: z.number().optional(),\n    total: z.number().optional(),\n  }).optional(),\n  \n  // Validation results\n  validation: z.object({\n    isValid: z.boolean(),\n    errors: z.array(z.string()).optional(),\n    warnings: z.array(z.string()).optional(),\n  }).optional(),\n});\n\n// Chat conversation schema\nexport const ChatConversation = z.object({\n  id: z.string(),\n  messages: z.array(z.object({\n    role: z.enum([\"user\", \"assistant\", \"system\"]),\n    content: z.string(),\n    timestamp: z.string(),\n    metadata: z.record(z.string(), z.any()).optional(),\n  })),\n  context: z.record(z.string(), z.any()).optional(),\n  createdAt: z.string(),\n  updatedAt: z.string(),\n});\n\n// Chat receipt schema for AI-generated content\nexport const ChatReceipt = z.object({\n  kind: z.literal(\"chat-receipt\"),\n  id: z.string(),\n  prompt: z.string(),\n  model: z.string(),\n  modelParams: z.record(z.string(), z.any()),\n  generatedContent: z.string(),\n  validation: z.object({\n    isValid: z.boolean(),\n    errors: z.array(z.string()).optional(),\n  }),\n  timestamp: z.string(),\n  fingerprint: z.string(),\n});\n\n"
+        }
+    ]
+}

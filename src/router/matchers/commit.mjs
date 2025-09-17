@@ -11,7 +11,7 @@
  */
 export function message(pred, meta) {
   if (!pred.message) return false;
-  
+
   const pattern = new RegExp(pred.message, "i"); // Case insensitive
   return pattern.test(meta.message || "");
 }
@@ -24,7 +24,7 @@ export function message(pred, meta) {
  */
 export function authorEmail(pred, meta) {
   if (!pred.authorEmail) return false;
-  
+
   const pattern = new RegExp(pred.authorEmail, "i"); // Case insensitive
   return pattern.test(meta.authorEmail || "");
 }
@@ -37,7 +37,7 @@ export function authorEmail(pred, meta) {
  */
 export function authorName(pred, meta) {
   if (!pred.authorName) return false;
-  
+
   const pattern = new RegExp(pred.authorName, "i"); // Case insensitive
   return pattern.test(meta.authorName || "");
 }
@@ -50,7 +50,7 @@ export function authorName(pred, meta) {
  */
 export function signed(pred, meta) {
   if (!pred.signed) return false;
-  
+
   return !!meta.signed;
 }
 
@@ -62,7 +62,7 @@ export function signed(pred, meta) {
  */
 export function commitType(pred, meta) {
   if (!pred.commitType) return false;
-  
+
   const message = meta.message || "";
   const typePattern = new RegExp(`^${pred.commitType}(?:\\(.*\\))?:`, "i");
   return typePattern.test(message);
@@ -76,9 +76,8 @@ export function commitType(pred, meta) {
  */
 export function commitScope(pred, meta) {
   if (!pred.commitScope) return false;
-  
+
   const message = meta.message || "";
   const scopePattern = new RegExp(`^\\w+\\(${pred.commitScope}\\):`, "i");
   return scopePattern.test(message);
 }
-

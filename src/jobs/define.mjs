@@ -13,28 +13,22 @@
  * @returns {object} Job definition object
  */
 export function defineJob(definition) {
-  const {
-    meta = {},
-    run,
-    cron,
-    inputs,
-    ...otherProps
-  } = definition;
+  const { meta = {}, run, cron, inputs, ...otherProps } = definition;
 
-  if (typeof run !== 'function') {
-    throw new Error('Job definition must include a run function');
+  if (typeof run !== "function") {
+    throw new Error("Job definition must include a run function");
   }
 
   return {
     meta: {
-      desc: 'GitVan job',
+      desc: "GitVan job",
       tags: [],
-      ...meta
+      ...meta,
     },
     run,
     cron,
     inputs,
-    ...otherProps
+    ...otherProps,
   };
 }
 
@@ -47,7 +41,7 @@ export function defineJob(definition) {
 export function defineCronJob(cron, definition) {
   return defineJob({
     ...definition,
-    cron
+    cron,
   });
 }
 
@@ -60,6 +54,6 @@ export function defineCronJob(cron, definition) {
 export function defineEventJob(predicate, definition) {
   return defineJob({
     ...definition,
-    event: predicate
+    event: predicate,
   });
 }

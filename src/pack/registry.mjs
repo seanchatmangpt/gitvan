@@ -1,9 +1,14 @@
 import { createLogger } from '../utils/logger.mjs';
 import { sha256Hex, fingerprint } from '../utils/crypto.mjs';
 import { join, resolve, dirname } from 'pathe';
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, statSync, rmSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { z } from 'zod';
+import { execSync } from 'node:child_process';
+import { promisify } from 'node:util';
+import { exec } from 'node:child_process';
+
+const execAsync = promisify(exec);
 
 // Input validation schemas
 const PackInfoSchema = z.object({
@@ -32,38 +37,38 @@ export class PackRegistry {
     this.options = options;
     this.logger = createLogger('pack:registry');
     this.cacheDir = options.cacheDir || join(homedir(), '.gitvan', 'packs');
+    this.localPacksDir = options.localPacksDir || join(process.cwd(), 'packs');
+    this.builtinDir = join(this.localPacksDir, 'builtin');
     this.registryUrl = this.validateRegistryUrl(options.registryUrl);
     this.timeout = options.timeout || 30000;
     this.maxRetries = options.maxRetries || 3;
     this.index = null;
-    this.rateLimiter = new Map(); // Simple in-memory rate limiter
+    this.rateLimiter = new Map();
 
     this.initializeCache();
+    this.initializeBuiltins();
   }
 
   validateRegistryUrl(url) {
-    const defaultUrl = process.env.GITVAN_REGISTRY || 'https://registry.gitvan.dev';
-
-    if (!url) return defaultUrl;
-
-    try {
-      const parsed = new URL(url);
-      if (!['https:', 'http:'].includes(parsed.protocol)) {
-        this.logger.warn('Insecure registry URL, using default');
-        return defaultUrl;
-      }
-      return url;
-    } catch {
-      this.logger.warn('Invalid registry URL, using default');
-      return defaultUrl;
-    }
+    // Use local file system instead of remote registry
+    return 'local-filesystem';
   }
 
   initializeCache() {
     if (!existsSync(this.cacheDir)) {
       mkdirSync(this.cacheDir, { recursive: true });
     }
+    if (!existsSync(this.localPacksDir)) {
+      mkdirSync(this.localPacksDir, { recursive: true });
+    }
     this.loadLocalRegistry();
+  }
+
+  initializeBuiltins() {
+    if (!existsSync(this.builtinDir)) {
+      mkdirSync(this.builtinDir, { recursive: true });
+      this.createBuiltinPacks();
+    }
   }
 
   loadLocalRegistry() {
@@ -110,69 +115,96 @@ export class PackRegistry {
       license: pack.license,
       downloads: pack.downloads || 0,
       rating: pack.rating || 0,
-      lastModified: pack.lastModified
+      lastModified: pack.lastModified,
+      source: pack.source || 'unknown'
     };
   }
 
   async refreshIndex() {
-    if (!this.checkRateLimit('refresh', 60000)) { // 1 minute rate limit
-      this.logger.debug('Rate limited, using cached index');
-      return this.index || { packs: {} };
-    }
+    this.logger.debug('Refreshing local filesystem index');
 
-    let retries = 0;
-    while (retries < this.maxRetries) {
-      try {
-        this.logger.debug(`Fetching registry index (attempt ${retries + 1})`);
+    const packs = {};
 
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+    // Scan local packs directory
+    if (existsSync(this.localPacksDir)) {
+      const entries = readdirSync(this.localPacksDir, { withFileTypes: true });
 
-        const response = await fetch(`${this.registryUrl}/api/v1/index`, {
-          signal: controller.signal,
-          headers: {
-            'Accept': 'application/json',
-            'User-Agent': 'GitVan/2.0.0'
+      for (const entry of entries) {
+        if (entry.isDirectory()) {
+          const packPath = join(this.localPacksDir, entry.name);
+          const manifestPath = join(packPath, 'pack.json');
+
+          if (existsSync(manifestPath)) {
+            try {
+              const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+              const packId = manifest.id || entry.name;
+
+              packs[packId] = {
+                id: packId,
+                name: manifest.name || entry.name,
+                version: manifest.version || '1.0.0',
+                description: manifest.description || '',
+                tags: manifest.tags || [],
+                capabilities: manifest.capabilities || [],
+                author: manifest.author,
+                license: manifest.license,
+                lastModified: statSync(packPath).mtime.getTime(),
+                path: packPath,
+                source: 'local'
+              };
+            } catch (error) {
+              this.logger.warn(`Invalid pack manifest: ${manifestPath}`, error.message);
+            }
           }
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-
-        // Validate response structure
-        if (!data.packs || typeof data.packs !== 'object') {
-          throw new Error('Invalid registry response format');
-        }
-
-        this.index = {
-          ...data,
-          lastUpdated: Date.now()
-        };
-
-        // Cache the index locally
-        this.saveLocalRegistry();
-
-        this.logger.info(`Registry index refreshed: ${Object.keys(this.index.packs).length} packs`);
-
-        return this.index;
-      } catch (error) {
-        retries++;
-        this.logger.error(`Failed to refresh registry index (attempt ${retries}):`, error.message);
-
-        if (retries < this.maxRetries) {
-          await this.delay(Math.pow(2, retries) * 1000); // Exponential backoff
         }
       }
     }
 
-    // Return cached index if all retries failed
-    this.logger.warn('Using cached registry index due to network failures');
-    return this.index || { packs: {} };
+    // Scan builtin packs
+    if (existsSync(this.builtinDir)) {
+      const entries = readdirSync(this.builtinDir, { withFileTypes: true });
+
+      for (const entry of entries) {
+        if (entry.isDirectory()) {
+          const packPath = join(this.builtinDir, entry.name);
+          const manifestPath = join(packPath, 'pack.json');
+
+          if (existsSync(manifestPath)) {
+            try {
+              const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+              const packId = `builtin/${entry.name}`;
+
+              packs[packId] = {
+                id: packId,
+                name: manifest.name || entry.name,
+                version: manifest.version || '1.0.0',
+                description: manifest.description || '',
+                tags: [...(manifest.tags || []), 'builtin'],
+                capabilities: manifest.capabilities || [],
+                author: manifest.author || 'GitVan',
+                license: manifest.license || 'MIT',
+                lastModified: statSync(packPath).mtime.getTime(),
+                path: packPath,
+                source: 'builtin'
+              };
+            } catch (error) {
+              this.logger.warn(`Invalid builtin pack manifest: ${manifestPath}`, error.message);
+            }
+          }
+        }
+      }
+    }
+
+    this.index = {
+      packs,
+      lastUpdated: Date.now(),
+      source: 'local-filesystem'
+    };
+
+    this.saveLocalRegistry();
+
+    this.logger.info(`Registry index refreshed: ${Object.keys(packs).length} local packs found`);
+    return this.index;
   }
 
   saveLocalRegistry() {
@@ -187,44 +219,14 @@ export class PackRegistry {
   }
 
   async search(query, filters = {}) {
-    // Validate inputs
-    try {
-      SearchFiltersSchema.parse(filters);
-    } catch (error) {
-      throw new Error(`Invalid search filters: ${error.message}`);
-    }
+    // Use the new searchPacks method for compatibility
+    const options = {
+      ...filters,
+      limit: filters.limit
+    };
 
-    if (!this.index) {
-      await this.refreshIndex();
-    }
-
-    const results = [];
-    const packs = this.index?.packs || {};
-    const normalizedQuery = query?.toLowerCase().trim() || '';
-
-    for (const [id, pack] of Object.entries(packs)) {
-      try {
-        // Validate pack structure
-        PackInfoSchema.partial().parse(pack);
-
-        // Match query against searchable fields
-        const searchText = this.createSearchText(id, pack);
-
-        if (!normalizedQuery || searchText.includes(normalizedQuery)) {
-          // Apply filters
-          if (this.matchesFilters(pack, filters)) {
-            results.push({
-              id,
-              ...this.sanitizePackInfo(pack)
-            });
-          }
-        }
-      } catch (error) {
-        this.logger.debug(`Skipping invalid pack ${id}:`, error.message);
-      }
-    }
-
-    return results;
+    const result = await this.searchPacks(query, options);
+    return result.results;
   }
 
   createSearchText(id, pack) {
@@ -283,16 +285,22 @@ export class PackRegistry {
   async resolve(packId) {
     this.logger.debug(`Resolving pack: ${packId}`);
 
-    // Check if it's a GitHub reference (org/repo format)
-    if (packId.includes('/') && !packId.startsWith('.') && !packId.startsWith('/')) {
-      return await this.resolveGitHub(packId);
+    // Check if it's a built-in pack first
+    const builtinPath = this.resolveBuiltin(packId);
+    if (builtinPath) {
+      return builtinPath;
     }
 
     // Check local cache
-    const cachedPath = join(this.cacheDir, packId);
+    const cachedPath = join(this.cacheDir, packId.replace('/', '-'));
     if (existsSync(cachedPath)) {
       this.logger.debug(`Found in cache: ${cachedPath}`);
       return cachedPath;
+    }
+
+    // Check if it's a GitHub reference (org/repo format)
+    if (packId.includes('/') && !packId.startsWith('.') && !packId.startsWith('/')) {
+      return await this.resolveGitHub(packId);
     }
 
     // Try to fetch from registry
@@ -309,9 +317,59 @@ export class PackRegistry {
       return cachedPath;
     }
 
-    // Would implement GitHub pack fetching here
-    this.logger.warn(`GitHub pack fetching not implemented: ${packId}`);
-    return null;
+    try {
+      this.logger.info(`Fetching GitHub pack: ${packId}`);
+
+      // Create cache directory
+      mkdirSync(cachedPath, { recursive: true });
+
+      // Clone the repository
+      const cloneUrl = `https://github.com/${org}/${repo}.git`;
+
+      await execAsync(`git clone --depth 1 ${cloneUrl} ${cachedPath}`, {
+        timeout: this.timeout
+      });
+
+      // Check if it's a valid GitVan pack
+      const manifestPath = join(cachedPath, 'pack.json');
+      if (!existsSync(manifestPath)) {
+        // Look for pack.json in subdirectories (monorepo support)
+        const entries = readdirSync(cachedPath, { withFileTypes: true });
+        let foundManifest = false;
+
+        for (const entry of entries) {
+          if (entry.isDirectory()) {
+            const subManifestPath = join(cachedPath, entry.name, 'pack.json');
+            if (existsSync(subManifestPath)) {
+              // Move the pack to the root level
+              const tempDir = join(cachedPath, '..', `${cacheKey}-temp`);
+              execSync(`mv ${join(cachedPath, entry.name)} ${tempDir}`);
+              rmSync(cachedPath, { recursive: true, force: true });
+              execSync(`mv ${tempDir} ${cachedPath}`);
+              foundManifest = true;
+              break;
+            }
+          }
+        }
+
+        if (!foundManifest) {
+          throw new Error('No pack.json found in repository');
+        }
+      }
+
+      this.logger.info(`Successfully cached GitHub pack: ${packId}`);
+      return cachedPath;
+
+    } catch (error) {
+      this.logger.error(`Failed to fetch GitHub pack ${packId}:`, error.message);
+
+      // Clean up failed download
+      if (existsSync(cachedPath)) {
+        rmSync(cachedPath, { recursive: true, force: true });
+      }
+
+      return null;
+    }
   }
 
   async fetchFromRegistry(packId) {
@@ -334,33 +392,83 @@ export class PackRegistry {
   }
 
   resolveBuiltin(packId) {
-    // Map of built-in pack IDs to their paths
-    const builtins = {
-      'gv/next-min': 'builtin/next-minimal',
-      'gv/docs-enterprise': 'builtin/docs-enterprise',
-      'gv/nodejs-basic': 'builtin/nodejs-basic'
+    // Check for exact builtin pack ID
+    if (packId.startsWith('builtin/')) {
+      const builtinPath = join(this.builtinDir, packId.replace('builtin/', ''));
+      if (existsSync(builtinPath)) {
+        this.logger.debug(`Resolved builtin pack: ${packId}`);
+        return builtinPath;
+      }
+    }
+
+    // Check for legacy builtin mappings
+    const builtinMappings = {
+      'gv/next-min': 'next-minimal',
+      'gv/docs-enterprise': 'docs-enterprise',
+      'gv/nodejs-basic': 'nodejs-basic'
     };
 
-    if (builtins[packId]) {
-      // Would return actual builtin pack path
-      this.logger.debug(`Resolved builtin pack: ${packId}`);
-      return null; // For now, no builtin packs implemented
+    if (builtinMappings[packId]) {
+      const builtinPath = join(this.builtinDir, builtinMappings[packId]);
+      if (existsSync(builtinPath)) {
+        this.logger.debug(`Resolved legacy builtin pack: ${packId}`);
+        return builtinPath;
+      }
+    }
+
+    // Check if it exists in local packs
+    const localPath = join(this.localPacksDir, packId);
+    if (existsSync(localPath)) {
+      this.logger.debug(`Resolved local pack as builtin: ${packId}`);
+      return localPath;
     }
 
     return null;
   }
 
-  async search(query, options = {}) {
+  async searchPacks(query, options = {}) {
     try {
       this.logger.debug(`Searching packs: ${query}`);
 
-      // Would implement registry search API here
+      if (!this.index) {
+        await this.refreshIndex();
+      }
+
       const results = [];
+      const packs = this.index?.packs || {};
+      const normalizedQuery = query?.toLowerCase().trim() || '';
+
+      for (const [id, pack] of Object.entries(packs)) {
+        const searchText = this.createSearchText(id, pack);
+
+        if (!normalizedQuery || searchText.includes(normalizedQuery)) {
+          // Apply additional filters
+          if (this.matchesSearchOptions(pack, options)) {
+            results.push({
+              id,
+              ...this.sanitizePackInfo(pack)
+            });
+          }
+        }
+      }
+
+      // Sort by relevance (exact matches first, then partial)
+      results.sort((a, b) => {
+        const aExact = a.name.toLowerCase() === normalizedQuery;
+        const bExact = b.name.toLowerCase() === normalizedQuery;
+        if (aExact !== bExact) return bExact - aExact;
+
+        const aStarts = a.name.toLowerCase().startsWith(normalizedQuery);
+        const bStarts = b.name.toLowerCase().startsWith(normalizedQuery);
+        if (aStarts !== bStarts) return bStarts - aStarts;
+
+        return a.name.localeCompare(b.name);
+      });
 
       return {
         query,
         total: results.length,
-        results
+        results: options.limit ? results.slice(0, options.limit) : results
       };
     } catch (e) {
       this.logger.error(`Search failed:`, e);
@@ -373,12 +481,61 @@ export class PackRegistry {
     }
   }
 
+  matchesSearchOptions(pack, options) {
+    if (options.capability && !pack.capabilities?.includes(options.capability)) {
+      return false;
+    }
+
+    if (options.tag && !pack.tags?.includes(options.tag)) {
+      return false;
+    }
+
+    if (options.source && pack.source !== options.source) {
+      return false;
+    }
+
+    return true;
+  }
+
   async list(options = {}) {
     try {
-      // Would implement registry listing API here
+      this.logger.debug('Listing all packs');
+
+      if (!this.index) {
+        await this.refreshIndex();
+      }
+
+      const packs = this.index?.packs || {};
+      const results = [];
+
+      for (const [id, pack] of Object.entries(packs)) {
+        if (this.matchesListOptions(pack, options)) {
+          results.push({
+            id,
+            ...this.sanitizePackInfo(pack)
+          });
+        }
+      }
+
+      // Sort by name by default
+      results.sort((a, b) => {
+        if (options.sortBy === 'lastModified') {
+          return (b.lastModified || 0) - (a.lastModified || 0);
+        }
+        if (options.sortBy === 'downloads') {
+          return (b.downloads || 0) - (a.downloads || 0);
+        }
+        return a.name.localeCompare(b.name);
+      });
+
+      const startIndex = options.offset || 0;
+      const endIndex = options.limit ? startIndex + options.limit : results.length;
+
       return {
-        packs: [],
-        total: 0
+        packs: results.slice(startIndex, endIndex),
+        total: results.length,
+        offset: startIndex,
+        limit: options.limit
       };
     } catch (e) {
       this.logger.error(`List failed:`, e);
@@ -388,6 +545,22 @@ export class PackRegistry {
         error: e.message
       };
     }
+  }
+
+  matchesListOptions(pack, options) {
+    if (options.source && pack.source !== options.source) {
+      return false;
+    }
+
+    if (options.tag && !pack.tags?.includes(options.tag)) {
+      return false;
+    }
+
+    if (options.capability && !pack.capabilities?.includes(options.capability)) {
+      return false;
+    }
+
+    return true;
   }
 
   async info(packId) {
@@ -444,14 +617,92 @@ export class PackRegistry {
       if (packId) {
         const cacheKey = packId.replace('/', '-');
         const cachePath = join(this.cacheDir, cacheKey);
-        // Would remove specific cache entry
-        this.logger.debug(`Cleared cache for ${packId}`);
+        if (existsSync(cachePath)) {
+          rmSync(cachePath, { recursive: true, force: true });
+          this.logger.info(`Cleared cache for ${packId}`);
+        }
       } else {
-        // Would clear entire cache
-        this.logger.debug(`Cleared entire pack cache`);
+        if (existsSync(this.cacheDir)) {
+          rmSync(this.cacheDir, { recursive: true, force: true });
+          mkdirSync(this.cacheDir, { recursive: true });
+          this.logger.info('Cleared entire pack cache');
+        }
       }
     } catch (e) {
       this.logger.error(`Failed to clear cache:`, e);
+    }
+  }
+
+  createBuiltinPacks() {
+    this.logger.info('Creating builtin packs');
+
+    // Create next-minimal builtin pack
+    const nextMinPath = join(this.builtinDir, 'next-minimal');
+    if (!existsSync(nextMinPath)) {
+      mkdirSync(nextMinPath, { recursive: true });
+
+      const manifest = {
+        id: 'builtin/next-minimal',
+        name: 'Next.js Minimal Starter',
+        version: '1.0.0',
+        description: 'A minimal Next.js application starter pack',
+        tags: ['nextjs', 'react', 'minimal', 'builtin'],
+        capabilities: ['scaffold', 'development'],
+        author: 'GitVan',
+        license: 'MIT',
+        modes: ['scaffold', 'dev'],
+        requires: {
+          node: '>=18.0.0'
+        }
+      };
+
+      writeFileSync(join(nextMinPath, 'pack.json'), JSON.stringify(manifest, null, 2));
+    }
+
+    // Create nodejs-basic builtin pack
+    const nodeBasicPath = join(this.builtinDir, 'nodejs-basic');
+    if (!existsSync(nodeBasicPath)) {
+      mkdirSync(nodeBasicPath, { recursive: true });
+
+      const manifest = {
+        id: 'builtin/nodejs-basic',
+        name: 'Node.js Basic Starter',
+        version: '1.0.0',
+        description: 'A basic Node.js application starter pack',
+        tags: ['nodejs', 'javascript', 'basic', 'builtin'],
+        capabilities: ['scaffold', 'development'],
+        author: 'GitVan',
+        license: 'MIT',
+        modes: ['scaffold', 'dev'],
+        requires: {
+          node: '>=16.0.0'
+        }
+      };
+
+      writeFileSync(join(nodeBasicPath, 'pack.json'), JSON.stringify(manifest, null, 2));
+    }
+
+    // Create docs-enterprise builtin pack
+    const docsEnterprisePath = join(this.builtinDir, 'docs-enterprise');
+    if (!existsSync(docsEnterprisePath)) {
+      mkdirSync(docsEnterprisePath, { recursive: true });
+
+      const manifest = {
+        id: 'builtin/docs-enterprise',
+        name: 'Enterprise Documentation',
+        version: '1.0.0',
+        description: 'Enterprise-grade documentation starter pack',
+        tags: ['documentation', 'enterprise', 'vitepress', 'builtin'],
+        capabilities: ['scaffold', 'documentation'],
+        author: 'GitVan',
+        license: 'MIT',
+        modes: ['scaffold', 'docs'],
+        requires: {
+          node: '>=18.0.0'
+        }
+      };
+
+      writeFileSync(join(docsEnterprisePath, 'pack.json'), JSON.stringify(manifest, null, 2));
     }
   }
 }

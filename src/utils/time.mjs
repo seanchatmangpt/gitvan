@@ -47,24 +47,35 @@ export function getNextCronTime(cron, from = new Date()) {
   // Basic cron parser - supports minute, hour, day, month, weekday
   const parts = cron.trim().split(/\s+/);
   if (parts.length !== 5) return null;
-  
+
   const [min, hour, day, month, weekday] = parts;
-  
+
   // Simple implementation for common patterns
-  if (min === "*" && hour === "*" && day === "*" && month === "*" && weekday === "*") {
+  if (
+    min === "*" &&
+    hour === "*" &&
+    day === "*" &&
+    month === "*" &&
+    weekday === "*"
+  ) {
     // Every minute
     return new Date(from.getTime() + 60000);
   }
-  
-  if (min === "0" && hour === "*" && day === "*" && month === "*" && weekday === "*") {
+
+  if (
+    min === "0" &&
+    hour === "*" &&
+    day === "*" &&
+    month === "*" &&
+    weekday === "*"
+  ) {
     // Every hour
     const next = new Date(from);
     next.setMinutes(0, 0, 0);
     next.setHours(next.getHours() + 1);
     return next;
   }
-  
+
   // More complex patterns would need a proper cron library
   return null;
 }
-

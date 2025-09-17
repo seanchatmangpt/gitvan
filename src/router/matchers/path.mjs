@@ -30,9 +30,9 @@ function escapeRegex(str) {
  */
 function anyMatch(globs = [], files = []) {
   if (!globs?.length || !files?.length) return false;
-  
+
   const patterns = globs.map(compileGlob);
-  return files.some(file => patterns.some(pattern => pattern.test(file)));
+  return files.some((file) => patterns.some((pattern) => pattern.test(file)));
 }
 
 /**
@@ -78,4 +78,3 @@ export function pathDeleted(pred, meta) {
   const files = meta.filesDeleted || [];
   return anyMatch(pred.pathDeleted, files);
 }
-

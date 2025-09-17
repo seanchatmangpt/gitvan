@@ -22,8 +22,8 @@ export async function startCronScheduler(config = {}) {
     cron = {
       enabled: true,
       interval: 60000, // 1 minute
-      timezone: "UTC"
-    }
+      timezone: "UTC",
+    },
   } = config;
 
   if (!cron.enabled) {
@@ -47,7 +47,7 @@ export async function startCronScheduler(config = {}) {
           definition: jobDef,
           cron: jobDef.cron,
           lastRun: null,
-          nextRun: calculateNextRun(jobDef.cron)
+          nextRun: calculateNextRun(jobDef.cron),
         });
       }
     } catch (error) {
@@ -80,7 +80,7 @@ async function runCronLoop(cronJobs, config) {
   while (true) {
     try {
       const now = new Date();
-      
+
       for (const job of cronJobs) {
         if (shouldRunJob(job, now)) {
           await executeCronJob(job, config);
@@ -109,7 +109,7 @@ function shouldRunJob(job, now) {
   if (cronParts.length !== 5) return false;
 
   const [minute, hour, day, month, weekday] = cronParts;
-  
+
   // Get current time components
   const currentMinute = now.getMinutes();
   const currentHour = now.getHours();
@@ -121,7 +121,7 @@ function shouldRunJob(job, now) {
   if (minute === "*" && hour === "*") return true; // Every minute
   if (minute === "0" && hour === "*") return true; // Every hour
   if (minute === "0" && hour === "0") return true; // Daily at midnight
-  
+
   // Check specific times
   if (minute !== "*" && parseInt(minute) !== currentMinute) return false;
   if (hour !== "*" && parseInt(hour) !== currentHour) return false;
@@ -140,7 +140,7 @@ function shouldRunJob(job, now) {
  */
 async function executeCronJob(job, config) {
   const { rootDir = process.cwd() } = config;
-  
+
   logger.info(`Executing cron job: ${job.id}`);
 
   try {
@@ -151,8 +151,8 @@ async function executeCronJob(job, config) {
       cron: {
         schedule: job.cron,
         lastRun: job.lastRun,
-        nextRun: job.nextRun
-      }
+        nextRun: job.nextRun,
+      },
     };
 
     const startTime = Date.now();
@@ -167,18 +167,18 @@ async function executeCronJob(job, config) {
       action: "cron",
       result: {
         ...result,
-        duration
+        duration,
       },
       meta: {
         cron: job.cron,
-        scheduled: true
-      }
+        scheduled: true,
+      },
     });
 
     logger.info(`Cron job ${job.id} completed successfully`);
   } catch (error) {
     logger.error(`Cron job ${job.id} failed:`, error.message);
-    
+
     // Write failure receipt
     writeReceipt({
       id: `cron-${job.id}`,
@@ -187,12 +187,12 @@ async function executeCronJob(job, config) {
       action: "cron",
       result: {
         error: error.message,
-        duration: Date.now() - Date.now()
+        duration: Date.now() - Date.now(),
       },
       meta: {
         cron: job.cron,
-        scheduled: true
-      }
+        scheduled: true,
+      },
     });
   }
 }
@@ -209,16 +209,16 @@ function calculateNextRun(cron, from = new Date()) {
   if (cronParts.length !== 5) return new Date(from.getTime() + 60000);
 
   const [minute, hour, day, month, weekday] = cronParts;
-  
+
   // Simple logic for common patterns
   if (minute === "*" && hour === "*") {
     return new Date(from.getTime() + 60000); // Next minute
   }
-  
+
   if (minute === "0" && hour === "*") {
     return new Date(from.getTime() + 3600000); // Next hour
   }
-  
+
   if (minute === "0" && hour === "0") {
     return new Date(from.getTime() + 86400000); // Next day
   }
@@ -233,7 +233,7 @@ function calculateNextRun(cron, from = new Date()) {
  * @returns {Promise<void>}
  */
 function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -244,7 +244,7 @@ function sleep(ms) {
 export async function scanJobs(options = {}) {
   const { cwd = process.cwd() } = options;
   const jobsDir = join(cwd, "jobs");
-  
+
   const allJobs = discoverJobs(jobsDir);
   const cronJobs = [];
 
@@ -255,7 +255,7 @@ export async function scanJobs(options = {}) {
         cronJobs.push({
           ...jobInfo,
           cron: jobDef.cron,
-          meta: jobDef.meta || {}
+          meta: jobDef.meta || {},
         });
       }
     } catch (error) {

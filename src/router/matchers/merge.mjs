@@ -11,12 +11,12 @@
  */
 export function mergeTo(pred, meta) {
   if (!meta.mergedTo) return false;
-  
+
   const target = pred.mergeTo;
   if (typeof target === "string") {
     return meta.mergedTo === target;
   }
-  
+
   return false;
 }
 
@@ -28,15 +28,15 @@ export function mergeTo(pred, meta) {
  */
 export function branchCreate(pred, meta) {
   if (!meta.branchCreated) return false;
-  
+
   const pattern = pred.branchCreate;
   if (!pattern) return true; // Match any branch creation if no pattern
-  
+
   if (typeof pattern === "string") {
     const regex = new RegExp(pattern);
     return regex.test(meta.branchCreated);
   }
-  
+
   return false;
 }
 
@@ -48,15 +48,15 @@ export function branchCreate(pred, meta) {
  */
 export function mergeFrom(pred, meta) {
   if (!meta.mergedFrom) return false;
-  
+
   const pattern = pred.mergeFrom;
   if (!pattern) return true; // Match any merge source if no pattern
-  
+
   if (typeof pattern === "string") {
     const regex = new RegExp(pattern);
     return regex.test(meta.mergedFrom);
   }
-  
+
   return false;
 }
 
@@ -68,7 +68,6 @@ export function mergeFrom(pred, meta) {
  */
 export function pullRequest(pred, meta) {
   if (!pred.pullRequest) return false;
-  
+
   return !!meta.pullRequest;
 }
-

@@ -10,6 +10,7 @@
  */
 
 import { createJobLoader } from "./job-loader.mjs";
+import { withGitVan } from "./context.mjs";
 
 /**
  * GitVan Hook Loader - Job-Only Architecture
@@ -61,8 +62,10 @@ export class GitVanHookLoader {
     console.log(`   🔧 Running job: ${jobName}`);
     
     try {
-      // Execute the job's run function
-      await job.run(context);
+      // Wrap job execution in GitVan context
+      await withGitVan(context, async () => {
+        await job.run(context);
+      });
     } catch (error) {
       console.error(`   ❌ Error in job ${jobName}:`, error.message);
       throw error;

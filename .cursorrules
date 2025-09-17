@@ -98,11 +98,32 @@ GitVan is a Git-native development automation platform that uses Git as a runtim
 3. **Admit when things are untested**
 4. **Verify before claiming success**
 
+## CRITICAL: Error Checking Protocol
+- **ALWAYS CHECK CONSOLE OUTPUT FOR ERRORS** before declaring success
+- **NEVER declare success if there are ANY error messages** (❌, ⚠️, Error:, Failed:, etc.)
+- **READ THE FULL OUTPUT** - don't just look for ✅ symbols
+- **VERIFY EXIT CODES** - commands must exit with code 0
+- **CHECK FOR WARNINGS** - warnings indicate potential issues
+- **VALIDATE ACTUAL FUNCTIONALITY** - not just that commands run
+
+### Error Detection Patterns
+- Look for: `❌`, `⚠️`, `Error:`, `Failed:`, `Cannot`, `TypeError`, `ReferenceError`
+- Check exit codes: `exit code: 0` = success, anything else = failure
+- Verify no warnings: `warning:`, `WARN:`, `⚠️`
+- Ensure clean output: no stack traces or error messages
+
+### Success Criteria
+- ✅ **ALL** console output shows success indicators
+- ✅ **ZERO** error messages or warnings
+- ✅ **ZERO** exit code (success)
+- ✅ **ACTUAL** functionality verified, not just "command ran"
+
 **REMEMBER:**
 - Writing a file to disk DOES NOT mean it works
 - Finishing a TODO is NOT enough without verification
 - You MUST verify with actual command execution
-- Always test before claiming completion
+- **NEVER declare success without checking ALL console output for errors**
+- **ALWAYS read the full output before claiming anything works**
 
 ## Quick Commands
 ```bash

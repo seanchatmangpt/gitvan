@@ -261,6 +261,33 @@ export interface {{ name | pascalCase }} {
 }
 ```
 
+### Worktree Management
+```javascript
+// Using the useWorktree composable
+import { useWorktree } from 'gitvan/composables/worktree';
+
+const worktree = useWorktree();
+
+// Get worktree information
+const info = await worktree.info();
+console.log(`Current branch: ${info.branch}`);
+console.log(`Worktree path: ${info.worktree}`);
+
+// List all worktrees
+const worktrees = await worktree.list();
+worktrees.forEach(wt => {
+  console.log(`${wt.path} (${wt.branch}) ${wt.isMain ? '(main)' : ''}`);
+});
+
+// Create a new worktree
+await worktree.create('/path/to/new-worktree', 'feature-branch');
+
+// Get worktree status
+const status = await worktree.status();
+console.log(`Total worktrees: ${status.count}`);
+console.log(`Is main worktree: ${status.isMain}`);
+```
+
 ## 🤝 Contributing
 
 1. Fork the repository

@@ -5,12 +5,17 @@ export * from "./composables/index.mjs";
 export * from "./runtime/define-job.mjs";
 export * from "./runtime/boot.mjs";
 export { GitVanDaemon } from "./runtime/daemon.mjs";
-export { LockManager } from "./runtime/locks.mjs";
+export {
+  acquireLock,
+  releaseLock,
+  generateLockRef,
+  worktreeLockRef,
+} from "./runtime/locks.mjs";
 
 // Job system
-export { defineJob } from './jobs/define.mjs';
-export { scanJobs } from './jobs/scan.mjs';
-export { runJob } from './jobs/runner.mjs';
+export { defineJob } from "./jobs/define.mjs";
+export { scanJobs } from "./jobs/scan.mjs";
+export { JobRunner, JobResult, JobExecutionContext } from "./jobs/runner.mjs";
 
 // Pack system
 export {
@@ -21,9 +26,9 @@ export {
   PackRegistry,
   loadPackManifest,
   validateManifest,
-  PackManifestSchema
-} from './pack/index.mjs';
+  PackManifestSchema,
+} from "./pack/index.mjs";
 
 // Configuration
-export { loadOptions } from './config/loader.mjs';
-export { defineConfig } from './config/defaults.mjs';
+export { loadOptions } from "./config/loader.mjs";
+export { GitVanDefaults } from "./config/defaults.mjs";

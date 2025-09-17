@@ -5,7 +5,7 @@
 import { CronScheduler } from "./cron.mjs";
 import { EventJobRunner } from "./events.mjs";
 import { loadOptions } from "../config/loader.mjs";
-import { useGit } from "../composables/git.mjs";
+import { useGit } from "../composables/git/index.mjs";
 
 /**
  * GitVan Job Daemon
@@ -54,7 +54,7 @@ export class JobDaemon {
     console.log(`  Receipts ref: ${this.config.receipts.ref}`);
     console.log(`  Event check interval: ${this.eventCheckInterval / 1000}s`);
     console.log(
-      `  Cron tick interval: ${this.cronScheduler.tickInterval / 1000}s`,
+      `  Cron tick interval: ${this.cronScheduler.tickInterval / 1000}s`
     );
 
     this.isRunning = true;
@@ -137,7 +137,7 @@ export class JobDaemon {
 
       if (this.lastCommit && currentCommit !== this.lastCommit) {
         console.log(
-          `Git event detected: ${this.lastCommit} → ${currentCommit}`,
+          `Git event detected: ${this.lastCommit} → ${currentCommit}`
         );
 
         // Check for event-driven jobs
@@ -261,7 +261,9 @@ export class DaemonCLI {
 
     if (status.cronStatus) {
       console.log(
-        `  Cron scheduler: ${status.cronStatus.isRunning ? "Running" : "Stopped"}`,
+        `  Cron scheduler: ${
+          status.cronStatus.isRunning ? "Running" : "Stopped"
+        }`
       );
       console.log(`  Scheduled jobs: ${status.cronStatus.scheduleSize}`);
     }

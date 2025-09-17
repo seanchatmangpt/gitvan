@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 1,
+            "activePatchIndex": 2,
             "patches": [
                 {
                     "date": 1758057329115,
@@ -12,6 +12,10 @@
                 {
                     "date": 1758072812248,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -297,4 +297,5 @@\n \n   // Additional checks could be added here\n   return true;\n }\n+\n"
+                },
+                {
+                    "date": 1758096593613,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -2,9 +2,9 @@\n  * GitVan v2 Audit CLI - Receipt audit and verification commands\n  * Provides commands for building audit packs and verifying receipts\n  */\n \n-import { useGit } from \"../composables/git.mjs\";\n+import { useGit } from \"../composables/git/index.mjs\";\n import { writeFileSafe } from \"../utils/fs.mjs\";\n import { loadOptions } from \"../config/loader.mjs\";\n import { createLogger } from \"../utils/logger.mjs\";\n import { Receipt, ReceiptQuery } from \"../schemas/receipt.zod.mjs\";\n@@ -297,5 +297,4 @@\n \n   // Additional checks could be added here\n   return true;\n }\n-\n"
                 }
             ],
             "date": 1758057329115,

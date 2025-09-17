@@ -5,7 +5,7 @@
 import { scanJobs } from "./scan.mjs";
 import { JobRunner } from "./runner.mjs";
 import { loadOptions } from "../config/loader.mjs";
-import { useGit } from "../composables/git.mjs";
+import { useGit } from "../composables/git/index.mjs";
 
 /**
  * Event predicate evaluator

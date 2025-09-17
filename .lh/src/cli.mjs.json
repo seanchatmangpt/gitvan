@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 10,
+            "activePatchIndex": 11,
             "patches": [
                 {
                     "date": 1758057329115,
@@ -48,6 +48,10 @@
                 {
                     "date": 1758089702835,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -441,10 +441,11 @@\n         };\n \n         const { withGitVan } = await import(\"./composables/ctx.mjs\");\n         await withGitVan(ctx, async () => {\n+          const { useGit } = await import(\"./composables/git.mjs\");\n           const git = useGit();\n-          const worktrees = git.listWorktrees();\n+          const worktrees = await git.listWorktrees();\n \n           if (worktrees.length === 0) {\n             console.log(\"No worktrees found\");\n             return;\n"
+                },
+                {
+                    "date": 1758096593591,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -10,9 +10,9 @@\n   findJobFile,\n   findAllJobs,\n   loadJobDefinition,\n } from \"./runtime/jobs.mjs\";\n-import { useGit } from \"./composables/git.mjs\";\n+import { useGit } from \"./composables/git/index.mjs\";\n import { runJobWithContext } from \"./runtime/boot.mjs\";\n import { loadConfig } from \"./runtime/config.mjs\";\n import { GitVanDefaults } from \"./config/defaults.mjs\";\n \n"
                 }
             ],
             "date": 1758057329115,

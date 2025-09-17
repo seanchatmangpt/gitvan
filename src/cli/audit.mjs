@@ -3,7 +3,7 @@
  * Provides commands for building audit packs and verifying receipts
  */
 
-import { useGit } from "../composables/git.mjs";
+import { useGit } from "../composables/git/index.mjs";
 import { writeFileSafe } from "../utils/fs.mjs";
 import { loadOptions } from "../config/loader.mjs";
 import { createLogger } from "../utils/logger.mjs";

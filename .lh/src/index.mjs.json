@@ -3,11 +3,15 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 1,
             "patches": [
                 {
                     "date": 1758048054861,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1758096591576,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,5 +1,34 @@\n+// Core composables\n export * from \"./composables/index.mjs\";\n+\n+// Runtime exports\n export * from \"./runtime/define-job.mjs\";\n export * from \"./runtime/boot.mjs\";\n export { GitVanDaemon } from \"./runtime/daemon.mjs\";\n-export { LockManager } from \"./runtime/locks.mjs\";\n+export {\n+  acquireLock,\n+  releaseLock,\n+  generateLockRef,\n+  worktreeLockRef,\n+} from \"./runtime/locks.mjs\";\n+\n+// Job system\n+export { defineJob } from \"./jobs/define.mjs\";\n+export { scanJobs } from \"./jobs/scan.mjs\";\n+export { JobRunner, JobResult, JobExecutionContext } from \"./jobs/runner.mjs\";\n+\n+// Pack system\n+export {\n+  Pack,\n+  PackManager,\n+  PackApplier,\n+  PackPlanner,\n+  PackRegistry,\n+  loadPackManifest,\n+  validateManifest,\n+  PackManifestSchema,\n+} from \"./pack/index.mjs\";\n+\n+// Configuration\n+export { loadOptions } from \"./config/loader.mjs\";\n+export { GitVanDefaults } from \"./config/defaults.mjs\";\n"
                 }
             ],
             "date": 1758048054861,

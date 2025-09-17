@@ -11,7 +11,7 @@ import {
   findAllJobs,
   loadJobDefinition,
 } from "./runtime/jobs.mjs";
-import { useGit } from "./composables/git.mjs";
+import { useGit } from "./composables/git/index.mjs";
 import { runJobWithContext } from "./runtime/boot.mjs";
 import { loadConfig } from "./runtime/config.mjs";
 import { GitVanDefaults } from "./config/defaults.mjs";

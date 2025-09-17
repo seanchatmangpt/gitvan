@@ -3,7 +3,7 @@
  * Provides worktree-aware operations for multi-worktree environments
  */
 
-import { useGit } from "../composables/git.mjs";
+import { useGit } from "../composables/git/index.mjs";
 import { createHash } from "node:crypto";
 
 /**

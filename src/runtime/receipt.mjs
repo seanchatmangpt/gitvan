@@ -3,7 +3,7 @@
  * Writes structured receipts to Git notes for auditability
  */
 
-import { useGit } from "../composables/git.mjs";
+import { useGit } from "../composables/git/index.mjs";
 
 /**
  * Writes a structured receipt to Git notes

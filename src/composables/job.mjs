@@ -4,7 +4,7 @@
  */
 
 import { useGitVan, tryUseGitVan, withGitVan } from "../core/context.mjs";
-import { useGit } from "./git.mjs";
+import { useGit } from "./git/index.mjs";
 import { useReceipt } from "./receipt.mjs";
 import { useLock } from "./lock.mjs";
 import { discoverJobs, loadJobDefinition } from "../runtime/jobs.mjs";

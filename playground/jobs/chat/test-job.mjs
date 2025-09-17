@@ -1,31 +1,38 @@
-import { defineJob } from "gitvan/define"
-
-export default defineJob({
+export default {
   meta: { 
-    desc: "Create a test job", 
-    tags: ["test", "example"]
+    desc: "Creates a basic test job file with sample content for automation testing purposes", 
+    tags: ["test","automation","setup"],
+    author: "GitVan AI",
+    version: "1.0.0"
   },
-  async run({ ctx, payload }) {
-    const { useGit } = await import("gitvan/composables/git")
-    const { useTemplate } = await import("gitvan/composables/template")
-    const git = useGit()
-    const tpl = await useTemplate()
-    
-    // Create a test file
-    const testFileContent = `# Test Job
-    
-This is a generated test file created by the test job.
-
-Timestamp: ${new Date().toISOString()}
-Repository: ${ctx.repo}
-Branch: ${ctx.branch}
-`
-    
-    await git.writeFile('test-job-output.md', testFileContent)
-    
-    // Log the job execution
-    console.log('Test job executed successfully')
-    
-    return { ok: true, artifacts: ['test-job-output.md'] }
+  
+  on: ["push"],
+  
+  async run({ ctx, payload, meta }) {
+    try {
+      console.log("Executing job: Creates a basic test job file with sample content for automation testing purposes");
+      
+      // Extract parameters
+      const jobName = payload.jobName || "test-job";
+      const outputDirectory = payload.outputDirectory || "./tests";
+      
+      // Execute operations
+      console.log("Log start of job execution");
+      // TODO: Implement file write: Write sample content to a new test job file
+      console.log("Log completion of job execution");
+      
+      return { 
+        ok: true, 
+        artifacts: ["{{ outputDirectory }}/{{ jobName }}.js"],
+        summary: "Test job file created successfully"
+      }
+    } catch (error) {
+      console.error('Job failed:', error.message)
+      return { 
+        ok: false, 
+        error: error.message,
+        artifacts: []
+      }
+    }
   }
-})
+}

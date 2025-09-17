@@ -6,7 +6,7 @@
 // - Focused on worktree-specific operations
 
 import { useGitVan, tryUseGitVan } from "../core/context.mjs";
-import { useGit } from "./git.mjs";
+import { useGit } from "./git/index.mjs";
 
 export function useWorktree() {
   // Get context from unctx - this must be called synchronously
@@ -74,9 +74,9 @@ export function useWorktree() {
 
     async isWorktree() {
       try {
-        const { execFile } = await import("node:child_process");
+        const { execFile: execFileSync } = await import("node:child_process");
         const { promisify } = await import("node:util");
-        const execFile = promisify(execFile);
+        const execFile = promisify(execFileSync);
 
         await execFile("git", ["rev-parse", "--is-inside-work-tree"], {
           cwd: base.cwd,
@@ -90,9 +90,9 @@ export function useWorktree() {
 
     async list() {
       try {
-        const { execFile } = await import("node:child_process");
+        const { execFile: execFileSync } = await import("node:child_process");
         const { promisify } = await import("node:util");
-        const execFile = promisify(execFile);
+        const execFile = promisify(execFileSync);
 
         const output = await execFile(
           "git",
@@ -129,9 +129,9 @@ export function useWorktree() {
         }));
       } catch {
         // Fallback to single worktree
-        const { execFile } = await import("node:child_process");
+        const { execFile: execFileSync } = await import("node:child_process");
         const { promisify } = await import("node:util");
-        const execFile = promisify(execFile);
+        const execFile = promisify(execFileSync);
 
         const [worktree, head, branch] = await Promise.all([
           execFile("git", ["rev-parse", "--show-toplevel"], {

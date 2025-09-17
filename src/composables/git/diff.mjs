@@ -1,12 +1,13 @@
 // src/composables/git/diff.mjs
-// GitVan v2 — Git Diff Operations
-// Modular diff commands to prevent bloat in main useGit()
+// GitVan v2 — Diff operations factory
+// - File diff and change detection helpers
+// - Changed paths filtering with glob support
 
-import { runGit } from "../git-core.mjs";
+import minimatch from "minimatch";
 
-export function createDiffCommands(base) {
+export default function makeDiff(base, run, runVoid, toArr) {
   return {
-    // ---------- Diff operations ----------
+    // Git diff with various options
     async diff(options = {}) {
       const args = ["diff"];
 
@@ -28,18 +29,32 @@ export function createDiffCommands(base) {
 
       // Handle specific files
       if (options.files && options.files.length > 0) {
-        args.push("--", ...options.files);
+        args.push("--", ...toArr(options.files));
       }
 
-      return runGit(args, base);
+      return run(args);
     },
 
-    async diffFiles(file1, file2) {
-      return runGit(["diff", "--no-index", file1, file2], base);
+    // Get changed files between commits
+    async changedFiles(from, to = "HEAD") {
+      const diff = await this.diff({ from, to, nameOnly: true });
+      return diff.split("\n").filter(line => line.trim());
     },
 
-    async diffTree(tree1, tree2) {
-      return runGit(["diff-tree", tree1, tree2], base);
+    // Get diff names (file names only)
+    async diffNames(from, to = "HEAD") {
+      const diff = await this.diff({ from, to, nameOnly: true });
+      return diff.split("\n").filter(line => line.trim());
+    },
+
+    // Filter changed paths by glob patterns
+    async pathsChanged(globs, from, to = "HEAD") {
+      const changedPaths = await this.diffNames(from, to);
+      const globArray = toArr(globs);
+      
+      return changedPaths.filter(path => {
+        return globArray.some(glob => minimatch(path, glob));
+      });
     },
   };
 }

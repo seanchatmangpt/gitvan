@@ -5,8 +5,13 @@ import { join, extname } from "pathe";
 import { GitVanDaemon, startDaemon } from "./runtime/daemon.mjs";
 import { discoverEvents, loadEventDefinition } from "./runtime/events.mjs";
 import { readReceiptsRange } from "./runtime/receipt.mjs";
-import { discoverJobs, findJobFile, findAllJobs, loadJobDefinition } from "./runtime/jobs.mjs";
-import { useGit } from "./composables/git.mjs";
+import {
+  discoverJobs,
+  findJobFile,
+  findAllJobs,
+  loadJobDefinition,
+} from "./runtime/jobs.mjs";
+import { useGit } from "./composables/git/index.mjs";
 import { runJobWithContext } from "./runtime/boot.mjs";
 import { loadConfig } from "./runtime/config.mjs";
 
@@ -85,7 +90,9 @@ async function handleDaemon(action = "start", ...options) {
     case "status":
       const statusDaemon = new GitVanDaemon(worktreePath);
       console.log(
-        `Daemon ${statusDaemon.isRunning() ? "running" : "not running"} for: ${worktreePath}`,
+        `Daemon ${
+          statusDaemon.isRunning() ? "running" : "not running"
+        } for: ${worktreePath}`
       );
       break;
     default:
@@ -107,10 +114,10 @@ async function handleChat(action = "draft", ...args) {
 function parseArgs(args) {
   const parsed = {};
   let positionalIndex = 0;
-  
+
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
-    
+
     if (arg.startsWith("--")) {
       // Named argument
       const key = arg.replace(/^--/, "");
@@ -127,7 +134,7 @@ function parseArgs(args) {
       positionalIndex++;
     }
   }
-  
+
   return parsed;
 }
 
@@ -193,13 +200,13 @@ async function handleJob(action = "list", ...args) {
         console.log("No jobs directory found");
         return;
       }
-      
+
       const jobs = discoverJobs(jobsDir);
       if (jobs.length === 0) {
         console.log("No jobs found");
         return;
       }
-      
+
       console.log("Available jobs:");
       console.log("==============");
       jobs.forEach((job) => {
@@ -209,7 +216,7 @@ async function handleJob(action = "list", ...args) {
         console.log();
       });
       break;
-      
+
     case "run":
       const nameIndex = args.indexOf("--name");
       if (nameIndex === -1 || !args[nameIndex + 1]) {
@@ -217,20 +224,20 @@ async function handleJob(action = "list", ...args) {
         process.exit(1);
       }
       const jobName = args[nameIndex + 1];
-      
+
       const jobPath = findJobFile(jobsDir, jobName);
       if (!jobPath) {
         console.error(`Job not found: ${jobName}`);
         process.exit(1);
       }
-      
+
       try {
         const jobDef = await loadJobDefinition(jobPath);
         if (!jobDef) {
           console.error(`Failed to load job: ${jobName}`);
           process.exit(1);
         }
-        
+
         const ctx = {
           root: worktreePath,
           env: process.env,
@@ -241,10 +248,10 @@ async function handleJob(action = "list", ...args) {
             log: console.log,
             warn: console.warn,
             error: console.error,
-            info: console.info
-          }
+            info: console.info,
+          },
         };
-        
+
         console.log(`Running job: ${jobName}`);
         const result = await runJobWithContext(ctx, jobDef);
         console.log("Result:", JSON.stringify(result, null, 2));
@@ -253,7 +260,7 @@ async function handleJob(action = "list", ...args) {
         process.exit(1);
       }
       break;
-      
+
     default:
       console.error(`Unknown job action: ${action}`);
       process.exit(1);
@@ -292,8 +299,8 @@ async function handleRun(jobName) {
         log: console.log,
         warn: console.warn,
         error: console.error,
-        info: console.info
-      }
+        info: console.info,
+      },
     };
 
     console.log(`Running job: ${jobName}`);

@@ -2,6 +2,8 @@
 
 GitVan v2 provides a comprehensive set of composables that enable Git-native development automation. Each composable is designed to work independently or in combination with others, providing a powerful and flexible API for building automation workflows.
 
+> **📚 New Modular Architecture**: GitVan v2 composables have been refactored into a modular factory pattern. See the [Composables Documentation Index](../composables/index.md) for the new structure, [API Reference](../composables/git-api.md) for detailed function documentation, and [Migration Guide](../composables/migration-guide.md) for upgrading from the monolithic version.
+
 ## Table of Contents
 
 - [GitVan v2 Composables API](#gitvan-v2-composables-api)
@@ -40,13 +42,13 @@ GitVan v2 provides a comprehensive set of composables that enable Git-native dev
 The `useGit` composable provides low-level Git operations and repository management.
 
 ```javascript
-import { useGit } from './src/composables/git.mjs';
+import { useGit } from './src/composables/git/index.mjs';
 
 const git = useGit();
 
 // Basic Git operations
-const head = await git.head();
-const branch = await git.getCurrentBranch();
+const headSha = await git.headSha();
+const branch = await git.currentRef();
 const isClean = await git.isClean();
 
 // Repository information

@@ -1,5 +1,5 @@
 import { withGitVan } from "../composables/ctx.mjs";
-import { useGit } from "../composables/git.mjs";
+import { useGit } from "../composables/git/index.mjs";
 import { useExec } from "../composables/exec.mjs";
 import { acquireLock, worktreeLockRef, releaseLock } from "./locks.mjs";
 import { writeReceipt } from "./receipt.mjs";

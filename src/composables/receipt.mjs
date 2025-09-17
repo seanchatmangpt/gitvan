@@ -4,7 +4,7 @@
  */
 
 import { useGitVan, tryUseGitVan, withGitVan } from "../core/context.mjs";
-import { useGit } from "./git.mjs";
+import { useGit } from "./git/index.mjs";
 import {
   writeReceipt,
   readReceipts,

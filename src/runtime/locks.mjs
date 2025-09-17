@@ -3,7 +3,7 @@
  * Provides atomic file locking using Git refs for concurrency safety
  */
 
-import { useGit } from "../composables/git.mjs";
+import { useGit } from "../composables/git/index.mjs";
 
 /**
  * Acquires an atomic lock using Git refs

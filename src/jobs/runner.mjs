@@ -3,7 +3,7 @@
 // Handles job execution, concurrency control, and audit trails
 
 import { createHash } from "node:crypto";
-import { useGit } from "../composables/git.mjs";
+import { useGit } from "../composables/git/index.mjs";
 import { defineJob } from "./define.mjs";
 import { createJobHooks } from "./hooks.mjs";
 

@@ -1,108 +1,157 @@
 # GitVan v2 Composables
 
-This directory contains all the composables for GitVan v2, providing a comprehensive API for Git-native development automation.
-
-## Quick Start
-
-```javascript
-import { withGitVan, useJob, useEvent, useSchedule } from './src/composables/index.mjs';
-
-await withGitVan({ cwd: process.cwd(), env: process.env }, async () => {
-  const job = useJob();
-  const event = useEvent();
-  const schedule = useSchedule();
-  
-  // Your automation code here
-  const result = await job.run('my-job');
-  await event.trigger('job-completed', { result });
-});
-```
-
-## Available Composables
-
-### Core Composables
-- **`useGit`** - Git operations and repository management
-- **`useWorktree`** - Git worktree management
-- **`useTemplate`** - Template rendering with Nunjucks
-
-### Job & Event Composables
-- **`useJob`** - Job lifecycle and execution management
-- **`useEvent`** - Event system and triggering
-- **`useSchedule`** - Cron and scheduling management
-
-### Infrastructure Composables
-- **`useReceipt`** - Receipt and audit management
-- **`useLock`** - Distributed locking
-- **`useRegistry`** - Job and event registry management
-
-## Documentation
-
-- [Composables API Documentation](../docs/api/composables.md)
-- [Quick Reference Guide](../docs/api/composables-quick-reference.md)
-- [Examples](../docs/examples/composables-examples.md)
-
-## Features
-
-- **Context-aware**: All composables use `unctx` for proper async context management
-- **Git-native**: Leverages Git refs for locking, receipts, and metadata
-- **Type-safe**: Comprehensive error handling and validation
-- **Performance-optimized**: Efficient caching and parallel operations
-- **Extensible**: Easy to add new composables following the same pattern
-- **Unrouting**: Extract original names from routed paths for flexible access
-
-## Testing
-
-All composables are thoroughly tested with comprehensive integration tests:
-
-```bash
-# Run composables tests
-node test-new-composables.mjs
-```
-
-## Contributing
-
-When adding new composables:
-
-1. Follow the existing pattern in other composables
-2. Use `unctx` for context management
-3. Implement comprehensive error handling
-4. Add unrouting methods if applicable
-5. Write tests for all functionality
-6. Update documentation
+This directory contains the modular composables for GitVan v2, refactored from a monolithic structure into focused, testable factory modules.
 
 ## Architecture
 
-Each composable follows this pattern:
+The composables follow a factory pattern where each module exports a factory function that accepts shared dependencies:
 
 ```javascript
-export function useComposable() {
-  // Get context from unctx
-  let ctx;
-  try {
-    ctx = useGitVan();
-  } catch {
-    ctx = tryUseGitVan?.() || null;
-  }
-
-  const cwd = (ctx && ctx.cwd) || process.cwd();
-  const env = {
-    ...process.env,
-    ...(ctx && ctx.env ? ctx.env : {}),
-    TZ: "UTC",
-    LANG: "C",
-  };
-
-  const base = { cwd, env };
-
-  return {
-    cwd: base.cwd,
-    env: base.env,
-    
-    // Composable-specific methods
-    async method1() { /* ... */ },
-    async method2() { /* ... */ },
-  };
+export default function makeX(base, run, runVoid, toArr) {
+  return { /* functions */ }
 }
 ```
 
-This ensures consistent context handling and error management across all composables.
+## Directory Structure
+
+```
+src/composables/
+├── git/                    # Modular Git operations
+│   ├── index.mjs          # Barrel export (useGit)
+│   ├── runner.mjs         # Core runner with deterministic env
+│   ├── repo.mjs           # Repository info
+│   ├── commits.mjs        # Commit operations
+│   ├── diff.mjs           # Diff operations
+│   ├── branches.mjs       # Branch operations
+│   ├── tags.mjs           # Tag operations
+│   ├── notes.mjs          # Notes operations
+│   ├── refs.mjs           # Reference operations
+│   ├── worktrees.mjs      # Worktree operations
+│   ├── remotes.mjs        # Remote operations
+│   ├── merge_rebase_reset.mjs  # Merge/rebase/reset operations
+│   ├── stash.mjs          # Stash operations
+│   ├── cherry_revert.mjs  # Cherry-pick/revert operations
+│   └── plumbing.mjs       # Low-level operations
+├── index.mjs              # Main composables barrel
+├── worktree.mjs           # Worktree management
+├── template.mjs           # Template system
+├── notes.mjs              # Notes system
+├── job.mjs                # Job system
+├── event.mjs              # Event system
+├── schedule.mjs           # Schedule system
+├── receipt.mjs            # Receipt system
+├── lock.mjs               # Lock system
+└── registry.mjs           # Registry system
+```
+
+## Usage
+
+### Import the main composable
+
+```javascript
+import { useGit } from "./src/composables/git/index.mjs";
+const git = useGit();
+```
+
+### Or import from the main barrel
+
+```javascript
+import { useGit } from "./src/composables/index.mjs";
+const git = useGit();
+```
+
+### Use individual modules for testing
+
+```javascript
+import makeRepo from "./src/composables/git/repo.mjs";
+
+const mockBase = { cwd: "/test", env: {} };
+const mockRun = async (args) => "test-output";
+const mockRunVoid = async (args) => {};
+const mockToArr = (x) => Array.isArray(x) ? x : [x];
+
+const repo = makeRepo(mockBase, mockRun, mockRunVoid, mockToArr);
+```
+
+## Key Features
+
+### 80/20 Must-Add Features
+
+- **Release Helpers**: `shortlog(range)`, `trailers(range)`
+- **Path Filtering**: `pathsChanged(globs, from, to)`
+- **Notes Default**: `NOTES_REF` constant with defaulting
+- **Tag Convenience**: `pushTags(remote)`
+- **Remote Detection**: `defaultRemote()`
+
+### Enhanced Environment
+
+- `TZ=UTC` - UTC timezone
+- `LANG=C` - C locale
+- `LC_ALL=C` - C locale for all categories
+- `GIT_TERMINAL_PROMPT=0` - Disable terminal prompts
+
+### API Improvements
+
+- `head()` → `headSha()` (more descriptive)
+- `repoRoot()` → `root()` (shorter)
+- `statusPorcelain()` → `status()` (simplified)
+- `catFilePretty()` → `catFile()` (simplified)
+
+## Documentation
+
+- [Composables Index](../docs/composables/index.md) - Architecture overview
+- [Git API Reference](../docs/composables/git-api.md) - Detailed function documentation
+- [Migration Guide](../docs/composables/migration-guide.md) - Upgrade from v1
+- [Quick Reference](../docs/composables/quick-reference.md) - Cheat sheet
+
+## Testing
+
+Each module can be tested independently:
+
+```javascript
+import makeRepo from "./src/composables/git/repo.mjs";
+
+// Mock dependencies
+const mockBase = { cwd: "/test", env: {} };
+const mockRun = async (args) => "test-output";
+const mockRunVoid = async (args) => {};
+const mockToArr = (x) => Array.isArray(x) ? x : [x];
+
+// Create instance
+const repo = makeRepo(mockBase, mockRun, mockRunVoid, mockToArr);
+
+// Test functions
+const root = await repo.root(); // Uses mockRun
+```
+
+## Benefits
+
+### Maintainability
+- Smaller, focused modules (~80 lines each)
+- Clear separation of concerns
+- Easier to understand and modify
+
+### Testability
+- Test individual modules in isolation
+- Mock dependencies easily
+- Faster test execution
+
+### Extensibility
+- Add new Git operations easily
+- Compose only what you need
+- Better tree-shaking support
+
+### Performance
+- Modular loading
+- Efficient object composition
+- Deterministic behavior
+
+## Migration from v1
+
+See the [Migration Guide](../docs/composables/migration-guide.md) for detailed instructions on upgrading from the monolithic version.
+
+Key changes:
+1. Update import paths
+2. Rename functions (see API changes above)
+3. Take advantage of new features
+4. Update tests to use modular approach

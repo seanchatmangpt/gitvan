@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 1,
+            "activePatchIndex": 2,
             "patches": [
                 {
                     "date": 1758057329128,
@@ -12,6 +12,10 @@
                 {
                     "date": 1758089701064,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -13,15 +13,16 @@\n export async function getWorktreeInfo() {\n   const git = useGit();\n \n   try {\n-    const commonDir = await git.run(\"rev-parse --git-common-dir\");\n-    const worktree = await git.run(\"rev-parse --show-toplevel\");\n+    // Use --git-dir instead of --git-common-dir for compatibility\n+    const gitDir = await git.run(\"rev-parse\", \"--git-dir\");\n+    const worktree = await git.run(\"rev-parse\", \"--show-toplevel\");\n     const head = await git.head();\n     const branch = await git.getCurrentBranch();\n \n     return {\n-      commonDir: commonDir.trim(),\n+      commonDir: gitDir.trim(),\n       worktree: worktree.trim(),\n       branch: branch.trim(),\n       head: head.trim(),\n     };\n@@ -45,9 +46,9 @@\n  */\n export async function isWorktree() {\n   try {\n     const git = useGit();\n-    await git.run(\"rev-parse --is-inside-work-tree\");\n+    await git.run(\"rev-parse\", \"--is-inside-work-tree\");\n     return true;\n   } catch {\n     return false;\n   }\n@@ -60,9 +61,9 @@\n export async function listWorktrees() {\n   const git = useGit();\n \n   try {\n-    const output = await git.run(\"worktree list --porcelain\");\n+    const output = await git.run(\"worktree\", \"list\", \"--porcelain\");\n     const worktrees = [];\n     let current = {};\n \n     for (const line of output.split(\"\\n\")) {\n"
+                },
+                {
+                    "date": 1758096593606,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -2,9 +2,9 @@\n  * GitVan v2 Worktree Utilities - Git worktree detection and scoping\n  * Provides worktree-aware operations for multi-worktree environments\n  */\n \n-import { useGit } from \"../composables/git.mjs\";\n+import { useGit } from \"../composables/git/index.mjs\";\n import { createHash } from \"node:crypto\";\n \n /**\n  * Get comprehensive worktree information\n"
                 }
             ],
             "date": 1758057329128,

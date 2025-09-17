@@ -23,6 +23,34 @@ npm install -g gitvan
 npm install gitvan
 ```
 
+### Deterministic First Run
+
+```bash
+git init my-repo && cd my-repo
+gitvan init
+echo 'console.log(1)' > index.js
+git add . && git commit -m "init"
+
+# Add a real job
+echo "import { defineJob, useGit, useNotes } from 'file:///Users/sac/gitvan/src/index.mjs'
+
+export default defineJob({
+  meta: { name: 'touch', desc: 'Touch file on tag creation' },
+  on: { tagCreate: 'v*' },
+  async run() {
+    const git = useGit()
+    const notes = useNotes()
+    await git.writeFile('TOUCHED', 'ok')
+    await notes.write(\`touch for \${await git.headSha()}\`)
+    return { ok: true, artifacts: ['TOUCHED'] }
+  }
+})" > jobs/touch.mjs
+
+git tag v0.1.0
+gitvan event simulate --ref refs/tags/v0.1.0
+test -f TOUCHED && echo ok
+```
+
 ### Initialize a Project
 
 ```bash
@@ -49,6 +77,7 @@ GitVan v2 provides a comprehensive set of composables for building automation wo
 - **`useGit`** - Git operations and repository management
 - **`useWorktree`** - Git worktree management  
 - **`useTemplate`** - Template rendering with Nunjucks
+- **`useNotes`** - Git notes management for receipts
 
 ### Job & Event Composables
 - **`useJob`** - Job lifecycle and execution management
@@ -60,35 +89,46 @@ GitVan v2 provides a comprehensive set of composables for building automation wo
 - **`useLock`** - Distributed locking
 - **`useRegistry`** - Job and event registry management
 
-### Example Usage
+### API Reference
 
+#### defineJob
 ```javascript
-import { withGitVan, useJob, useEvent, useSchedule } from './src/composables/index.mjs';
+import { defineJob, useGit, useTemplate, useNotes } from 'file:///Users/sac/gitvan/src/index.mjs'
 
-await withGitVan({ cwd: process.cwd(), env: process.env }, async () => {
-  const job = useJob();
-  const event = useEvent();
-  const schedule = useSchedule();
-  
-  // Schedule a job
-  await schedule.add('daily-backup', '0 3 * * *', 'backup-job');
-  
-  // Register events
-  await event.register('backup-complete', {
-    name: 'Backup Complete',
-    type: 'custom',
-    job: 'notify-job'
-  });
-  
-  // Execute job with event triggering
-  const result = await job.run('backup-job');
-  if (result.success) {
-    await event.trigger('backup-complete', { result });
+export default defineJob({
+  meta: { name: "changelog", desc: "Generate changelog from commits" },
+  on: { tagCreate: "v*" },
+  async run() {
+    const git = useGit()
+    const tpl = await useTemplate()
+    const notes = useNotes()
+
+    const commits = await git.logSinceLastTag()
+    const body = tpl.render("changelog.njk", { commits })
+    await git.writeFile("CHANGELOG.md", body)
+    await notes.write(`changelog for ${await git.headSha()}`)
+    return { ok: true, artifacts: ["CHANGELOG.md"] }
   }
-});
+})
 ```
 
-**📚 Documentation**: [Composables API](docs/api/composables.md) | [Quick Reference](docs/api/composables-quick-reference.md) | [Examples](docs/examples/composables-examples.md)
+#### Event Schema
+```javascript
+on: {
+  // Git events
+  push: "refs/heads/main",           // Push to specific branch
+  tagCreate: "v*",                   // Tag creation with pattern
+  merge: "into:main",                // Merge into branch
+  fsChange: "src/**",                // File system changes
+  
+  // Cron events
+  cron: "0 */2 * * *",               // Cron expression
+  
+  // Predicates compose under all/any
+  all: [{ push: "refs/heads/main" }, { fsChange: "src/**" }],
+  any: [{ tagCreate: "v*" }, { cron: "0 0 * * *" }]
+}
+```
 
 ## ✨ Features
 
@@ -170,7 +210,7 @@ gitvan scaffold react-pack:component --inputs '{"name":"Button"}'
 ### Daemon & Events
 - `gitvan daemon start` - Start GitVan daemon
 - `gitvan daemon status` - Check daemon status
-- `gitvan event simulate --files "src/**"` - Simulate file events
+- `gitvan event simulate --ref refs/tags/v1.0.0` - Simulate events
 
 ### Audit & Compliance
 - `gitvan audit build` - Build audit report
@@ -237,6 +277,70 @@ export default {
 };
 ```
 
+## 🎯 Strategy Presets
+
+GitVan supports multiple development strategies with preset configurations:
+
+### Trunk-Based (Default)
+- Direct commits to main branch
+- Feature branches merged via PR
+- Continuous deployment on main
+
+### Release Flow
+- Release branches for versioning
+- Feature branches → Release → Main
+- Tagged releases with changelogs
+
+### Forking Workflow
+- External contributor support
+- Fork-based pull requests
+- Security scanning for external PRs
+
+## 📊 Event Model
+
+GitVan supports a comprehensive event system with standardized patterns:
+
+| Event        | Key payload              | Pattern example        |
+| ------------ | ------------------------ | ---------------------- |
+| `push`       | `ref`, `before`, `after` | `push:refs/heads/main` |
+| `tag:create` | `ref`, `tag`             | `tag:create:v*`        |
+| `merge`      | `from`, `into`           | `merge:into:main`      |
+| `fs:change`  | `paths`                  | `fs:change:src/**`     |
+| `cron`       | `cron`                   | `cron:0 */2 * * *`     |
+
+Predicates compose under `all` and `any`. Keep it to those two.
+
+## 🔄 Evolution Story
+
+GitVan's power lies in how the tree stays fixed while behavior changes. Here's how workflows evolve:
+
+### Phase 1 → Phase 2 (add release flow)
+
+```diff
+ // gitvan.config.js
+ export default {
+-  strategy: "tbd",
++  strategy: "release-flow",
+   events: {
+     "push:refs/heads/main": ["notes:write","changelog"],
+     "push:refs/heads/feature/*": ["lint.changed","test.changed"],
++    "branch:create:refs/heads/release/*": ["version.freeze","changelog.seed"],
++    "push:refs/heads/release/*": ["release.plan"],
+     "tag:create:v*": ["release.publish"]
+   }
+ }
+```
+
+### Phase 2 → Phase 3 (enable OSS PRs)
+
+```diff
+   events: {
+     ...
++    "pr:opened:external": ["security.scan","ai.review.summary"]
+   }
+ }
+```
+
 ## 🔒 Security & Safety
 
 - **Path Sandboxing**: Prevents directory traversal attacks
@@ -244,6 +348,14 @@ export default {
 - **Shell Allowlists**: Configurable command execution
 - **Audit Trails**: Complete operation logging in Git notes
 - **Idempotent Operations**: Safe to run multiple times
+
+## 📝 Receipts
+
+GitVan maintains complete audit trails through Git notes:
+
+- **Location**: `refs/notes/gitvan/results`
+- **Key**: `${commitSHA}:${jobName}:${timestamp}`
+- **Body**: JSON `{ ok, startedAt, finishedAt, inputs, outputs, artifacts, seed }`
 
 ## 🎨 Front-Matter Support
 
@@ -260,17 +372,26 @@ Content here
 
 ## 📚 Examples
 
-### Simple Job
+### Canonical Job Skeleton
 ```javascript
-// jobs/greeting.mjs
-export default {
-  name: "greeting",
-  description: "Say hello",
-  
+// jobs/changelog.mjs
+import { defineJob, useGit, useTemplate, useNotes } from 'file:///Users/sac/gitvan/src/index.mjs'
+
+export default defineJob({
+  meta: { name: "changelog", desc: "Generate changelog from commits" },
+  on: { tagCreate: "v*" },
   async run() {
-    console.log("Hello from GitVan! 🚀");
+    const git = useGit()
+    const tpl = await useTemplate()
+    const notes = useNotes()
+
+    const commits = await git.logSinceLastTag()
+    const body = tpl.render("changelog.njk", { commits })
+    await git.writeFile("CHANGELOG.md", body)
+    await notes.write(`changelog for ${await git.headSha()}`)
+    return { ok: true, artifacts: ["CHANGELOG.md"] }
   }
-};
+})
 ```
 
 ### Template with Front-Matter
@@ -337,6 +458,10 @@ const status = await worktree.status();
 console.log(`Total worktrees: ${status.count}`);
 console.log(`Is main worktree: ${status.isMain}`);
 ```
+
+## 🚀 Performance
+
+GitVan is optimized for sub-second execution of single-file jobs on local repositories. For complex workflows, performance scales linearly with job complexity.
 
 ## 🤝 Contributing
 

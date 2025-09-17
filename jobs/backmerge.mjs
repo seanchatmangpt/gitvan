@@ -1,45 +1,23 @@
-/**
- * GitVan Job: backmerge
- * Backmerges release branch to main
- */
-export default {
-  name: "backmerge",
-  meta: {
-    description: "Backmerge release to main",
-    category: "release"
-  },
+import { defineJob } from 'file:///Users/sac/gitvan/src/index.mjs';
+
+export default defineJob({
+  meta: { name: "backmerge", desc: "Backmerge release to main" },
   async run(ctx) {
-    const { useGit, useReceipt } = ctx;
-    const git = useGit();
-    const receipt = useReceipt();
-    
+    const { inputs } = ctx;
     const timestamp = new Date().toISOString();
-    const currentBranch = await git.getCurrentBranch();
-    const releaseBranch = currentBranch.replace("refs/heads/", "");
     
-    // Simulate backmerge (in real scenario, would switch branches)
-    const backmergeInfo = {
-      timestamp,
-      from: releaseBranch,
-      to: "main",
-      status: "simulated"
-    };
+    // Simulate backmerge (simplified for demo)
+    console.log(`✓ Backmerged to main at ${timestamp}`);
     
-    // Write note
-    await git.noteAdd(`backmerged ${releaseBranch} -> main`);
-    
-    // Create receipt
-    await receipt.create({
-      operation: "backmerge",
-      status: "completed",
-      timestamp,
-      metadata: { 
-        from: releaseBranch,
+    return {
+      status: 'success',
+      message: `Backmerge completed`,
+      data: {
+        timestamp,
+        from: "release/1.0",
         to: "main",
         simulated: true
       }
-    });
-    
-    console.log(`✓ Backmerged ${releaseBranch} -> main (simulated)`);
+    };
   }
-};
+});

@@ -1,35 +1,35 @@
-import { createHash } from 'node:crypto';
-import { writeFileSync, unlinkSync } from 'node:fs';
-import { join } from 'node:path';
-import { tmpdir } from 'node:os';
-import { useGit } from '../../composables/git.mjs';
-import { createLogger } from '../../utils/logger.mjs';
-import { CryptoManager } from '../../utils/crypto.mjs';
+import { createHash } from "node:crypto";
+import { writeFileSync, unlinkSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { useGit } from "../../composables/git/index.mjs";
+import { createLogger } from "../../utils/logger.mjs";
+import { CryptoManager } from "../../utils/crypto.mjs";
 
 export class ReceiptManager {
   constructor(options = {}) {
     this.options = options;
-    this.logger = createLogger('pack:receipt');
+    this.logger = createLogger("pack:receipt");
     this.git = useGit();
-    this.receiptsRef = options.receiptsRef || 'refs/notes/gitvan/pack-receipts';
+    this.receiptsRef = options.receiptsRef || "refs/notes/gitvan/pack-receipts";
 
     // Initialize crypto manager
-    this.crypto = new CryptoManager(options.gitvanDir || '.gitvan');
+    this.crypto = new CryptoManager(options.gitvanDir || ".gitvan");
 
     // Auto-generate keys if signing is enabled and no keys exist
     if (options.sign && !this.crypto.hasKeyPair()) {
       try {
         this.crypto.generateKeyPair();
-        this.logger.info('Generated new Ed25519 key pair for receipt signing');
+        this.logger.info("Generated new Ed25519 key pair for receipt signing");
       } catch (error) {
-        this.logger.warn('Failed to generate key pair:', error.message);
+        this.logger.warn("Failed to generate key pair:", error.message);
       }
     }
   }
 
   async create(pack, operation, status, details = {}) {
     const receipt = {
-      kind: 'pack-receipt',
+      kind: "pack-receipt",
       id: pack.manifest.id,
       version: pack.manifest.version,
       operation,
@@ -40,13 +40,13 @@ export class ReceiptManager {
       fingerprint: pack.fingerprint || this.createFingerprint(pack.manifest),
       details,
       environment: this.captureEnvironment(),
-      integrity: {}
+      integrity: {},
     };
 
     // Add integrity hashes
     receipt.integrity = {
       manifest: this.hashObject(pack.manifest),
-      receipt: null // Will be filled after signing
+      receipt: null, // Will be filled after signing
     };
 
     // Sign receipt if configured
@@ -64,7 +64,7 @@ export class ReceiptManager {
     try {
       // Write to Git notes using temporary file
       const noteContent = JSON.stringify(receipt, null, 2);
-      const commit = receipt.commit !== 'unknown' ? receipt.commit : 'HEAD';
+      const commit = receipt.commit !== "unknown" ? receipt.commit : "HEAD";
 
       // Use temporary file to avoid command line escaping issues
       const tempFile = join(tmpdir(), `gitvan-receipt-${Date.now()}.json`);
@@ -75,9 +75,20 @@ export class ReceiptManager {
         // Ensure notes ref exists
         await this.ensureNotesRef();
 
-        await this.git.run(['notes', '--ref', this.receiptsRef, 'add', '-f', '-F', tempFile, commit]);
+        await this.git.run([
+          "notes",
+          "--ref",
+          this.receiptsRef,
+          "add",
+          "-f",
+          "-F",
+          tempFile,
+          commit,
+        ]);
 
-        this.logger.debug(`Receipt written to ${this.receiptsRef} for ${receipt.id}@${receipt.version}`);
+        this.logger.debug(
+          `Receipt written to ${this.receiptsRef} for ${receipt.id}@${receipt.version}`
+        );
 
         return { ref: this.receiptsRef, commit };
       } finally {
@@ -88,20 +99,31 @@ export class ReceiptManager {
         }
       }
     } catch (error) {
-      this.logger.error('Failed to write receipt:', error.message);
+      this.logger.error("Failed to write receipt:", error.message);
       throw error;
     }
   }
 
   async read(packId, options = {}) {
     try {
-      const notes = await this.git.run(['notes', '--ref', this.receiptsRef, 'list']);
+      const notes = await this.git.run([
+        "notes",
+        "--ref",
+        this.receiptsRef,
+        "list",
+      ]);
       const receipts = [];
 
-      for (const line of notes.split('\n').filter(Boolean)) {
-        const [noteId, commit] = line.split(' ');
+      for (const line of notes.split("\n").filter(Boolean)) {
+        const [noteId, commit] = line.split(" ");
         try {
-          const content = await this.git.run(['notes', '--ref', this.receiptsRef, 'show', noteId]);
+          const content = await this.git.run([
+            "notes",
+            "--ref",
+            this.receiptsRef,
+            "show",
+            noteId,
+          ]);
           const receipt = JSON.parse(content);
 
           if (receipt.id === packId || !packId) {
@@ -121,7 +143,11 @@ export class ReceiptManager {
 
       return receipts;
     } catch (error) {
-      if (error.message.includes('No note found') || error.message.includes('not found') || error.message.includes('No notes exist')) {
+      if (
+        error.message.includes("No note found") ||
+        error.message.includes("not found") ||
+        error.message.includes("No notes exist")
+      ) {
         return options.latest ? null : [];
       }
       throw error;
@@ -137,59 +163,66 @@ export class ReceiptManager {
     const computedHash = this.hashObject(receiptCopy);
 
     if (computedHash !== receipt.integrity?.receipt) {
-      errors.push('Receipt integrity check failed');
+      errors.push("Receipt integrity check failed");
     }
 
     // Verify signature if present
     if (receipt.signature && this.options.publicKey) {
       const signatureValid = await this.verifySignature(receipt);
       if (!signatureValid) {
-        errors.push('Invalid signature');
+        errors.push("Invalid signature");
       }
     }
 
     // Verify commit exists (skip if 'unknown')
-    if (receipt.commit && receipt.commit !== 'unknown') {
+    if (receipt.commit && receipt.commit !== "unknown") {
       try {
-        await this.git.run(['cat-file', '-e', receipt.commit]);
+        await this.git.run(["cat-file", "-e", receipt.commit]);
       } catch {
         errors.push(`Commit not found: ${receipt.commit}`);
       }
     }
 
     // Verify required fields
-    const requiredFields = ['kind', 'id', 'version', 'operation', 'status', 'timestamp'];
-    const missingFields = requiredFields.filter(field => !(field in receipt));
+    const requiredFields = [
+      "kind",
+      "id",
+      "version",
+      "operation",
+      "status",
+      "timestamp",
+    ];
+    const missingFields = requiredFields.filter((field) => !(field in receipt));
     if (missingFields.length > 0) {
-      errors.push(`Missing required fields: ${missingFields.join(', ')}`);
+      errors.push(`Missing required fields: ${missingFields.join(", ")}`);
     }
 
     return {
       valid: errors.length === 0,
       errors,
-      receipt
+      receipt,
     };
   }
 
   async listByStatus(status) {
     const allReceipts = await this.read();
-    return allReceipts.filter(receipt => receipt.status === status);
+    return allReceipts.filter((receipt) => receipt.status === status);
   }
 
   async listByOperation(operation) {
     const allReceipts = await this.read();
-    return allReceipts.filter(receipt => receipt.operation === operation);
+    return allReceipts.filter((receipt) => receipt.operation === operation);
   }
 
   async getReceiptHistory(packId) {
     const receipts = await this.read(packId);
-    return receipts.map(receipt => ({
+    return receipts.map((receipt) => ({
       timestamp: receipt.timestamp,
       operation: receipt.operation,
       status: receipt.status,
       version: receipt.version,
       commit: receipt.commit,
-      details: receipt.details
+      details: receipt.details,
     }));
   }
 
@@ -198,25 +231,25 @@ export class ReceiptManager {
       node: process.version,
       platform: process.platform,
       arch: process.arch,
-      gitvan: this.options.gitvanVersion || 'unknown',
-      user: process.env.USER || process.env.USERNAME || 'unknown',
-      ci: process.env.CI === 'true',
+      gitvan: this.options.gitvanVersion || "unknown",
+      user: process.env.USER || process.env.USERNAME || "unknown",
+      ci: process.env.CI === "true",
       timestamp_utc: new Date().toISOString(),
-      pwd: process.cwd()
+      pwd: process.cwd(),
     };
   }
 
   hashObject(obj) {
     const canonical = JSON.stringify(this.sortObject(obj));
-    return createHash('sha256').update(canonical).digest('hex');
+    return createHash("sha256").update(canonical).digest("hex");
   }
 
   sortObject(obj) {
     if (Array.isArray(obj)) {
-      return obj.map(item => this.sortObject(item));
+      return obj.map((item) => this.sortObject(item));
     }
 
-    if (obj && typeof obj === 'object' && obj !== null) {
+    if (obj && typeof obj === "object" && obj !== null) {
       const sorted = {};
       const keys = Object.keys(obj).sort();
       for (const key of keys) {
@@ -230,14 +263,16 @@ export class ReceiptManager {
 
   createFingerprint(manifest) {
     const canonical = JSON.stringify(this.sortObject(manifest));
-    return createHash('sha256').update(canonical).digest('hex');
+    return createHash("sha256").update(canonical).digest("hex");
   }
 
   async signReceipt(receipt) {
     try {
       // Ensure we have a key pair
       if (!this.crypto.hasKeyPair()) {
-        throw new Error('No signing key available. Run with --generate-keys or ensure keys exist.');
+        throw new Error(
+          "No signing key available. Run with --generate-keys or ensure keys exist."
+        );
       }
 
       // Create receipt copy without signature for signing
@@ -253,10 +288,10 @@ export class ReceiptManager {
         ...signatureInfo,
         keyFingerprint: this.crypto.getPublicKeyFingerprint(),
         receiptId: receipt.id,
-        receiptVersion: receipt.version
+        receiptVersion: receipt.version,
       };
     } catch (error) {
-      this.logger.error('Failed to sign receipt:', error.message);
+      this.logger.error("Failed to sign receipt:", error.message);
       throw new Error(`Receipt signing failed: ${error.message}`);
     }
   }
@@ -264,19 +299,21 @@ export class ReceiptManager {
   async verifySignature(receipt) {
     try {
       if (!receipt.signature) {
-        this.logger.debug('No signature found in receipt');
+        this.logger.debug("No signature found in receipt");
         return false;
       }
 
       // Check if we have the required algorithm
-      if (receipt.signature.algorithm !== 'Ed25519') {
-        this.logger.warn(`Unsupported signature algorithm: ${receipt.signature.algorithm}`);
+      if (receipt.signature.algorithm !== "Ed25519") {
+        this.logger.warn(
+          `Unsupported signature algorithm: ${receipt.signature.algorithm}`
+        );
         return false;
       }
 
       // Ensure we have a public key for verification
       if (!this.crypto.hasKeyPair()) {
-        this.logger.warn('No public key available for signature verification');
+        this.logger.warn("No public key available for signature verification");
         return false;
       }
 
@@ -289,30 +326,34 @@ export class ReceiptManager {
       const isValid = this.crypto.verify(receiptToVerify, receipt.signature);
 
       if (!isValid) {
-        this.logger.warn(`Invalid signature for receipt ${receipt.id}@${receipt.version}`);
+        this.logger.warn(
+          `Invalid signature for receipt ${receipt.id}@${receipt.version}`
+        );
       } else {
-        this.logger.debug(`Valid signature for receipt ${receipt.id}@${receipt.version}`);
+        this.logger.debug(
+          `Valid signature for receipt ${receipt.id}@${receipt.version}`
+        );
       }
 
       return isValid;
     } catch (error) {
-      this.logger.error('Signature verification failed:', error.message);
+      this.logger.error("Signature verification failed:", error.message);
       return false;
     }
   }
 
   async getCurrentCommit() {
     try {
-      const result = await this.git.run(['rev-parse', 'HEAD']);
+      const result = await this.git.run(["rev-parse", "HEAD"]);
       return result.trim();
     } catch {
-      return 'unknown';
+      return "unknown";
     }
   }
 
   async getWorktreePath() {
     try {
-      const result = await this.git.run(['rev-parse', '--show-toplevel']);
+      const result = await this.git.run(["rev-parse", "--show-toplevel"]);
       return result.trim();
     } catch {
       return process.cwd();
@@ -322,34 +363,55 @@ export class ReceiptManager {
   async ensureNotesRef() {
     try {
       // Check if notes ref exists
-      await this.git.run(['show-ref', this.receiptsRef]);
+      await this.git.run(["show-ref", this.receiptsRef]);
     } catch {
       // Create empty notes ref by adding and removing a note
       try {
-        await this.git.run(['notes', '--ref', this.receiptsRef, 'add', '-m', 'Initialize pack receipts', 'HEAD']);
-        await this.git.run(['notes', '--ref', this.receiptsRef, 'remove', 'HEAD']);
+        await this.git.run([
+          "notes",
+          "--ref",
+          this.receiptsRef,
+          "add",
+          "-m",
+          "Initialize pack receipts",
+          "HEAD",
+        ]);
+        await this.git.run([
+          "notes",
+          "--ref",
+          this.receiptsRef,
+          "remove",
+          "HEAD",
+        ]);
       } catch (error) {
-        this.logger.warn('Could not initialize notes ref:', error.message);
+        this.logger.warn("Could not initialize notes ref:", error.message);
       }
     }
   }
 
-  async exportReceipts(format = 'json') {
+  async exportReceipts(format = "json") {
     const receipts = await this.read();
 
-    if (format === 'json') {
+    if (format === "json") {
       return JSON.stringify(receipts, null, 2);
     }
 
-    if (format === 'csv') {
-      if (receipts.length === 0) return '';
+    if (format === "csv") {
+      if (receipts.length === 0) return "";
 
-      const headers = ['id', 'version', 'operation', 'status', 'timestamp', 'commit'];
-      const rows = receipts.map(receipt =>
-        headers.map(header => receipt[header] || '').join(',')
+      const headers = [
+        "id",
+        "version",
+        "operation",
+        "status",
+        "timestamp",
+        "commit",
+      ];
+      const rows = receipts.map((receipt) =>
+        headers.map((header) => receipt[header] || "").join(",")
       );
 
-      return [headers.join(','), ...rows].join('\n');
+      return [headers.join(","), ...rows].join("\n");
     }
 
     throw new Error(`Unsupported export format: ${format}`);
@@ -365,10 +427,12 @@ export class ReceiptManager {
       this.logger.info(`Generated new Ed25519 key pair:`);
       this.logger.info(`  Public key: ${keyInfo.publicKeyPath}`);
       this.logger.info(`  Private key: ${keyInfo.privateKeyPath}`);
-      this.logger.info(`  Key fingerprint: ${this.crypto.getPublicKeyFingerprint()}`);
+      this.logger.info(
+        `  Key fingerprint: ${this.crypto.getPublicKeyFingerprint()}`
+      );
       return keyInfo;
     } catch (error) {
-      this.logger.error('Failed to generate signing keys:', error.message);
+      this.logger.error("Failed to generate signing keys:", error.message);
       throw error;
     }
   }
@@ -388,10 +452,10 @@ export class ReceiptManager {
         publicKeyPath: this.crypto.publicKeyPath,
         privateKeyPath: this.crypto.privateKeyPath,
         fingerprint: this.crypto.getPublicKeyFingerprint(),
-        keysDirectory: this.crypto.keysDir
+        keysDirectory: this.crypto.keysDir,
       };
     } catch (error) {
-      this.logger.error('Failed to get key info:', error.message);
+      this.logger.error("Failed to get key info:", error.message);
       return null;
     }
   }

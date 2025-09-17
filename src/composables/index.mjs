@@ -4,9 +4,10 @@
  */
 
 // Core composables
-export { useGit } from "./git.mjs";
+export { useGit } from "./git/index.mjs";
 export { useWorktree } from "./worktree.mjs";
 export { useTemplate } from "./template.mjs";
+export { useNotes } from "./notes.mjs";
 
 // Job & Event composables
 export { useJob } from "./job.mjs";
@@ -17,6 +18,7 @@ export { useSchedule } from "./schedule.mjs";
 export { useReceipt } from "./receipt.mjs";
 export { useLock } from "./lock.mjs";
 export { useRegistry } from "./registry.mjs";
+export { usePack } from "./pack.mjs";
 
 // Re-export context utilities for convenience
 export { withGitVan, useGitVan, tryUseGitVan } from "../core/context.mjs";

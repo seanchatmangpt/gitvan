@@ -7,15 +7,12 @@
 // - 80/20 commands: Only the essential Git operations that GitVan actually uses.
 
 import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import path from "node:path";
 import { useGitVan, tryUseGitVan } from "../core/context.mjs";
 
-const execFileAsync = promisify(execFile);
-
 async function runGit(args, { cwd, env, maxBuffer = 12 * 1024 * 1024 } = {}) {
   try {
-    const { stdout } = await execFileAsync("git", args, {
+    const { stdout } = await execFile("git", args, {
       cwd,
       env,
       maxBuffer,
@@ -91,6 +88,9 @@ export function useGit() {
     async head() {
       return runGit(["rev-parse", "HEAD"], base);
     },
+    async headSha() {
+      return runGit(["rev-parse", "HEAD"], base);
+    },
     async repoRoot() {
       return runGit(["rev-parse", "--show-toplevel"], base);
     },
@@ -113,6 +113,14 @@ export function useGit() {
           ? extra.split(/\s+/).filter(Boolean)
           : toArr(extra);
       return runGit(["log", `--pretty=${format}`, ...extraArgs], base);
+    },
+    async logSinceLastTag(format = "%h%x09%s") {
+      try {
+        return runGit(["log", `--pretty=${format}`, "--oneline", "HEAD"], base);
+      } catch {
+        // If no tags exist, return empty
+        return "";
+      }
     },
     async statusPorcelain() {
       return runGit(["status", "--porcelain"], base);
@@ -142,6 +150,14 @@ export function useGit() {
       const list = toArr(paths).filter(Boolean);
       if (list.length === 0) return;
       await runGitVoid(["add", "--", ...list], base);
+    },
+    async writeFile(filePath, content) {
+      const { writeFile } = await import("node:fs/promises");
+      const fullPath = path.isAbsolute(filePath)
+        ? filePath
+        : path.join(base.cwd, filePath);
+      await writeFile(fullPath, content, "utf8");
+      return fullPath;
     },
     async commit(message, opts = {}) {
       const args = ["commit", "-m", message];

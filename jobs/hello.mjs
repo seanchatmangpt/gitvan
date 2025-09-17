@@ -1,8 +1,7 @@
 import { defineJob } from 'file:///Users/sac/gitvan/src/index.mjs';
 
 export default defineJob({
-  name: 'hello',
-  description: 'Say hello from GitVan pack',
+  meta: { name: 'hello', desc: 'Say hello from GitVan pack' },
   async run(ctx) {
     const { inputs } = ctx;
     const projectName = inputs?.projectName || 'Unknown Project';

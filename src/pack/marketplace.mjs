@@ -7,7 +7,11 @@ import { PackRegistry } from "./registry.mjs";
 import { createLogger } from "../utils/logger.mjs";
 import { z } from "zod";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join } from "pathe";
+import { join, dirname } from "pathe";
+import { fileURLToPath } from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Input validation schemas
 const BrowseOptionsSchema = z.object({
@@ -37,6 +41,8 @@ function detectPacks() {
     join(process.cwd(), 'packs'),
     join(process.cwd(), 'packs', 'builtin'),
     join(process.cwd(), 'node_modules', '@gitvan', 'packs'),
+    // Also look in GitVan's builtin packs
+    join(__dirname, '..', '..', 'packs', 'builtin'),
   ];
   
   for (const packDir of packDirs) {

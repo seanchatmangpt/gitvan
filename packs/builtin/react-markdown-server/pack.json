@@ -1,22 +1,24 @@
 {
   "abi": "1.0",
-  "id": "builtin/next-minimal",
-  "name": "Next.js Minimal Starter",
+  "id": "builtin/react-markdown-server",
+  "name": "React Markdown Components Server",
   "version": "1.0.0",
-  "description": "A minimal Next.js application starter pack",
+  "description": "Complete React markdown rendering system with custom components and server-side rendering",
   "tags": [
-    "nextjs",
     "react",
-    "minimal",
+    "markdown",
+    "ssr",
+    "components",
     "builtin"
   ],
   "categories": [
-    "next",
-    "react"
+    "react",
+    "api"
   ],
   "capabilities": [
     "scaffold",
-    "development"
+    "ssr",
+    "components"
   ],
   "author": "GitVan",
   "license": "MIT",
@@ -31,7 +33,7 @@
     {
       "key": "project_name",
       "type": "string",
-      "default": "my-nextjs-app",
+      "default": "markdown-server",
       "prompt": "Project name"
     },
     {
@@ -41,17 +43,23 @@
       "prompt": "Use TypeScript?"
     },
     {
+      "key": "include_ssr",
+      "type": "boolean",
+      "default": true,
+      "prompt": "Include server-side rendering?"
+    },
+    {
       "key": "port",
       "type": "string",
       "default": "3000",
-      "prompt": "Development port"
+      "prompt": "Server port"
     }
   ],
   "provides": {
     "jobs": [
       {
-        "src": "create-nextjs-project.mjs",
-        "id": "create-nextjs-project"
+        "src": "create-markdown-server.mjs",
+        "id": "create-markdown-server"
       }
     ]
   },

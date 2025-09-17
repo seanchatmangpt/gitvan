@@ -58,3 +58,4 @@ export function generateSeed(base, context = {}) {
   const hash = sha256Hex(content);
   return parseInt(hash.slice(0, 8), 16);
 }
+

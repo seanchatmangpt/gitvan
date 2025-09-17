@@ -56,3 +56,4 @@ export function tagSuffix(pred, meta) {
   
   return meta.tagsCreated.some(tag => tag.endsWith(pred.tagSuffix));
 }
+

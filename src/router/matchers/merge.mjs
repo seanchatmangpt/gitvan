@@ -71,3 +71,4 @@ export function pullRequest(pred, meta) {
   
   return !!meta.pullRequest;
 }
+

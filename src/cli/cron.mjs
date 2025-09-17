@@ -3,9 +3,8 @@
  * Provides commands for listing, starting, and managing cron jobs
  */
 
-import { startCronScheduler } from "../jobs/cron.mjs";
-import { scanJobs } from "../jobs/scan.mjs";
-import { loadOptions } from "../config/loader.mjs";
+import { startCronScheduler, scanJobs } from "../jobs/cron.mjs";
+import { loadConfig } from "../runtime/config.mjs";
 import { createLogger } from "../utils/logger.mjs";
 
 const logger = createLogger("cron-cli");
@@ -17,7 +16,7 @@ const logger = createLogger("cron-cli");
  * @returns {Promise<void>}
  */
 export async function cronCommand(subcommand = "list", args = {}) {
-  const config = await loadOptions();
+  const config = await loadConfig();
 
   switch (subcommand) {
     case "list":
@@ -44,7 +43,7 @@ export async function cronCommand(subcommand = "list", args = {}) {
  */
 async function listCronJobs(config) {
   try {
-    const jobs = await scanJobs({ cwd: config.rootDir });
+    const jobs = await scanJobs({ cwd: config.rootDir || process.cwd() });
     const cronJobs = jobs.filter((job) => job.cron);
 
     if (cronJobs.length === 0) {
@@ -56,9 +55,9 @@ async function listCronJobs(config) {
     console.log();
 
     for (const job of cronJobs) {
-      console.log(`📅 ${job.id || job.filename}`);
+      console.log(`📅 ${job.id || job.name}`);
       console.log(`   Cron: ${job.cron}`);
-      console.log(`   File: ${job.filePath}`);
+      console.log(`   File: ${job.relativePath}`);
       if (job.meta?.desc) {
         console.log(`   Desc: ${job.meta.desc}`);
       }
@@ -78,7 +77,7 @@ async function listCronJobs(config) {
  */
 async function dryRunCronJobs(config, at) {
   try {
-    const jobs = await scanJobs({ cwd: config.rootDir });
+    const jobs = await scanJobs({ cwd: config.rootDir || process.cwd() });
     const cronJobs = jobs.filter((job) => job.cron);
     const checkTime = at ? new Date(at) : new Date();
 
@@ -101,7 +100,7 @@ async function dryRunCronJobs(config, at) {
 
     console.log(`Jobs that would run:`);
     for (const job of matchingJobs) {
-      console.log(`  - ${job.id || job.filename} (${job.cron})`);
+      console.log(`  - ${job.id || job.name} (${job.cron})`);
     }
   } catch (error) {
     logger.error("Failed to dry run cron jobs:", error.message);

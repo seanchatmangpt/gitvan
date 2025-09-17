@@ -62,3 +62,4 @@ export const ConfigSchema = z.object({
     sandbox: z.boolean().default(true),
   }).default({}),
 });
+

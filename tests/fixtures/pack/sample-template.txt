@@ -1,0 +1,19 @@
+---
+title: Sample Template
+author: GitVan
+mergeStrategy: append
+variables:
+  greeting: Hello
+  defaultName: World
+---
+{{greeting}}, {{inputs.name or defaultName}}!
+
+This is a sample template processed at {{nowISO}}.
+
+Repository: {{repo.name}}
+Branch: {{git.branch}}
+Package: {{pkg.name or 'unknown'}}
+
+Environment variables:
+- NODE_ENV: {{env.NODE_ENV or 'development'}}
+- USER: {{env.USER or 'unknown'}}

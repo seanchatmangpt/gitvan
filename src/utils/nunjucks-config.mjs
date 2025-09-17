@@ -228,6 +228,19 @@ export function createTestEnvironment(paths = []) {
 }
 
 /**
+ * Ensure a Nunjucks environment with default configuration
+ * @param {string} templateDir - Directory containing templates
+ * @returns {nunjucks.Environment} Configured Nunjucks environment
+ */
+export function ensureNunjucksEnv(templateDir = process.cwd()) {
+  return getCachedEnvironment({
+    paths: [templateDir],
+    autoescape: false,
+    noCache: true
+  });
+}
+
+/**
  * List all available filters
  * @returns {Object} Object with filter categories and their filters
  */

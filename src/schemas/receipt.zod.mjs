@@ -52,3 +52,4 @@ export const ReceiptQuery = z.object({
   branch: z.string().optional(),
   limit: z.number().positive().optional(),
 });
+

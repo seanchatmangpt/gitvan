@@ -117,3 +117,4 @@ export async function pullModel(model = "qwen3-coder:30b") {
     throw new Error(`Failed to pull model ${model}: ${error.message}`);
   }
 }
+

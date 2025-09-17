@@ -1,0 +1,51 @@
+---
+fileType: {{ 'ts' if inputs.useTypescript else 'js' }}
+---
+{% if inputs.useTypescript -%}
+import { NextRequest, NextResponse } from 'next/server';
+
+export async function GET(request: NextRequest) {
+{%- else -%}
+export async function GET(request) {
+{%- endif %}
+  try {
+    // TODO: Implement your GET logic here
+    const data = {
+      message: 'Hello from {{ route }}',
+      timestamp: new Date().toISOString(),
+      method: 'GET'
+    };
+
+    return NextResponse.json(data);
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Internal Server Error' },
+      { status: 500 }
+    );
+  }
+}
+
+{% if inputs.useTypescript -%}
+export async function POST(request: NextRequest) {
+{%- else -%}
+export async function POST(request) {
+{%- endif %}
+  try {
+    const body = await request.json();
+
+    // TODO: Implement your POST logic here
+    const data = {
+      message: 'Data received at {{ route }}',
+      timestamp: new Date().toISOString(),
+      method: 'POST',
+      receivedData: body
+    };
+
+    return NextResponse.json(data);
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Internal Server Error' },
+      { status: 500 }
+    );
+  }
+}

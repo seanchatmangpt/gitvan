@@ -177,3 +177,4 @@ Refine the following {{ type | default('job') }} specification:
 
 Provide an improved version that addresses the requirements while maintaining compatibility with GitVan v2.
 `;
+

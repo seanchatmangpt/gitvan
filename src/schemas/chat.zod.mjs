@@ -84,3 +84,4 @@ export const ChatReceipt = z.object({
   timestamp: z.string(),
   fingerprint: z.string(),
 });
+

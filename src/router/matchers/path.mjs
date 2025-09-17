@@ -78,3 +78,4 @@ export function pathDeleted(pred, meta) {
   const files = meta.filesDeleted || [];
   return anyMatch(pred.pathDeleted, files);
 }
+

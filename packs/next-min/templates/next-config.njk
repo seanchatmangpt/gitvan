@@ -1,0 +1,13 @@
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  {% if inputs.docsMdx -%}
+  experimental: {
+    mdxRs: true,
+  },
+  {%- endif %}
+  eslint: {
+    dirs: ['pages', 'utils', 'components', 'lib'],
+  },
+};
+
+module.exports = nextConfig;

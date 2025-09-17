@@ -298,3 +298,4 @@ function verifyReceiptIntegrity(receipt) {
   // Additional checks could be added here
   return true;
 }
+

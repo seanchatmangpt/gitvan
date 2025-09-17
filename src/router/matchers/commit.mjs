@@ -81,3 +81,4 @@ export function commitScope(pred, meta) {
   const scopePattern = new RegExp(`^\\w+\\(${pred.commitScope}\\):`, "i");
   return scopePattern.test(message);
 }
+

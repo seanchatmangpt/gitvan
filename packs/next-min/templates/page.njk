@@ -1,0 +1,36 @@
+---
+fileType: {{ 'tsx' if inputs.useTypescript else 'jsx' }}
+---
+{% if inputs.useTypescript -%}
+export default function Home(): JSX.Element {
+{%- else -%}
+export default function Home() {
+{%- endif %}
+  return (
+    <main className="flex min-h-screen flex-col items-center justify-between p-24">
+      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm">
+        <h1 className="text-4xl font-bold">
+          Welcome to {{ inputs.projectName }}
+        </h1>
+        <p className="mt-4">
+          Get started by editing{' '}
+          <code className="font-mono font-bold">
+            {{ 'app/page.tsx' if inputs.appRouter else 'pages/index.jsx' }}
+          </code>
+        </p>
+        <div className="mt-8">
+          <h2 className="text-2xl font-semibold mb-4">Features</h2>
+          <ul className="list-disc list-inside space-y-2">
+            <li>Next.js {{ '14 with App Router' if inputs.appRouter else '14 with Pages Router' }}</li>
+            <li>{{ 'TypeScript' if inputs.useTypescript else 'JavaScript' }} support</li>
+            <li>GitVan automation for docs and releases</li>
+            <li>ESLint configuration</li>
+            {% if inputs.ci != 'none' -%}
+            <li>{{ inputs.ci | capitalize }} CI/CD setup</li>
+            {%- endif %}
+          </ul>
+        </div>
+      </div>
+    </main>
+  );
+}

@@ -274,3 +274,4 @@ GitVan v2 is backward compatible with v1 job definitions. Existing jobs will con
 ---
 
 **GitVan v2** - AI-powered Git workflow automation with composables and Nunjucks templates.
+

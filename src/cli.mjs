@@ -5,6 +5,7 @@ import { join, extname } from "pathe";
 import { GitVanDaemon, startDaemon } from "./runtime/daemon.mjs";
 import { discoverEvents, loadEventDefinition } from "./runtime/events.mjs";
 import { readReceiptsRange } from "./runtime/receipt.mjs";
+import { discoverJobs, findJobFile, findAllJobs, loadJobDefinition } from "./runtime/jobs.mjs";
 import { useGit } from "./composables/git.mjs";
 import { runJobWithContext } from "./runtime/boot.mjs";
 import { loadConfig } from "./runtime/config.mjs";
@@ -15,6 +16,11 @@ import { daemonCommand } from "./cli/daemon.mjs";
 import { eventCommand } from "./cli/event.mjs";
 import { auditCommand } from "./cli/audit.mjs";
 import { chatCommand } from "./cli/chat.mjs";
+import { packCommand } from "./cli/pack.mjs";
+import { scaffoldCommand } from "./cli/scaffold.mjs";
+import { marketplaceCommand } from "./cli/marketplace.mjs";
+import { composeCommand } from "./cli/compose.mjs";
+import { ensureCommand } from "./cli/ensure.mjs";
 
 const commands = {
   daemon: handleDaemon,
@@ -31,6 +37,11 @@ const commands = {
   audit: auditCommand,
   chat: handleChat,
   llm: handleLLM,
+  pack: handlePack,
+  scaffold: handleScaffold,
+  marketplace: handleMarketplace,
+  compose: handleCompose,
+  ensure: handleEnsure,
 };
 
 async function main() {
@@ -103,13 +114,71 @@ async function handleChat(action = "draft", ...args) {
   return await chatCommand(action, parseArgs(args));
 }
 
+async function handlePack(action = "list", ...args) {
+  // Use new pack command handler
+  const parsedArgs = parseArgs(args);
+  const commandArgs = {
+    args: {
+      [action]: true,
+      ...parsedArgs
+    }
+  };
+
+  // Handle specific pack subcommands
+  if (action === "apply" || action === "plan" || action === "remove" || action === "update") {
+    commandArgs.args.pack = parsedArgs.arg0 || parsedArgs.pack;
+  }
+
+  return await packCommand.subCommands[action]?.run(commandArgs) || packCommand.run(commandArgs);
+}
+
+async function handleScaffold(scaffold, ...args) {
+  // Use new scaffold command handler
+  const parsedArgs = parseArgs(args);
+  return await scaffoldCommand.run({ args: { scaffold, ...parsedArgs } });
+}
+
+async function handleMarketplace(action = 'browse', ...args) {
+  // Use new marketplace command handler
+  const parsedArgs = parseArgs(args);
+
+  // For search command, the first non-flag argument is the query
+  if (action === 'search' && args.length > 0 && !args[0].startsWith('--')) {
+    parsedArgs.query = args[0];
+  }
+
+  // For inspect command, the first non-flag argument is the pack
+  if (action === 'inspect' && args.length > 0 && !args[0].startsWith('--')) {
+    parsedArgs.pack = args[0];
+  }
+
+  if (marketplaceCommand.subCommands[action]) {
+    return await marketplaceCommand.subCommands[action].run({ args: parsedArgs });
+  }
+
+  return await marketplaceCommand.run({ args: parsedArgs });
+}
+
+async function handleCompose(...args) {
+  // Use new compose command handler
+  const parsedArgs = parseArgs(args);
+  parsedArgs.packs = args.filter(arg => !arg.startsWith('--'));
+  return await composeCommand.run({ args: parsedArgs });
+}
+
+async function handleEnsure(...args) {
+  // Use new ensure command handler
+  const parsedArgs = parseArgs(args);
+  return await ensureCommand.run({ args: parsedArgs });
+}
+
 function parseArgs(args) {
   const parsed = {};
   let positionalIndex = 0;
-  
+
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
-    
+
     if (arg.startsWith("--")) {
       // Named argument
       const key = arg.replace(/^--/, "");
@@ -126,7 +195,7 @@ function parseArgs(args) {
       positionalIndex++;
     }
   }
-  
+
   return parsed;
 }
 
@@ -183,11 +252,32 @@ async function handleWorktree(action = "list") {
 }
 
 async function handleJob(action = "list", ...args) {
+  const worktreePath = process.cwd();
+  const jobsDir = join(worktreePath, "jobs");
+
   switch (action) {
     case "list":
-      console.log("Job listing not yet implemented");
-      // TODO: Discover and list available jobs
+      if (!statSync(jobsDir).isDirectory()) {
+        console.log("No jobs directory found");
+        return;
+      }
+
+      const jobs = discoverJobs(jobsDir);
+      if (jobs.length === 0) {
+        console.log("No jobs found");
+        return;
+      }
+
+      console.log("Available jobs:");
+      console.log("==============");
+      jobs.forEach((job) => {
+        console.log(`${job.id}`);
+        console.log(`  File: ${job.relativePath}`);
+        console.log(`  Directory: ${job.directory}`);
+        console.log();
+      });
       break;
+
     case "run":
       const nameIndex = args.indexOf("--name");
       if (nameIndex === -1 || !args[nameIndex + 1]) {
@@ -195,9 +285,43 @@ async function handleJob(action = "list", ...args) {
         process.exit(1);
       }
       const jobName = args[nameIndex + 1];
-      console.log(`Running job: ${jobName}`);
-      // TODO: Implement job execution
+
+      const jobPath = findJobFile(jobsDir, jobName);
+      if (!jobPath) {
+        console.error(`Job not found: ${jobName}`);
+        process.exit(1);
+      }
+
+      try {
+        const jobDef = await loadJobDefinition(jobPath);
+        if (!jobDef) {
+          console.error(`Failed to load job: ${jobName}`);
+          process.exit(1);
+        }
+
+        const ctx = {
+          root: worktreePath,
+          env: process.env,
+          now: () => new Date().toISOString(),
+          nowISO: new Date().toISOString(),
+          id: jobName,
+          logger: {
+            log: console.log,
+            warn: console.warn,
+            error: console.error,
+            info: console.info
+          }
+        };
+
+        console.log(`Running job: ${jobName}`);
+        const result = await runJobWithContext(ctx, jobDef);
+        console.log("Result:", JSON.stringify(result, null, 2));
+      } catch (error) {
+        console.error(`Error running job ${jobName}:`, error.message);
+        process.exit(1);
+      }
       break;
+
     default:
       console.error(`Unknown job action: ${action}`);
       process.exit(1);
@@ -219,16 +343,34 @@ async function handleRun(jobName) {
     process.exit(1);
   }
 
-  const jobMod = await import(`file://${jobPath}`);
-  const ctx = {
-    root: worktreePath,
-    env: process.env,
-    now: () => new Date().toISOString(),
-  };
+  try {
+    const jobDef = await loadJobDefinition(jobPath);
+    if (!jobDef) {
+      console.error(`Failed to load job: ${jobName}`);
+      process.exit(1);
+    }
 
-  console.log(`Running job: ${jobName}`);
-  const result = await runJobWithContext(ctx, jobMod);
-  console.log("Result:", JSON.stringify(result, null, 2));
+    const ctx = {
+      root: worktreePath,
+      env: process.env,
+      now: () => new Date().toISOString(),
+      nowISO: new Date().toISOString(),
+      id: jobName,
+      logger: {
+        log: console.log,
+        warn: console.warn,
+        error: console.error,
+        info: console.info
+      }
+    };
+
+    console.log(`Running job: ${jobName}`);
+    const result = await runJobWithContext(ctx, jobDef);
+    console.log("Result:", JSON.stringify(result, null, 2));
+  } catch (error) {
+    console.error(`Error running job ${jobName}:`, error.message);
+    process.exit(1);
+  }
 }
 
 function handleList() {
@@ -303,6 +445,11 @@ Usage:
   gitvan audit [build|verify|list]                       Receipt audit
   gitvan chat [draft|generate|explain]                    AI job generation
   gitvan llm [call|models]                               AI operations
+  gitvan pack [list|apply|plan|remove|update|status]     Pack management
+  gitvan scaffold <pack:scaffold> [--inputs '{}']        Run pack scaffolds
+  gitvan marketplace [browse|search|inspect|quickstart]  Marketplace commands
+  gitvan compose <pack1> <pack2> [--inputs '{}']         Compose multiple packs
+  gitvan ensure [--init-config] [--skip-git]             Ensure GitVan setup
   gitvan schedule apply                                  Apply scheduled tasks
   gitvan worktree list                                   List all worktrees
   gitvan run <job-name>                                  Run a specific job (legacy)
@@ -316,56 +463,15 @@ Examples:
   gitvan chat generate "Create a changelog job"         Generate job via AI
   gitvan llm call "Summarize recent commits"            Call AI directly
   gitvan audit build --out audit.json                  Build audit pack
+  gitvan pack apply my-pack --inputs '{"name":"test"}'  Apply a pack
+  gitvan pack plan my-pack                             Show pack plan
+  gitvan scaffold my-pack:component --inputs '{}'       Run scaffold
+  gitvan marketplace browse --category docs            Browse marketplace
+  gitvan marketplace search "changelog"                Search for packs
+  gitvan marketplace quickstart docs                   Get docs quickstart
+  gitvan compose my-pack1 my-pack2                     Compose multiple packs
+  gitvan ensure --init-config                          Initialize GitVan config
 `);
-}
-
-function findJobFile(jobsDir, jobName) {
-  const possiblePaths = [
-    join(jobsDir, `${jobName}.mjs`),
-    join(jobsDir, `${jobName}.js`),
-    join(jobsDir, jobName, "index.mjs"),
-    join(jobsDir, jobName, "index.js"),
-  ];
-
-  for (const path of possiblePaths) {
-    try {
-      if (statSync(path).isFile()) {
-        return path;
-      }
-    } catch (err) {
-      // File doesn't exist, continue
-    }
-  }
-
-  return null;
-}
-
-function findAllJobs(dir, prefix = "") {
-  const jobs = [];
-
-  try {
-    const entries = readdirSync(dir);
-
-    for (const entry of entries) {
-      const fullPath = join(dir, entry);
-      const stat = statSync(fullPath);
-
-      if (stat.isDirectory()) {
-        jobs.push(
-          ...findAllJobs(fullPath, prefix ? `${prefix}/${entry}` : entry),
-        );
-      } else if (stat.isFile() && [".mjs", ".js"].includes(extname(entry))) {
-        const jobName = prefix
-          ? `${prefix}/${entry.replace(/\.(mjs|js)$/, "")}`
-          : entry.replace(/\.(mjs|js)$/, "");
-        jobs.push(jobName);
-      }
-    }
-  } catch (err) {
-    // Directory doesn't exist or is not accessible
-  }
-
-  return jobs;
 }
 
 export { main };

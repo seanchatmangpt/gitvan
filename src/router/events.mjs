@@ -118,3 +118,4 @@ export function validatePredicate(predicate) {
     errors
   };
 }
+

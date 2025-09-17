@@ -1,0 +1,76 @@
+{
+  "abi": "1.0",
+  "id": "test/hello-world",
+  "name": "Hello World Test Pack",
+  "version": "1.0.0",
+  "description": "A simple test pack for integration testing",
+  "tags": ["test", "hello-world"],
+  "license": "MIT",
+  "requires": {
+    "gitvan": ">=1.0.0",
+    "node": ">=16.0.0"
+  },
+  "modes": ["new-repo", "existing-repo"],
+  "inputs": [
+    {
+      "key": "projectName",
+      "type": "string",
+      "default": "my-project",
+      "prompt": "What is your project name?"
+    },
+    {
+      "key": "author",
+      "type": "string",
+      "default": "Anonymous",
+      "prompt": "Who is the author?"
+    }
+  ],
+  "capabilities": ["template-generation", "file-copying", "job-installation"],
+  "dependencies": {
+    "npm": {
+      "devDependencies": {
+        "vitest": "^1.0.0"
+      },
+      "scripts": {
+        "test": "vitest"
+      }
+    }
+  },
+  "provides": {
+    "templates": [
+      {
+        "src": "README.njk",
+        "target": "README.md",
+        "mode": "write"
+      },
+      {
+        "src": "package.njk",
+        "target": "package.json",
+        "mode": "merge"
+      }
+    ],
+    "files": [
+      {
+        "src": "gitignore",
+        "target": ".gitignore",
+        "mode": "skip"
+      }
+    ],
+    "jobs": [
+      {
+        "src": "hello.mjs",
+        "id": "hello"
+      }
+    ]
+  },
+  "postInstall": [
+    {
+      "action": "run",
+      "args": ["echo", "Pack installed successfully!"]
+    }
+  ],
+  "idempotency": {
+    "fingerprint": ["templates", "files", "jobs"],
+    "conflict": "skip"
+  }
+}

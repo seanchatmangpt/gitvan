@@ -1,0 +1,33 @@
+{
+  "name": "{{ project_name }}",
+  "version": "1.0.0",
+  "description": "Enterprise documentation site built with VitePress and GitVan",
+  "scripts": {
+    "dev": "vitepress dev docs",
+    "build": "vitepress build docs",
+    "preview": "vitepress preview docs",
+    "serve": "vitepress serve docs",
+    "clean": "rm -rf docs/.vitepress/dist"
+  },
+  "keywords": [
+    "documentation",
+    "vitepress",
+    "vue",
+    "enterprise",
+    "gitvan"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "vitepress": "^1.0.0",
+    "vue": "^3.3.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@vitepress/theme-default": "^1.0.0",
+    "markdown-it": "^13.0.0",
+    "markdown-it-container": "^3.0.0",
+    "shiki": "^0.14.0"
+  }
+}

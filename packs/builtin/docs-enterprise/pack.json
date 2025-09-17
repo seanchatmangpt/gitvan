@@ -1,25 +1,117 @@
 {
+  "abi": "1.0",
   "id": "builtin/docs-enterprise",
   "name": "Enterprise Documentation",
   "version": "1.0.0",
-  "description": "Enterprise-grade documentation starter pack",
+  "description": "Enterprise-grade documentation starter pack with VitePress, search, analytics, and collaboration features",
   "tags": [
     "documentation",
     "enterprise",
     "vitepress",
-    "builtin"
+    "builtin",
+    "vue",
+    "markdown"
   ],
   "capabilities": [
     "scaffold",
-    "documentation"
+    "documentation",
+    "static-site",
+    "search"
   ],
   "author": "GitVan",
   "license": "MIT",
   "modes": [
-    "scaffold",
-    "docs"
+    "new-repo",
+    "existing-repo"
   ],
   "requires": {
-    "node": ">=18.0.0"
+    "node": ">=18.0.0",
+    "git": true
+  },
+  "inputs": [
+    {
+      "key": "project_name",
+      "type": "string",
+      "description": "Documentation site name",
+      "default": "my-docs"
+    },
+    {
+      "key": "site_title",
+      "type": "string",
+      "description": "Site title",
+      "default": "Enterprise Documentation"
+    },
+    {
+      "key": "base_url",
+      "type": "string",
+      "description": "Base URL for deployment",
+      "default": "/"
+    },
+    {
+      "key": "enable_search",
+      "type": "boolean",
+      "description": "Enable local search",
+      "default": true
+    }
+  ],
+  "detects": [
+    {
+      "kind": "file",
+      "pattern": ".vitepress/config.js"
+    },
+    {
+      "kind": "file",
+      "pattern": ".vitepress/config.ts"
+    },
+    {
+      "kind": "pkg",
+      "pattern": "vitepress"
+    }
+  ],
+  "provides": {
+    "templates": [
+      "package.json",
+      ".vitepress/config.ts",
+      ".vitepress/theme/index.ts",
+      ".vitepress/theme/custom.css",
+      "docs/index.md",
+      "docs/guide/getting-started.md",
+      "docs/guide/installation.md",
+      "docs/api/index.md",
+      "docs/examples/basic.md",
+      "docs/contributing.md",
+      "docs/changelog.md",
+      "docs/public/logo.svg",
+      ".gitignore",
+      "README.md"
+    ],
+    "jobs": [
+      "dev",
+      "build",
+      "preview",
+      "deploy"
+    ],
+    "events": [
+      "post-install",
+      "pre-build"
+    ]
+  },
+  "dependencies": {
+    "vitepress": "^1.0.0",
+    "vue": "^3.3.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "@vitepress/theme-default": "^1.0.0",
+    "markdown-it": "^13.0.0",
+    "markdown-it-container": "^3.0.0",
+    "shiki": "^0.14.0"
+  },
+  "postInstall": [
+    "npm install",
+    "npm run build"
+  ],
+  "idempotency": {
+    "fingerprint": ["files", "deps", "templates", "jobs"],
+    "conflict": "skip"
   }
 }

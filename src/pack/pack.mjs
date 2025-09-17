@@ -8,6 +8,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, resolve, dirname } from 'pathe';
 import { createHash } from 'node:crypto';
 import { createLogger } from '../utils/logger.mjs';
+import { PromptingContext, promptForInputs, validateInputValue } from '../utils/prompts.mjs';
 
 export class Pack {
   constructor(packPath, options = {}) {
@@ -88,8 +89,19 @@ export class Pack {
       case 'file':
         return existsSync(join(targetDir, pattern));
       case 'glob':
-        // Simple glob - would use proper glob library in production
-        return existsSync(join(targetDir, pattern.replace('*', '')));
+        try {
+          const { glob } = await import('tinyglobby');
+          const files = await glob([pattern], {
+            cwd: targetDir,
+            absolute: false,
+            onlyFiles: true,
+            followSymbolicLinks: false
+          });
+          return files.length > 0;
+        } catch (error) {
+          this.logger?.error(`Failed to evaluate glob pattern ${pattern}: ${error.message}`);
+          return false;
+        }
       case 'pkg':
         const pkgPath = join(targetDir, 'package.json');
         if (!existsSync(pkgPath)) return false;
@@ -104,40 +116,136 @@ export class Pack {
     }
   }
 
-  async resolveInputs(inputs = {}) {
+  async resolveInputs(inputs = {}, promptingOptions = {}) {
     const resolved = {};
+    const inputsToPrompt = [];
 
+    // Create prompting context with options
+    const context = new PromptingContext({
+      noPrompt: promptingOptions.noPrompt || this.options.noPrompt,
+      nonInteractive: promptingOptions.nonInteractive || this.options.nonInteractive,
+      defaults: { ...promptingOptions.defaults, ...inputs },
+      answers: promptingOptions.answers || {},
+      ...promptingOptions
+    });
+
+    // First pass: collect inputs that need prompting
     for (const inputDef of this.manifest.inputs || []) {
-      const { key, type, default: defaultValue } = inputDef;
+      const { key, default: defaultValue } = inputDef;
 
       if (inputs[key] !== undefined) {
-        resolved[key] = this.validateInput(inputs[key], inputDef);
-      } else if (defaultValue !== undefined) {
-        resolved[key] = defaultValue;
+        // First convert/validate the input using Pack's validateInput
+        try {
+          const convertedValue = this.validateInput(inputs[key], inputDef);
+          // Then validate the converted value
+          validateInputValue(convertedValue, inputDef);
+          resolved[key] = convertedValue;
+        } catch (error) {
+          this.logger.error(`Invalid input for '${key}': ${error.message}`);
+          throw error;
+        }
       } else {
-        // Would prompt user for required inputs
-        this.logger.warn(`Missing required input: ${key}`);
+        // Check for context-provided values (defaults or answers)
+        const contextValue = context.getPreAnswer(key);
+        if (contextValue !== undefined) {
+          const convertedValue = this.validateInput(contextValue, inputDef);
+          validateInputValue(convertedValue, inputDef);
+          resolved[key] = convertedValue;
+        } else if (defaultValue !== undefined) {
+          resolved[key] = defaultValue;
+        } else {
+          // Mark for prompting
+          inputsToPrompt.push(inputDef);
+        }
       }
     }
 
+    // Prompt for missing inputs if any
+    if (inputsToPrompt.length > 0) {
+      try {
+        this.logger.debug(`Prompting for ${inputsToPrompt.length} missing inputs`);
+        const promptedValues = await promptForInputs(inputsToPrompt, context);
+
+        // Validate and add prompted values
+        for (const inputDef of inputsToPrompt) {
+          const { key } = inputDef;
+          if (promptedValues[key] !== undefined) {
+            const convertedValue = this.validateInput(promptedValues[key], inputDef);
+            validateInputValue(convertedValue, inputDef);
+            resolved[key] = convertedValue;
+          }
+        }
+      } catch (error) {
+        this.logger.error(`Failed to resolve inputs: ${error.message}`);
+        throw error;
+      }
+    }
+
+    // Final validation: check for missing required inputs
+    for (const inputDef of this.manifest.inputs || []) {
+      const { key, required = false } = inputDef;
+      if (required && resolved[key] === undefined) {
+        throw new Error(
+          `Required input '${key}' is missing. ` +
+          `Provide it via --input ${key}=value or enable prompting.`
+        );
+      }
+    }
+
+    this.logger.debug(`Resolved ${Object.keys(resolved).length} inputs`);
     return resolved;
   }
 
   validateInput(value, definition) {
     const { type, enum: enumValues } = definition;
 
+    // Return undefined/null as-is
+    if (value === undefined || value === null) {
+      return value;
+    }
+
     switch (type) {
       case 'boolean':
+        // Handle string representations of booleans
+        if (typeof value === 'string') {
+          const lower = value.toLowerCase();
+          if (lower === 'true' || lower === 'yes' || lower === '1') return true;
+          if (lower === 'false' || lower === 'no' || lower === '0') return false;
+        }
         return Boolean(value);
+
+      case 'number':
+        const num = Number(value);
+        if (isNaN(num)) {
+          throw new Error(`Invalid number value: ${value}`);
+        }
+        return num;
+
       case 'string':
+      case 'text':
         return String(value);
+
       case 'path':
         return resolve(String(value));
+
+      case 'select':
       case 'enum':
         if (enumValues && !enumValues.includes(value)) {
           throw new Error(`Invalid enum value: ${value}. Must be one of: ${enumValues.join(', ')}`);
         }
         return value;
+
+      case 'multiselect':
+        // Ensure it's an array
+        if (!Array.isArray(value)) {
+          // Try to parse comma-separated string
+          if (typeof value === 'string') {
+            return value.split(',').map(v => v.trim());
+          }
+          throw new Error(`Multiselect value must be an array, got: ${typeof value}`);
+        }
+        return value;
+
       default:
         return value;
     }

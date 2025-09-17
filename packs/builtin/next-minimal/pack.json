@@ -1,25 +1,114 @@
 {
+  "abi": "1.0",
   "id": "builtin/next-minimal",
   "name": "Next.js Minimal Starter",
   "version": "1.0.0",
-  "description": "A minimal Next.js application starter pack",
+  "description": "A minimal Next.js application starter pack with TypeScript, Tailwind CSS, and modern development tools",
   "tags": [
     "nextjs",
     "react",
     "minimal",
-    "builtin"
+    "builtin",
+    "typescript",
+    "tailwind"
   ],
   "capabilities": [
     "scaffold",
-    "development"
+    "development",
+    "build",
+    "deploy"
   ],
   "author": "GitVan",
   "license": "MIT",
   "modes": [
-    "scaffold",
-    "dev"
+    "new-repo",
+    "existing-repo"
   ],
   "requires": {
-    "node": ">=18.0.0"
+    "node": ">=18.0.0",
+    "git": true
+  },
+  "inputs": [
+    {
+      "key": "project_name",
+      "type": "string",
+      "description": "Project name",
+      "default": "my-next-app"
+    },
+    {
+      "key": "use_typescript",
+      "type": "boolean",
+      "description": "Use TypeScript",
+      "default": true
+    },
+    {
+      "key": "use_tailwind",
+      "type": "boolean",
+      "description": "Use Tailwind CSS",
+      "default": true
+    }
+  ],
+  "detects": [
+    {
+      "kind": "file",
+      "pattern": "next.config.js"
+    },
+    {
+      "kind": "file",
+      "pattern": "next.config.mjs"
+    },
+    {
+      "kind": "pkg",
+      "pattern": "next"
+    }
+  ],
+  "provides": {
+    "templates": [
+      "package.json",
+      "next.config.mjs",
+      "tailwind.config.js",
+      "tsconfig.json",
+      "src/pages/_app.tsx",
+      "src/pages/index.tsx",
+      "src/pages/api/hello.ts",
+      "src/components/Layout.tsx",
+      "src/styles/globals.css",
+      "public/favicon.ico",
+      ".gitignore",
+      "README.md"
+    ],
+    "jobs": [
+      "dev",
+      "build",
+      "start",
+      "lint",
+      "test"
+    ],
+    "events": [
+      "post-install",
+      "pre-build"
+    ]
+  },
+  "dependencies": {
+    "next": "^14.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "tailwindcss": "^3.0.0",
+    "autoprefixer": "^10.0.0",
+    "postcss": "^8.0.0",
+    "eslint": "^8.0.0",
+    "eslint-config-next": "^14.0.0"
+  },
+  "postInstall": [
+    "npm install",
+    "npm run build"
+  ],
+  "idempotency": {
+    "fingerprint": ["files", "deps", "templates", "jobs"],
+    "conflict": "skip"
   }
 }

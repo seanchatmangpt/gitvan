@@ -1,25 +1,122 @@
 {
+  "abi": "1.0",
   "id": "builtin/nodejs-basic",
   "name": "Node.js Basic Starter",
   "version": "1.0.0",
-  "description": "A basic Node.js application starter pack",
+  "description": "A basic Node.js application starter pack with Express, TypeScript support, and modern development tools",
   "tags": [
     "nodejs",
     "javascript",
     "basic",
-    "builtin"
+    "builtin",
+    "express",
+    "api"
   ],
   "capabilities": [
     "scaffold",
-    "development"
+    "development",
+    "api",
+    "server"
   ],
   "author": "GitVan",
   "license": "MIT",
   "modes": [
-    "scaffold",
-    "dev"
+    "new-repo",
+    "existing-repo"
   ],
   "requires": {
-    "node": ">=16.0.0"
+    "node": ">=16.0.0",
+    "git": true
+  },
+  "inputs": [
+    {
+      "key": "project_name",
+      "type": "string",
+      "description": "Project name",
+      "default": "my-node-app"
+    },
+    {
+      "key": "use_typescript",
+      "type": "boolean",
+      "description": "Use TypeScript",
+      "default": true
+    },
+    {
+      "key": "port",
+      "type": "string",
+      "description": "Default port",
+      "default": "3000"
+    }
+  ],
+  "detects": [
+    {
+      "kind": "file",
+      "pattern": "server.js"
+    },
+    {
+      "kind": "file",
+      "pattern": "app.js"
+    },
+    {
+      "kind": "pkg",
+      "pattern": "express"
+    }
+  ],
+  "provides": {
+    "templates": [
+      "package.json",
+      "src/server.ts",
+      "src/app.ts",
+      "src/routes/index.ts",
+      "src/routes/health.ts",
+      "src/middleware/logger.ts",
+      "src/middleware/errorHandler.ts",
+      "src/config/index.ts",
+      "src/types/index.ts",
+      "tsconfig.json",
+      ".env.example",
+      ".gitignore",
+      "README.md"
+    ],
+    "jobs": [
+      "dev",
+      "start",
+      "build",
+      "test",
+      "lint"
+    ],
+    "events": [
+      "post-install",
+      "pre-start"
+    ]
+  },
+  "dependencies": {
+    "express": "^4.18.0",
+    "cors": "^2.8.5",
+    "helmet": "^7.0.0",
+    "morgan": "^1.10.0",
+    "dotenv": "^16.0.0",
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0",
+    "@types/express": "^4.17.0",
+    "@types/cors": "^2.8.0",
+    "@types/morgan": "^1.9.0",
+    "tsx": "^4.0.0",
+    "nodemon": "^3.0.0",
+    "jest": "^29.0.0",
+    "@types/jest": "^29.0.0",
+    "supertest": "^6.3.0",
+    "@types/supertest": "^2.0.0",
+    "eslint": "^8.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0"
+  },
+  "postInstall": [
+    "npm install",
+    "npm run build"
+  ],
+  "idempotency": {
+    "fingerprint": ["files", "deps", "templates", "jobs"],
+    "conflict": "skip"
   }
 }

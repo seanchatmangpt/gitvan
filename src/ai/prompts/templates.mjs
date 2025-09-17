@@ -3,146 +3,177 @@
  * Templates for generating jobs, events, and other GitVan artifacts
  */
 
-// Enhanced verbose job writer template with comprehensive guidance
-export const VERBOSE_JOB_WRITER_TEMPLATE = `
-# GitVan Job Generator - Comprehensive Template
+// Template-based job generation prompt with comprehensive context
+export const TEMPLATE_BASED_JOB_PROMPT = `
+# GitVan v2 - Template-Based Job Generator
 
-You are an expert GitVan developer creating a production-ready job module. Follow these guidelines:
+## Overview
+GitVan is a Git-native development automation platform that transforms Git into a runtime environment. This system generates jobs using structured templates with Zod validation instead of raw code generation.
 
-## Context & Requirements
+## Context & Request
 - **User Request**: "{{ prompt }}"
 - **Job Type**: {{ kind | default('job') }}
 - **Target**: {{ target | default('general automation') }}
 
-## GitVan Architecture Guidelines
+## GitVan Architecture
 
-### 1. Job Structure
-- Export a default object with \`run\` function
-- Include comprehensive \`meta\` object with description and tags
-- Implement proper error handling and logging
-- Return structured results with \`artifacts\` array
+### Core Concepts
+- **Git-Native**: Uses Git refs for locking, notes for audit trails
+- **Composables**: Reusable functions (useGit, useTemplate, usePack)
+- **Template System**: Nunjucks-powered with front-matter support
+- **Pack System**: Reusable automation components
+- **Job System**: Automated task execution with scheduling
+- **Event System**: File change triggers and webhooks
 
-### 2. Available Composables
-- **useGit()**: Git operations (commits, refs, notes, branches)
-- **useTemplate()**: Nunjucks template rendering with front-matter
+### Available Composables
+- **useGit()**: Git operations (commits, refs, notes, branches, worktrees)
+- **useTemplate()**: Nunjucks template rendering with front-matter (YAML/TOML/JSON)
 - **usePack()**: Pack system for reusable components
 - **useJob()**: Job discovery and execution
 - **useEvent()**: Event handling and scheduling
 
-### 3. Template System Integration
-- Use \`useTemplate()\` for file generation with front-matter
-- Support YAML, TOML, JSON front-matter formats
-- Implement plan/apply lifecycle for safe operations
-- Use path sandboxing for security
+### Job Structure
+Jobs export a default object with:
+- **meta**: Description, tags, author, version
+- **config**: Cron, on triggers, schedule
+- **run()**: Async function with { ctx, payload, meta } parameters
+- **Return**: { ok: boolean, artifacts: array, summary: string }
 
-### 4. Git Integration Best Practices
-- Use atomic operations where possible
-- Implement proper locking with Git refs
-- Write receipts to Git notes for audit trails
-- Handle Git errors gracefully
+### Template System Features
+- **Front-matter**: YAML (---), TOML (+++), JSON (;)
+- **Plan/Apply**: Dry-run planning then execution
+- **Path Sandboxing**: Security against directory traversal
+- **Idempotent Operations**: Safe to run multiple times
+- **Atomic Locking**: Git ref-based concurrency control
 
-### 5. Security & Safety
-- Validate all inputs and paths
-- Use allowlists for shell commands
-- Implement idempotent operations
-- Sandbox file operations to project root
+### Security & Safety
+- **Path Validation**: All paths validated against project root
+- **Shell Allowlists**: Configurable command execution
+- **Audit Trails**: Complete operation logging in Git notes
+- **Error Handling**: Graceful degradation and recovery
 
-## Generated Job Template
+## Job Template Schema
 
-\`\`\`javascript
-export default {
-  meta: { 
-    desc: "{{ desc | default('Generated job') }}", 
-    tags: {{ tags | default("[]") | safe }},
-    author: "{{ author | default('GitVan AI') }}",
-    version: "{{ version | default('1.0.0') }}"
+Generate a JSON object following this Zod schema:
+
+\`\`\`json
+{
+  "meta": {
+    "desc": "Clear description of what the job does",
+    "tags": ["tag1", "tag2"],
+    "author": "GitVan AI", 
+    "version": "1.0.0"
   },
-  {% if cron %}cron: "{{ cron }}",{% endif %}
-  {% if on %}on: {{ on | safe }},{% endif %}
-  {% if schedule %}schedule: "{{ schedule }}",{% endif %}
-  async run({ ctx, payload, meta }) {
-    try {
-      // Import GitVan composables (available when running in GitVan context)
-      let git, template, pack
-      try {
-        const gitModule = await import("gitvan/composables/git")
-        const templateModule = await import("gitvan/composables/template")
-        const packModule = await import("gitvan/composables/pack")
-        git = gitModule.useGit()
-        template = await templateModule.useTemplate()
-        pack = await packModule.usePack()
-      } catch (importError) {
-        console.log("GitVan composables not available, running in standalone mode")
-        git = null
-        template = null
-        pack = null
+  "config": {
+    "cron": "optional cron expression (e.g., '0 2 * * *')",
+    "on": "optional event triggers (e.g., ['push', 'pull-request'])",
+    "schedule": "optional schedule expression"
+  },
+  "implementation": {
+    "type": "file-operation|git-operation|template-operation|pack-operation|simple",
+    "description": "What the job does",
+    "parameters": [
+      {
+        "name": "paramName",
+        "type": "string|number|boolean|object|array",
+        "description": "Parameter description",
+        "required": true,
+        "default": "default value"
       }
-      
-      // Job implementation
-      {{ body | default("// TODO: implement job logic") }}
-      
-      return { 
-        ok: true, 
-        artifacts: [],
-        summary: "{{ summary | default('Job completed successfully') }}"
+    ],
+    "operations": [
+      {
+        "type": "log|file-read|file-write|file-copy|file-move|git-commit|git-note|template-render|pack-apply",
+        "description": "What this operation does",
+        "parameters": {
+          "key": "value"
+        }
       }
-    } catch (error) {
-      console.error('Job failed:', error.message)
-      return { 
-        ok: false, 
-        error: error.message,
-        artifacts: []
-      }
+    ],
+    "errorHandling": "strict|graceful|continue",
+    "returnValue": {
+      "success": "Success message",
+      "artifacts": ["artifact1", "artifact2"]
     }
+  },
+  "values": {
+    "specificValue1": "filled in value",
+    "specificValue2": "another value"
   }
 }
 \`\`\`
 
-## Implementation Guidelines
+## Implementation Types & Operations
 
-### Template Usage Examples
-\`\`\`javascript
-// Generate files with front-matter
-const plan = await template.plan('templates/component.njk', { name: 'MyComponent' })
-const result = await template.apply(plan)
+### file-operation
+**Purpose**: File system operations, backups, file processing
+**Operations**:
+- \`log\`: Console logging
+- \`file-read\`: Read file contents
+- \`file-write\`: Write file contents  
+- \`file-copy\`: Copy files/directories
+- \`file-move\`: Move/rename files
 
-// Render templates with data
-const content = await template.render('templates/readme.njk', {
-  project: { name: 'my-project', description: 'A great project' }
-})
-\`\`\`
+**Example Parameters**:
+- \`sourcePath\`: Source file/directory path
+- \`destinationPath\`: Destination path
+- \`includePatterns\`: File patterns to include
+- \`excludePatterns\`: File patterns to exclude
 
-### Git Operations Examples
-\`\`\`javascript
-// Safe Git operations
-const head = await git.head()
-const commits = await git.log({ maxCount: 10 })
-await git.noteAppend('refs/notes/gitvan/results', JSON.stringify(result))
-\`\`\`
+### git-operation
+**Purpose**: Git operations, commit processing, note management
+**Operations**:
+- \`log\`: Console logging
+- \`git-commit\`: Git commit operations
+- \`git-note\`: Git notes for audit trails
 
-### Pack System Examples
-\`\`\`javascript
-// Apply packs
-const packResult = await pack.apply('react-component', {
-  name: 'Button',
-  props: ['variant', 'size']
-})
-\`\`\`
+**Example Parameters**:
+- \`ref\`: Git reference (branch, tag, commit)
+- \`message\`: Commit or note message
+- \`author\`: Author information
 
-## Requirements for Generated Code
+### template-operation
+**Purpose**: Template rendering, file generation
+**Operations**:
+- \`log\`: Console logging
+- \`template-render\`: Render Nunjucks templates
 
-1. **Complete Implementation**: Generate fully functional code, not TODOs
-2. **Error Handling**: Include proper try/catch blocks and error returns
-3. **Logging**: Add appropriate console.log statements for debugging
-4. **Documentation**: Include JSDoc comments for complex functions
-5. **Type Safety**: Use proper parameter destructuring and validation
-6. **Git Integration**: Leverage Git composables for file operations
-7. **Template Usage**: Use useTemplate() for file generation when appropriate
-8. **Security**: Implement path validation and sandboxing
-9. **Idempotency**: Ensure operations can be run multiple times safely
-10. **Audit Trail**: Write receipts for important operations
+**Example Parameters**:
+- \`template\`: Template file path
+- \`data\`: Template data object
+- \`outputPath\`: Output file path
 
-Generate a complete, production-ready job that follows all these guidelines.
+### pack-operation
+**Purpose**: Pack system operations
+**Operations**:
+- \`log\`: Console logging
+- \`pack-apply\`: Apply pack scaffolds
+
+**Example Parameters**:
+- \`packName\`: Pack identifier
+- \`inputs\`: Pack input parameters
+
+### simple
+**Purpose**: Simple logging, basic operations
+**Operations**:
+- \`log\`: Console logging
+
+## Error Handling Strategies
+
+- **strict**: Fail fast on any error
+- **graceful**: Handle errors gracefully, continue if possible
+- **continue**: Log errors but continue processing
+
+## Instructions
+
+1. **Analyze the user request** and determine the appropriate implementation type
+2. **Design the job structure** with proper meta, config, and implementation
+3. **Define parameters** that the job will accept via payload
+4. **Plan operations** that accomplish the requested functionality
+5. **Set error handling** strategy appropriate for the use case
+6. **Fill in values** that map payload parameters to template variables
+
+Generate ONLY the JSON object following the schema above. No additional text or explanations.
 `;
 
 // Job writer template

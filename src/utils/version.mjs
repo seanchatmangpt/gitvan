@@ -32,6 +32,12 @@ export function satisfiesConstraint(version, constraint) {
  */
 export function compareVersions(version1, version2) {
   try {
+    // Try direct semver comparison first for pre-release versions
+    if (semver.valid(version1) && semver.valid(version2)) {
+      return semver.compare(version1, version2);
+    }
+
+    // Fall back to coerced versions if direct comparison fails
     const clean1 = semver.coerce(version1)?.version || version1;
     const clean2 = semver.coerce(version2)?.version || version2;
 
@@ -51,6 +57,12 @@ export function compareVersions(version1, version2) {
  */
 export function isGreaterThan(version1, version2) {
   try {
+    // Try direct semver comparison first for pre-release versions
+    if (semver.valid(version1) && semver.valid(version2)) {
+      return semver.gt(version1, version2);
+    }
+
+    // Fall back to coerced versions if direct comparison fails
     const clean1 = semver.coerce(version1)?.version || version1;
     const clean2 = semver.coerce(version2)?.version || version2;
 

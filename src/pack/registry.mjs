@@ -8,6 +8,7 @@ import { execSync } from 'node:child_process';
 import { promisify } from 'node:util';
 import { exec } from 'node:child_process';
 import { setTimeout } from 'node:timers/promises';
+import { PackCache } from './optimization/cache.mjs';
 
 const execAsync = promisify(exec);
 
@@ -52,6 +53,18 @@ export class PackRegistry {
       remaining: 5000,
       reset: Date.now() + (60 * 60 * 1000) // 1 hour from now
     };
+
+    // Initialize enhanced cache system
+    this.packCache = new PackCache({
+      cacheDir: join(this.cacheDir, 'enhanced'),
+      ttl: options.cacheTtl || 3600000, // 1 hour
+      maxSize: options.cacheMaxSize || 200 * 1024 * 1024, // 200MB
+      compression: options.cacheCompression !== false,
+      warmupKeys: [
+        { type: 'registry', data: { url: this.registryUrl } },
+        { type: 'builtin', data: { dir: this.builtinDir } }
+      ]
+    });
 
     this.initializeCache();
     this.initializeBuiltins();
@@ -274,6 +287,14 @@ export class PackRegistry {
       throw new Error('Invalid pack ID format');
     }
 
+    // Check enhanced cache first
+    const cacheKey = { packId, operation: 'get' };
+    const cached = await this.packCache.get('pack-info', cacheKey);
+    if (cached) {
+      this.logger.debug(`Cache hit for pack info: ${packId}`);
+      return cached;
+    }
+
     if (!this.index) {
       await this.refreshIndex();
     }
@@ -283,7 +304,12 @@ export class PackRegistry {
       return null;
     }
 
-    return this.sanitizePackInfo(pack);
+    const sanitized = this.sanitizePackInfo(pack);
+
+    // Cache the result
+    await this.packCache.set('pack-info', cacheKey, sanitized);
+
+    return sanitized;
   }
 
   delay(ms) {
@@ -299,20 +325,39 @@ export class PackRegistry {
       return builtinPath;
     }
 
-    // Check local cache
-    const cachedPath = join(this.cacheDir, packId.replace('/', '-'));
-    if (existsSync(cachedPath)) {
-      this.logger.debug(`Found in cache: ${cachedPath}`);
+    // Check enhanced cache for resolved paths
+    const cacheKey = { packId, operation: 'resolve' };
+    const cachedPath = await this.packCache.get('pack-resolve', cacheKey);
+    if (cachedPath && existsSync(cachedPath)) {
+      this.logger.debug(`Cache hit for resolved pack: ${packId} -> ${cachedPath}`);
       return cachedPath;
     }
 
-    // Check if it's a GitHub reference (org/repo format)
-    if (packId.includes('/') && !packId.startsWith('.') && !packId.startsWith('/')) {
-      return await this.resolveGitHub(packId);
+    // Check legacy local cache
+    const legacyCachedPath = join(this.cacheDir, packId.replace('/', '-'));
+    if (existsSync(legacyCachedPath)) {
+      this.logger.debug(`Found in legacy cache: ${legacyCachedPath}`);
+      // Cache in enhanced system for future use
+      await this.packCache.set('pack-resolve', cacheKey, legacyCachedPath);
+      return legacyCachedPath;
     }
 
-    // Try to fetch from registry
-    return await this.fetchFromRegistry(packId);
+    let resolvedPath;
+
+    // Check if it's a GitHub reference (org/repo format)
+    if (packId.includes('/') && !packId.startsWith('.') && !packId.startsWith('/')) {
+      resolvedPath = await this.resolveGitHub(packId);
+    } else {
+      // Try to fetch from registry
+      resolvedPath = await this.fetchFromRegistry(packId);
+    }
+
+    // Cache the resolved path if successful
+    if (resolvedPath) {
+      await this.packCache.set('pack-resolve', cacheKey, resolvedPath);
+    }
+
+    return resolvedPath;
   }
 
   async resolveGitHub(packId) {
@@ -323,12 +368,23 @@ export class PackRegistry {
     }
 
     const { owner, repo, ref, path: subPath } = parsed;
-    const cacheKey = this.generateGitHubCacheKey(owner, repo, ref, subPath);
-    const cachedPath = join(this.cacheDir, cacheKey);
+    const githubCacheKey = { owner, repo, ref, subPath, operation: 'resolve' };
 
-    // Check cache first
+    // Check enhanced cache first
+    const enhancedCachedPath = await this.packCache.get('github-pack', githubCacheKey);
+    if (enhancedCachedPath && existsSync(enhancedCachedPath)) {
+      this.logger.debug(`Enhanced cache hit for GitHub pack: ${packId} -> ${enhancedCachedPath}`);
+      return enhancedCachedPath;
+    }
+
+    // Check legacy cache
+    const legacyCacheKey = this.generateGitHubCacheKey(owner, repo, ref, subPath);
+    const cachedPath = join(this.cacheDir, legacyCacheKey);
+
     if (existsSync(cachedPath)) {
-      this.logger.debug(`Found GitHub pack in cache: ${cachedPath}`);
+      this.logger.debug(`Found GitHub pack in legacy cache: ${cachedPath}`);
+      // Migrate to enhanced cache
+      await this.packCache.set('github-pack', githubCacheKey, cachedPath);
       return cachedPath;
     }
 
@@ -395,6 +451,9 @@ export class PackRegistry {
       // Enhance manifest with GitHub metadata
       await this.enhanceManifestWithGitHubData(cachedPath, repoMetadata, owner, repo);
 
+      // Cache in enhanced system
+      await this.packCache.set('github-pack', githubCacheKey, cachedPath);
+
       this.logger.info(`Successfully cached GitHub pack: ${packId}`);
       return cachedPath;
 
@@ -412,16 +471,31 @@ export class PackRegistry {
 
   async fetchFromRegistry(packId) {
     try {
-      // Would implement registry API calls here
       this.logger.debug(`Fetching from registry: ${packId}`);
+
+      // Check enhanced cache for registry fetch results
+      const cacheKey = { packId, operation: 'fetchFromRegistry' };
+      const cached = await this.packCache.get('registry-fetch', cacheKey);
+      if (cached) {
+        this.logger.debug(`Cache hit for registry fetch: ${packId}`);
+        return cached;
+      }
 
       // For now, check if it's a built-in pack
       const builtinPath = this.resolveBuiltin(packId);
       if (builtinPath) {
+        // Cache the builtin path result
+        await this.packCache.set('registry-fetch', cacheKey, builtinPath);
         return builtinPath;
       }
 
+      // TODO: Implement actual registry API calls here
+      // When implemented, cache the result before returning
+
       this.logger.warn(`Pack not found in registry: ${packId}`);
+
+      // Cache negative results with shorter TTL
+      await this.packCache.set('registry-fetch', cacheKey, null);
       return null;
     } catch (e) {
       this.logger.error(`Failed to fetch from registry:`, e);
@@ -976,5 +1050,43 @@ export class PackRegistry {
 
       writeFileSync(join(docsEnterprisePath, 'pack.json'), JSON.stringify(manifest, null, 2));
     }
+  }
+
+  // Enhanced cache management methods
+  async getCacheStats() {
+    return await this.packCache.getDetailedStats();
+  }
+
+  async clearEnhancedCache(type = null) {
+    await this.packCache.clear(type);
+    this.logger.info(`Enhanced cache cleared${type ? ` for type: ${type}` : ''}`);
+  }
+
+  async compactCache() {
+    return await this.packCache.compact();
+  }
+
+  async exportCacheStats(filePath) {
+    return await this.packCache.export(filePath);
+  }
+
+  async warmupCache() {
+    await this.packCache.warmup();
+    this.logger.info('Cache warmup completed');
+  }
+
+  // Legacy cache management for backward compatibility
+  async clearLegacyCache(packId = null) {
+    await this.clearCache(packId);
+  }
+
+  // Unified cache management
+  async clearAllCaches(packId = null) {
+    // Clear both enhanced and legacy caches
+    await Promise.all([
+      this.clearEnhancedCache(packId),
+      this.clearLegacyCache(packId)
+    ]);
+    this.logger.info('All caches cleared');
   }
 }

@@ -14,6 +14,7 @@ import {
 import { useGit } from "./composables/git.mjs";
 import { runJobWithContext } from "./runtime/boot.mjs";
 import { loadConfig } from "./runtime/config.mjs";
+import { GitVanDefaults } from "./config/defaults.mjs";
 
 // Import new CLI commands
 import { cronCommand } from "./cli/cron.mjs";
@@ -161,8 +162,8 @@ async function handleInit() {
   },
   
   ai: {
-    provider: "ollama",
-    model: "qwen3-coder:30b",
+    provider: "${GitVanDefaults.ai.provider}",
+    model: "${GitVanDefaults.ai.model}",
   },
   
   // Custom data available in templates

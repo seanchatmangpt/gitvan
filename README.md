@@ -175,7 +175,7 @@ export default {
   
   ai: {
     provider: "ollama",
-    model: "qwen3-coder:30b",
+    model: "qwen3-coder:30b", // Default from GitVanDefaults
   },
   
   data: {

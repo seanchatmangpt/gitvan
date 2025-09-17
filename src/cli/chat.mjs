@@ -14,6 +14,7 @@ import { join } from "pathe";
 import { createLogger } from "../utils/logger.mjs";
 import {
   JOB_WRITER_TEMPLATE,
+  VERBOSE_JOB_WRITER_TEMPLATE,
   EVENT_WRITER_TEMPLATE,
   TEMPLATE_GENERATOR_TEMPLATE,
 } from "../ai/prompts/templates.mjs";
@@ -368,7 +369,7 @@ async function generateSpec(input, config) {
  * @returns {Promise<object>} Generated files
  */
 async function generateJobFiles(input, config, writeFile = true) {
-  const prompt = buildJobPrompt(input);
+  const prompt = await buildJobPrompt(input);
 
   const result = await generateText({
     prompt,
@@ -437,20 +438,47 @@ Do not include any explanatory text, only the JSON specification.`;
 }
 
 /**
- * Build job generation prompt
- * @param {object} input - Chat input
- * @returns {string} Prompt text
+ * Build comprehensive job generation prompt using useTemplate
+ * @param {object} input - Chat input with prompt and options
+ * @returns {Promise<string>} Generated prompt
  */
-function buildJobPrompt(input) {
-  const template =
-    input.kind === "event" ? EVENT_WRITER_TEMPLATE : JOB_WRITER_TEMPLATE;
-
-  return `Generate a GitVan ${input.kind} module for the following request:
+async function buildJobPrompt(input) {
+  const { useTemplate } = await import("../composables/template.mjs");
+  const template = await useTemplate();
+  
+  // Use verbose template for comprehensive guidance
+  const templateContent = input.kind === "event" ? EVENT_WRITER_TEMPLATE : VERBOSE_JOB_WRITER_TEMPLATE;
+  
+  // Render the template with context
+  const context = {
+    prompt: input.prompt,
+    kind: input.kind,
+    target: input.target || "general automation",
+    desc: input.desc || `Generated ${input.kind} for: ${input.prompt}`,
+    tags: input.tags || ["ai-generated", input.kind],
+    author: "GitVan AI",
+    version: "1.0.0",
+    cron: input.cron,
+    on: input.on,
+    schedule: input.schedule,
+    body: input.body || `// Implementation for: ${input.prompt}`,
+    summary: `Successfully executed ${input.kind} for: ${input.prompt}`
+  };
+  
+  try {
+    // Use the template system to render the prompt
+    const renderedPrompt = await template.renderString(templateContent, context);
+    return renderedPrompt;
+  } catch (error) {
+    // Fallback to simple template if rendering fails
+    logger.warn("Template rendering failed, using fallback:", error.message);
+    return `Generate a GitVan ${input.kind} module for the following request:
 
 "${input.prompt}"
 
 Use this template structure:
-${template}
+${templateContent}
 
 Replace the placeholders with appropriate values based on the request. Generate complete, working code that can be executed by GitVan.`;
+  }
 }

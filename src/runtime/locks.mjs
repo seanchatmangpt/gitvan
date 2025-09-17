@@ -47,3 +47,13 @@ export function generateLockRef(operation, path) {
   const normalizedPath = path.replace(/[^a-zA-Z0-9._-]/g, "_");
   return `refs/gitvan/locks/${operation}:${normalizedPath}`;
 }
+
+/**
+ * Generate a worktree-specific lock ref
+ * @param {string} worktreePath - Worktree path
+ * @returns {string} Worktree lock ref path
+ */
+export function worktreeLockRef(worktreePath) {
+  const normalizedPath = worktreePath.replace(/[^a-zA-Z0-9._-]/g, "_");
+  return `refs/gitvan/locks/worktree:${normalizedPath}`;
+}

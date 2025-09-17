@@ -79,3 +79,33 @@ export async function listReceiptCommits({
     return []; // No notes found
   }
 }
+
+/**
+ * Reads receipts from a range of commits
+ * @param {Object} options - Read options
+ * @param {string} options.from - Start commit SHA
+ * @param {string} options.to - End commit SHA
+ * @param {string} options.ref - Git notes ref (default: 'refs/notes/gitvan/results')
+ * @returns {Promise<Array>} Array of receipt objects
+ */
+export async function readReceiptsRange({
+  from,
+  to,
+  ref = "refs/notes/gitvan/results",
+} = {}) {
+  const git = useGit();
+  try {
+    const commits = await git.run(`rev-list ${from}..${to}`);
+    const commitList = commits.split("\n").filter((line) => line.trim());
+
+    const allReceipts = [];
+    for (const commit of commitList) {
+      const receipts = await readReceipts({ ref, sha: commit });
+      allReceipts.push(...receipts);
+    }
+
+    return allReceipts;
+  } catch {
+    return []; // No commits or notes found
+  }
+}

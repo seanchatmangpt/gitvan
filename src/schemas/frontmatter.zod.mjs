@@ -50,9 +50,5 @@ export const FrontmatterSchema = z.object({
   data: z.record(z.any()).default({}),
 });
 
-// Type exports for TypeScript
-export type FrontmatterData = z.infer<typeof FrontmatterSchema>;
-export type InjectSpec = z.infer<typeof InjectSpec>;
-export type CopySpec = z.infer<typeof CopySpec>;
-export type ShellSpec = z.infer<typeof ShellSpec>;
-export type PerFileSpec = z.infer<typeof PerFileSpec>;
+// Note: Type exports removed for ES module compatibility
+// Types can be inferred from the schemas when needed

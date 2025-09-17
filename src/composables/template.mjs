@@ -297,6 +297,13 @@ export async function useTemplate(opts = {}) {
       try {
         // Acquire all necessary locks first
         for (const op of plan.operations) {
+          const targetPath = presolve(binding.root, op.to || op.into);
+
+          // Path Sandboxing: Ensure target is within the root directory
+          if (!targetPath.startsWith(binding.root)) {
+            throw new Error(`Path escape violation: ${targetPath}`);
+          }
+
           const lockPath = generateLockRef("template", op.to || op.into);
           if (!(await acquireLock(lockPath, head))) {
             throw new Error(`Failed to acquire lock for: ${op.to || op.into}`);
@@ -319,11 +326,6 @@ export async function useTemplate(opts = {}) {
           }
 
           const targetPath = presolve(binding.root, op.to || op.into);
-
-          // Path Sandboxing: Ensure target is within the root directory
-          if (!targetPath.startsWith(binding.root)) {
-            throw new Error(`Path escape violation: ${targetPath}`);
-          }
 
           if (op.type === "write") {
             const exists = await fs

@@ -9,9 +9,9 @@ tags: ["git", "automation", "templating", "ai", "workflows"]
 
 # GitVan v2
 
-**Git-native development automation platform with AI-powered workflows**
+**Git-native development automation platform with unified hooks system**
 
-GitVan transforms Git into a runtime environment for development automation, providing intelligent job scheduling, template generation, and AI-powered workflow creation.
+GitVan transforms Git into a runtime environment for development automation, providing intelligent job scheduling, template generation, and AI-powered workflow creation through a unified hooks system.
 
 ## 🚀 Quick Start
 
@@ -31,13 +31,13 @@ gitvan init
 echo 'console.log(1)' > index.js
 git add . && git commit -m "init"
 
-# Add a real job
+# Add a real job with unified hooks system
 echo "import { defineJob, useGit, useNotes } from 'file:///Users/sac/gitvan/src/index.mjs'
 
 export default defineJob({
-  meta: { name: 'touch', desc: 'Touch file on tag creation' },
-  on: { tagCreate: 'v*' },
-  async run() {
+  meta: { name: 'touch', desc: 'Touch file on commit/merge' },
+  hooks: ['post-commit', 'post-merge'], // Unified hooks system
+  async run(context) {
     const git = useGit()
     const notes = useNotes()
     await git.writeFile('TOUCHED', 'ok')
@@ -46,8 +46,8 @@ export default defineJob({
   }
 })" > jobs/touch.mjs
 
-git tag v0.1.0
-gitvan event simulate --ref refs/tags/v0.1.0
+git commit -m "feat: add touch job"
+gitvan hook post-commit
 test -f TOUCHED && echo ok
 ```
 
@@ -79,15 +79,15 @@ GitVan v2 provides a comprehensive set of composables for building automation wo
 - **`useTemplate`** - Template rendering with Nunjucks
 - **`useNotes`** - Git notes management for receipts
 
-### Job & Event Composables
+### Job & Hook Composables
 - **`useJob`** - Job lifecycle and execution management
-- **`useEvent`** - Event system and triggering
+- **`useHook`** - Unified hooks system and triggering
 - **`useSchedule`** - Cron and scheduling management
 
 ### Infrastructure Composables
 - **`useReceipt`** - Receipt and audit management
 - **`useLock`** - Distributed locking
-- **`useRegistry`** - Job and event registry management
+- **`useRegistry`** - Job and hook registry management
 
 ### API Reference
 
@@ -97,7 +97,7 @@ import { defineJob, useGit, useTemplate, useNotes } from 'file:///Users/sac/gitv
 
 export default defineJob({
   meta: { name: "changelog", desc: "Generate changelog from commits" },
-  on: { tagCreate: "v*" },
+  hooks: ["post-commit", "post-merge"], // Unified hooks system
   async run() {
     const git = useGit()
     const tpl = await useTemplate()
@@ -112,30 +112,53 @@ export default defineJob({
 })
 ```
 
-#### Event Schema
+#### Hooks Schema
 ```javascript
-on: {
-  // Git events
-  push: "refs/heads/main",           // Push to specific branch
-  tagCreate: "v*",                   // Tag creation with pattern
-  merge: "into:main",                // Merge into branch
-  fsChange: "src/**",                // File system changes
-  
-  // Cron events
-  cron: "0 */2 * * *",               // Cron expression
-  
-  // Predicates compose under all/any
-  all: [{ push: "refs/heads/main" }, { fsChange: "src/**" }],
-  any: [{ tagCreate: "v*" }, { cron: "0 0 * * *" }]
-}
+hooks: [
+  "post-commit",    // After commit
+  "post-merge",     // After merge
+  "post-rewrite",   // After rebase/amend (future)
+  "pre-push"        // Before push (future)
+]
+```
+
+## 🎯 Job-Only Architecture
+
+GitVan v2 features a **job-only architecture** that eliminates complexity by having jobs handle Git operations directly:
+
+### **Single Layer Execution**
+- **Jobs**: Define `hooks: ["post-commit", "post-merge"]` and handle Git operations directly
+- **No Hooks Directory**: Eliminates `src/hooks/` complexity entirely
+- **Registry**: Automatic job discovery and hook-to-job mapping
+- **Loader**: Direct job execution - simple and predictable
+
+### **Benefits**
+- **Eliminates Complexity**: No hooks directory to maintain
+- **Jobs Handle Everything**: Git operations, routing, execution all in jobs
+- **Simpler Execution**: Direct job execution without intermediate layers
+- **Fewer Files**: Less code to maintain and understand
+- **More Intuitive**: Developers work directly with jobs
+
+### **Git Hook Integration**
+```bash
+# Install Git hooks
+gitvan ensure
+
+# Manual hook execution (executes jobs directly)
+gitvan hook post-commit
+gitvan hook post-merge
+
+# Event simulation
+gitvan event simulate --files "src/components/Button.tsx"
 ```
 
 ## ✨ Features
 
 ### 🎯 **Core Capabilities**
 - **Git-Native**: Uses Git refs for locking, notes for audit trails
+- **Job-Only Architecture**: Single layer execution with jobs handling everything
 - **Template Engine**: Nunjucks-powered with front-matter support
-- **Job System**: Automated task execution with scheduling
+- **Job System**: Automated task execution with hook-based scheduling
 - **Pack System**: Reusable automation components
 - **Composables API**: Comprehensive composables for automation workflows
 - **AI Integration**: Generate jobs and templates with AI assistance
@@ -188,8 +211,13 @@ gitvan scaffold react-pack:component --inputs '{"name":"Button"}'
 
 ### Core Commands
 - `gitvan init` - Initialize GitVan in current directory
-- `gitvan ensure` - Verify and fix GitVan configuration
+- `gitvan ensure` - Install Git hooks for unified hooks system
 - `gitvan help` - Show all available commands
+
+### Unified Hooks System
+- `gitvan hook <name>` - Execute specific Git hook (post-commit, post-merge)
+- `gitvan event simulate --files "<path>"` - Test router logic without real commit
+- `gitvan ensure` - Install Git hooks for surgical precision
 
 ### Job Management
 - `gitvan job list` - List available jobs
@@ -207,10 +235,11 @@ gitvan scaffold react-pack:component --inputs '{"name":"Button"}'
 - `gitvan chat draft <prompt>` - Draft template via AI
 - `gitvan llm call <prompt>` - Direct AI interaction
 
-### Daemon & Events
+### Daemon & Hooks
 - `gitvan daemon start` - Start GitVan daemon
 - `gitvan daemon status` - Check daemon status
-- `gitvan event simulate --ref refs/tags/v1.0.0` - Simulate events
+- `gitvan hook post-commit` - Execute post-commit hook manually
+- `gitvan hook post-merge` - Execute post-merge hook manually
 
 ### Audit & Compliance
 - `gitvan audit build` - Build audit report
@@ -227,10 +256,13 @@ my-project/
 │   ├── packs/         # Installed packs
 │   ├── state/         # Runtime state
 │   └── backups/       # Automatic backups
-├── jobs/              # Job definitions
+├── src/hooks/         # Unified hooks system
+│   ├── 10-router.post-commit.mjs
+│   ├── 10-router.post-merge.mjs
+│   └── _shared/       # Shared utilities
+├── jobs/              # Job definitions (with hooks)
 ├── templates/         # Nunjucks templates
 ├── packs/             # Local pack definitions
-├── events/            # Event handlers
 └── gitvan.config.js   # Configuration file
 ```
 
@@ -379,7 +411,7 @@ import { defineJob, useGit, useTemplate, useNotes } from 'file:///Users/sac/gitv
 
 export default defineJob({
   meta: { name: "changelog", desc: "Generate changelog from commits" },
-  on: { tagCreate: "v*" },
+  hooks: ["post-commit", "post-merge"], // Unified hooks system
   async run() {
     const git = useGit()
     const tpl = await useTemplate()

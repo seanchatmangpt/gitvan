@@ -197,29 +197,14 @@ export default {
 
 ## 🎨 Front-Matter Support
 
-GitVan supports multiple front-matter formats:
+GitVan uses YAML front-matter for all templates and configuration:
 
-### YAML (Default)
+### YAML Front-Matter
 ```yaml
 ---
 to: "output.txt"
 force: "overwrite"
 ---
-Content here
-```
-
-### TOML
-```toml
-+++
-to = "output.txt"
-force = "overwrite"
-+++
-Content here
-```
-
-### JSON
-```json
-;{"to":"output.txt","force":"overwrite"}
 Content here
 ```
 

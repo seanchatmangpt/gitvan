@@ -26,10 +26,12 @@ The useGit() composable provides comprehensive Git operations through a modular 
 - **isClean()**: Check if working directory is clean
 - **info()**: Get comprehensive repository information
 
-### File Operations (built into repo.mjs)
-- **writeFile(path, content)**: Write file to working directory
-- **readFile(path)**: Read file from working directory
-- **exists(path)**: Check if file exists
+### File Operations
+**Note**: GitVan's useGit() composable does NOT provide direct file system operations.
+For file operations, use Node.js built-in modules:
+- \`import { readFileSync, writeFileSync } from 'node:fs'\`
+- \`import { readFile, writeFile } from 'node:fs/promises'\`
+- \`import { writeFileSafe } from '../utils/fs.mjs'\` (for safe path operations)
 
 ### Commit Operations (commits.mjs)
 - **log(options)**: Get commit history with filtering

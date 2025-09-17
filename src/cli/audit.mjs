@@ -4,6 +4,7 @@
  */
 
 import { useGit } from "../composables/git/index.mjs";
+import { useNotes } from "../composables/notes.mjs";
 import { writeFileSafe } from "../utils/fs.mjs";
 import { loadOptions } from "../config/loader.mjs";
 import { createLogger } from "../utils/logger.mjs";
@@ -46,39 +47,57 @@ export async function auditCommand(subcommand = "build", args = {}) {
  */
 async function buildAuditPack(config, args) {
   try {
-    const git = useGit();
-    const receiptsRef = config.receipts?.ref || "refs/notes/gitvan/results";
+    const notes = useNotes();
     const outPath = args.out || "dist/audit.json";
 
     console.log("Building audit pack...");
 
-    // Get all receipt notes
-    const listOutput = await git
-      .run(`notes --ref=${receiptsRef} list`)
-      .catch(() => "");
-    const lines = listOutput.split("\n").filter(Boolean);
-
+    // Get all receipt notes using the notes composable
+    const noteLines = await notes.list();
+    
     const receipts = [];
     let validCount = 0;
     let invalidCount = 0;
 
-    for (const line of lines) {
-      const sha = line.split(" ")[0];
-      if (!sha) continue;
+    for (const line of noteLines) {
+      // Extract commit SHA from the line (format: "note-sha commit-sha")
+      const commitSha = line.split(" ")[1] || line.split(" ")[0];
+      if (!commitSha) continue;
 
       try {
-        const rawReceipt = await git
-          .run(`notes --ref=${receiptsRef} show ${sha}`)
-          .catch(() => null);
+        const rawReceipt = await notes.read(commitSha);
         if (!rawReceipt) continue;
 
-        const receipt = JSON.parse(rawReceipt);
-        const validatedReceipt = Receipt.parse(receipt);
-
-        receipts.push(validatedReceipt);
-        validCount++;
+        // Handle multiple receipts in the raw data (one per line)
+        const lines = rawReceipt.split('\n').filter(line => line.trim());
+        for (const line of lines) {
+          try {
+            const receipt = JSON.parse(line);
+            // Map the actual receipt schema to the expected schema
+            const mappedReceipt = {
+              kind: "workflow-receipt",
+              id: receipt.id || "unknown",
+              status: receipt.status === "success" ? "OK" : receipt.status === "error" ? "ERROR" : "SKIP",
+              ts: receipt.ts || new Date().toISOString(),
+              commit: receipt.commit,
+              action: receipt.action || "unknown",
+              artifacts: receipt.artifact || [],
+              fingerprint: receipt.meta?.fingerprint,
+              duration: receipt.meta?.duration,
+              worktree: receipt.meta?.worktree,
+              branch: receipt.meta?.branch,
+            };
+            
+            const validatedReceipt = Receipt.parse(mappedReceipt);
+            receipts.push(validatedReceipt);
+            validCount++;
+          } catch (parseError) {
+            logger.warn(`Invalid receipt JSON for commit ${commitSha}:`, parseError.message);
+            invalidCount++;
+          }
+        }
       } catch (error) {
-        logger.warn(`Invalid receipt for commit ${sha}:`, error.message);
+        logger.warn(`Invalid receipt for commit ${commitSha}:`, error.message);
         invalidCount++;
       }
     }
@@ -97,10 +116,10 @@ async function buildAuditPack(config, args) {
       receipts,
       summary,
       metadata: {
-        totalProcessed: lines.length,
+        totalProcessed: noteLines.length,
         validReceipts: validCount,
         invalidReceipts: invalidCount,
-        gitRef: receiptsRef,
+        gitRef: "refs/notes/gitvan/results",
         generatedBy: "gitvan-audit-cli",
       },
     };
@@ -136,35 +155,56 @@ async function verifyReceipt(config, args) {
       throw new Error("Receipt ID required for verify command");
     }
 
-    const git = useGit();
-    const receiptsRef = config.receipts?.ref || "refs/notes/gitvan/results";
+    const notes = useNotes();
 
     console.log(`Verifying receipt: ${args.id}`);
 
-    // Find receipt by ID
-    const listOutput = await git
-      .run(`notes --ref=${receiptsRef} list`)
-      .catch(() => "");
-    const lines = listOutput.split("\n").filter(Boolean);
-
+    // Find receipt by ID using notes composable
+    const noteLines = await notes.list();
+    
     let receipt = null;
     let commitSha = null;
 
-    for (const line of lines) {
-      const sha = line.split(" ")[0];
-      if (!sha) continue;
+    for (const line of noteLines) {
+      // Extract commit SHA from the line (format: "note-sha commit-sha")
+      const commitShaFromLine = line.split(" ")[1] || line.split(" ")[0];
+      if (!commitShaFromLine) continue;
 
       try {
-        const rawReceipt = await git.run(
-          `notes --ref=${receiptsRef} show ${sha}`,
-        );
-        const parsedReceipt = JSON.parse(rawReceipt);
-
-        if (parsedReceipt.id === args.id) {
-          receipt = Receipt.parse(parsedReceipt);
-          commitSha = sha;
-          break;
+        const rawReceipt = await notes.read(commitShaFromLine);
+        const lines = rawReceipt.split('\n').filter(line => line.trim());
+        
+        for (const line of lines) {
+          try {
+            const parsedReceipt = JSON.parse(line);
+            
+            if (parsedReceipt.id === args.id) {
+              // Map the actual receipt schema to the expected schema
+              const mappedReceipt = {
+                kind: "workflow-receipt",
+                id: parsedReceipt.id,
+                status: parsedReceipt.status === "success" ? "OK" : parsedReceipt.status === "error" ? "ERROR" : "SKIP",
+                ts: parsedReceipt.ts,
+                commit: parsedReceipt.commit,
+                action: parsedReceipt.action,
+                artifacts: parsedReceipt.artifact || [],
+                fingerprint: parsedReceipt.meta?.fingerprint,
+                duration: parsedReceipt.meta?.duration,
+                worktree: parsedReceipt.meta?.worktree,
+                branch: parsedReceipt.meta?.branch,
+              };
+              
+              receipt = Receipt.parse(mappedReceipt);
+              commitSha = commitShaFromLine;
+              break;
+            }
+          } catch (parseError) {
+            // Skip invalid JSON
+            continue;
+          }
         }
+        
+        if (receipt) break;
       } catch (error) {
         // Skip invalid receipts
         continue;
@@ -204,29 +244,47 @@ async function verifyReceipt(config, args) {
  */
 async function listReceipts(config, args) {
   try {
-    const git = useGit();
-    const receiptsRef = config.receipts?.ref || "refs/notes/gitvan/results";
+    const notes = useNotes();
     const limit = args.limit ? parseInt(args.limit) : 50;
 
     console.log(`Listing receipts (limit: ${limit})...`);
 
-    const listOutput = await git
-      .run(`notes --ref=${receiptsRef} list`)
-      .catch(() => "");
-    const lines = listOutput.split("\n").filter(Boolean);
-
+    const noteLines = await notes.list();
     const receipts = [];
 
-    for (const line of lines.slice(0, limit)) {
-      const sha = line.split(" ")[0];
-      if (!sha) continue;
+    for (const line of noteLines.slice(0, limit)) {
+      // Extract commit SHA from the line (format: "note-sha commit-sha")
+      const commitSha = line.split(" ")[1] || line.split(" ")[0];
+      if (!commitSha) continue;
 
       try {
-        const rawReceipt = await git.run(
-          `notes --ref=${receiptsRef} show ${sha}`,
-        );
-        const receipt = JSON.parse(rawReceipt);
-        receipts.push(receipt);
+        const rawReceipt = await notes.read(commitSha);
+        const lines = rawReceipt.split('\n').filter(line => line.trim());
+        
+        for (const line of lines) {
+          try {
+            const receipt = JSON.parse(line);
+            // Map the actual receipt schema to the expected schema
+            const mappedReceipt = {
+              kind: "workflow-receipt",
+              id: receipt.id || "unknown",
+              status: receipt.status === "success" ? "OK" : receipt.status === "error" ? "ERROR" : "SKIP",
+              ts: receipt.ts || new Date().toISOString(),
+              commit: receipt.commit,
+              action: receipt.action || "unknown",
+              artifacts: receipt.artifact || [],
+              fingerprint: receipt.meta?.fingerprint,
+              duration: receipt.meta?.duration,
+              worktree: receipt.meta?.worktree,
+              branch: receipt.meta?.branch,
+            };
+            
+            receipts.push(mappedReceipt);
+          } catch (parseError) {
+            // Skip invalid JSON
+            continue;
+          }
+        }
       } catch (error) {
         // Skip invalid receipts
         continue;

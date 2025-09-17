@@ -21,7 +21,7 @@ import { cronCommand } from "./cli/cron.mjs";
 import { daemonCommand } from "./cli/daemon.mjs";
 import { eventCommand } from "./cli/event.mjs";
 import { auditCommand } from "./cli/audit.mjs";
-import { chatCommand } from "./cli/chat-real.mjs";
+import { chatCommand } from "./cli/chat.mjs";
 import { packCommand } from "./cli/pack.mjs";
 import { scaffoldCommand } from "./cli/scaffold.mjs";
 import { marketplaceCommand } from "./cli/marketplace.mjs";
@@ -41,7 +41,7 @@ const commands = {
 
   // New v2 commands
   cron: cronCommand,
-  audit: auditCommand,
+  audit: handleAudit,
   chat: handleChat,
   llm: handleLLM,
   pack: handlePack,
@@ -321,6 +321,11 @@ async function handleDaemon(action = "start", ...options) {
 async function handleEvent(action = "list", ...args) {
   // Use new event command handler
   return await eventCommand(action, parseArgs(args));
+}
+
+async function handleAudit(subcommand = "list", ...args) {
+  // Use audit command handler
+  return await auditCommand(subcommand, parseArgs(args));
 }
 
 async function handleChat(action = "draft", ...args) {

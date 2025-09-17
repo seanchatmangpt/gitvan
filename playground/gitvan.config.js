@@ -3,6 +3,11 @@ export default {
   jobs: { dir: "jobs" },
   templates: { engine: "nunjucks", dirs: ["templates"] },
   receipts: { ref: "refs/notes/gitvan/results" },
+  ai: {
+    provider: 'mock',
+    model: 'mock-model',
+    temperature: 0.7,
+  },
   hooks: {
     "job:before"({ id, payload }) {
       console.log(`[playground] 🚀 Starting job: ${id}`);

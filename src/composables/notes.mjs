@@ -63,8 +63,8 @@ export function useNotes() {
 
     async list() {
       try {
-        const refs = await git.listRefs("refs/notes/gitvan/results");
-        return refs;
+        const notes = await git.notesList("refs/notes/gitvan/results");
+        return notes;
       } catch (error) {
         return [];
       }

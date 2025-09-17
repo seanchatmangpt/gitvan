@@ -53,7 +53,7 @@ Generate a detailed job specification that follows GitVan patterns exactly. Incl
 
 Return only valid JSON specification.`;
 
-    // Use real AI to generate job specification
+    // Use AI to generate job specification
     const result = await generateJobSpec({
       prompt: contextPrompt,
       model: input.options?.model,

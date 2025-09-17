@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 13,
+            "activePatchIndex": 15,
             "patches": [
                 {
                     "date": 1758057329115,
@@ -60,6 +60,14 @@
                 {
                     "date": 1758132848669,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -20,9 +20,9 @@\n import { cronCommand } from \"./cli/cron.mjs\";\n import { daemonCommand } from \"./cli/daemon.mjs\";\n import { eventCommand } from \"./cli/event.mjs\";\n import { auditCommand } from \"./cli/audit.mjs\";\n-import { chatCommand } from \"./cli/chat.mjs\";\n+import { chatCommand } from \"./cli/chat-real.mjs\";\n import { packCommand } from \"./cli/pack.mjs\";\n import { scaffoldCommand } from \"./cli/scaffold.mjs\";\n import { marketplaceCommand } from \"./cli/marketplace.mjs\";\n import { composeCommand } from \"./cli/compose.mjs\";\n"
+                },
+                {
+                    "date": 1758134517617,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -20,9 +20,9 @@\n import { cronCommand } from \"./cli/cron.mjs\";\n import { daemonCommand } from \"./cli/daemon.mjs\";\n import { eventCommand } from \"./cli/event.mjs\";\n import { auditCommand } from \"./cli/audit.mjs\";\n-import { chatCommand } from \"./cli/chat-real.mjs\";\n+import { chatCommand } from \"./cli/chat.mjs\";\n import { packCommand } from \"./cli/pack.mjs\";\n import { scaffoldCommand } from \"./cli/scaffold.mjs\";\n import { marketplaceCommand } from \"./cli/marketplace.mjs\";\n import { composeCommand } from \"./cli/compose.mjs\";\n"
+                },
+                {
+                    "date": 1758135450965,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -40,9 +40,9 @@\n   help: handleHelp,\n \n   // New v2 commands\n   cron: cronCommand,\n-  audit: auditCommand,\n+  audit: handleAudit,\n   chat: handleChat,\n   llm: handleLLM,\n   pack: handlePack,\n   scaffold: handleScaffold,\n@@ -322,8 +322,13 @@\n   // Use new event command handler\n   return await eventCommand(action, parseArgs(args));\n }\n \n+async function handleAudit(subcommand = \"list\", ...args) {\n+  // Use audit command handler\n+  return await auditCommand(subcommand, parseArgs(args));\n+}\n+\n async function handleChat(action = \"draft\", ...args) {\n   // Use new chat command handler\n   return await chatCommand(action, parseArgs(args));\n }\n"
                 }
             ],
             "date": 1758057329115,

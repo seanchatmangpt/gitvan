@@ -4,7 +4,7 @@
  */
 
 import { ChatInput } from "../../schemas/chat.zod.mjs";
-import { generateWorkingJob } from "../../ai/real-provider.mjs";
+import { generateWorkingJob } from "../../ai/provider.mjs";
 import {
   GITVAN_SYSTEM_CONTEXT,
   JOB_GENERATION_CONTEXT,

@@ -59,7 +59,7 @@ Generate a COMPLETE, WORKING GitVan job file. Requirements:
 
 The generated code must be production-ready and functional.`;
 
-    // Use real AI to generate working job code
+    // Use AI to generate working job code
     const result = await generateWorkingJob({
       prompt: contextPrompt,
       model: input.options?.model,

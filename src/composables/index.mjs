@@ -8,6 +8,7 @@ export { useGit } from "./git/index.mjs";
 export { useWorktree } from "./worktree.mjs";
 export { useTemplate } from "./template.mjs";
 export { useNotes } from "./notes.mjs";
+export { useUnrouting } from "./unrouting.mjs";
 
 // Job & Event composables
 export { useJob } from "./job.mjs";

@@ -23,6 +23,8 @@ const BrowseOptionsSchema = z.object({
       category: z.string().optional(),
       author: z.string().optional(),
       license: z.string().optional(),
+      framework: z.string().optional(),
+      unplugin: z.boolean().optional(),
     })
     .optional(),
   sort: z
@@ -72,6 +74,7 @@ function detectPacks() {
                   license: manifest.license || "MIT",
                   path: packPath,
                   manifest,
+                  unplugin: manifest.unplugin || null,
                 });
               } catch (error) {
                 // Skip invalid manifests
@@ -307,6 +310,19 @@ export class Marketplace {
         ) {
           return false;
         }
+        // Unplugin-specific filters
+        if (options.filters.unplugin === true && !pack.unplugin) {
+          return false;
+        }
+        if (options.filters.unplugin === false && pack.unplugin) {
+          return false;
+        }
+        if (options.filters.framework && pack.unplugin) {
+          const supportedFrameworks = pack.unplugin.frameworks || ['vite', 'webpack', 'rollup'];
+          if (!supportedFrameworks.includes(options.filters.framework)) {
+            return false;
+          }
+        }
         return true;
       });
     }
@@ -354,6 +370,7 @@ export class Marketplace {
         author: pack.author,
         license: pack.license,
         categories: pack.manifest.categories || [],
+        unplugin: pack.unplugin,
       })),
       pagination: {
         page: page,
@@ -369,6 +386,7 @@ export class Marketplace {
         capabilities: [...new Set(packs.flatMap((p) => p.capabilities))],
         authors: [...new Set(packs.map((p) => p.author).filter(Boolean))],
         licenses: [...new Set(packs.map((p) => p.license).filter(Boolean))],
+        frameworks: [...new Set(packs.filter(p => p.unplugin).flatMap(p => p.unplugin.frameworks || []))],
       },
     };
 

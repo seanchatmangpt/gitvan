@@ -2,33 +2,36 @@ import { readdirSync, statSync } from 'node:fs'
 import { join, extname, resolve } from 'pathe'
 
 /**
- * Discovers events by scanning the events/ directory
- * Maps filesystem paths to event patterns and triggers
+ * Discovers hooks by scanning the hooks/ directory
+ * Maps filesystem paths to hook patterns and triggers
  */
-export function discoverEvents(eventsDir) {
-  const events = []
+export function discoverHooks(hooksDir) {
+  const hooks = []
 
-  if (!eventsDir) return events
+  if (!hooksDir) return hooks
 
-  // Check if events directory exists and is accessible
+  // Check if hooks directory exists and is accessible
   try {
-    const stat = statSync(eventsDir)
-    if (!stat.isDirectory()) return events
+    const stat = statSync(hooksDir)
+    if (!stat.isDirectory()) return hooks
   } catch {
-    return events
+    return hooks
   }
 
   try {
-    scanDirectory(eventsDir, '', events)
+    scanDirectory(hooksDir, '', hooks)
   } catch (err) {
-    // Events directory doesn't exist or isn't readable
-    return events
+    // Hooks directory doesn't exist or isn't readable
+    return hooks
   }
 
-  return events
+  return hooks
 }
 
-function scanDirectory(baseDir, relativePath, events) {
+// Backward compatibility
+export const discoverEvents = discoverHooks
+
+function scanDirectory(baseDir, relativePath, hooks) {
   const fullPath = join(baseDir, relativePath)
 
   try {
@@ -39,14 +42,14 @@ function scanDirectory(baseDir, relativePath, events) {
       const relativeEntryPath = relativePath ? join(relativePath, entry) : entry
 
       if (statSync(entryPath).isDirectory()) {
-        scanDirectory(baseDir, relativeEntryPath, events)
+        scanDirectory(baseDir, relativeEntryPath, hooks)
       } else if (extname(entry) === '.mjs') {
-        const eventPattern = parseEventPath(relativeEntryPath)
-        if (eventPattern) {
-          events.push({
+        const hookPattern = parseHookPath(relativeEntryPath)
+        if (hookPattern) {
+          hooks.push({
             id: relativeEntryPath.replace(/\.mjs$/, ''),
             file: entryPath,
-            ...eventPattern
+            ...hookPattern
           })
         }
       }
@@ -57,9 +60,9 @@ function scanDirectory(baseDir, relativePath, events) {
 }
 
 /**
- * Parse event file path into trigger pattern
+ * Parse hook file path into trigger pattern
  */
-function parseEventPath(relativePath) {
+function parseHookPath(relativePath) {
   const parts = relativePath.replace(/\.mjs$/, '').split('/')
 
   if (parts.length < 2) return null
@@ -133,28 +136,34 @@ function parseEventPath(relativePath) {
   }
 }
 
+// Backward compatibility
+export const parseEventPath = parseHookPath
+
 /**
- * Load event definition from file
+ * Load hook definition from file
  */
-export async function loadEventDefinition(eventFile) {
+export async function loadHookDefinition(hookFile) {
   try {
-    const module = await import(eventFile)
+    const module = await import(hookFile)
     return module.default || module
   } catch (err) {
-    console.warn(`Failed to load event file ${eventFile}:`, err.message)
+    console.warn(`Failed to load hook file ${hookFile}:`, err.message)
     return null
   }
 }
 
+// Backward compatibility
+export const loadEventDefinition = loadHookDefinition
+
 /**
- * Check if event fires for given commit context
+ * Check if hook fires for given commit context
  */
-export function eventMatches(event, context) {
-  const { type, pattern, regex, branch } = event
+export function hookMatches(hook, context) {
+  const { type, pattern, regex, branch } = hook
 
   switch (type) {
     case 'cron':
-      // Cron events are handled by scheduler, not commit-based
+      // Cron hooks are handled by scheduler, not commit-based
       return false
 
     case 'merge':
@@ -179,6 +188,9 @@ export function eventMatches(event, context) {
       return false
   }
 }
+
+// Backward compatibility
+export const eventMatches = hookMatches
 
 function matchesPattern(value, pattern) {
   if (!pattern || !value) return false

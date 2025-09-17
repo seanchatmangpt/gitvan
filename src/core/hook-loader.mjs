@@ -1,6 +1,6 @@
 /**
  * GitVan Hook Loader - Job-Only Architecture
- * 
+ *
  * Rule set:
  * - Scope: post-commit and post-merge only (v1)
  * - ABI: jobs define hooks and execute directly
@@ -14,7 +14,7 @@ import { withGitVan } from "./context.mjs";
 
 /**
  * GitVan Hook Loader - Job-Only Architecture
- * 
+ *
  * Loads and executes jobs directly for specific Git hook types:
  * 1. Load all jobs from jobs/ directory
  * 2. Find jobs registered for the specific hook
@@ -32,25 +32,25 @@ export class GitVanHookLoader {
    */
   async run(gitHookName, context = {}) {
     console.log(`🔍 GitVan: Running ${gitHookName} jobs`);
-    
+
     // Load all jobs first
     await this.jobLoader.loadAllJobs();
-    
+
     // Get jobs registered for this hook
     const hookJobs = this.jobLoader.getJobsForHook(gitHookName);
-    
+
     if (hookJobs.length === 0) {
       console.log(`   ✅ No jobs found for ${gitHookName}`);
       return;
     }
 
     console.log(`   📁 Found ${hookJobs.length} jobs`);
-    
+
     // Execute jobs in registration order
     for (const job of hookJobs) {
       await this.executeJob(job, context);
     }
-    
+
     console.log(`   ✅ All ${gitHookName} jobs completed`);
   }
 
@@ -60,7 +60,7 @@ export class GitVanHookLoader {
   async executeJob(job, context) {
     const jobName = job.meta.name;
     console.log(`   🔧 Running job: ${jobName}`);
-    
+
     try {
       // Wrap job execution in GitVan context
       await withGitVan(context, async () => {

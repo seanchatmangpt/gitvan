@@ -1,7 +1,7 @@
 // Simple gray-matter implementation for front-matter parsing
 export default {
   default(content) {
-    const lines = content.split('\n');
+    const lines = content.split("\n");
     let inFrontMatter = false;
     let frontMatterLines = [];
     let contentLines = [];
@@ -10,12 +10,12 @@ export default {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
 
-      if (i === 0 && line === '---') {
+      if (i === 0 && line === "---") {
         inFrontMatter = true;
         continue;
       }
 
-      if (inFrontMatter && line === '---') {
+      if (inFrontMatter && line === "---") {
         inFrontMatter = false;
         foundEnd = true;
         continue;
@@ -31,31 +31,76 @@ export default {
     // Parse YAML-like front matter (simplified)
     const data = {};
     if (foundEnd && frontMatterLines.length > 0) {
+      let currentKey = null;
+      let currentValue = {};
+
       for (const line of frontMatterLines) {
-        const match = line.match(/^(\w+):\s*(.+)$/);
+        const trimmedLine = line.trim();
+        if (!trimmedLine) continue;
+
+        // Check for nested structure (key:)
+        if (trimmedLine.endsWith(":") && !trimmedLine.includes(" ")) {
+          currentKey = trimmedLine.slice(0, -1);
+          currentValue = {};
+          data[currentKey] = currentValue;
+          continue;
+        }
+
+        // Check for key: value pairs
+        const match = trimmedLine.match(/^(\w+):\s*(.+)$/);
         if (match) {
           const [, key, value] = match;
           // Basic type inference
-          if (value === 'true') data[key] = true;
-          else if (value === 'false') data[key] = false;
-          else if (/^\d+$/.test(value)) data[key] = parseInt(value, 10);
-          else if (value.startsWith('"') && value.endsWith('"')) {
-            data[key] = value.slice(1, -1);
+          if (value === "true") {
+            if (currentKey) {
+              currentValue[key] = true;
+            } else {
+              data[key] = true;
+            }
+          } else if (value === "false") {
+            if (currentKey) {
+              currentValue[key] = false;
+            } else {
+              data[key] = false;
+            }
+          } else if (/^\d+$/.test(value)) {
+            const numValue = parseInt(value, 10);
+            if (currentKey) {
+              currentValue[key] = numValue;
+            } else {
+              data[key] = numValue;
+            }
+          } else if (value.startsWith('"') && value.endsWith('"')) {
+            const strValue = value.slice(1, -1);
+            if (currentKey) {
+              currentValue[key] = strValue;
+            } else {
+              data[key] = strValue;
+            }
           } else if (value.startsWith("'") && value.endsWith("'")) {
-            data[key] = value.slice(1, -1);
+            const strValue = value.slice(1, -1);
+            if (currentKey) {
+              currentValue[key] = strValue;
+            } else {
+              data[key] = strValue;
+            }
           } else {
-            data[key] = value;
+            if (currentKey) {
+              currentValue[key] = value;
+            } else {
+              data[key] = value;
+            }
           }
         }
       }
     }
 
     return {
-      content: contentLines.join('\n'),
+      content: contentLines.join("\n"),
       data,
-      matter: frontMatterLines.join('\n')
+      matter: frontMatterLines.join("\n"),
     };
-  }
+  },
 };
 
 // Export as named function too

@@ -1,0 +1,82 @@
+[
+  {
+    "id": "component-change",
+    "pattern": "src/components/[name]/[file].tsx",
+    "job": {
+      "name": "component:update",
+      "with": { "name": ":name", "file": ":file", "path": ":__file" }
+    }
+  },
+  {
+    "id": "page-change",
+    "pattern": "src/pages/[page]/[file].tsx",
+    "job": {
+      "name": "page:update",
+      "with": { "page": ":page", "file": ":file", "path": ":__file" }
+    }
+  },
+  {
+    "id": "api-change",
+    "pattern": "src/api/[endpoint].ts",
+    "job": {
+      "name": "api:update",
+      "with": { "endpoint": ":endpoint", "path": ":__file" }
+    }
+  },
+  {
+    "id": "test-change",
+    "pattern": "src/**/*.test.ts",
+    "job": {
+      "name": "test:run",
+      "with": { "path": ":__file" }
+    }
+  },
+  {
+    "id": "config-change",
+    "pattern": "config/[file].json",
+    "job": {
+      "name": "config:reload",
+      "with": { "file": ":file", "path": ":__file" }
+    }
+  },
+  {
+    "id": "hook-change",
+    "pattern": "src/hooks/[hook].ts",
+    "job": {
+      "name": "hook:update",
+      "with": { "hook": ":hook", "path": ":__file" }
+    }
+  },
+  {
+    "id": "service-change",
+    "pattern": "src/services/[service].ts",
+    "job": {
+      "name": "service:update",
+      "with": { "service": ":service", "path": ":__file" }
+    }
+  },
+  {
+    "id": "type-change",
+    "pattern": "src/types/[type].ts",
+    "job": {
+      "name": "type:update",
+      "with": { "type": ":type", "path": ":__file" }
+    }
+  },
+  {
+    "id": "util-change",
+    "pattern": "src/utils/[util].ts",
+    "job": {
+      "name": "util:update",
+      "with": { "util": ":util", "path": ":__file" }
+    }
+  },
+  {
+    "id": "layout-change",
+    "pattern": "src/layouts/[layout].tsx",
+    "job": {
+      "name": "layout:update",
+      "with": { "layout": ":layout", "path": ":__file" }
+    }
+  }
+]

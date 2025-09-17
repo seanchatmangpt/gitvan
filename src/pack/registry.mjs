@@ -85,8 +85,29 @@ export class PackRegistry {
   }
 
   validateRegistryUrl(url) {
-    // Use local file system instead of remote registry
-    return "local-filesystem";
+    if (!url) {
+      return "https://registry.gitvan.dev";
+    }
+
+    // Validate URL format
+    try {
+      const parsedUrl = new URL(url);
+
+      // Only allow HTTPS URLs for security
+      if (parsedUrl.protocol !== "https:") {
+        this.logger.warn(
+          `Insecure registry URL detected: ${url}, falling back to secure default`
+        );
+        return "https://registry.gitvan.dev";
+      }
+
+      return url;
+    } catch (error) {
+      this.logger.warn(
+        `Invalid registry URL: ${url}, falling back to secure default`
+      );
+      return "https://registry.gitvan.dev";
+    }
   }
 
   initializeCache() {

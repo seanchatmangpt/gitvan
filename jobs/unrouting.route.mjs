@@ -43,22 +43,30 @@ export default defineJob({
 
       console.log(`📄 Found ${changedFiles.length} changed files`);
 
-      // Simple routes configuration
+      // GitVan-specific routes configuration
       const routes = [
         {
-          id: "component-change",
-          pattern: "src/components/[name]/[file].tsx",
+          id: "composable-change",
+          pattern: "src/composables/[name].mjs",
           job: {
-            name: "component:update",
-            with: { name: ":name", file: ":file", path: ":__file" },
+            name: "composable:update",
+            with: { name: ":name", path: ":__file" },
           },
         },
         {
-          id: "page-change",
-          pattern: "src/pages/[page]/[file].tsx",
+          id: "cli-change",
+          pattern: "src/cli/[command].mjs",
           job: {
-            name: "page:update",
-            with: { page: ":page", file: ":file", path: ":__file" },
+            name: "cli:update",
+            with: { command: ":command", path: ":__file" },
+          },
+        },
+        {
+          id: "job-change",
+          pattern: "jobs/[job].mjs",
+          job: {
+            name: "job:update",
+            with: { job: ":job", path: ":__file" },
           },
         },
         {
@@ -70,19 +78,19 @@ export default defineJob({
           },
         },
         {
-          id: "test-change",
-          pattern: "src/**/*.test.ts",
-          job: {
-            name: "test:run",
-            with: { path: ":__file" },
-          },
-        },
-        {
           id: "config-change",
           pattern: "config/[file].json",
           job: {
             name: "config:reload",
             with: { file: ":file", path: ":__file" },
+          },
+        },
+        {
+          id: "test-change",
+          pattern: "tests/[suite]/[test].test.mjs",
+          job: {
+            name: "test:run",
+            with: { suite: ":suite", test: ":test", path: ":__file" },
           },
         },
       ];

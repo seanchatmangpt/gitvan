@@ -3,11 +3,15 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 1,
             "patches": [
                 {
                     "date": 1758045807388,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1758143563304,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -97,13 +97,34 @@\n 2. **Show actual test output**\n 3. **Admit when things are untested**\n 4. **Verify before claiming success**\n \n+## CRITICAL: Error Checking Protocol\n+- **ALWAYS CHECK CONSOLE OUTPUT FOR ERRORS** before declaring success\n+- **NEVER declare success if there are ANY error messages** (❌, ⚠️, Error:, Failed:, etc.)\n+- **READ THE FULL OUTPUT** - don't just look for ✅ symbols\n+- **VERIFY EXIT CODES** - commands must exit with code 0\n+- **CHECK FOR WARNINGS** - warnings indicate potential issues\n+- **VALIDATE ACTUAL FUNCTIONALITY** - not just that commands run\n+\n+### Error Detection Patterns\n+- Look for: `❌`, `⚠️`, `Error:`, `Failed:`, `Cannot`, `TypeError`, `ReferenceError`\n+- Check exit codes: `exit code: 0` = success, anything else = failure\n+- Verify no warnings: `warning:`, `WARN:`, `⚠️`\n+- Ensure clean output: no stack traces or error messages\n+\n+### Success Criteria\n+- ✅ **ALL** console output shows success indicators\n+- ✅ **ZERO** error messages or warnings\n+- ✅ **ZERO** exit code (success)\n+- ✅ **ACTUAL** functionality verified, not just \"command ran\"\n+\n **REMEMBER:**\n - Writing a file to disk DOES NOT mean it works\n - Finishing a TODO is NOT enough without verification\n - You MUST verify with actual command execution\n-- Always test before claiming completion\n+- **NEVER declare success without checking ALL console output for errors**\n+- **ALWAYS read the full output before claiming anything works**\n \n ## Quick Commands\n ```bash\n # Run tests\n"
                 }
             ],
             "date": 1758045807388,

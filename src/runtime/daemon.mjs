@@ -4,7 +4,7 @@ import { useExec } from "../composables/exec.mjs";
 import { acquireLock, worktreeLockRef, releaseLock } from "./locks.mjs";
 import { writeReceipt } from "./receipt.mjs";
 import { recentShas, sleep, eventFires } from "./utils.mjs";
-import { discoverEvents, loadEventDefinition } from "./events.mjs";
+import { discoverHooks, loadHookDefinition } from "./events.mjs";
 import { loadConfig } from "./config.mjs";
 import { join } from "pathe";
 
@@ -15,27 +15,27 @@ export async function startDaemon(opts = {}, registry = null, sel = "current") {
   const config = await loadConfig(opts.rootDir);
   const mergedOpts = { ...config, ...opts };
 
-  // Discover events if not provided in registry
+  // Discover hooks if not provided in registry
   if (!registry) {
-    const eventsDir = join(
+    const hooksDir = join(
       mergedOpts.rootDir || process.cwd(),
-      mergedOpts.events.directory,
+      mergedOpts.hooks?.directory || "hooks",
     );
-    const eventFiles = discoverEvents(eventsDir);
-    const events = [];
+    const hookFiles = discoverHooks(hooksDir);
+    const hooks = [];
 
-    for (const eventFile of eventFiles) {
-      const definition = await loadEventDefinition(eventFile.file);
+    for (const hookFile of hookFiles) {
+      const definition = await loadHookDefinition(hookFile.file);
       if (definition) {
-        events.push({
-          ...eventFile,
+        hooks.push({
+          ...hookFile,
           run: definition.run || definition,
           job: definition.job,
         });
       }
     }
 
-    registry = { events, jobs: {} };
+    registry = { hooks, jobs: {} };
   }
 
   const git = useGit();
@@ -105,58 +105,58 @@ async function loopWorktree(opts, registry, wt) {
         for (const sha of shas) {
           if (ran >= maxPerTick) break;
 
-          for (const event of registry.events) {
+          for (const hook of registry.hooks) {
             if (ran >= maxPerTick) break;
 
             try {
-              const fires = await eventFires(event, sha);
+              const fires = await eventFires(hook, sha);
               if (!fires) continue;
 
               const git = useGit();
               const lockRef = worktreeLockRef(
                 opts.locksRoot || "refs/gitvan/locks",
                 await git.worktreeId(),
-                event.id,
+                hook.id,
                 sha,
               );
 
               const acquired = acquireLock(lockRef, sha);
               if (!acquired) {
-                console.debug(`Lock already held for ${event.id}@${sha}`);
+                console.debug(`Lock already held for ${hook.id}@${sha}`);
                 continue;
               }
 
               console.log(
-                `Processing ${event.id} for commit ${sha.slice(0, 8)}`,
+                `Processing ${hook.id} for commit ${sha.slice(0, 8)}`,
               );
 
               let res;
-              if (event.job && registry.jobs[event.job]) {
+              if (hook.job && registry.jobs[hook.job]) {
                 // Run named job
-                res = await registry.jobs[event.job].run({
+                res = await registry.jobs[hook.job].run({
                   payload: ctx.payload,
                 });
-              } else if (event.run) {
+              } else if (hook.run) {
                 // Run inline action
-                res = await runAction(event.run);
+                res = await runAction(hook.run);
               } else {
-                console.warn(`No action defined for event ${event.id}`);
+                console.warn(`No action defined for hook ${hook.id}`);
                 continue;
               }
 
               writeReceipt({
                 resultsRef: opts.resultsRef || "refs/notes/gitvan/results",
-                id: `${event.id}@${await git.worktreeId()}`,
+                id: `${hook.id}@${await git.worktreeId()}`,
                 status: res.ok ? "OK" : "ERROR",
                 commit: sha,
-                action: event.job ? "job" : event.run?.exec || "unknown",
+                action: hook.job ? "job" : hook.run?.exec || "unknown",
                 result: res,
                 artifact: res.artifact,
                 meta: {
                   worktree: wt.path,
                   branch: wt.branch,
-                  eventType: event.type,
-                  pattern: event.pattern,
+                  hookType: hook.type,
+                  pattern: hook.pattern,
                 },
               });
 
@@ -164,7 +164,7 @@ async function loopWorktree(opts, registry, wt) {
               ran++;
             } catch (err) {
               console.error(
-                `Error processing event ${event.id} for ${sha}:`,
+                `Error processing hook ${hook.id} for ${sha}:`,
                 err.message,
               );
             }

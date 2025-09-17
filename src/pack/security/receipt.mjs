@@ -5,12 +5,13 @@ import { tmpdir } from "node:os";
 import { useGit } from "../../composables/git/index.mjs";
 import { createLogger } from "../../utils/logger.mjs";
 import { CryptoManager } from "../../utils/crypto.mjs";
+import { withGitVan } from "../../core/context.mjs";
 
 export class ReceiptManager {
   constructor(options = {}) {
     this.options = options;
     this.logger = createLogger("pack:receipt");
-    this.git = useGit();
+    this.cwd = options.cwd || process.cwd();
     this.receiptsRef = options.receiptsRef || "refs/notes/gitvan/pack-receipts";
 
     // Initialize crypto manager
@@ -25,6 +26,11 @@ export class ReceiptManager {
         this.logger.warn("Failed to generate key pair:", error.message);
       }
     }
+  }
+
+  // Get git instance with proper context
+  getGit() {
+    return withGitVan({ cwd: this.cwd }, () => useGit());
   }
 
   async create(pack, operation, status, details = {}) {
@@ -75,7 +81,7 @@ export class ReceiptManager {
         // Ensure notes ref exists
         await this.ensureNotesRef();
 
-        await this.git.run([
+        await this.getGit().run([
           "notes",
           "--ref",
           this.receiptsRef,
@@ -106,7 +112,7 @@ export class ReceiptManager {
 
   async read(packId, options = {}) {
     try {
-      const notes = await this.git.run([
+      const notes = await this.getGit().run([
         "notes",
         "--ref",
         this.receiptsRef,
@@ -117,7 +123,7 @@ export class ReceiptManager {
       for (const line of notes.split("\n").filter(Boolean)) {
         const [noteId, commit] = line.split(" ");
         try {
-          const content = await this.git.run([
+          const content = await this.getGit().run([
             "notes",
             "--ref",
             this.receiptsRef,
@@ -177,7 +183,7 @@ export class ReceiptManager {
     // Verify commit exists (skip if 'unknown')
     if (receipt.commit && receipt.commit !== "unknown") {
       try {
-        await this.git.run(["cat-file", "-e", receipt.commit]);
+        await this.getGit().run(["cat-file", "-e", receipt.commit]);
       } catch {
         errors.push(`Commit not found: ${receipt.commit}`);
       }
@@ -235,7 +241,7 @@ export class ReceiptManager {
       user: process.env.USER || process.env.USERNAME || "unknown",
       ci: process.env.CI === "true",
       timestamp_utc: new Date().toISOString(),
-      pwd: process.cwd(),
+      pwd: this.cwd,
     };
   }
 
@@ -344,7 +350,7 @@ export class ReceiptManager {
 
   async getCurrentCommit() {
     try {
-      const result = await this.git.run(["rev-parse", "HEAD"]);
+      const result = await this.getGit().run(["rev-parse", "HEAD"]);
       return result.trim();
     } catch {
       return "unknown";
@@ -353,21 +359,21 @@ export class ReceiptManager {
 
   async getWorktreePath() {
     try {
-      const result = await this.git.run(["rev-parse", "--show-toplevel"]);
+      const result = await this.getGit().run(["rev-parse", "--show-toplevel"]);
       return result.trim();
     } catch {
-      return process.cwd();
+      return this.cwd;
     }
   }
 
   async ensureNotesRef() {
     try {
       // Check if notes ref exists
-      await this.git.run(["show-ref", this.receiptsRef]);
+      await this.getGit().run(["show-ref", this.receiptsRef]);
     } catch {
       // Create empty notes ref by adding and removing a note
       try {
-        await this.git.run([
+        await this.getGit().run([
           "notes",
           "--ref",
           this.receiptsRef,
@@ -376,7 +382,7 @@ export class ReceiptManager {
           "Initialize pack receipts",
           "HEAD",
         ]);
-        await this.git.run([
+        await this.getGit().run([
           "notes",
           "--ref",
           this.receiptsRef,

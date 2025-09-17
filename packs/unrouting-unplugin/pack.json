@@ -1,0 +1,67 @@
+{
+  "id": "unrouting-unplugin",
+  "name": "Unrouting Unplugin Pack",
+  "version": "1.0.0",
+  "description": "File-based routing system with unplugin support for build tools",
+  "author": "GitVan Team",
+  "license": "MIT",
+  "keywords": ["routing", "file-based", "automation", "gitvan", "unplugin", "build-tools"],
+  "main": "parser.mjs",
+  "files": [
+    "routes.json",
+    "parser.mjs",
+    "jobs/",
+    "plugins/"
+  ],
+  "jobs": [
+    {
+      "name": "unrouting:route",
+      "file": "jobs/unrouting.route.mjs",
+      "description": "Route file changes to GitVan jobs using unrouting patterns"
+    },
+    {
+      "name": "unrouting:plan", 
+      "file": "jobs/unrouting.plan.mjs",
+      "description": "Plan unrouting jobs without executing them (dry-run)"
+    }
+  ],
+  "dependencies": {
+    "unrouting": "^1.0.0"
+  },
+  "unplugin": {
+    "name": "unrouting-plugin",
+    "description": "File-based routing plugin for build tools",
+    "frameworks": ["vite", "webpack", "rollup", "esbuild"],
+    "hooks": {
+      "buildStart": "function() { console.log('Unrouting plugin: Build started'); }",
+      "resolveId": "function(id) { if (id.startsWith('unrouting:')) return id; }",
+      "load": "function(id) { if (id.startsWith('unrouting:')) return 'export default {}'; }",
+      "transform": "function(code, id) { if (id.includes('route')) return code.replace(/\\broutes\\b/g, 'unrouting-routes'); }"
+    },
+    "options": {
+      "routesFile": "routes.json",
+      "watchMode": true,
+      "generateTypes": true,
+      "vite": {
+        "plugins": ["@vitejs/plugin-react"]
+      },
+      "webpack": {
+        "mode": "development"
+      },
+      "rollup": {
+        "external": ["unrouting"]
+      }
+    },
+    "dependencies": ["unrouting", "unplugin"]
+  },
+  "gitvan": {
+    "packType": "routing",
+    "version": "2.0.0",
+    "compatibility": {
+      "gitvan": ">=2.0.0"
+    }
+  },
+  "capabilities": ["routing", "file-based", "automation", "unplugin", "build-integration"],
+  "tags": ["routing", "automation", "build-tools", "unplugin"],
+  "categories": ["routing", "build-tools"]
+}

@@ -54,6 +54,20 @@ export default defineJob({
     const receipt = useReceipt()
     const lock = useLock()
     
+    // Destructure methods for cleaner code
+    const { 
+      worktreeRoot, currentHead, currentBranch, writeFile, 
+      add, commit, statusPorcelain 
+    } = git
+    
+    const { render, renderString, renderToFile } = template
+    const { write: writeNote, read: readNotes, list: listNotes } = notes
+    const { create: createWorktree, remove: removeWorktree, switch: switchWorktree } = worktree
+    const { apply: applyPack, list: listPacks } = pack
+    const { add: scheduleJob, remove: unscheduleJob } = schedule
+    const { write: writeReceipt, read: readReceipt } = receipt
+    const { acquire: acquireLock, release: releaseLock, isLocked } = lock
+    
     // Job implementation here
     
     return {
@@ -73,22 +87,24 @@ Git operations composable with camelCase naming convention:
 \`\`\`javascript
 const git = useGit()
 
+// Destructure commonly used methods
+const { 
+  worktreeRoot, currentHead, currentBranch, writeFile, 
+  add, commit, statusPorcelain, log, logSinceLastTag 
+} = git
+
 // Repository Information
-await git.worktreeRoot()        // Get repo root directory
-await git.currentHead()         // Get HEAD commit SHA
-await git.currentBranch()       // Get current branch name
-await git.worktreeStatus()      // Get repo status (porcelain)
-await git.isClean()             // Check if working tree is clean
-await git.info()                // Get comprehensive repo info
+await worktreeRoot()        // Get repo root directory
+await currentHead()          // Get HEAD commit SHA
+await currentBranch()       // Get current branch name
+await statusPorcelain()     // Get repo status (porcelain)
 
 // Git Operations
-await git.run(["command", "args"])     // Run git command
-await git.runVoid(["command", "args"]) // Run git command, no output
-await git.listRefs()                   // List all refs
-await git.listWorktrees()              // List worktrees
-await git.show(sha)                    // Show commit details
-await git.logSinceLastTag()            // Get commits since last tag
-await git.writeFile(path, content)     // Write file to repo
+await add(['file1.txt', 'file2.js'])     // Stage files
+await commit('Commit message')           // Commit changes
+await writeFile('output.txt', 'content') // Write file to repo
+await log()                              // Get commit log
+await logSinceLastTag()                  // Get commits since last tag
 \`\`\`
 
 #### useTemplate()
@@ -97,14 +113,20 @@ Nunjucks template rendering composable:
 \`\`\`javascript
 const template = useTemplate()
 
+// Destructure template methods
+const { render, renderString, renderToFile, getEnvironment } = template
+
 // Render template file
-const result = await template.render('template.njk', { data })
+const result = await render('template.njk', { data })
 
 // Render template string
-const result = await template.renderString('Hello {{ name }}', { name: 'World' })
+const result = await renderString('Hello {{ name }}', { name: 'World' })
+
+// Render template to file
+await renderToFile('template.njk', 'output.html', { data })
 
 // Get template environment
-const env = await template.getEnvironment()
+const env = await getEnvironment()
 \`\`\`
 
 #### useNotes()
@@ -113,11 +135,14 @@ Git notes operations for audit trails:
 \`\`\`javascript
 const notes = useNotes()
 
-await notes.write("Audit message")           // Write note
-await notes.read()                          // Read notes
-await notes.append("Additional info")       // Append to notes
-await notes.list()                          // List all notes
-await notes.exists()                        // Check if notes exist
+// Destructure notes methods
+const { write: writeNote, read: readNotes, append: appendNote, list: listNotes, exists: notesExist } = notes
+
+await writeNote("Audit message")           // Write note
+await readNotes()                          // Read notes
+await appendNote("Additional info")       // Append to notes
+await listNotes()                          // List all notes
+await notesExist()                         // Check if notes exist
 \`\`\`
 
 #### useWorktree()
@@ -126,10 +151,13 @@ Worktree management for parallel development:
 \`\`\`javascript
 const worktree = useWorktree()
 
-await worktree.create("feature-branch", "origin/main")  // Create worktree
-await worktree.remove("feature-branch")                // Remove worktree
-await worktree.list()                                  // List all worktrees
-await worktree.switch("feature-branch")               // Switch to worktree
+// Destructure worktree methods
+const { create: createWorktree, remove: removeWorktree, list: listWorktrees, switch: switchWorktree } = worktree
+
+await createWorktree("feature-branch", "origin/main")  // Create worktree
+await removeWorktree("feature-branch")                // Remove worktree
+await listWorktrees()                                 // List all worktrees
+await switchWorktree("feature-branch")               // Switch to worktree
 \`\`\`
 
 #### usePack()
@@ -138,10 +166,13 @@ Apply GitVan automation packs:
 \`\`\`javascript
 const pack = usePack()
 
-await pack.apply("changelog-generator")      // Apply pack by name
-await pack.list()                           // List available packs
-await pack.install("https://pack-url")      // Install pack from URL
-await pack.remove("pack-name")              // Remove pack
+// Destructure pack methods
+const { apply: applyPack, list: listPacks, install: installPack, remove: removePack } = pack
+
+await applyPack("changelog-generator")      // Apply pack by name
+await listPacks()                           // List available packs
+await installPack("https://pack-url")      // Install pack from URL
+await removePack("pack-name")               // Remove pack
 \`\`\`
 
 #### useSchedule()
@@ -150,10 +181,13 @@ Cron scheduling and job management:
 \`\`\`javascript
 const schedule = useSchedule()
 
-await schedule.add("backup-job", "0 2 * * *")  // Schedule job
-await schedule.remove("backup-job")             // Remove schedule
-await schedule.list()                          // List scheduled jobs
-await schedule.run("backup-job")                // Run job manually
+// Destructure schedule methods
+const { add: scheduleJob, remove: unscheduleJob, list: listScheduledJobs, run: runJob } = schedule
+
+await scheduleJob("backup-job", "0 2 * * *")  // Schedule job
+await unscheduleJob("backup-job")             // Remove schedule
+await listScheduledJobs()                     // List scheduled jobs
+await runJob("backup-job")                    // Run job manually
 \`\`\`
 
 #### useReceipt()
@@ -162,13 +196,16 @@ Job result tracking and audit trails:
 \`\`\`javascript
 const receipt = useReceipt()
 
-await receipt.write({                        // Write job result
+// Destructure receipt methods
+const { write: writeReceipt, read: readReceipt, list: listReceipts } = receipt
+
+await writeReceipt({                        // Write job result
   status: "success",
   artifacts: ["file.txt"],
   duration: 1500
 })
-await receipt.read("job-id")                 // Read job result
-await receipt.list()                         // List all receipts
+await readReceipt("job-id")                 // Read job result
+await listReceipts()                        // List all receipts
 \`\`\`
 
 #### useLock()
@@ -177,9 +214,12 @@ Prevent concurrent job execution:
 \`\`\`javascript
 const lock = useLock()
 
-await lock.acquire("job-name")               // Acquire lock
-await lock.release("job-name")               // Release lock
-await lock.isLocked("job-name")              // Check if locked
+// Destructure lock methods
+const { acquire: acquireLock, release: releaseLock, isLocked: checkLocked } = lock
+
+await acquireLock("job-name")               // Acquire lock
+await releaseLock("job-name")               // Release lock
+await checkLocked("job-name")               // Check if locked
 \`\`\`
 
 ### Event System
@@ -247,26 +287,31 @@ async run({ ctx, payload, meta }) {
   const worktree = useWorktree()
   const lock = useLock()
   
+  // Destructure methods
+  const { writeFile } = git
+  const { create: createWorktree, remove: removeWorktree } = worktree
+  const { acquire: acquireLock, release: releaseLock, isLocked: checkLocked } = lock
+  
   // Prevent concurrent execution
-  if (await lock.isLocked("feature-job")) {
+  if (await checkLocked("feature-job")) {
     return { ok: false, error: "Job already running" }
   }
   
-  await lock.acquire("feature-job")
+  await acquireLock("feature-job")
   
   try {
     // Create worktree for feature
-    await worktree.create("feature-branch", "origin/main")
+    await createWorktree("feature-branch", "origin/main")
     
     // Do work in the worktree
-    await git.writeFile("feature-branch/new-feature.js", "// New feature code")
+    await writeFile("feature-branch/new-feature.js", "// New feature code")
     
     // Clean up
-    await worktree.remove("feature-branch")
+    await removeWorktree("feature-branch")
     
     return { ok: true, artifacts: ["new-feature.js"] }
   } finally {
-    await lock.release("feature-job")
+    await releaseLock("feature-job")
   }
 }
 \`\`\`
@@ -277,11 +322,15 @@ async run({ ctx, payload, meta }) {
   const pack = usePack()
   const receipt = useReceipt()
   
+  // Destructure methods
+  const { apply: applyPack } = pack
+  const { write: writeReceipt } = receipt
+  
   // Apply automation pack
-  const result = await pack.apply("changelog-generator")
+  const result = await applyPack("changelog-generator")
   
   // Track the result
-  await receipt.write({
+  await writeReceipt({
     status: "success",
     artifacts: result.artifacts,
     duration: result.duration
@@ -298,14 +347,18 @@ async run({ ctx, payload, meta }) {
   const receipt = useReceipt()
   const git = useGit()
   
+  // Destructure methods
+  const { writeFile } = git
+  const { write: writeReceipt } = receipt
+  
   const startTime = Date.now()
   
   try {
     // Do scheduled work
-    await git.writeFile("backup.txt", "Backup data")
+    await writeFile("backup.txt", "Backup data")
     
     // Track success
-    await receipt.write({
+    await writeReceipt({
       status: "success",
       artifacts: ["backup.txt"],
       duration: Date.now() - startTime
@@ -314,7 +367,7 @@ async run({ ctx, payload, meta }) {
     return { ok: true, artifacts: ["backup.txt"] }
   } catch (error) {
     // Track failure
-    await receipt.write({
+    await writeReceipt({
       status: "error",
       error: error.message,
       duration: Date.now() - startTime
@@ -330,26 +383,37 @@ async run({ ctx, payload, meta }) {
 #### File Operations
 \`\`\`javascript
 const git = useGit()
-await git.writeFile("output.txt", "content")
-await git.writeFile("config.json", JSON.stringify(config, null, 2))
+const { writeFile, add, commit } = git
+
+await writeFile("output.txt", "content")
+await writeFile("config.json", JSON.stringify(config, null, 2))
+await add(["output.txt", "config.json"])
+await commit("Add generated files")
 \`\`\`
 
 #### Template Rendering
 \`\`\`javascript
 const template = useTemplate()
-const html = await template.render('email-template.njk', {
+const { render, renderString } = template
+
+const html = await render('email-template.njk', {
   user: { name: 'John', email: 'john@example.com' },
   data: { message: 'Welcome!' }
 })
-await git.writeFile("welcome.html", html)
+
+const summary = await renderString('Hello {{ name }}, you have {{ count }} messages', {
+  name: 'John',
+  count: 5
+})
 \`\`\`
 
 #### Audit Trail
 \`\`\`javascript
 const notes = useNotes()
-const git = useGit()
-await notes.write(\`Job completed at \${new Date().toISOString()}\`)
-await notes.append(\`Processed \${count} files\`)
+const { write: writeNote, append: appendNote } = notes
+
+await writeNote(\`Job completed at \${new Date().toISOString()}\`)
+await appendNote(\`Processed \${count} files\`)
 \`\`\`
 
 #### Error Handling

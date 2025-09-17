@@ -50,7 +50,11 @@
     "ai",
     "workflow",
     "cicd",
-    "devops"
+    "devops",
+    "remote-packs",
+    "giget",
+    "unplugin",
+    "build-tools"
   ],
   "author": "GitVan Team",
   "license": "MIT",
@@ -78,7 +82,8 @@
     "zod": "^4.1.9",
     "tinyglobby": "^0.2.15",
     "defu": "^6.1.4",
-    "klona": "^2.0.6"
+    "klona": "^2.0.6",
+    "giget": "^1.2.1"
   },
   "devDependencies": {
     "@types/node": "^20.19.15",

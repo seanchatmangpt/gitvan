@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 15,
+            "activePatchIndex": 16,
             "patches": [
                 {
                     "date": 1758057329115,
@@ -68,6 +68,10 @@
                 {
                     "date": 1758135450965,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -40,9 +40,9 @@\n   help: handleHelp,\n \n   // New v2 commands\n   cron: cronCommand,\n-  audit: auditCommand,\n+  audit: handleAudit,\n   chat: handleChat,\n   llm: handleLLM,\n   pack: handlePack,\n   scaffold: handleScaffold,\n@@ -322,8 +322,13 @@\n   // Use new event command handler\n   return await eventCommand(action, parseArgs(args));\n }\n \n+async function handleAudit(subcommand = \"list\", ...args) {\n+  // Use audit command handler\n+  return await auditCommand(subcommand, parseArgs(args));\n+}\n+\n async function handleChat(action = \"draft\", ...args) {\n   // Use new chat command handler\n   return await chatCommand(action, parseArgs(args));\n }\n"
+                },
+                {
+                    "date": 1758146445314,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -24,8 +24,9 @@\n import { chatCommand } from \"./cli/chat.mjs\";\n import { packCommand } from \"./cli/pack.mjs\";\n import { scaffoldCommand } from \"./cli/scaffold.mjs\";\n import { marketplaceCommand } from \"./cli/marketplace.mjs\";\n+import { marketplaceScanCommand } from \"./cli/marketplace-scan.mjs\";\n import { composeCommand } from \"./cli/compose.mjs\";\n import { ensureCommand } from \"./cli/ensure.mjs\";\n \n const commands = {\n@@ -46,8 +47,9 @@\n   llm: handleLLM,\n   pack: handlePack,\n   scaffold: handleScaffold,\n   marketplace: handleMarketplace,\n+  'marketplace-scan': marketplaceScanCommand,\n   compose: handleCompose,\n   ensure: handleEnsure,\n };\n \n@@ -712,8 +714,9 @@\n   gitvan llm [call|models]                               AI operations\n   gitvan pack [list|apply|plan|remove|update|status]     Pack management\n   gitvan scaffold <pack:scaffold> [--inputs '{}']        Run pack scaffolds\n   gitvan marketplace [browse|search|inspect|quickstart]  Marketplace commands\n+  gitvan marketplace-scan [index|scan|status|config]     Marketplace scanning\n   gitvan compose <pack1> <pack2> [--inputs '{}']         Compose multiple packs\n   gitvan ensure [--init-config] [--skip-git]             Ensure GitVan setup\n   gitvan schedule apply                                  Apply scheduled tasks\n   gitvan worktree list                                   List all worktrees\n"
                 }
             ],
             "date": 1758057329115,

@@ -25,6 +25,7 @@ import { chatCommand } from "./cli/chat.mjs";
 import { packCommand } from "./cli/pack.mjs";
 import { scaffoldCommand } from "./cli/scaffold.mjs";
 import { marketplaceCommand } from "./cli/marketplace.mjs";
+import { marketplaceScanCommand } from "./cli/marketplace-scan.mjs";
 import { composeCommand } from "./cli/compose.mjs";
 import { ensureCommand } from "./cli/ensure.mjs";
 
@@ -47,6 +48,7 @@ const commands = {
   pack: handlePack,
   scaffold: handleScaffold,
   marketplace: handleMarketplace,
+  'marketplace-scan': marketplaceScanCommand,
   compose: handleCompose,
   ensure: handleEnsure,
 };
@@ -713,6 +715,7 @@ Usage:
   gitvan pack [list|apply|plan|remove|update|status]     Pack management
   gitvan scaffold <pack:scaffold> [--inputs '{}']        Run pack scaffolds
   gitvan marketplace [browse|search|inspect|quickstart]  Marketplace commands
+  gitvan marketplace-scan [index|scan|status|config]     Marketplace scanning
   gitvan compose <pack1> <pack2> [--inputs '{}']         Compose multiple packs
   gitvan ensure [--init-config] [--skip-git]             Ensure GitVan setup
   gitvan schedule apply                                  Apply scheduled tasks

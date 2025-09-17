@@ -253,6 +253,50 @@ export function useGit() {
       }
     },
 
+    // ---------- Worktree methods ----------
+    async listWorktrees() {
+      try {
+        const output = await runGit(["worktree", "list", "--porcelain"], base);
+        const worktrees = [];
+        let current = {};
+
+        for (const line of output.split("\n")) {
+          if (line.startsWith("worktree ")) {
+            if (current.path) worktrees.push(current);
+            current = { path: line.substring(9) };
+          } else if (line.startsWith("HEAD ")) {
+            current.head = line.substring(5);
+          } else if (line.startsWith("branch ")) {
+            current.branch = line.substring(7).replace("refs/heads/", "");
+          } else if (line.startsWith("detached")) {
+            current.detached = true;
+          }
+        }
+
+        if (current.path) worktrees.push(current);
+        
+        // Mark main worktree
+        const mainPath = await this.repoRoot();
+        return worktrees.map(wt => ({
+          ...wt,
+          isMain: wt.path === mainPath
+        }));
+      } catch {
+        // Fallback to single worktree
+        const worktree = await this.repoRoot();
+        const head = await this.head();
+        const branch = await this.getCurrentBranch();
+        return [
+          {
+            path: worktree,
+            head: head,
+            branch: branch,
+            isMain: true
+          }
+        ];
+      }
+    },
+
     // ---------- Generic runner (escape hatch) ----------
     async run(args) {
       return runGit(toArr(args), base);

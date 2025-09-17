@@ -14,13 +14,14 @@ export async function getWorktreeInfo() {
   const git = useGit();
 
   try {
-    const commonDir = await git.run("rev-parse --git-common-dir");
-    const worktree = await git.run("rev-parse --show-toplevel");
+    // Use --git-dir instead of --git-common-dir for compatibility
+    const gitDir = await git.run("rev-parse", "--git-dir");
+    const worktree = await git.run("rev-parse", "--show-toplevel");
     const head = await git.head();
     const branch = await git.getCurrentBranch();
 
     return {
-      commonDir: commonDir.trim(),
+      commonDir: gitDir.trim(),
       worktree: worktree.trim(),
       branch: branch.trim(),
       head: head.trim(),
@@ -46,7 +47,7 @@ export async function worktreeKey() {
 export async function isWorktree() {
   try {
     const git = useGit();
-    await git.run("rev-parse --is-inside-work-tree");
+    await git.run("rev-parse", "--is-inside-work-tree");
     return true;
   } catch {
     return false;
@@ -61,7 +62,7 @@ export async function listWorktrees() {
   const git = useGit();
 
   try {
-    const output = await git.run("worktree list --porcelain");
+    const output = await git.run("worktree", "list", "--porcelain");
     const worktrees = [];
     let current = {};
 

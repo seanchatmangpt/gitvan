@@ -442,8 +442,9 @@ async function handleWorktree(action = "list") {
 
         const { withGitVan } = await import("./composables/ctx.mjs");
         await withGitVan(ctx, async () => {
+          const { useGit } = await import("./composables/git.mjs");
           const git = useGit();
-          const worktrees = git.listWorktrees();
+          const worktrees = await git.listWorktrees();
 
           if (worktrees.length === 0) {
             console.log("No worktrees found");

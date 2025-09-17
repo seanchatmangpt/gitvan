@@ -99,7 +99,7 @@ export class JobDaemon {
   async startEventMonitoring() {
     // Get initial commit
     try {
-      this.lastCommit = await this.git.head();
+      this.lastCommit = await this.git.currentHead();
     } catch (error) {
       console.warn("Could not get initial commit:", error.message);
     }
@@ -133,7 +133,7 @@ export class JobDaemon {
    */
   async checkForEvents() {
     try {
-      const currentCommit = await this.git.head();
+      const currentCommit = await this.git.currentHead();
 
       if (this.lastCommit && currentCommit !== this.lastCommit) {
         console.log(

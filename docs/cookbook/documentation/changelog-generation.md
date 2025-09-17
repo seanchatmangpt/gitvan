@@ -79,8 +79,8 @@ export default defineJob({
       generatedAt: ctx.nowISO,
       totalCommits: commits.length,
       repository: {
-        head: await git.head(),
-        branch: await git.getCurrentBranch()
+        head: await git.currentHead(),
+        branch: await git.currentBranch()
       }
     };
     
@@ -275,8 +275,8 @@ export default defineJob({
     
     // Get repository information
     const repository = {
-      head: await git.head(),
-      branch: await git.getCurrentBranch(),
+      head: await git.currentHead(),
+      branch: await git.currentBranch(),
       isClean: await git.isClean()
     };
     

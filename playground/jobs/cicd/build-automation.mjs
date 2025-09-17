@@ -24,13 +24,13 @@ export default defineJob({
     const cleanBuild = payload?.cleanBuild !== false;
 
     // Get repository information
-    const head = await git.head();
-    const branch = await git.getCurrentBranch();
+    const head = await git.currentHead();
+    const branch = await git.currentBranch();
     const isClean = await git.isClean();
 
     if (!isClean && !payload?.allowDirty) {
       ctx.logger.warn(
-        "⚠️ Repository has uncommitted changes, but continuing with build",
+        "⚠️ Repository has uncommitted changes, but continuing with build"
       );
     }
 
@@ -51,7 +51,7 @@ export default defineJob({
     };
 
     ctx.logger.log(
-      `🚀 Starting ${buildType} build for ${environment} environment`,
+      `🚀 Starting ${buildType} build for ${environment} environment`
     );
 
     // Clean build directory if requested
@@ -165,11 +165,11 @@ export default defineJob({
     const htmlReportPath = await template.renderToFile(
       "cicd/build-report.njk",
       join(buildDir, "build-report.html"),
-      buildReport,
+      buildReport
     );
 
     ctx.logger.log(
-      `📊 Build ${buildSuccess ? "completed successfully" : "failed"}`,
+      `📊 Build ${buildSuccess ? "completed successfully" : "failed"}`
     );
     ctx.logger.log(`📝 Build report: ${reportPath}`);
 

@@ -13,8 +13,8 @@ export default defineJob({
     const git = useGit();
 
     // Gather repository information
-    const head = await git.head();
-    const branch = await git.getCurrentBranch();
+    const head = await git.currentHead();
+    const branch = await git.currentBranch();
     const isClean = await git.isClean();
     const commitCount = await git.getCommitCount();
 
@@ -38,7 +38,7 @@ export default defineJob({
       ctx.root,
       "dist",
       "foundation",
-      "greeting-report.json",
+      "greeting-report.json"
     );
     await fs.mkdir(join(ctx.root, "dist", "foundation"), { recursive: true });
     await fs.writeFile(outputPath, JSON.stringify(reportData, null, 2));

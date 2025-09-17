@@ -72,8 +72,8 @@ export default defineJob({
     const git = useGit();
     
     // Gather repository information
-    const head = await git.head();
-    const branch = await git.getCurrentBranch();
+    const head = await git.currentHead();
+    const branch = await git.currentBranch();
     const isClean = await git.isClean();
     const commitCount = await git.getCommitCount();
     
@@ -216,8 +216,8 @@ export default defineJob({
       timestamp: ctx.nowISO,
       trigger: trigger?.data || {},
       repository: {
-        head: await git.head(),
-        branch: await git.getCurrentBranch()
+        head: await git.currentHead(),
+        branch: await git.currentBranch()
       }
     };
 
@@ -345,8 +345,8 @@ export default defineJob({
     const template = await useTemplate();
     
     // Get build information
-    const head = await git.head();
-    const branch = await git.getCurrentBranch();
+    const head = await git.currentHead();
+    const branch = await git.currentBranch();
     const isClean = await git.isClean();
     
     if (!isClean) {
@@ -418,8 +418,8 @@ export default defineJob({
     
     // Get test configuration
     const testConfig = {
-      head: await git.head(),
-      branch: await git.getCurrentBranch(),
+      head: await git.currentHead(),
+      branch: await git.currentBranch(),
       timestamp: ctx.nowISO,
       ...payload
     };

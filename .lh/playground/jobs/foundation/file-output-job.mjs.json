@@ -3,11 +3,19 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 2,
             "patches": [
                 {
                     "date": 1758052882220,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1758097277781,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -13,9 +13,9 @@\n     const git = useGit();\n \n     // Gather repository information\n     const head = await git.head();\n-    const branch = await git.getCurrentBranch();\n+    const branch = await git.branch();\n     const isClean = await git.isClean();\n     const commitCount = await git.getCommitCount();\n \n     const reportData = {\n"
+                },
+                {
+                    "date": 1758097605040,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -12,10 +12,10 @@\n   async run({ ctx, payload }) {\n     const git = useGit();\n \n     // Gather repository information\n-    const head = await git.head();\n-    const branch = await git.branch();\n+    const head = await git.currentHead();\n+    const branch = await git.currentBranch();\n     const isClean = await git.isClean();\n     const commitCount = await git.getCommitCount();\n \n     const reportData = {\n@@ -37,9 +37,9 @@\n     const outputPath = join(\n       ctx.root,\n       \"dist\",\n       \"foundation\",\n-      \"greeting-report.json\",\n+      \"greeting-report.json\"\n     );\n     await fs.mkdir(join(ctx.root, \"dist\", \"foundation\"), { recursive: true });\n     await fs.writeFile(outputPath, JSON.stringify(reportData, null, 2));\n \n"
                 }
             ],
             "date": 1758052882220,

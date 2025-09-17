@@ -107,8 +107,8 @@ export default defineJob({
 
     // Get repository information
     const repository = {
-      head: await git.head(),
-      branch: await git.getCurrentBranch(),
+      head: await git.currentHead(),
+      branch: await git.currentBranch(),
       isClean: await git.isClean(),
     };
 
@@ -132,12 +132,12 @@ export default defineJob({
     const outputPath = await template.renderToFile(
       "documentation/advanced-changelog.njk",
       "dist/documentation/ADVANCED_CHANGELOG.md",
-      data,
+      data
     );
 
     ctx.logger.log(`📝 Advanced changelog generated: ${outputPath}`);
     ctx.logger.log(
-      `📊 Processed ${commits.length} commits from ${analysis.uniqueAuthors} authors`,
+      `📊 Processed ${commits.length} commits from ${analysis.uniqueAuthors} authors`
     );
 
     return {

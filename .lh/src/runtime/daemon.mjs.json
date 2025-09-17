@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 1,
+            "activePatchIndex": 3,
             "patches": [
                 {
                     "date": 1758057329128,
@@ -12,6 +12,14 @@
                 {
                     "date": 1758096593613,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,6 +1,6 @@\n import { withGitVan } from \"../composables/ctx.mjs\";\n-import { useGit } from \"../composables/git.mjs\";\n+import { useGit } from \"../composables/git/index.mjs\";\n import { useExec } from \"../composables/exec.mjs\";\n import { acquireLock, worktreeLockRef, releaseLock } from \"./locks.mjs\";\n import { writeReceipt } from \"./receipt.mjs\";\n import { recentShas, sleep, eventFires } from \"./utils.mjs\";\n"
+                },
+                {
+                    "date": 1758097155219,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -40,15 +40,15 @@\n \n   const git = useGit();\n   const wts =\n     sel === \"all\"\n-      ? git.listWorktrees()\n+      ? await git.listWorktrees()\n       : Array.isArray(sel)\n-        ? git.listWorktrees().filter((w) => sel.includes(w.path))\n+        ? (await git.listWorktrees()).filter((w) => sel.includes(w.path))\n         : [\n             {\n-              path: git.worktreeRoot || git.root,\n-              branch: git.branch(),\n+              path: await git.worktreeRoot || await git.root(),\n+              branch: await git.branch(),\n               isMain: true,\n             },\n           ];\n \n@@ -114,9 +114,9 @@\n \n               const git = useGit();\n               const lockRef = worktreeLockRef(\n                 opts.locksRoot || \"refs/gitvan/locks\",\n-                git.worktreeId(),\n+                await git.worktreeId(),\n                 event.id,\n                 sha,\n               );\n \n@@ -145,9 +145,9 @@\n               }\n \n               writeReceipt({\n                 resultsRef: opts.resultsRef || \"refs/notes/gitvan/results\",\n-                id: `${event.id}@${git.worktreeId()}`,\n+                id: `${event.id}@${await git.worktreeId()}`,\n                 status: res.ok ? \"OK\" : \"ERROR\",\n                 commit: sha,\n                 action: event.job ? \"job\" : event.run?.exec || \"unknown\",\n                 result: res,\n"
+                },
+                {
+                    "date": 1758097484101,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -45,10 +45,10 @@\n       : Array.isArray(sel)\n         ? (await git.listWorktrees()).filter((w) => sel.includes(w.path))\n         : [\n             {\n-              path: await git.worktreeRoot || await git.root(),\n-              branch: await git.branch(),\n+              path: await git.worktreeRoot,\n+              branch: await git.currentBranch(),\n               isMain: true,\n             },\n           ];\n \n"
                 }
             ],
             "date": 1758057329128,

@@ -61,8 +61,8 @@ export class JobExecutionContext {
       nowISO: this.nowISO,
       env: this.env,
       git: {
-        head: await git.head(),
-        branch: await git.getCurrentBranch(),
+        head: await git.currentHead(),
+        branch: await git.currentBranch(),
         isSigned: await this.isCommitSigned(),
       },
       trigger: this.trigger,
@@ -74,7 +74,7 @@ export class JobExecutionContext {
   async isCommitSigned() {
     try {
       const git = this.git;
-      const head = await git.head();
+      const head = await git.currentHead();
       const commitInfo = await git.run(["show", "--show-signature", head]);
       return commitInfo.includes("Good signature");
     } catch {
@@ -125,8 +125,16 @@ export class JobRunner {
       // Force mode: create new lock with timestamp
       const timestamp = Date.now();
       const forceFingerprint = `${fingerprint}-force-${timestamp}`;
-      await this.git.runVoid(["update-ref", lockRef, await this.git.head()]);
-      await this.git.noteAdd(lockRef, forceFingerprint, await this.git.head());
+      await this.git.runVoid([
+        "update-ref",
+        lockRef,
+        await this.git.currentHead(),
+      ]);
+      await this.git.noteAdd(
+        lockRef,
+        forceFingerprint,
+        await this.git.currentHead()
+      );
       return forceFingerprint;
     }
 
@@ -137,8 +145,16 @@ export class JobRunner {
       return false;
     } catch {
       // Lock doesn't exist, create it
-      await this.git.runVoid(["update-ref", lockRef, await this.git.head()]);
-      await this.git.noteAdd(lockRef, fingerprint, await this.git.head());
+      await this.git.runVoid([
+        "update-ref",
+        lockRef,
+        await this.git.currentHead(),
+      ]);
+      await this.git.noteAdd(
+        lockRef,
+        fingerprint,
+        await this.git.currentHead()
+      );
 
       // Call lock acquire hook
       await this.hooks.callHook("lock:acquire", { id: jobId, fingerprint });
@@ -234,12 +250,12 @@ export class JobRunner {
       await this.git.runVoid([
         "update-ref",
         executionRef,
-        await this.git.head(),
+        await this.git.currentHead(),
       ]);
       await this.git.noteAdd(
         executionRef,
         executionData,
-        await this.git.head()
+        await this.git.currentHead()
       );
     } catch (error) {
       this.git.logger?.warn(`Failed to record execution: ${error.message}`);
@@ -259,7 +275,7 @@ export class JobRunner {
 
     const startTime = Date.now();
     const startedAt = new Date().toISOString();
-    const currentHead = head || (await this.git.head());
+    const currentHead = head || (await this.git.currentHead());
 
     // Generate fingerprint
     const fingerprint = this.generateFingerprint(

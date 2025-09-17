@@ -94,7 +94,7 @@ export const GIT_OPERATION_TEMPLATE = `
       console.log("{{ operation.description }}")
       {% elif operation.type == "git-commit" %}
       if (git) {
-        const head = await git.head()
+        const head = await git.currentHead()
         console.log("Current HEAD: {{ operation.description }}")
       }
       {% elif operation.type == "git-note" %}

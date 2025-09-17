@@ -32,7 +32,7 @@ The `useGit()` composable is designed for:
 import { useGit } from 'gitvan/composables/git'
 
 const git = useGit()
-const currentBranch = await git.branch()
+const currentBranch = await git.currentBranch()
 ```
 
 ## Context System
@@ -65,27 +65,27 @@ The `bindContext()` function resolves context once to avoid async pitfalls:
 
 ### Repository Information
 
-#### `branch()`
+#### `currentBranch()`
 Get the current branch name.
 
 ```js
-const currentBranch = await git.branch()
+const currentBranch = await git.currentBranch()
 // Returns: "main" or "feature/new-api"
 ```
 
-#### `head()`
+#### `currentHead()`
 Get the current HEAD commit SHA.
 
 ```js
-const headSha = await git.head()
+const headSha = await git.currentHead()
 // Returns: "a1b2c3d4e5f6..."
 ```
 
-#### `repoRoot()`
+#### `worktreeRoot()`
 Get the repository root directory.
 
 ```js
-const rootPath = await git.repoRoot()
+const rootPath = await git.worktreeRoot()
 // Returns: "/Users/dev/my-project"
 ```
 
@@ -127,11 +127,11 @@ const detailedLog = await git.log("%H %an %ad %s", ["--since=1.week.ago"])
 const recentCommits = await git.log("%h %s", "--max-count=5")
 ```
 
-#### `statusPorcelain()`
+#### `worktreeStatus()`
 Get repository status in porcelain format.
 
 ```js
-const status = await git.statusPorcelain()
+const status = await git.worktreeStatus()
 // Returns: " M file.js\n?? new-file.txt"
 ```
 
@@ -372,7 +372,7 @@ const git = useGit()
 
 // Check repository status
 const branch = await git.branch()
-const status = await git.statusPorcelain()
+const status = await git.worktreeStatus()
 
 if (status) {
   console.log(`On branch ${branch} with changes:`)
@@ -431,7 +431,7 @@ const parsed = JSON.parse(storedReceipt)
 ```js
 const git = useGit()
 const lockRef = 'refs/locks/deploy'
-const headSha = await git.head()
+const headSha = await git.currentHead()
 
 // Try to acquire lock
 const lockAcquired = await git.updateRefCreate(lockRef, headSha)

@@ -27,7 +27,7 @@ export default defineJob({
       errorHandler.handleValidationError(
         "Payload must be an object",
         "payload",
-        payload,
+        payload
       );
     }
 
@@ -35,7 +35,7 @@ export default defineJob({
       errorHandler.handleValidationError(
         "requiredField must be a string",
         "requiredField",
-        payload.requiredField,
+        payload.requiredField
       );
     }
 
@@ -44,7 +44,7 @@ export default defineJob({
       errorHandler.handleValidationError(
         "Invalid payload detected",
         "payload",
-        payload,
+        payload
       );
     }
 
@@ -54,8 +54,8 @@ export default defineJob({
       // Safe git operations with error handling
       let repositoryInfo;
       try {
-        const head = await git.head();
-        const branch = await git.getCurrentBranch();
+        const head = await git.currentHead();
+        const branch = await git.currentBranch();
         const isClean = await git.isClean();
 
         repositoryInfo = {
@@ -105,7 +105,7 @@ export default defineJob({
             payload: payload,
             generatedAt: ctx.nowISO,
             success: true,
-          },
+          }
         );
 
         ctx.logger.log(`✅ Template rendered: ${templatePath}`);
@@ -152,7 +152,7 @@ export default defineJob({
           ctx.root,
           "dist",
           "foundation",
-          "error-report.json",
+          "error-report.json"
         );
         await fs.mkdir(join(ctx.root, "dist", "foundation"), {
           recursive: true,
@@ -168,7 +168,7 @@ export default defineJob({
         };
       } catch (saveError) {
         ctx.logger.error(
-          `❌ Failed to save error report: ${saveError.message}`,
+          `❌ Failed to save error report: ${saveError.message}`
         );
 
         // Re-throw original error

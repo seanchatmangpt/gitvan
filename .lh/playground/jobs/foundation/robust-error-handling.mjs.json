@@ -3,11 +3,19 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 2,
             "patches": [
                 {
                     "date": 1758052882220,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1758097277780,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -54,9 +54,9 @@\n       // Safe git operations with error handling\n       let repositoryInfo;\n       try {\n         const head = await git.head();\n-        const branch = await git.getCurrentBranch();\n+        const branch = await git.branch();\n         const isClean = await git.isClean();\n \n         repositoryInfo = {\n           head: head.substring(0, 8),\n"
+                },
+                {
+                    "date": 1758097605063,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -26,26 +26,26 @@\n     if (!payload || typeof payload !== \"object\") {\n       errorHandler.handleValidationError(\n         \"Payload must be an object\",\n         \"payload\",\n-        payload,\n+        payload\n       );\n     }\n \n     if (payload.requiredField && typeof payload.requiredField !== \"string\") {\n       errorHandler.handleValidationError(\n         \"requiredField must be a string\",\n         \"requiredField\",\n-        payload.requiredField,\n+        payload.requiredField\n       );\n     }\n \n     // Additional validation for test cases\n     if (payload.invalid === \"payload\") {\n       errorHandler.handleValidationError(\n         \"Invalid payload detected\",\n         \"payload\",\n-        payload,\n+        payload\n       );\n     }\n \n     ctx.logger.log(\"✅ Input validation passed\");\n@@ -53,10 +53,10 @@\n     try {\n       // Safe git operations with error handling\n       let repositoryInfo;\n       try {\n-        const head = await git.head();\n-        const branch = await git.branch();\n+        const head = await git.currentHead();\n+        const branch = await git.currentBranch();\n         const isClean = await git.isClean();\n \n         repositoryInfo = {\n           head: head.substring(0, 8),\n@@ -104,9 +104,9 @@\n             repository: repositoryInfo,\n             payload: payload,\n             generatedAt: ctx.nowISO,\n             success: true,\n-          },\n+          }\n         );\n \n         ctx.logger.log(`✅ Template rendered: ${templatePath}`);\n       } catch (error) {\n@@ -151,9 +151,9 @@\n         const errorPath = join(\n           ctx.root,\n           \"dist\",\n           \"foundation\",\n-          \"error-report.json\",\n+          \"error-report.json\"\n         );\n         await fs.mkdir(join(ctx.root, \"dist\", \"foundation\"), {\n           recursive: true,\n         });\n@@ -167,9 +167,9 @@\n           data: errorReport,\n         };\n       } catch (saveError) {\n         ctx.logger.error(\n-          `❌ Failed to save error report: ${saveError.message}`,\n+          `❌ Failed to save error report: ${saveError.message}`\n         );\n \n         // Re-throw original error\n         throw error;\n"
                 }
             ],
             "date": 1758052882220,

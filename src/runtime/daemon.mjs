@@ -41,13 +41,13 @@ export async function startDaemon(opts = {}, registry = null, sel = "current") {
   const git = useGit();
   const wts =
     sel === "all"
-      ? git.listWorktrees()
+      ? await git.listWorktrees()
       : Array.isArray(sel)
-        ? git.listWorktrees().filter((w) => sel.includes(w.path))
+        ? (await git.listWorktrees()).filter((w) => sel.includes(w.path))
         : [
             {
-              path: git.worktreeRoot || git.root,
-              branch: git.branch(),
+              path: await git.worktreeRoot,
+              branch: await git.currentBranch(),
               isMain: true,
             },
           ];
@@ -115,7 +115,7 @@ async function loopWorktree(opts, registry, wt) {
               const git = useGit();
               const lockRef = worktreeLockRef(
                 opts.locksRoot || "refs/gitvan/locks",
-                git.worktreeId(),
+                await git.worktreeId(),
                 event.id,
                 sha,
               );
@@ -146,7 +146,7 @@ async function loopWorktree(opts, registry, wt) {
 
               writeReceipt({
                 resultsRef: opts.resultsRef || "refs/notes/gitvan/results",
-                id: `${event.id}@${git.worktreeId()}`,
+                id: `${event.id}@${await git.worktreeId()}`,
                 status: res.ok ? "OK" : "ERROR",
                 commit: sha,
                 action: event.job ? "job" : event.run?.exec || "unknown",

@@ -22,7 +22,7 @@ export async function writeReceipt(
     schema: "gitvan.receipt.v1",
     role: "receipt",
     ts: git.nowISO(),
-    commit: await git.head(),
+    commit: await git.currentHead(),
     ...receipt,
   };
 

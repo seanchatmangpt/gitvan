@@ -3,11 +3,15 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 1,
             "patches": [
                 {
                     "date": 1758051254570,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1758097968787,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -71,10 +71,10 @@\n   async run({ ctx, payload }) {\n     const git = useGit();\n     \n     // Gather repository information\n-    const head = await git.head();\n-    const branch = await git.getCurrentBranch();\n+    const head = await git.currentHead();\n+    const branch = await git.currentBranch();\n     const isClean = await git.isClean();\n     const commitCount = await git.getCommitCount();\n     \n     const reportData = {\n@@ -215,10 +215,10 @@\n       tag: latestTag.trim(),\n       timestamp: ctx.nowISO,\n       trigger: trigger?.data || {},\n       repository: {\n-        head: await git.head(),\n-        branch: await git.getCurrentBranch()\n+        head: await git.currentHead(),\n+        branch: await git.currentBranch()\n       }\n     };\n \n     // Create notification file\n@@ -344,10 +344,10 @@\n     const git = useGit();\n     const template = await useTemplate();\n     \n     // Get build information\n-    const head = await git.head();\n-    const branch = await git.getCurrentBranch();\n+    const head = await git.currentHead();\n+    const branch = await git.currentBranch();\n     const isClean = await git.isClean();\n     \n     if (!isClean) {\n       throw new Error(\"Repository has uncommitted changes\");\n@@ -417,10 +417,10 @@\n     const git = useGit();\n     \n     // Get test configuration\n     const testConfig = {\n-      head: await git.head(),\n-      branch: await git.getCurrentBranch(),\n+      head: await git.currentHead(),\n+      branch: await git.currentBranch(),\n       timestamp: ctx.nowISO,\n       ...payload\n     };\n     \n"
                 }
             ],
             "date": 1758051254570,

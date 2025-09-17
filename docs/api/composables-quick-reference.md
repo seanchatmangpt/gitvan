@@ -5,13 +5,14 @@
 ### useGit
 ```javascript
 const git = useGit();
-await git.head()                    // Get HEAD commit
-await git.getCurrentBranch()        // Get current branch
+await git.currentHead()             // Get HEAD commit
+await git.currentBranch()           // Get current branch
+await git.worktreeRoot()            // Get repo root
+await git.worktreeStatus()          // Get repo status
 await git.isClean()                 // Check if clean
 await git.info()                    // Get repo info
 await git.listRefs()                // List Git refs
 await git.listWorktrees()           // List worktrees
-await git.repoRoot()                // Get repo root
 ```
 
 ### useWorktree

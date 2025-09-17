@@ -3,11 +3,19 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 2,
             "patches": [
                 {
                     "date": 1758052882221,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1758097277780,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -24,9 +24,9 @@\n     const cleanBuild = payload?.cleanBuild !== false;\n \n     // Get repository information\n     const head = await git.head();\n-    const branch = await git.getCurrentBranch();\n+    const branch = await git.branch();\n     const isClean = await git.isClean();\n \n     if (!isClean && !payload?.allowDirty) {\n       ctx.logger.warn(\n"
+                },
+                {
+                    "date": 1758097605061,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -23,15 +23,15 @@\n     const buildType = payload?.buildType || \"production\";\n     const cleanBuild = payload?.cleanBuild !== false;\n \n     // Get repository information\n-    const head = await git.head();\n-    const branch = await git.branch();\n+    const head = await git.currentHead();\n+    const branch = await git.currentBranch();\n     const isClean = await git.isClean();\n \n     if (!isClean && !payload?.allowDirty) {\n       ctx.logger.warn(\n-        \"⚠️ Repository has uncommitted changes, but continuing with build\",\n+        \"⚠️ Repository has uncommitted changes, but continuing with build\"\n       );\n     }\n \n     const buildInfo = {\n@@ -50,9 +50,9 @@\n       },\n     };\n \n     ctx.logger.log(\n-      `🚀 Starting ${buildType} build for ${environment} environment`,\n+      `🚀 Starting ${buildType} build for ${environment} environment`\n     );\n \n     // Clean build directory if requested\n     if (cleanBuild) {\n@@ -164,13 +164,13 @@\n     // Generate HTML build report\n     const htmlReportPath = await template.renderToFile(\n       \"cicd/build-report.njk\",\n       join(buildDir, \"build-report.html\"),\n-      buildReport,\n+      buildReport\n     );\n \n     ctx.logger.log(\n-      `📊 Build ${buildSuccess ? \"completed successfully\" : \"failed\"}`,\n+      `📊 Build ${buildSuccess ? \"completed successfully\" : \"failed\"}`\n     );\n     ctx.logger.log(`📝 Build report: ${reportPath}`);\n \n     return {\n"
                 }
             ],
             "date": 1758052882221,

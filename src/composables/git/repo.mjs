@@ -16,17 +16,17 @@ export default function makeRepo(base, run, runVoid, toArr) {
 
   return {
     // Repository root directory
-    async root() {
+    async worktreeRoot() {
       return run(["rev-parse", "--show-toplevel"]);
     },
 
     // Current HEAD SHA
-    async headSha() {
+    async currentHead() {
       return run(["rev-parse", "HEAD"]);
     },
 
     // Current branch or ref
-    async currentRef() {
+    async currentBranch() {
       try {
         return run(["rev-parse", "--abbrev-ref", "HEAD"]);
       } catch (error) {
@@ -39,19 +39,28 @@ export default function makeRepo(base, run, runVoid, toArr) {
     },
 
     // Repository status (porcelain format)
-    async status() {
+    async worktreeStatus() {
       return run(["status", "--porcelain"]);
+    },
+
+    // Additional aliases for clarity
+    async headSha() {
+      return this.currentHead();
+    },
+
+    async currentRef() {
+      return this.currentBranch();
     },
 
     // Check if working directory is clean
     async isClean() {
-      const status = await this.status();
+      const status = await this.worktreeStatus();
       return status.trim() === "";
     },
 
     // Check if there are uncommitted changes
     async hasUncommittedChanges() {
-      const status = await this.status();
+      const status = await this.worktreeStatus();
       return status.trim() !== "";
     },
 
@@ -69,9 +78,9 @@ export default function makeRepo(base, run, runVoid, toArr) {
     async info() {
       try {
         const [head, branch, worktree] = await Promise.all([
-          this.headSha(),
-          this.currentRef(),
-          this.root(),
+          this.currentHead(),
+          this.currentBranch(),
+          this.worktreeRoot(),
         ]);
 
         return {

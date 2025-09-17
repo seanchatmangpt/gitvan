@@ -13,8 +13,8 @@ export default defineJob({
     const template = await useTemplate();
 
     // Get repository information
-    const head = await git.head();
-    const branch = await git.getCurrentBranch();
+    const head = await git.currentHead();
+    const branch = await git.currentBranch();
     const commitCount = await git.getCommitCount();
 
     // Prepare template data
@@ -38,7 +38,7 @@ export default defineJob({
     const outputPath = await template.renderToFile(
       "foundation/greeting.njk",
       "dist/foundation/greeting-template.html",
-      data,
+      data
     );
 
     ctx.logger.log(`📝 Template greeting created: ${outputPath}`);

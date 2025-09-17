@@ -3,10 +3,10 @@ import { useGit } from "../composables/git/index.mjs";
 /**
  * Get recent commit SHAs from current worktree HEAD
  */
-export function recentShas(n = 10) {
+export async function recentShas(n = 10) {
   const git = useGit();
   try {
-    const output = git.log("%H", `-n ${n}`);
+    const output = await git.log("%H", `-n ${n}`);
     return output.split("\n").filter(Boolean);
   } catch {
     return [];
@@ -28,13 +28,12 @@ export async function eventFires(eventDef, sha) {
 
   try {
     // Get commit details
-    const commitInfo = git.show(sha);
-    const message = git.run(`log --format=%s -n 1 ${sha}`);
-    const author = git.run(`log --format=%ae -n 1 ${sha}`);
+    const commitInfo = await git.show(sha);
+    const message = await git.run(`log --format=%s -n 1 ${sha}`);
+    const author = await git.run(`log --format=%ae -n 1 ${sha}`);
 
     // Check if it's a merge commit
-    const parents = git
-      .run(`log --format=%P -n 1 ${sha}`)
+    const parents = (await git.run(`log --format=%P -n 1 ${sha}`))
       .split(" ")
       .filter(Boolean);
     const isMerge = parents.length > 1;
@@ -42,8 +41,9 @@ export async function eventFires(eventDef, sha) {
     // Get changed files
     let changedPaths = [];
     try {
-      changedPaths = git
-        .run(`diff-tree --no-commit-id --name-only -r ${sha}`)
+      changedPaths = (
+        await git.run(`diff-tree --no-commit-id --name-only -r ${sha}`)
+      )
         .split("\n")
         .filter(Boolean);
     } catch {
@@ -54,18 +54,19 @@ export async function eventFires(eventDef, sha) {
     // Get branch info
     let branch = "";
     try {
-      branch = git
-        .run(`name-rev --name-only ${sha}`)
-        .replace(/^remotes\/origin\//, "");
+      branch = (await git.run(`name-rev --name-only ${sha}`)).replace(
+        /^remotes\/origin\//,
+        ""
+      );
     } catch {
-      branch = git.branch();
+      branch = await git.currentBranch();
     }
 
     // Check for tag
     let isTag = false;
     let tag = "";
     try {
-      tag = git.run(`describe --tags --exact-match ${sha}`);
+      tag = await git.run(`describe --tags --exact-match ${sha}`);
       isTag = true;
     } catch {
       // Not a tagged commit
@@ -115,24 +116,24 @@ function extractTargetBranch(message) {
 /**
  * Get worktree information
  */
-export function getWorktreeInfo() {
+export async function getWorktreeInfo() {
   const git = useGit();
 
   return {
-    id: git.worktreeId(),
-    path: git.worktreeRoot,
-    branch: git.branch(),
-    head: git.head(),
+    id: await git.worktreeId(),
+    path: await git.worktreeRoot,
+    branch: await git.currentBranch(),
+    head: await git.currentHead(),
   };
 }
 
 /**
  * Check if commit exists in repository
  */
-export function commitExists(sha) {
+export async function commitExists(sha) {
   const git = useGit();
   try {
-    git.run(`cat-file -e ${sha}`);
+    await git.run(`cat-file -e ${sha}`);
     return true;
   } catch {
     return false;

@@ -3,11 +3,15 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 1,
             "patches": [
                 {
                     "date": 1758051806640,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1758097968785,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -41,10 +41,10 @@\n     const buildType = payload?.buildType || \"production\";\n     const cleanBuild = payload?.cleanBuild !== false;\n     \n     // Get repository information\n-    const head = await git.head();\n-    const branch = await git.getCurrentBranch();\n+    const head = await git.currentHead();\n+    const branch = await git.currentBranch();\n     const isClean = await git.isClean();\n     \n     if (!isClean && !payload?.allowDirty) {\n       throw new Error(\"Repository has uncommitted changes. Build aborted.\");\n@@ -454,9 +454,9 @@\n   async run({ ctx, payload }) {\n     const git = useGit();\n     \n     const imageName = payload?.imageName || \"myapp\";\n-    const tag = payload?.tag || await git.head();\n+    const tag = payload?.tag || await git.currentHead();\n     const environment = payload?.environment || \"production\";\n     \n     const dockerfile = `Dockerfile.${environment}`;\n     \n"
                 }
             ],
             "date": 1758051806640,

@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 2,
+            "activePatchIndex": 4,
             "patches": [
                 {
                     "date": 1758057329128,
@@ -16,6 +16,14 @@
                 {
                     "date": 1758096593606,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -2,9 +2,9 @@\n  * GitVan v2 Worktree Utilities - Git worktree detection and scoping\n  * Provides worktree-aware operations for multi-worktree environments\n  */\n \n-import { useGit } from \"../composables/git.mjs\";\n+import { useGit } from \"../composables/git/index.mjs\";\n import { createHash } from \"node:crypto\";\n \n /**\n  * Get comprehensive worktree information\n"
+                },
+                {
+                    "date": 1758097277747,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -17,9 +17,9 @@\n     // Use --git-dir instead of --git-common-dir for compatibility\n     const gitDir = await git.run(\"rev-parse\", \"--git-dir\");\n     const worktree = await git.run(\"rev-parse\", \"--show-toplevel\");\n     const head = await git.head();\n-    const branch = await git.getCurrentBranch();\n+    const branch = await git.branch();\n \n     return {\n       commonDir: gitDir.trim(),\n       worktree: worktree.trim(),\n"
+                },
+                {
+                    "date": 1758097484102,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -16,10 +16,10 @@\n   try {\n     // Use --git-dir instead of --git-common-dir for compatibility\n     const gitDir = await git.run(\"rev-parse\", \"--git-dir\");\n     const worktree = await git.run(\"rev-parse\", \"--show-toplevel\");\n-    const head = await git.head();\n-    const branch = await git.branch();\n+    const head = await git.currentHead();\n+    const branch = await git.currentBranch();\n \n     return {\n       commonDir: gitDir.trim(),\n       worktree: worktree.trim(),\n"
                 }
             ],
             "date": 1758057329128,

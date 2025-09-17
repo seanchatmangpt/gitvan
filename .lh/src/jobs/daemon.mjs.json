@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 2,
+            "activePatchIndex": 3,
             "patches": [
                 {
                     "date": 1758048967773,
@@ -16,6 +16,10 @@
                 {
                     "date": 1758096685411,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -53,9 +53,9 @@\n     console.log(`  Root directory: ${this.config.rootDir}`);\n     console.log(`  Receipts ref: ${this.config.receipts.ref}`);\n     console.log(`  Event check interval: ${this.eventCheckInterval / 1000}s`);\n     console.log(\n-      `  Cron tick interval: ${this.cronScheduler.tickInterval / 1000}s`,\n+      `  Cron tick interval: ${this.cronScheduler.tickInterval / 1000}s`\n     );\n \n     this.isRunning = true;\n \n@@ -136,9 +136,9 @@\n       const currentCommit = await this.git.head();\n \n       if (this.lastCommit && currentCommit !== this.lastCommit) {\n         console.log(\n-          `Git event detected: ${this.lastCommit} → ${currentCommit}`,\n+          `Git event detected: ${this.lastCommit} → ${currentCommit}`\n         );\n \n         // Check for event-driven jobs\n         await this.eventRunner.checkAndRunEventJobs({\n@@ -260,9 +260,11 @@\n     console.log(`  Last commit: ${status.lastCommit || \"N/A\"}`);\n \n     if (status.cronStatus) {\n       console.log(\n-        `  Cron scheduler: ${status.cronStatus.isRunning ? \"Running\" : \"Stopped\"}`,\n+        `  Cron scheduler: ${\n+          status.cronStatus.isRunning ? \"Running\" : \"Stopped\"\n+        }`\n       );\n       console.log(`  Scheduled jobs: ${status.cronStatus.scheduleSize}`);\n     }\n   }\n"
+                },
+                {
+                    "date": 1758097605032,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -98,9 +98,9 @@\n    */\n   async startEventMonitoring() {\n     // Get initial commit\n     try {\n-      this.lastCommit = await this.git.head();\n+      this.lastCommit = await this.git.currentHead();\n     } catch (error) {\n       console.warn(\"Could not get initial commit:\", error.message);\n     }\n \n@@ -132,9 +132,9 @@\n    * Check for new git events\n    */\n   async checkForEvents() {\n     try {\n-      const currentCommit = await this.git.head();\n+      const currentCommit = await this.git.currentHead();\n \n       if (this.lastCommit && currentCommit !== this.lastCommit) {\n         console.log(\n           `Git event detected: ${this.lastCommit} → ${currentCommit}`\n"
                 }
             ],
             "date": 1758048967773,

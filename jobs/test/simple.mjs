@@ -3,7 +3,7 @@
 // Demonstrates basic job functionality
 
 import { defineJob } from "../../src/jobs/define.mjs";
-import { useGit } from "../../src/composables/git.mjs";
+import { useGit } from "../../src/composables/git/index.mjs";
 import { useTemplate } from "../../src/composables/template.mjs";
 import { promises as fs } from "node:fs";
 import { join, dirname } from "pathe";
@@ -21,8 +21,8 @@ export default defineJob({
     ctx.logger.log(`Running simple test job with payload:`, payload);
 
     // Get some git info
-    const branch = await git.getCurrentBranch();
-    const head = await git.head();
+    const branch = await git.currentBranch();
+    const head = await git.currentHead();
     const isClean = await git.isClean();
 
     // Create a simple report

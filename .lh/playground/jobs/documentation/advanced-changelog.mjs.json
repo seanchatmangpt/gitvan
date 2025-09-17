@@ -3,11 +3,19 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 2,
             "patches": [
                 {
                     "date": 1758052882220,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1758097277812,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -107,9 +107,9 @@\n \n     // Get repository information\n     const repository = {\n       head: await git.head(),\n-      branch: await git.getCurrentBranch(),\n+      branch: await git.branch(),\n       isClean: await git.isClean(),\n     };\n \n     // Prepare template data\n"
+                },
+                {
+                    "date": 1758097605063,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -106,10 +106,10 @@\n     });\n \n     // Get repository information\n     const repository = {\n-      head: await git.head(),\n-      branch: await git.branch(),\n+      head: await git.currentHead(),\n+      branch: await git.currentBranch(),\n       isClean: await git.isClean(),\n     };\n \n     // Prepare template data\n@@ -131,14 +131,14 @@\n     // Render template to file\n     const outputPath = await template.renderToFile(\n       \"documentation/advanced-changelog.njk\",\n       \"dist/documentation/ADVANCED_CHANGELOG.md\",\n-      data,\n+      data\n     );\n \n     ctx.logger.log(`📝 Advanced changelog generated: ${outputPath}`);\n     ctx.logger.log(\n-      `📊 Processed ${commits.length} commits from ${analysis.uniqueAuthors} authors`,\n+      `📊 Processed ${commits.length} commits from ${analysis.uniqueAuthors} authors`\n     );\n \n     return {\n       ok: true,\n"
                 }
             ],
             "date": 1758052882220,

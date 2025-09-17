@@ -3,11 +3,15 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 1,
             "patches": [
                 {
                     "date": 1758051806647,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1758097968784,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -132,10 +132,10 @@\n       \n       // Safe git operations with error handling\n       let repositoryInfo;\n       try {\n-        const head = await git.head();\n-        const branch = await git.getCurrentBranch();\n+        const head = await git.currentHead();\n+        const branch = await git.currentBranch();\n         const isClean = await git.isClean();\n         \n         repositoryInfo = {\n           head: head.substring(0, 8),\n"
                 }
             ],
             "date": 1758051806647,

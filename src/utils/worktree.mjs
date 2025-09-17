@@ -17,8 +17,8 @@ export async function getWorktreeInfo() {
     // Use --git-dir instead of --git-common-dir for compatibility
     const gitDir = await git.run("rev-parse", "--git-dir");
     const worktree = await git.run("rev-parse", "--show-toplevel");
-    const head = await git.head();
-    const branch = await git.getCurrentBranch();
+    const head = await git.currentHead();
+    const branch = await git.currentBranch();
 
     return {
       commonDir: gitDir.trim(),

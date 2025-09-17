@@ -132,8 +132,8 @@ export default defineJob({
     const template = await useTemplate();
     
     // Get repository information
-    const head = await git.head();
-    const branch = await git.getCurrentBranch();
+    const head = await git.currentHead();
+    const branch = await git.currentBranch();
     const commitCount = await git.getCommitCount();
     const isClean = await git.isClean();
     

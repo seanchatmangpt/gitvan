@@ -3,11 +3,19 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 2,
             "patches": [
                 {
                     "date": 1758048492139,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1758097277812,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -2,9 +2,9 @@\n // GitVan v2 — Simple Test Job\n // Demonstrates basic job functionality\n \n import { defineJob } from \"../../src/jobs/define.mjs\";\n-import { useGit } from \"../../src/composables/git.mjs\";\n+import { useGit } from \"../../src/composables/git/index.mjs\";\n import { useTemplate } from \"../../src/composables/template.mjs\";\n import { promises as fs } from \"node:fs\";\n import { join, dirname } from \"pathe\";\n \n@@ -20,9 +20,9 @@\n     // Log job execution\n     ctx.logger.log(`Running simple test job with payload:`, payload);\n \n     // Get some git info\n-    const branch = await git.getCurrentBranch();\n+    const branch = await git.branch();\n     const head = await git.head();\n     const isClean = await git.isClean();\n \n     // Create a simple report\n"
+                },
+                {
+                    "date": 1758097605040,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -20,10 +20,10 @@\n     // Log job execution\n     ctx.logger.log(`Running simple test job with payload:`, payload);\n \n     // Get some git info\n-    const branch = await git.branch();\n-    const head = await git.head();\n+    const branch = await git.currentBranch();\n+    const head = await git.currentHead();\n     const isClean = await git.isClean();\n \n     // Create a simple report\n     const reportData = {\n"
                 }
             ],
             "date": 1758048492139,

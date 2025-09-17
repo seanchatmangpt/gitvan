@@ -3,11 +3,19 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 2,
             "patches": [
                 {
                     "date": 1758049591937,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1758097277812,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -12,9 +12,9 @@\n     const git = useGit();\n \n     // Gather repository information\n     const head = await git.head();\n-    const branch = await git.getCurrentBranch();\n+    const branch = await git.branch();\n     const isClean = await git.isClean();\n     const commitCount = await git.getCommitCount();\n \n     const reportData = {\n"
+                },
+                {
+                    "date": 1758097605063,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -11,10 +11,10 @@\n   async run({ ctx, payload }) {\n     const git = useGit();\n \n     // Gather repository information\n-    const head = await git.head();\n-    const branch = await git.branch();\n+    const head = await git.currentHead();\n+    const branch = await git.currentBranch();\n     const isClean = await git.isClean();\n     const commitCount = await git.getCommitCount();\n \n     const reportData = {\n"
                 }
             ],
             "date": 1758049591937,

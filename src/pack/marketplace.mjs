@@ -26,27 +26,27 @@ const QuickstartCategories = {
   docs: {
     name: 'Documentation',
     description: 'Documentation and content generation packs',
-    packs: ['gv/docs-minimal', 'gv/mdbook', 'gv/changelog', 'gv/api-docs']
+    packs: ['builtin/docs-enterprise']
   },
   next: {
     name: 'Next.js',
     description: 'Next.js application templates and configurations',
-    packs: ['gv/next-min', 'gv/next-full', 'gv/next-mdx', 'gv/next-enterprise']
+    packs: ['builtin/next-minimal']
   },
   compliance: {
     name: 'Compliance & Governance',
     description: 'Quality management and compliance frameworks',
-    packs: ['gv/qms', 'gv/audit', 'gv/compliance-attest', 'gv/iso-docs']
+    packs: ['builtin/docs-enterprise']
   },
   enterprise: {
     name: 'Enterprise',
     description: 'Enterprise-grade templates and workflows',
-    packs: ['gv/enterprise-starter', 'gv/docs-enterprise', 'gv/ops-incident', 'gv/governance']
+    packs: ['builtin/docs-enterprise']
   },
   dev: {
     name: 'Development',
     description: 'Development tools and utilities',
-    packs: ['gv/dev-setup', 'gv/ci-cd', 'gv/testing', 'gv/debugging']
+    packs: ['builtin/nodejs-basic', 'builtin/next-minimal']
   },
   mobile: {
     name: 'Mobile',

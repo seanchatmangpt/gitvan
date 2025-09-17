@@ -5,6 +5,7 @@
 
 import matter from "gray-matter";
 import toml from "toml";
+import yaml from "js-yaml";
 
 const fmEngines = {
   toml: (s) => toml.parse(s),
@@ -17,9 +18,12 @@ const fmEngines = {
  * Accepts YAML (---), TOML (+++), or JSON ({ ... }) blocks understood by gray-matter.
  *
  * @param {string|Buffer} input
+ * @param {Object} options - Parsing options
+ * @param {boolean} options.strict - Whether to use strict YAML parsing (default: false)
  * @returns {{ data: Record<string, any>, body: string }}
  */
-export function parseFrontmatter(input) {
+export function parseFrontmatter(input, options = {}) {
+  const { strict = false } = options;
   const raw = String(input);
   const hasShebang = raw.startsWith("#!");
   let shebangLine = "";
@@ -35,7 +39,30 @@ export function parseFrontmatter(input) {
   }
 
   // Try different front-matter formats
-  let fm = matter(source, { excerpt: false });
+  let fm;
+  try {
+    fm = matter(source, { 
+      excerpt: false,
+      engines: strict ? {
+        yaml: {
+          parse: (str) => {
+            try {
+              // Use js-yaml for strict validation
+              return yaml.load(str);
+            } catch (error) {
+              throw new Error(`Invalid YAML frontmatter: ${error.message}`);
+            }
+          }
+        }
+      } : undefined
+    });
+  } catch (error) {
+    if (strict && error.message.includes('Invalid YAML frontmatter')) {
+      throw error;
+    }
+    // Fall back to treating as regular content
+    return { data: {}, body: source };
+  }
 
   // If no front-matter found (isEmpty=true or no data), try TOML format
   if (
@@ -78,4 +105,41 @@ export function parseFrontmatter(input) {
     data: fm.data || {},
     body: hasShebang ? `${shebangLine}\n${body}` : body,
   };
+}
+
+/**
+ * Validates frontmatter syntax without parsing the data.
+ * 
+ * @param {string|Buffer} input
+ * @returns {boolean} - True if frontmatter syntax is valid
+ */
+export function validateFrontmatter(input) {
+  try {
+    parseFrontmatter(input, { strict: true });
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+/**
+ * Validates and parses frontmatter with detailed error information.
+ * 
+ * @param {string|Buffer} input
+ * @returns {{ valid: boolean, data?: Record<string, any>, body?: string, error?: string }}
+ */
+export function validateAndParseFrontmatter(input) {
+  try {
+    const result = parseFrontmatter(input, { strict: true });
+    return {
+      valid: true,
+      data: result.data,
+      body: result.body
+    };
+  } catch (error) {
+    return {
+      valid: false,
+      error: error.message
+    };
+  }
 }

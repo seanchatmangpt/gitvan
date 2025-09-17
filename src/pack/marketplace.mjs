@@ -59,9 +59,16 @@ export class Marketplace {
   constructor(options = {}) {
     this.options = options;
     this.logger = createLogger('pack:marketplace');
-    this.registry = new PackRegistry(options);
+    this.registry = null; // Lazy initialization
     this.cache = new Map();
     this.cacheTimeout = options.cacheTimeout || 300000; // 5 minutes
+  }
+
+  getRegistry() {
+    if (!this.registry) {
+      this.registry = new PackRegistry(this.options);
+    }
+    return this.registry;
   }
 
   async browse(options = {}) {
@@ -81,10 +88,11 @@ export class Marketplace {
     }
 
     // Refresh registry index if needed
-    await this.registry.refreshIndex();
+    const registry = this.getRegistry();
+    await registry.refreshIndex();
 
     // Perform search
-    const searchResults = await this.registry.search(options.query, options.filters || {});
+    const searchResults = await registry.search(options.query, options.filters || {});
 
     // Format and paginate results
     const formatted = this.formatResults(searchResults, options);
@@ -108,7 +116,7 @@ export class Marketplace {
       return cached;
     }
 
-    const packInfo = await this.registry.get(packId);
+    const packInfo = await this.getRegistry().get(packId);
     if (!packInfo) {
       throw new Error(`Pack not found: ${packId}`);
     }
@@ -312,15 +320,19 @@ export class Marketplace {
       total: 0
     };
 
+    // Return simple pack information without loading full pack details
     for (const packId of categoryInfo.packs) {
-      try {
-        const packInfo = await this.registry.get(packId);
-        if (packInfo) {
-          results.packs.push(this.formatPackInfo(packInfo, false));
-        }
-      } catch (error) {
-        this.logger.debug(`Pack not found in quickstart: ${packId}`);
-      }
+      results.packs.push({
+        id: packId,
+        name: packId.replace('builtin/', '').replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        description: `Built-in ${categoryInfo.name.toLowerCase()} pack`,
+        version: '1.0.0',
+        downloads: 0,
+        rating: 5,
+        tags: [category.toLowerCase(), 'builtin'],
+        author: 'GitVan',
+        license: 'MIT'
+      });
     }
 
     results.total = results.packs.length;
@@ -361,7 +373,7 @@ export class Marketplace {
     }
 
     // Get top packs by downloads and rating
-    const allPacks = await this.registry.search('', {});
+    const allPacks = await this.getRegistry().search('', {});
 
     const featured = allPacks
       .filter(pack => {
@@ -396,8 +408,9 @@ export class Marketplace {
       return cached;
     }
 
-    await this.registry.refreshIndex();
-    const index = this.registry.index;
+    const registry = this.getRegistry();
+    await registry.refreshIndex();
+    const index = registry.index;
 
     if (!index?.packs) {
       return { totalPacks: 0, totalDownloads: 0, averageRating: 0 };

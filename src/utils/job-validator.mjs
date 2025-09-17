@@ -19,7 +19,7 @@ export async function validateJobFile(jobFilePath) {
     warnings: [],
     suggestions: [],
     testable: false,
-    executionResult: null
+    executionResult: null,
   };
 
   try {
@@ -30,8 +30,8 @@ export async function validateJobFile(jobFilePath) {
     }
 
     // 2. Read and parse the file
-    const jobContent = readFileSync(jobFilePath, 'utf8');
-    
+    const jobContent = readFileSync(jobFilePath, "utf8");
+
     // 3. Validate syntax
     const syntaxResult = validateJobSyntax(jobContent);
     result.errors.push(...syntaxResult.errors);
@@ -63,7 +63,6 @@ export async function validateJobFile(jobFilePath) {
 
     result.valid = result.errors.length === 0;
     return result;
-
   } catch (error) {
     result.errors.push(`Validation failed: ${error.message}`);
     return result;
@@ -80,29 +79,28 @@ function validateJobSyntax(content) {
 
   try {
     // Check for basic JavaScript syntax
-    if (!content.includes('export default')) {
+    if (!content.includes("export default")) {
       result.errors.push("Job must export a default object");
     }
 
-    if (!content.includes('async run(')) {
+    if (!content.includes("async run(")) {
       result.errors.push("Job must have an async run function");
     }
 
     // Check for proper return structure
-    if (!content.includes('return {') || !content.includes('ok:')) {
+    if (!content.includes("return {") || !content.includes("ok:")) {
       result.errors.push("Job must return an object with 'ok' property");
     }
 
     // Check for try/catch error handling
-    if (!content.includes('try {') || !content.includes('catch')) {
+    if (!content.includes("try {") || !content.includes("catch")) {
       result.warnings.push("Job should include try/catch error handling");
     }
 
     // Check for console.log statements
-    if (!content.includes('console.log')) {
+    if (!content.includes("console.log")) {
       result.warnings.push("Job should include logging statements");
     }
-
   } catch (error) {
     result.errors.push(`Syntax validation failed: ${error.message}`);
   }
@@ -119,17 +117,19 @@ function validateJobStructure(content) {
   const result = { errors: [], warnings: [] };
 
   // Check for meta object
-  if (!content.includes('meta:')) {
+  if (!content.includes("meta:")) {
     result.errors.push("Job must include meta object with description");
   }
 
   // Check for proper parameter destructuring
-  if (!content.includes('{ ctx, payload, meta }')) {
-    result.warnings.push("Job should destructure { ctx, payload, meta } parameters");
+  if (!content.includes("{ ctx, payload, meta }")) {
+    result.warnings.push(
+      "Job should destructure { ctx, payload, meta } parameters"
+    );
   }
 
   // Check for artifacts in return
-  if (!content.includes('artifacts:')) {
+  if (!content.includes("artifacts:")) {
     result.warnings.push("Job should return artifacts array");
   }
 
@@ -146,9 +146,9 @@ function validateJobDependencies(content) {
 
   // Check for GitVan composable imports
   const composableImports = [
-    'gitvan/composables/git',
-    'gitvan/composables/template', 
-    'gitvan/composables/pack'
+    "gitvan/composables/git",
+    "gitvan/composables/template",
+    "gitvan/composables/pack",
   ];
 
   let hasComposableImports = false;
@@ -160,12 +160,19 @@ function validateJobDependencies(content) {
   }
 
   if (!hasComposableImports) {
-    result.warnings.push("Job doesn't use GitVan composables - consider using useGit, useTemplate, or usePack");
+    result.warnings.push(
+      "Job doesn't use GitVan composables - consider using useGit, useTemplate, or usePack"
+    );
   }
 
   // Check for Node.js imports
-  if (content.includes("import('fs')") || content.includes("import('fs/promises')")) {
-    result.warnings.push("Job uses Node.js fs module - ensure proper error handling");
+  if (
+    content.includes("import('fs')") ||
+    content.includes("import('fs/promises')")
+  ) {
+    result.warnings.push(
+      "Job uses Node.js fs module - ensure proper error handling"
+    );
   }
 
   return result;
@@ -240,31 +247,30 @@ return {
 `;
 
     // Write test file
-    const testFilePath = jobFilePath.replace('.mjs', '.test.mjs');
+    const testFilePath = jobFilePath.replace(".mjs", ".test.mjs");
     writeFileSync(testFilePath, testContent);
 
     // Execute test
-    const { execSync } = await import('node:child_process');
-    const output = execSync(`node ${testFilePath}`, { 
-      encoding: 'utf8',
-      timeout: 10000 // 10 second timeout
+    const { execSync } = await import("node:child_process");
+    const output = execSync(`node ${testFilePath}`, {
+      encoding: "utf8",
+      timeout: 10000, // 10 second timeout
     });
 
     // Clean up test file
-    const { unlinkSync } = await import('node:fs');
+    const { unlinkSync } = await import("node:fs");
     unlinkSync(testFilePath);
 
     return {
       success: true,
       output: output,
-      message: "Job executed successfully with mock data"
+      message: "Job executed successfully with mock data",
     };
-
   } catch (error) {
     return {
       success: false,
       error: error.message,
-      message: "Job execution test failed"
+      message: "Job execution test failed",
     };
   }
 }
@@ -278,26 +284,27 @@ export async function generateWorkingJob(jobTemplate) {
   try {
     // Validate template
     const validatedTemplate = JobWithValuesSchema.parse(jobTemplate);
-    
+
     // Generate job code
-    const { generateJobFromTemplate } = await import("../templates/job-templates.mjs");
+    const { generateJobFromTemplate } = await import(
+      "../templates/job-templates.mjs"
+    );
     const jobCode = generateJobFromTemplate(validatedTemplate);
-    
+
     // Validate generated code
     const validation = await validateJobCode(jobCode);
-    
+
     return {
       success: validation.valid,
       jobCode: jobCode,
       validation: validation,
-      template: validatedTemplate
+      template: validatedTemplate,
     };
-
   } catch (error) {
     return {
       success: false,
       error: error.message,
-      template: jobTemplate
+      template: jobTemplate,
     };
   }
 }
@@ -309,29 +316,33 @@ export async function generateWorkingJob(jobTemplate) {
  */
 async function validateJobCode(jobCode) {
   // Write to temporary file and validate
-  const tempPath = join(process.cwd(), '.gitvan', 'temp', `job-${Date.now()}.mjs`);
-  
+  const tempPath = join(
+    process.cwd(),
+    ".gitvan",
+    "temp",
+    `job-${Date.now()}.mjs`
+  );
+
   try {
-    const { mkdirSync, writeFileSync, unlinkSync } = await import('node:fs');
-    const { dirname } = await import('node:path');
-    
+    const { mkdirSync, writeFileSync, unlinkSync } = await import("node:fs");
+    const { dirname } = await import("node:path");
+
     mkdirSync(dirname(tempPath), { recursive: true });
     writeFileSync(tempPath, jobCode);
-    
+
     const validation = await validateJobFile(tempPath);
-    
+
     // Clean up
     unlinkSync(tempPath);
-    
+
     return validation;
-    
   } catch (error) {
     return {
       valid: false,
       errors: [`Code validation failed: ${error.message}`],
       warnings: [],
       suggestions: [],
-      testable: false
+      testable: false,
     };
   }
 }
@@ -348,32 +359,36 @@ export async function createJobTestSuite(jobFilePath) {
     dependencies: false,
     execution: false,
     errorHandling: false,
-    overall: false
+    overall: false,
   };
 
   try {
     const validation = await validateJobFile(jobFilePath);
-    
-    tests.syntax = !validation.errors.some(e => e.includes('syntax'));
-    tests.structure = !validation.errors.some(e => e.includes('structure'));
-    tests.dependencies = !validation.errors.some(e => e.includes('dependencies'));
+
+    tests.syntax = !validation.errors.some((e) => e.includes("syntax"));
+    tests.structure = !validation.errors.some((e) => e.includes("structure"));
+    tests.dependencies = !validation.errors.some((e) =>
+      e.includes("dependencies")
+    );
     tests.execution = validation.executionResult?.success || false;
-    tests.errorHandling = validation.warnings.some(w => w.includes('try/catch'));
+    tests.errorHandling = validation.warnings.some((w) =>
+      w.includes("try/catch")
+    );
     tests.overall = validation.valid && tests.execution;
 
     return {
       success: tests.overall,
       tests: tests,
       validation: validation,
-      score: Object.values(tests).filter(Boolean).length / Object.keys(tests).length
+      score:
+        Object.values(tests).filter(Boolean).length / Object.keys(tests).length,
     };
-
   } catch (error) {
     return {
       success: false,
       error: error.message,
       tests: tests,
-      score: 0
+      score: 0,
     };
   }
 }

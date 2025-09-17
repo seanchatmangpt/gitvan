@@ -22,25 +22,60 @@ export const JobConfigSchema = z.object({
 
 // Job implementation schema
 export const JobImplementationSchema = z.object({
-  type: z.enum(["simple", "file-operation", "git-operation", "template-operation", "pack-operation"]).describe("Job implementation type"),
+  type: z
+    .enum([
+      "simple",
+      "file-operation",
+      "git-operation",
+      "template-operation",
+      "pack-operation",
+    ])
+    .describe("Job implementation type"),
   description: z.string().describe("What the job does"),
-  parameters: z.array(z.object({
-    name: z.string(),
-    type: z.string(),
-    description: z.string(),
-    required: z.boolean().optional(),
-    default: z.any().optional(),
-  })).optional().describe("Job parameters"),
-  operations: z.array(z.object({
-    type: z.enum(["log", "file-read", "file-write", "file-copy", "file-move", "git-commit", "git-note", "template-render", "pack-apply"]),
-    description: z.string(),
-    parameters: z.record(z.any()).optional(),
-  })).describe("List of operations to perform"),
-  errorHandling: z.enum(["strict", "graceful", "continue"]).default("graceful").describe("Error handling strategy"),
-  returnValue: z.object({
-    success: z.string().describe("Success message"),
-    artifacts: z.array(z.string()).default([]).describe("Artifacts to return"),
-  }).describe("Return value structure"),
+  parameters: z
+    .array(
+      z.object({
+        name: z.string(),
+        type: z.string(),
+        description: z.string(),
+        required: z.boolean().optional(),
+        default: z.any().optional(),
+      })
+    )
+    .optional()
+    .describe("Job parameters"),
+  operations: z
+    .array(
+      z.object({
+        type: z.enum([
+          "log",
+          "file-read",
+          "file-write",
+          "file-copy",
+          "file-move",
+          "git-commit",
+          "git-note",
+          "template-render",
+          "pack-apply",
+        ]),
+        description: z.string(),
+        parameters: z.record(z.any()).optional(),
+      })
+    )
+    .describe("List of operations to perform"),
+  errorHandling: z
+    .enum(["strict", "graceful", "continue"])
+    .default("graceful")
+    .describe("Error handling strategy"),
+  returnValue: z
+    .object({
+      success: z.string().describe("Success message"),
+      artifacts: z
+        .array(z.string())
+        .default([])
+        .describe("Artifacts to return"),
+    })
+    .describe("Return value structure"),
 });
 
 // Complete job template schema

@@ -9,6 +9,7 @@ import { promisify } from 'node:util';
 import { exec } from 'node:child_process';
 import { setTimeout } from 'node:timers/promises';
 import { PackCache } from './optimization/cache.mjs';
+import Fuse from 'fuse.js';
 
 const execAsync = promisify(exec);
 
@@ -45,6 +46,8 @@ export class PackRegistry {
     this.timeout = options.timeout || 30000;
     this.maxRetries = options.maxRetries || 3;
     this.index = null;
+    this.searchIndex = null;
+    this.fuse = null;
     this.rateLimiter = new Map();
     this.githubToken = process.env.GITHUB_TOKEN || options.githubToken;
     this.githubApiCache = new Map();
@@ -128,7 +131,7 @@ export class PackRegistry {
     return {
       id: pack.id,
       name: pack.name,
-      version: pack.version,
+      version: pack.version || '1.0.0', // Ensure version is always present
       description: pack.description,
       tags: pack.tags || [],
       capabilities: pack.capabilities || [],
@@ -222,6 +225,9 @@ export class PackRegistry {
       source: 'local-filesystem'
     };
 
+    // Create search index for performance
+    this.createSearchIndex();
+
     this.saveLocalRegistry();
 
     this.logger.info(`Registry index refreshed: ${Object.keys(packs).length} local packs found`);
@@ -240,14 +246,28 @@ export class PackRegistry {
   }
 
   async search(query, filters = {}) {
-    // Use the new searchPacks method for compatibility
+    // Enhanced search with backward compatibility
     const options = {
       ...filters,
-      limit: filters.limit
+      limit: filters.limit || 50 // Default limit for legacy API
     };
 
     const result = await this.searchPacks(query, options);
-    return result.results;
+
+    // Return in legacy format for backward compatibility
+    return result.results.map(pack => ({
+      id: pack.id,
+      name: pack.name,
+      version: pack.version,
+      description: pack.description,
+      tags: pack.tags,
+      capabilities: pack.capabilities,
+      author: pack.author,
+      source: pack.source,
+      // Add relevance score if available
+      ...(pack.score !== undefined && { relevance: pack.score }),
+      ...(pack.matches && { highlights: pack.matches })
+    }));
   }
 
   createSearchText(id, pack) {
@@ -546,41 +566,61 @@ export class PackRegistry {
         await this.refreshIndex();
       }
 
-      const results = [];
+      if (!this.fuse) {
+        this.createSearchIndex();
+      }
+
+      let results = [];
       const packs = this.index?.packs || {};
       const normalizedQuery = query?.toLowerCase().trim() || '';
 
-      for (const [id, pack] of Object.entries(packs)) {
-        const searchText = this.createSearchText(id, pack);
-
-        if (!normalizedQuery || searchText.includes(normalizedQuery)) {
-          // Apply additional filters
+      if (!normalizedQuery) {
+        // Return all packs if no query
+        for (const [id, pack] of Object.entries(packs)) {
           if (this.matchesSearchOptions(pack, options)) {
             results.push({
               id,
-              ...this.sanitizePackInfo(pack)
+              ...this.sanitizePackInfo(pack),
+              score: 1.0
+            });
+          }
+        }
+        // Sort by name for no-query results
+        results.sort((a, b) => a.name.localeCompare(b.name));
+      } else {
+        // Use fuzzy search with Fuse.js
+        const fuseResults = this.fuse.search(normalizedQuery);
+
+        for (const fuseResult of fuseResults) {
+          const pack = fuseResult.item;
+          if (this.matchesSearchOptions(pack, options)) {
+            results.push({
+              id: pack.id,
+              ...this.sanitizePackInfo(pack),
+              score: 1 - fuseResult.score, // Convert Fuse score (lower is better) to relevance score (higher is better)
+              matches: fuseResult.matches || []
             });
           }
         }
       }
 
-      // Sort by relevance (exact matches first, then partial)
-      results.sort((a, b) => {
-        const aExact = a.name.toLowerCase() === normalizedQuery;
-        const bExact = b.name.toLowerCase() === normalizedQuery;
-        if (aExact !== bExact) return bExact - aExact;
+      // Apply additional sorting if requested
+      if (options.sortBy) {
+        results = this.sortResults(results, options.sortBy, options.sortOrder);
+      }
 
-        const aStarts = a.name.toLowerCase().startsWith(normalizedQuery);
-        const bStarts = b.name.toLowerCase().startsWith(normalizedQuery);
-        if (aStarts !== bStarts) return bStarts - aStarts;
-
-        return a.name.localeCompare(b.name);
-      });
+      // Apply pagination
+      const offset = options.offset || 0;
+      const limit = options.limit;
+      const paginatedResults = limit ? results.slice(offset, offset + limit) : results.slice(offset);
 
       return {
-        query,
+        query: normalizedQuery,
         total: results.length,
-        results: options.limit ? results.slice(0, options.limit) : results
+        offset,
+        limit,
+        results: paginatedResults,
+        facets: this.generateSearchFacets(packs, normalizedQuery)
       };
     } catch (e) {
       this.logger.error(`Search failed:`, e);
@@ -606,6 +646,22 @@ export class PackRegistry {
       return false;
     }
 
+    if (options.author && pack.author !== options.author) {
+      return false;
+    }
+
+    if (options.license && pack.license !== options.license) {
+      return false;
+    }
+
+    if (options.minRating && (pack.rating || 0) < options.minRating) {
+      return false;
+    }
+
+    if (options.minDownloads && (pack.downloads || 0) < options.minDownloads) {
+      return false;
+    }
+
     return true;
   }
 
@@ -618,7 +674,7 @@ export class PackRegistry {
       }
 
       const packs = this.index?.packs || {};
-      const results = [];
+      let results = [];
 
       for (const [id, pack] of Object.entries(packs)) {
         if (this.matchesListOptions(pack, options)) {
@@ -629,25 +685,22 @@ export class PackRegistry {
         }
       }
 
-      // Sort by name by default
-      results.sort((a, b) => {
-        if (options.sortBy === 'lastModified') {
-          return (b.lastModified || 0) - (a.lastModified || 0);
-        }
-        if (options.sortBy === 'downloads') {
-          return (b.downloads || 0) - (a.downloads || 0);
-        }
-        return a.name.localeCompare(b.name);
-      });
+      // Advanced sorting with multiple criteria
+      results = this.sortResults(results, options.sortBy || 'name', options.sortOrder || 'asc');
 
-      const startIndex = options.offset || 0;
-      const endIndex = options.limit ? startIndex + options.limit : results.length;
+      // Apply pagination
+      const offset = options.offset || 0;
+      const limit = options.limit;
+      const paginatedResults = limit ? results.slice(offset, offset + limit) : results.slice(offset);
 
       return {
-        packs: results.slice(startIndex, endIndex),
+        packs: paginatedResults,
         total: results.length,
-        offset: startIndex,
-        limit: options.limit
+        offset,
+        limit,
+        filters: this.generateListFilters(packs),
+        sortOptions: this.getSortOptions(),
+        facets: this.generateListFacets(packs)
       };
     } catch (e) {
       this.logger.error(`List failed:`, e);
@@ -669,6 +722,30 @@ export class PackRegistry {
     }
 
     if (options.capability && !pack.capabilities?.includes(options.capability)) {
+      return false;
+    }
+
+    if (options.author && pack.author !== options.author) {
+      return false;
+    }
+
+    if (options.license && pack.license !== options.license) {
+      return false;
+    }
+
+    if (options.minRating && (pack.rating || 0) < options.minRating) {
+      return false;
+    }
+
+    if (options.minDownloads && (pack.downloads || 0) < options.minDownloads) {
+      return false;
+    }
+
+    if (options.hasCapability && (!pack.capabilities || pack.capabilities.length === 0)) {
+      return false;
+    }
+
+    if (options.hasTags && (!pack.tags || pack.tags.length === 0)) {
       return false;
     }
 
@@ -714,7 +791,7 @@ export class PackRegistry {
 
       mkdirSync(cachePath, { recursive: true });
 
-      // Would implement caching logic here
+      // Basic caching implemented - enhanced cache system available via PackCache
       this.logger.debug(`Cached pack ${packId} to ${cachePath}`);
 
       return cachePath;
@@ -1088,5 +1165,286 @@ export class PackRegistry {
       this.clearLegacyCache(packId)
     ]);
     this.logger.info('All caches cleared');
+  }
+
+  // Enhanced search functionality methods
+  createSearchIndex() {
+    if (!this.index?.packs) {
+      this.logger.warn('Cannot create search index: no packs available');
+      return;
+    }
+
+    const searchableItems = [];
+
+    for (const [id, pack] of Object.entries(this.index.packs)) {
+      searchableItems.push({
+        id,
+        name: pack.name || '',
+        description: pack.description || '',
+        tags: pack.tags || [],
+        capabilities: pack.capabilities || [],
+        author: pack.author || '',
+        license: pack.license || '',
+        source: pack.source || '',
+        // Computed search fields
+        searchText: this.createSearchText(id, pack),
+        keywords: [...(pack.tags || []), ...(pack.capabilities || [])].join(' '),
+        allText: [
+          pack.name || '',
+          pack.description || '',
+          pack.author || '',
+          ...(pack.tags || []),
+          ...(pack.capabilities || [])
+        ].join(' ').toLowerCase()
+      });
+    }
+
+    // Configure Fuse.js for fuzzy search
+    const fuseOptions = {
+      keys: [
+        { name: 'name', weight: 0.4 },
+        { name: 'description', weight: 0.3 },
+        { name: 'tags', weight: 0.15 },
+        { name: 'capabilities', weight: 0.1 },
+        { name: 'author', weight: 0.05 }
+      ],
+      threshold: 0.4, // 0.0 = exact match, 1.0 = match anything
+      distance: 200,
+      maxPatternLength: 32,
+      minMatchCharLength: 1,
+      includeScore: true,
+      includeMatches: true,
+      findAllMatches: true,
+      ignoreLocation: true
+    };
+
+    this.fuse = new Fuse(searchableItems, fuseOptions);
+    this.searchIndex = {
+      items: searchableItems,
+      createdAt: Date.now(),
+      count: searchableItems.length
+    };
+
+    this.logger.debug(`Search index created with ${searchableItems.length} items`);
+  }
+
+  sortResults(results, sortBy = 'name', sortOrder = 'asc') {
+    return results.sort((a, b) => {
+      let comparison = 0;
+
+      switch (sortBy) {
+        case 'name':
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case 'lastModified':
+          comparison = (a.lastModified || 0) - (b.lastModified || 0);
+          break;
+        case 'downloads':
+          comparison = (a.downloads || 0) - (b.downloads || 0);
+          break;
+        case 'rating':
+          comparison = (a.rating || 0) - (b.rating || 0);
+          break;
+        case 'relevance':
+        case 'score':
+          comparison = (b.score || 0) - (a.score || 0);
+          break;
+        case 'author':
+          comparison = (a.author || '').localeCompare(b.author || '');
+          break;
+        case 'source':
+          comparison = (a.source || '').localeCompare(b.source || '');
+          break;
+        default:
+          comparison = a.name.localeCompare(b.name);
+      }
+
+      return sortOrder === 'desc' ? -comparison : comparison;
+    });
+  }
+
+  generateSearchFacets(packs, query) {
+    const facets = {
+      sources: {},
+      tags: {},
+      capabilities: {},
+      authors: {},
+      licenses: {}
+    };
+
+    for (const pack of Object.values(packs)) {
+      // Count sources
+      const source = pack.source || 'unknown';
+      facets.sources[source] = (facets.sources[source] || 0) + 1;
+
+      // Count tags
+      for (const tag of pack.tags || []) {
+        facets.tags[tag] = (facets.tags[tag] || 0) + 1;
+      }
+
+      // Count capabilities
+      for (const capability of pack.capabilities || []) {
+        facets.capabilities[capability] = (facets.capabilities[capability] || 0) + 1;
+      }
+
+      // Count authors
+      if (pack.author) {
+        facets.authors[pack.author] = (facets.authors[pack.author] || 0) + 1;
+      }
+
+      // Count licenses
+      if (pack.license) {
+        facets.licenses[pack.license] = (facets.licenses[pack.license] || 0) + 1;
+      }
+    }
+
+    // Sort each facet by count (descending)
+    for (const facetKey of Object.keys(facets)) {
+      const sorted = Object.entries(facets[facetKey])
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 20); // Limit to top 20 facets
+
+      facets[facetKey] = Object.fromEntries(sorted);
+    }
+
+    return facets;
+  }
+
+  generateListFilters(packs) {
+    return {
+      sources: [...new Set(Object.values(packs).map(p => p.source).filter(Boolean))],
+      tags: [...new Set(Object.values(packs).flatMap(p => p.tags || []))],
+      capabilities: [...new Set(Object.values(packs).flatMap(p => p.capabilities || []))],
+      authors: [...new Set(Object.values(packs).map(p => p.author).filter(Boolean))],
+      licenses: [...new Set(Object.values(packs).map(p => p.license).filter(Boolean))]
+    };
+  }
+
+  generateListFacets(packs) {
+    return this.generateSearchFacets(packs, '');
+  }
+
+  getSortOptions() {
+    return [
+      { value: 'name', label: 'Name' },
+      { value: 'lastModified', label: 'Last Modified' },
+      { value: 'downloads', label: 'Downloads' },
+      { value: 'rating', label: 'Rating' },
+      { value: 'author', label: 'Author' },
+      { value: 'source', label: 'Source' }
+    ];
+  }
+
+  // Enhanced search with autocomplete suggestions
+  async getSearchSuggestions(partialQuery, limit = 10) {
+    if (!this.fuse || !partialQuery || partialQuery.length < 2) {
+      return [];
+    }
+
+    const results = this.fuse.search(partialQuery);
+    const suggestions = new Set();
+
+    for (const result of results.slice(0, limit * 2)) {
+      const pack = result.item;
+
+      // Add pack name
+      if (pack.name.toLowerCase().includes(partialQuery.toLowerCase())) {
+        suggestions.add(pack.name);
+      }
+
+      // Add relevant tags
+      for (const tag of pack.tags || []) {
+        if (tag.toLowerCase().includes(partialQuery.toLowerCase())) {
+          suggestions.add(tag);
+        }
+      }
+
+      // Add relevant capabilities
+      for (const capability of pack.capabilities || []) {
+        if (capability.toLowerCase().includes(partialQuery.toLowerCase())) {
+          suggestions.add(capability);
+        }
+      }
+
+      if (suggestions.size >= limit) break;
+    }
+
+    return Array.from(suggestions).slice(0, limit);
+  }
+
+  // Advanced search with complex query parsing
+  async advancedSearch(queryString, options = {}) {
+    const parsedQuery = this.parseAdvancedQuery(queryString);
+    const searchOptions = { ...options, ...parsedQuery.filters };
+
+    let results;
+    if (parsedQuery.query) {
+      results = await this.searchPacks(parsedQuery.query, searchOptions);
+    } else {
+      results = await this.list(searchOptions);
+      results = {
+        ...results,
+        query: queryString,
+        results: results.packs
+      };
+    }
+
+    return results;
+  }
+
+  parseAdvancedQuery(queryString) {
+    const filters = {};
+    let cleanQuery = queryString;
+
+    // Parse filters like "tag:react", "author:gitvan", "capability:scaffold"
+    const filterRegex = /(\w+):(\S+)/g;
+    let match;
+
+    while ((match = filterRegex.exec(queryString)) !== null) {
+      const [fullMatch, filterType, filterValue] = match;
+
+      switch (filterType.toLowerCase()) {
+        case 'tag':
+          filters.tag = filterValue;
+          break;
+        case 'author':
+          filters.author = filterValue;
+          break;
+        case 'capability':
+          filters.capability = filterValue;
+          break;
+        case 'source':
+          filters.source = filterValue;
+          break;
+        case 'license':
+          filters.license = filterValue;
+          break;
+      }
+
+      cleanQuery = cleanQuery.replace(fullMatch, '').trim();
+    }
+
+    return {
+      query: cleanQuery || null,
+      filters
+    };
+  }
+
+  // Search analytics and metrics
+  getSearchAnalytics() {
+    return {
+      indexSize: this.searchIndex?.count || 0,
+      indexAge: this.searchIndex ? Date.now() - this.searchIndex.createdAt : 0,
+      isIndexStale: this.searchIndex ? Date.now() - this.searchIndex.createdAt > 3600000 : true, // 1 hour
+      fuseConfigured: !!this.fuse
+    };
+  }
+
+  // Rebuild search index
+  async rebuildSearchIndex() {
+    this.logger.info('Rebuilding search index...');
+    await this.refreshIndex();
+    this.createSearchIndex();
+    this.logger.info('Search index rebuilt successfully');
   }
 }

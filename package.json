@@ -23,7 +23,9 @@
   "author": "GitVan Team",
   "license": "MIT",
   "dependencies": {
+    "@iarna/toml": "^2.2.5",
     "@types/prompts": "^2.4.9",
+    "ajv": "^8.17.1",
     "c12": "^2.0.4",
     "cacache": "^20.0.1",
     "citty": "^0.1.6",
@@ -35,6 +37,10 @@
     "gray-matter": "^4.0.3",
     "hookable": "^5.5.3",
     "inflection": "^3.0.2",
+    "ini": "^5.0.0",
+    "js-yaml": "^4.1.0",
+    "json5": "^2.2.3",
+    "jsonpath-plus": "^10.3.0",
     "klona": "^2.0.6",
     "lru-cache": "^11.2.1",
     "node-cron": "^4.2.1",
@@ -45,6 +51,7 @@
     "toml": "^3.0.0",
     "unctx": "^2.4.1",
     "unrouting": "^0.0.1",
+    "xml2js": "^0.6.2",
     "zod": "^4.1.9"
   },
   "devDependencies": {

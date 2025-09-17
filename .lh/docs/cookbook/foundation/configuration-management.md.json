@@ -3,11 +3,15 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 1,
             "patches": [
                 {
                     "date": 1758051806635,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1758091414868,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -484,9 +484,9 @@\n - [Error Handling](./error-handling.md) - Robust error handling patterns\n \n ## 📚 **Resources**\n \n-- [GitVan Configuration Guide](../../docs/configuration.md)\n+- [GitVan Configuration Guide](../../reference/configuration.md)\n - [Environment Variables](../../docs/environment-variables.md)\n - [Security Best Practices](../../docs/security.md)\n \n ## 🤝 **Contributors**\n"
                 }
             ],
             "date": 1758051806635,

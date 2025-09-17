@@ -1,0 +1,369 @@
+{
+  "executive_summary": {
+    "company": "GitVan",
+    "tagline": "The Git-Native Template Revolution",
+    "market_category": "Developer Tools & DevOps Infrastructure",
+    "stage": "Seed",
+    "ask": "$2M",
+    "valuation_target": "$10M pre-money"
+  },
+
+  "market_opportunity": {
+    "total_addressable_market": {
+      "size": "$45B",
+      "description": "Global DevOps market",
+      "growth_rate": "25% YoY",
+      "source": "Gartner, 2024"
+    },
+    "serviceable_addressable_market": {
+      "size": "$12B",
+      "description": "Developer tooling & infrastructure",
+      "segments": [
+        "CI/CD platforms",
+        "Code generation tools",
+        "Template marketplaces",
+        "Developer productivity tools"
+      ]
+    },
+    "serviceable_obtainable_market": {
+      "size": "$1.2B",
+      "description": "Git-native developer tools",
+      "timeline": "5 years"
+    }
+  },
+
+  "target_audience": {
+    "primary_users": {
+      "individual_developers": {
+        "size": "28M globally",
+        "pain_points": [
+          "40% time wasted on repetitive setup",
+          "Template fragmentation across platforms",
+          "Manual configuration errors",
+          "Vendor lock-in concerns"
+        ],
+        "willingness_to_pay": "$10-50/month for productivity gains"
+      },
+      "development_teams": {
+        "size": "2.5M teams globally",
+        "pain_points": [
+          "Standardization across team members",
+          "Onboarding new developers",
+          "Maintaining consistent project structure",
+          "Enterprise compliance requirements"
+        ],
+        "willingness_to_pay": "$100-500/month per team"
+      }
+    },
+    "enterprise_customers": {
+      "fortune_500_companies": {
+        "size": "500 companies",
+        "average_dev_teams": "50-500 per company",
+        "pain_points": [
+          "Development velocity bottlenecks",
+          "Technical debt from inconsistent setups",
+          "Security compliance challenges",
+          "Multi-cloud/hybrid infrastructure complexity"
+        ],
+        "willingness_to_pay": "$50K-500K annually"
+      }
+    }
+  },
+
+  "competitive_advantage": {
+    "git_native_approach": {
+      "description": "First mover in Git-native template distribution",
+      "benefits": [
+        "Zero learning curve for developers",
+        "Instant distribution to 28M Git users",
+        "No vendor lock-in",
+        "Works with existing Git infrastructure"
+      ],
+      "defensibility": "Network effects + Git ecosystem lock-in"
+    },
+    "technical_differentiation": [
+      "Smart variable interpolation engine",
+      "Git-native storage and versioning",
+      "Hookable plugin architecture",
+      "Multi-language template support",
+      "Enterprise-grade security model"
+    ]
+  },
+
+  "traction_metrics": {
+    "product_metrics": {
+      "setup_time_improvement": "10x faster (8 seconds vs 8 minutes)",
+      "error_reduction": "95% fewer configuration errors",
+      "developer_productivity": "40% time savings on project setup"
+    },
+    "early_adoption": {
+      "github_stars": {
+        "current": "1,200",
+        "growth_rate": "300% month-over-month",
+        "trajectory": "Viral adoption pattern"
+      },
+      "early_users": {
+        "individual_developers": "500+ beta users",
+        "companies_piloting": "15 companies",
+        "fortune_500_interest": "3 active evaluations"
+      }
+    },
+    "ecosystem_growth": {
+      "template_count": "50+ templates",
+      "template_categories": [
+        "React/Next.js stacks",
+        "API backends (Node.js, Go, Python)",
+        "Enterprise configurations",
+        "ML/AI project templates",
+        "Mobile app starters"
+      ],
+      "community_contributions": "Growing 200% monthly"
+    }
+  },
+
+  "revenue_model": {
+    "freemium_structure": {
+      "free_tier": {
+        "description": "Individual developers, public templates",
+        "limitations": "Basic templates, community support",
+        "conversion_strategy": "Premium features + team collaboration"
+      },
+      "premium_tiers": [
+        {
+          "tier": "Pro Developer",
+          "price": "$19/month",
+          "features": [
+            "Private templates",
+            "Advanced customization",
+            "Priority support",
+            "Analytics dashboard"
+          ],
+          "target": "Individual power users"
+        },
+        {
+          "tier": "Team",
+          "price": "$99/month (up to 10 developers)",
+          "features": [
+            "Team template sharing",
+            "Access controls",
+            "Usage analytics",
+            "Integration APIs"
+          ],
+          "target": "Small-medium teams"
+        },
+        {
+          "tier": "Enterprise",
+          "price": "$500+/month",
+          "features": [
+            "On-premise deployment",
+            "SSO integration",
+            "Compliance tools",
+            "24/7 support",
+            "Custom templates"
+          ],
+          "target": "Large enterprises"
+        }
+      ]
+    },
+    "marketplace_revenue": {
+      "template_marketplace": {
+        "commission": "30% on paid templates",
+        "creator_incentives": "70% revenue share",
+        "premium_templates": "$5-50 per template",
+        "enterprise_templates": "$100-1000 per template"
+      }
+    }
+  },
+
+  "financial_projections": {
+    "year_1": {
+      "users": "5K developers, 100 teams",
+      "revenue": "$150K ARR",
+      "key_milestones": [
+        "Product-market fit validation",
+        "100+ templates in ecosystem",
+        "First enterprise customer"
+      ]
+    },
+    "year_2": {
+      "users": "25K developers, 1K teams, 10 enterprise",
+      "revenue": "$1.2M ARR",
+      "key_milestones": [
+        "Series A fundraising",
+        "Team expansion to 15 people",
+        "International expansion"
+      ]
+    },
+    "year_3": {
+      "users": "100K developers, 5K teams, 50 enterprise",
+      "revenue": "$8M ARR",
+      "key_milestones": [
+        "Market leadership position",
+        "Acquisition conversations",
+        "Platform integrations"
+      ]
+    },
+    "year_5": {
+      "users": "1M+ developers, 50K teams, 500 enterprise",
+      "revenue": "$100M+ ARR",
+      "exit_scenarios": [
+        "Strategic acquisition by GitHub ($500M-1B)",
+        "Strategic acquisition by GitLab ($300M-800M)",
+        "Strategic acquisition by cloud provider ($1B+)",
+        "IPO pathway at $2B+ valuation"
+      ]
+    }
+  },
+
+  "use_of_funds": {
+    "total_raise": "$2M",
+    "allocation": {
+      "engineering": {
+        "percentage": 50,
+        "amount": "$1M",
+        "focus_areas": [
+          "Core platform scalability",
+          "Advanced template engine",
+          "Enterprise security features",
+          "API and integration development"
+        ]
+      },
+      "growth_marketing": {
+        "percentage": 30,
+        "amount": "$600K",
+        "focus_areas": [
+          "Developer community building",
+          "Content marketing and documentation",
+          "Conference presence and evangelism",
+          "Partnership development"
+        ]
+      },
+      "operations": {
+        "percentage": 20,
+        "amount": "$400K",
+        "focus_areas": [
+          "Enterprise sales team",
+          "Customer success and support",
+          "Legal and compliance",
+          "Infrastructure and tooling"
+        ]
+      }
+    }
+  },
+
+  "competitive_landscape": {
+    "direct_competitors": [
+      {
+        "name": "Yeoman",
+        "weakness": "Outdated architecture, poor UX",
+        "market_share": "Legacy market, declining"
+      },
+      {
+        "name": "Create React App",
+        "weakness": "Single-framework focus, maintenance burden",
+        "market_share": "React ecosystem only"
+      },
+      {
+        "name": "Cookiecutter",
+        "weakness": "Python-only, no Git integration",
+        "market_share": "Limited to Python developers"
+      }
+    ],
+    "indirect_competitors": [
+      {
+        "name": "GitHub Templates",
+        "weakness": "Basic functionality, no smart interpolation",
+        "opportunity": "Integration partnership potential"
+      },
+      {
+        "name": "Vercel Templates",
+        "weakness": "Platform lock-in, limited scope",
+        "opportunity": "Multi-platform approach advantage"
+      }
+    ],
+    "competitive_moats": [
+      "First-mover advantage in Git-native space",
+      "Network effects from template ecosystem",
+      "Technical complexity barriers",
+      "Developer mindshare and community"
+    ]
+  },
+
+  "team_and_execution": {
+    "founding_team": [
+      {
+        "role": "CEO/Founder",
+        "background": "Former startup founder, 10+ years development experience",
+        "expertise": "Product vision, developer tools, Go-to-market"
+      }
+    ],
+    "hiring_plan": [
+      "Senior Full-Stack Engineers (3)",
+      "DevRel/Community Manager (1)",
+      "Enterprise Sales (1)",
+      "Product Manager (1)"
+    ],
+    "advisory_board": [
+      "Former GitHub executive",
+      "Open source community leaders",
+      "Enterprise DevOps experts"
+    ]
+  },
+
+  "risks_and_mitigation": {
+    "technical_risks": [
+      {
+        "risk": "Git infrastructure limitations",
+        "mitigation": "Hybrid architecture with performance optimizations"
+      },
+      {
+        "risk": "Template complexity scaling",
+        "mitigation": "Modular architecture and plugin ecosystem"
+      }
+    ],
+    "market_risks": [
+      {
+        "risk": "Big Tech competition (GitHub, GitLab)",
+        "mitigation": "Speed to market, community lock-in, acquisition target positioning"
+      },
+      {
+        "risk": "Developer adoption challenges",
+        "mitigation": "Zero learning curve, immediate value delivery"
+      }
+    ],
+    "execution_risks": [
+      {
+        "risk": "Scaling team and culture",
+        "mitigation": "Strong hiring practices, clear values, experienced advisors"
+      }
+    ]
+  },
+
+  "key_metrics_to_track": [
+    "Monthly Active Developers",
+    "Templates Created/Used",
+    "Time-to-Value (setup time reduction)",
+    "Enterprise Pipeline Value",
+    "Community Contribution Rate",
+    "Revenue per User",
+    "Net Promoter Score",
+    "Template Marketplace GMV"
+  ],
+
+  "investor_call_to_action": {
+    "immediate_next_steps": [
+      "Due diligence materials sharing",
+      "Product demo and technical deep-dive",
+      "Reference customer calls",
+      "Market validation data review"
+    ],
+    "timeline": "Close seed round within 60 days",
+    "key_decision_factors": [
+      "Massive developer market opportunity",
+      "Git-native approach = instant distribution",
+      "Strong early traction and product-market fit signals",
+      "Clear path to $100M+ revenue",
+      "Strategic acquisition potential"
+    ]
+  }
+}

@@ -41,23 +41,25 @@ export function parseFrontmatter(input, options = {}) {
   // Try different front-matter formats
   let fm;
   try {
-    fm = matter(source, { 
+    fm = matter(source, {
       excerpt: false,
-      engines: strict ? {
-        yaml: {
-          parse: (str) => {
-            try {
-              // Use js-yaml for strict validation
-              return yaml.load(str);
-            } catch (error) {
-              throw new Error(`Invalid YAML frontmatter: ${error.message}`);
-            }
+      engines: strict
+        ? {
+            yaml: {
+              parse: (str) => {
+                try {
+                  // Use js-yaml for strict validation
+                  return yaml.load(str);
+                } catch (error) {
+                  throw new Error(`Invalid YAML frontmatter: ${error.message}`);
+                }
+              },
+            },
           }
-        }
-      } : undefined
+        : undefined,
     });
   } catch (error) {
-    if (strict && error.message.includes('Invalid YAML frontmatter')) {
+    if (strict && error.message.includes("Invalid YAML frontmatter")) {
       throw error;
     }
     // Fall back to treating as regular content
@@ -109,7 +111,7 @@ export function parseFrontmatter(input, options = {}) {
 
 /**
  * Validates frontmatter syntax without parsing the data.
- * 
+ *
  * @param {string|Buffer} input
  * @returns {boolean} - True if frontmatter syntax is valid
  */
@@ -124,7 +126,7 @@ export function validateFrontmatter(input) {
 
 /**
  * Validates and parses frontmatter with detailed error information.
- * 
+ *
  * @param {string|Buffer} input
  * @returns {{ valid: boolean, data?: Record<string, any>, body?: string, error?: string }}
  */
@@ -134,12 +136,12 @@ export function validateAndParseFrontmatter(input) {
     return {
       valid: true,
       data: result.data,
-      body: result.body
+      body: result.body,
     };
   } catch (error) {
     return {
       valid: false,
-      error: error.message
+      error: error.message,
     };
   }
 }

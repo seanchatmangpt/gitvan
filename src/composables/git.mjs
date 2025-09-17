@@ -1,10 +1,10 @@
 // src/composables/git.mjs
-// GitVan v2 — useGit()
+// GitVan v2 — useGit() - 80/20 Implementation
 // - POSIX-first. No external deps. ESM.
 // - Deterministic env: TZ=UTC, LANG=C.
 // - UnJS context-aware (unctx). Captures context once to avoid loss after await.
 // - Happy path only. No retries. No shell string interpolation.
-// - 80/20 commands + a few primitives used by locks/receipts.
+// - 80/20 commands: Only the essential Git operations that GitVan actually uses.
 
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -161,13 +161,13 @@ export function useGit() {
       // git will create the notes ref if needed
       await runGitVoid(
         ["notes", `--ref=${ref}`, "add", "-f", "-m", message, sha],
-        base,
+        base
       );
     },
     async noteAppend(ref, message, sha = "HEAD") {
       await runGitVoid(
         ["notes", `--ref=${ref}`, "append", "-m", message, sha],
-        base,
+        base
       );
     },
     async noteShow(ref, sha = "HEAD") {
@@ -253,6 +253,50 @@ export function useGit() {
       }
     },
 
+    // ---------- Info methods ----------
+    async info() {
+      try {
+        const [head, branch, worktree] = await Promise.all([
+          this.head(),
+          this.getCurrentBranch(),
+          this.repoRoot(),
+        ]);
+
+        return {
+          head,
+          branch,
+          worktree,
+          isClean: await this.isClean(),
+          hasUncommittedChanges: await this.hasUncommittedChanges(),
+        };
+      } catch (error) {
+        throw new Error(`Failed to get git info: ${error.message}`);
+      }
+    },
+
+    // ---------- Ref methods ----------
+    async listRefs(pattern = "") {
+      try {
+        const args = ["for-each-ref", "--format=%(refname)"];
+        if (pattern) {
+          args.push(pattern);
+        }
+        const output = await runGit(args, base);
+        return output.split("\n").filter((line) => line.trim());
+      } catch (error) {
+        return [];
+      }
+    },
+
+    async getRef(ref) {
+      try {
+        const output = await runGit(["show-ref", "--verify", ref], base);
+        return output.trim();
+      } catch (error) {
+        return null;
+      }
+    },
+
     // ---------- Worktree methods ----------
     async listWorktrees() {
       try {
@@ -274,12 +318,12 @@ export function useGit() {
         }
 
         if (current.path) worktrees.push(current);
-        
+
         // Mark main worktree
         const mainPath = await this.repoRoot();
-        return worktrees.map(wt => ({
+        return worktrees.map((wt) => ({
           ...wt,
-          isMain: wt.path === mainPath
+          isMain: wt.path === mainPath,
         }));
       } catch {
         // Fallback to single worktree
@@ -291,10 +335,259 @@ export function useGit() {
             path: worktree,
             head: head,
             branch: branch,
-            isMain: true
-          }
+            isMain: true,
+          },
         ];
       }
+    },
+
+    // ---------- Diff operations ----------
+    async diff(options = {}) {
+      const args = ["diff"];
+
+      // Handle different diff types
+      if (options.cached) args.push("--cached");
+      if (options.staged) args.push("--cached");
+      if (options.nameOnly) args.push("--name-only");
+      if (options.nameStatus) args.push("--name-status");
+      if (options.stat) args.push("--stat");
+      if (options.shortstat) args.push("--shortstat");
+      if (options.numstat) args.push("--numstat");
+
+      // Handle commit ranges
+      if (options.from && options.to) {
+        args.push(`${options.from}..${options.to}`);
+      } else if (options.from) {
+        args.push(options.from);
+      }
+
+      // Handle specific files
+      if (options.files && options.files.length > 0) {
+        args.push("--", ...toArr(options.files));
+      }
+
+      return runGit(args, base);
+    },
+
+    // ---------- Remote operations ----------
+    async fetch(remote = "origin", refspec = "", options = {}) {
+      const args = ["fetch"];
+
+      if (options.prune) args.push("--prune");
+      if (options.tags) args.push("--tags");
+      if (options.all) args.push("--all");
+      if (options.depth) args.push(`--depth=${options.depth}`);
+
+      if (remote) args.push(remote);
+      if (refspec) args.push(refspec);
+
+      await runGitVoid(args, base);
+    },
+
+    async push(remote = "origin", ref = "HEAD", options = {}) {
+      const args = ["push"];
+
+      if (options.force) args.push("--force");
+      if (options.setUpstream) args.push("--set-upstream");
+      if (options.tags) args.push("--tags");
+      if (options.delete) args.push("--delete");
+      if (options.dryRun) args.push("--dry-run");
+
+      if (remote) args.push(remote);
+      if (ref) args.push(ref);
+
+      await runGitVoid(args, base);
+    },
+
+    async pull(remote = "origin", branch = "", options = {}) {
+      const args = ["pull"];
+
+      if (options.rebase) args.push("--rebase");
+      if (options.ff) args.push("--ff-only");
+      if (options.noff) args.push("--no-ff");
+      if (options.squash) args.push("--squash");
+
+      if (remote) args.push(remote);
+      if (branch) args.push(branch);
+
+      await runGitVoid(args, base);
+    },
+
+    // ---------- Branch operations ----------
+    async branchList(options = {}) {
+      const args = ["branch"];
+
+      if (options.all) args.push("-a");
+      if (options.remote) args.push("-r");
+      if (options.merged) args.push("--merged");
+      if (options.noMerged) args.push("--no-merged");
+      if (options.verbose) args.push("-v");
+
+      const output = await runGit(args, base);
+      return output
+        .split("\n")
+        .filter((line) => line.trim())
+        .map((line) => line.replace(/^\*?\s*/, "").trim());
+    },
+
+    async branchCreate(name, startPoint = "HEAD", options = {}) {
+      const args = ["branch"];
+
+      if (options.force) args.push("-f");
+      if (options.track) args.push("--track");
+      if (options.noTrack) args.push("--no-track");
+
+      args.push(name);
+      if (startPoint !== "HEAD") args.push(startPoint);
+
+      await runGitVoid(args, base);
+    },
+
+    async branchDelete(name, options = {}) {
+      const args = ["branch"];
+
+      if (options.force) args.push("-D");
+      else args.push("-d");
+
+      args.push(name);
+      await runGitVoid(args, base);
+    },
+
+    // ---------- Checkout/Switch operations ----------
+    async checkout(ref, options = {}) {
+      const args = ["checkout"];
+
+      if (options.force) args.push("-f");
+      if (options.create) args.push("-b");
+      if (options.track) args.push("--track");
+      if (options.detach) args.push("--detach");
+
+      if (ref) args.push(ref);
+
+      await runGitVoid(args, base);
+    },
+
+    async switch(branch, options = {}) {
+      const args = ["switch"];
+
+      if (options.create) args.push("-c");
+      if (options.force) args.push("-f");
+      if (options.detach) args.push("--detach");
+      if (options.track) args.push("--track");
+      if (options.noTrack) args.push("--no-track");
+
+      if (branch) args.push(branch);
+
+      await runGitVoid(args, base);
+    },
+
+    // ---------- Merge operations ----------
+    async merge(ref, options = {}) {
+      const args = ["merge"];
+
+      if (options.noff) args.push("--no-ff");
+      if (options.ff) args.push("--ff-only");
+      if (options.squash) args.push("--squash");
+      if (options.noCommit) args.push("--no-commit");
+      if (options.message) args.push("-m", options.message);
+
+      if (ref) args.push(ref);
+
+      await runGitVoid(args, base);
+    },
+
+    // ---------- Rebase operations ----------
+    async rebase(onto = "origin/main", options = {}) {
+      const args = ["rebase"];
+
+      if (options.interactive) args.push("-i");
+      if (options.continue) args.push("--continue");
+      if (options.abort) args.push("--abort");
+      if (options.skip) args.push("--skip");
+      if (options.autosquash) args.push("--autosquash");
+      if (options.noAutosquash) args.push("--no-autosquash");
+
+      if (onto) args.push(onto);
+
+      await runGitVoid(args, base);
+    },
+
+    // ---------- Reset operations ----------
+    async reset(mode = "mixed", ref = "HEAD", options = {}) {
+      const args = ["reset"];
+
+      // Reset modes: soft, mixed, hard, merge, keep
+      if (mode) args.push(`--${mode}`);
+
+      if (options.paths && options.paths.length > 0) {
+        args.push("--", ...toArr(options.paths));
+      } else if (ref) {
+        args.push(ref);
+      }
+
+      await runGitVoid(args, base);
+    },
+
+    // ---------- Stash operations ----------
+    async stashSave(message = "", options = {}) {
+      const args = ["stash"];
+
+      if (options.push) args.push("push");
+      else args.push("save");
+
+      if (message) args.push("-m", message);
+      if (options.includeUntracked) args.push("-u");
+      if (options.keepIndex) args.push("--keep-index");
+
+      await runGitVoid(args, base);
+    },
+
+    async stashList() {
+      const output = await runGit(["stash", "list"], base);
+      return output.split("\n").filter((line) => line.trim());
+    },
+
+    async stashApply(stash = "stash@{0}", options = {}) {
+      const args = ["stash"];
+
+      if (options.pop) args.push("pop");
+      else args.push("apply");
+
+      if (stash) args.push(stash);
+
+      await runGitVoid(args, base);
+    },
+
+    async stashDrop(stash = "stash@{0}") {
+      await runGitVoid(["stash", "drop", stash], base);
+    },
+
+    // ---------- Cherry-pick operations ----------
+    async cherryPick(commit, options = {}) {
+      const args = ["cherry-pick"];
+
+      if (options.continue) args.push("--continue");
+      if (options.abort) args.push("--abort");
+      if (options.skip) args.push("--skip");
+      if (options.noCommit) args.push("--no-commit");
+      if (options.edit) args.push("--edit");
+
+      if (commit) args.push(commit);
+
+      await runGitVoid(args, base);
+    },
+
+    // ---------- Revert operations ----------
+    async revert(commit, options = {}) {
+      const args = ["revert"];
+
+      if (options.noCommit) args.push("--no-commit");
+      if (options.edit) args.push("--edit");
+      if (options.mainline) args.push("-m", options.mainline);
+
+      if (commit) args.push(commit);
+
+      await runGitVoid(args, base);
     },
 
     // ---------- Generic runner (escape hatch) ----------

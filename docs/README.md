@@ -210,7 +210,7 @@ src/
 - [Composables API](./api/composables.md)
 - [Job Definition](./api/job-definition.md)
 - [Event Predicates](./api/event-predicates.md)
-- [Configuration](./api/configuration.md)
+- [Configuration](./reference/configuration.md)
 
 ### Advanced Topics
 - [Receipt System](./advanced/receipts.md)

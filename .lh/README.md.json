@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 6,
+            "activePatchIndex": 9,
             "patches": [
                 {
                     "date": 1758042393509,
@@ -32,6 +32,18 @@
                 {
                     "date": 1758077250460,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -174,9 +174,9 @@\n   },\n   \n   ai: {\n     provider: \"ollama\",\n-    model: \"qwen3-coder:30b\",\n+    model: \"qwen3-coder:30b\", // Default from GitVanDefaults\n   },\n   \n   data: {\n     project: {\n"
+                },
+                {
+                    "date": 1758088442924,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -196,34 +196,19 @@\n - **Idempotent Operations**: Safe to run multiple times\n \n ## 🎨 Front-Matter Support\n \n-GitVan supports multiple front-matter formats:\n+GitVan uses YAML front-matter for all templates and configuration:\n \n-### YAML (Default)\n+### YAML Front-Matter\n ```yaml\n ---\n to: \"output.txt\"\n force: \"overwrite\"\n ---\n Content here\n ```\n \n-### TOML\n-```toml\n-+++\n-to = \"output.txt\"\n-force = \"overwrite\"\n-+++\n-Content here\n-```\n-\n-### JSON\n-```json\n-;{\"to\":\"output.txt\",\"force\":\"overwrite\"}\n-Content here\n-```\n-\n ## 📚 Examples\n \n ### Simple Job\n ```javascript\n"
+                },
+                {
+                    "date": 1758089475362,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -260,8 +260,35 @@\n   }\n }\n ```\n \n+### Worktree Management\n+```javascript\n+// Using the useWorktree composable\n+import { useWorktree } from 'gitvan/composables/worktree';\n+\n+const worktree = useWorktree();\n+\n+// Get worktree information\n+const info = await worktree.info();\n+console.log(`Current branch: ${info.branch}`);\n+console.log(`Worktree path: ${info.worktree}`);\n+\n+// List all worktrees\n+const worktrees = await worktree.list();\n+worktrees.forEach(wt => {\n+  console.log(`${wt.path} (${wt.branch}) ${wt.isMain ? '(main)' : ''}`);\n+});\n+\n+// Create a new worktree\n+await worktree.create('/path/to/new-worktree', 'feature-branch');\n+\n+// Get worktree status\n+const status = await worktree.status();\n+console.log(`Total worktrees: ${status.count}`);\n+console.log(`Is main worktree: ${status.isMain}`);\n+```\n+\n ## 🤝 Contributing\n \n 1. Fork the repository\n 2. Create a feature branch: `git checkout -b feature-name`\n"
+                },
+                {
+                    "date": 1758090739990,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -40,15 +40,65 @@\n ```bash\n gitvan run hello\n ```\n \n+## 🧩 Composables API\n+\n+GitVan v2 provides a comprehensive set of composables for building automation workflows:\n+\n+### Core Composables\n+- **`useGit`** - Git operations and repository management\n+- **`useWorktree`** - Git worktree management  \n+- **`useTemplate`** - Template rendering with Nunjucks\n+\n+### Job & Event Composables\n+- **`useJob`** - Job lifecycle and execution management\n+- **`useEvent`** - Event system and triggering\n+- **`useSchedule`** - Cron and scheduling management\n+\n+### Infrastructure Composables\n+- **`useReceipt`** - Receipt and audit management\n+- **`useLock`** - Distributed locking\n+- **`useRegistry`** - Job and event registry management\n+\n+### Example Usage\n+\n+```javascript\n+import { withGitVan, useJob, useEvent, useSchedule } from './src/composables/index.mjs';\n+\n+await withGitVan({ cwd: process.cwd(), env: process.env }, async () => {\n+  const job = useJob();\n+  const event = useEvent();\n+  const schedule = useSchedule();\n+  \n+  // Schedule a job\n+  await schedule.add('daily-backup', '0 3 * * *', 'backup-job');\n+  \n+  // Register events\n+  await event.register('backup-complete', {\n+    name: 'Backup Complete',\n+    type: 'custom',\n+    job: 'notify-job'\n+  });\n+  \n+  // Execute job with event triggering\n+  const result = await job.run('backup-job');\n+  if (result.success) {\n+    await event.trigger('backup-complete', { result });\n+  }\n+});\n+```\n+\n+**📚 Documentation**: [Composables API](docs/api/composables.md) | [Quick Reference](docs/api/composables-quick-reference.md) | [Examples](docs/examples/composables-examples.md)\n+\n ## ✨ Features\n \n ### 🎯 **Core Capabilities**\n - **Git-Native**: Uses Git refs for locking, notes for audit trails\n - **Template Engine**: Nunjucks-powered with front-matter support\n - **Job System**: Automated task execution with scheduling\n - **Pack System**: Reusable automation components\n+- **Composables API**: Comprehensive composables for automation workflows\n - **AI Integration**: Generate jobs and templates with AI assistance\n \n ### 📋 **Front-Matter Templates**\n GitVan supports Hygen-style templates with rich front-matter:\n"
                 }
             ],
             "date": 1758042393509,

@@ -4,7 +4,7 @@
 
 import { createHash } from "node:crypto";
 import { useGit } from "../composables/git.mjs";
-import { createJobContext } from "./define.mjs";
+import { defineJob } from "./define.mjs";
 import { createJobHooks } from "./hooks.mjs";
 
 /**
@@ -56,7 +56,7 @@ export class JobExecutionContext {
   async buildContext() {
     const git = this.git;
 
-    return createJobContext(this.jobDef, {
+    return {
       root: this.root,
       nowISO: this.nowISO,
       env: this.env,
@@ -68,7 +68,7 @@ export class JobExecutionContext {
       trigger: this.trigger,
       logger: this.logger,
       payload: this.payload,
-    });
+    };
   }
 
   async isCommitSigned() {
@@ -199,11 +199,11 @@ export class JobRunner {
         await this.git.noteAppend(
           this.receiptsRef,
           `\n---\n${receiptJson}`,
-          result.head,
+          result.head
         );
       } catch (appendError) {
         this.git.logger?.warn(
-          `Failed to write receipt: ${appendError.message}`,
+          `Failed to write receipt: ${appendError.message}`
         );
       }
     }
@@ -239,7 +239,7 @@ export class JobRunner {
       await this.git.noteAdd(
         executionRef,
         executionData,
-        await this.git.head(),
+        await this.git.head()
       );
     } catch (error) {
       this.git.logger?.warn(`Failed to record execution: ${error.message}`);
@@ -266,7 +266,7 @@ export class JobRunner {
       jobDef,
       currentHead,
       payload,
-      trigger,
+      trigger
     );
 
     // Create execution context
@@ -283,7 +283,7 @@ export class JobRunner {
     const lockFingerprint = await this.acquireLock(
       jobDef.id,
       fingerprint,
-      force,
+      force
     );
 
     let result;

@@ -166,7 +166,7 @@ export const TEMPLATE_MAP = {
   "git-operation": GIT_OPERATION_TEMPLATE,
   "template-operation": TEMPLATE_OPERATION_TEMPLATE,
   "pack-operation": PACK_OPERATION_TEMPLATE,
-  "simple": SIMPLE_OPERATION_TEMPLATE,
+  simple: SIMPLE_OPERATION_TEMPLATE,
 };
 
 /**
@@ -176,10 +176,11 @@ export const TEMPLATE_MAP = {
  */
 export function generateJobFromTemplate(jobWithValues) {
   const { meta, config, implementation, values } = jobWithValues;
-  
+
   // Get the appropriate template for the implementation type
-  const operationTemplate = TEMPLATE_MAP[implementation.type] || SIMPLE_OPERATION_TEMPLATE;
-  
+  const operationTemplate =
+    TEMPLATE_MAP[implementation.type] || SIMPLE_OPERATION_TEMPLATE;
+
   // Create the context for template rendering
   const context = {
     meta,
@@ -188,22 +189,31 @@ export function generateJobFromTemplate(jobWithValues) {
       ...implementation,
       body: operationTemplate,
       artifacts: implementation.returnValue?.artifacts || [],
-      successMessage: implementation.returnValue?.success || "Job completed successfully"
+      successMessage:
+        implementation.returnValue?.success || "Job completed successfully",
     },
-    values
+    values,
   };
-  
+
   // For now, return a simple template with placeholders
   // In a real implementation, this would use Nunjucks to render
-  return BASE_JOB_TEMPLATE
-    .replace(/\{\{\s*meta\.desc\s*\}\}/g, meta.desc)
+  return BASE_JOB_TEMPLATE.replace(/\{\{\s*meta\.desc\s*\}\}/g, meta.desc)
     .replace(/\{\{\s*meta\.tags\s*\|\s*safe\s*\}\}/g, JSON.stringify(meta.tags))
     .replace(/\{\{\s*meta\.author\s*\}\}/g, meta.author)
     .replace(/\{\{\s*meta\.version\s*\}\}/g, meta.version)
     .replace(/\{\{\s*config\.cron\s*\}\}/g, config?.cron || "")
-    .replace(/\{\{\s*config\.on\s*\|\s*safe\s*\}\}/g, config?.on ? JSON.stringify(config.on) : "")
+    .replace(
+      /\{\{\s*config\.on\s*\|\s*safe\s*\}\}/g,
+      config?.on ? JSON.stringify(config.on) : ""
+    )
     .replace(/\{\{\s*config\.schedule\s*\}\}/g, config?.schedule || "")
     .replace(/\{\{\s*implementation\.body\s*\}\}/g, operationTemplate)
-    .replace(/\{\{\s*implementation\.artifacts\s*\|\s*safe\s*\}\}/g, JSON.stringify(implementation.returnValue?.artifacts || []))
-    .replace(/\{\{\s*implementation\.successMessage\s*\}\}/g, implementation.returnValue?.success || "Job completed successfully");
+    .replace(
+      /\{\{\s*implementation\.artifacts\s*\|\s*safe\s*\}\}/g,
+      JSON.stringify(implementation.returnValue?.artifacts || [])
+    )
+    .replace(
+      /\{\{\s*implementation\.successMessage\s*\}\}/g,
+      implementation.returnValue?.success || "Job completed successfully"
+    );
 }

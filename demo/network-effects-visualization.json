@@ -1,0 +1,20 @@
+{
+  "title": "GitVan Network Effects Visualization",
+  "asciiDiagram": "\n╭─────────────────────────────────────────────────────────────╮\n│                    GITVAN ECOSYSTEM                        │\n│                 Network Effects Flow                       │\n╰─────────────────────────────────────────────────────────────╯\n\n            ┌─────────────┐\n            │    USER     │\n            │  (Entry)    │\n            └──────┬──────┘\n                   │\n                   ▼\n          ┌─────────────────┐\n          │   CLI INTERFACE │ ◄─── Single point of access\n          │  (Multiplier)   │      Creates familiarity\n          └─────────┬───────┘\n                    │\n         ┌──────────┼──────────┐\n         ▼          ▼          ▼\n    ┌─────────┐ ┌──────┐ ┌──────────┐\n    │  JOBS   │ │PACKS │ │TEMPLATES │\n    │(Execute)│ │(Bundle)│ │(Generate)│\n    └────┬────┘ └───┬──┘ └────┬─────┘\n         │          │         │\n         └─────┬────┴───┬─────┘\n               ▼        ▼\n         ┌──────────────────┐\n         │   MARKETPLACE    │ ◄─── Network Effects Hub\n         │ (Distribution)   │      More packs → More users\n         └─────────┬────────┘      More users → More packs\n                   │\n                   ▼\n            ┌─────────────┐\n            │ AI FEATURES │ ◄─── Improves with usage\n            │ (Learning)  │      Creates data moats\n            └─────────────┘\n\nNetwork Effect Multipliers:\n├── Direct: Users → Packs → Users (Viral Loop)\n├── Data: Usage → AI → Better UX → More Users\n├── Platform: Creators ↔ Consumers (Two-sided)\n└── Technical: Components amplify each other\n\nValue Equation: UserValue = BaseValue × (NetworkSize)^α\nWhere α > 1 (super-linear growth)\n",
+  "interactionMatrix": {
+    "CLI → Jobs": "Commands execute automation",
+    "Jobs → Templates": "Jobs generate files from templates",
+    "Templates → Packs": "Packs bundle templates",
+    "Packs → Marketplace": "Marketplace distributes packs",
+    "Marketplace → Users": "Users discover via marketplace",
+    "Users → AI": "Usage trains AI features",
+    "AI → Templates": "AI generates better templates",
+    "Git → All": "Git stores state for everything"
+  },
+  "valueMeasurement": {
+    "individualUser": "Base automation value",
+    "networkUser": "Base value + Network amplification",
+    "ecosystemUser": "Base + Network + Platform + Data effects",
+    "formula": "TotalValue = Σ(UserValue × NetworkMultiplier × PlatformEffects)"
+  }
+}

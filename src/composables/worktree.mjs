@@ -39,14 +39,26 @@ export function useWorktree() {
     async info() {
       try {
         const { execFile } = await import("node:child_process");
-        const { promisify } = await import("node:util");
-        const execFileAsync = promisify(execFile);
 
         const [gitDir, worktree, head, branch] = await Promise.all([
-          execFileAsync("git", ["rev-parse", "--git-dir"], { cwd: base.cwd, env: base.env }).then(r => r.stdout.trim()),
-          execFileAsync("git", ["rev-parse", "--show-toplevel"], { cwd: base.cwd, env: base.env }).then(r => r.stdout.trim()),
-          execFileAsync("git", ["rev-parse", "HEAD"], { cwd: base.cwd, env: base.env }).then(r => r.stdout.trim()),
-          execFileAsync("git", ["rev-parse", "--abbrev-ref", "HEAD"], { cwd: base.cwd, env: base.env }).then(r => r.stdout.trim()).catch(() => "HEAD"),
+          execFile("git", ["rev-parse", "--git-dir"], {
+            cwd: base.cwd,
+            env: base.env,
+          }).then((r) => r.stdout.trim()),
+          execFile("git", ["rev-parse", "--show-toplevel"], {
+            cwd: base.cwd,
+            env: base.env,
+          }).then((r) => r.stdout.trim()),
+          execFile("git", ["rev-parse", "HEAD"], {
+            cwd: base.cwd,
+            env: base.env,
+          }).then((r) => r.stdout.trim()),
+          execFile("git", ["rev-parse", "--abbrev-ref", "HEAD"], {
+            cwd: base.cwd,
+            env: base.env,
+          })
+            .then((r) => r.stdout.trim())
+            .catch(() => "HEAD"),
         ]);
 
         return {
@@ -64,9 +76,12 @@ export function useWorktree() {
       try {
         const { execFile } = await import("node:child_process");
         const { promisify } = await import("node:util");
-        const execFileAsync = promisify(execFile);
-        
-        await execFileAsync("git", ["rev-parse", "--is-inside-work-tree"], { cwd: base.cwd, env: base.env });
+        const execFile = promisify(execFile);
+
+        await execFile("git", ["rev-parse", "--is-inside-work-tree"], {
+          cwd: base.cwd,
+          env: base.env,
+        });
         return true;
       } catch {
         return false;
@@ -77,9 +92,13 @@ export function useWorktree() {
       try {
         const { execFile } = await import("node:child_process");
         const { promisify } = await import("node:util");
-        const execFileAsync = promisify(execFile);
-        
-        const output = await execFileAsync("git", ["worktree", "list", "--porcelain"], { cwd: base.cwd, env: base.env }).then(r => r.stdout);
+        const execFile = promisify(execFile);
+
+        const output = await execFile(
+          "git",
+          ["worktree", "list", "--porcelain"],
+          { cwd: base.cwd, env: base.env }
+        ).then((r) => r.stdout);
         const worktrees = [];
         let current = {};
 
@@ -97,32 +116,47 @@ export function useWorktree() {
         }
 
         if (current.path) worktrees.push(current);
-        
+
         // Mark main worktree
-        const mainPath = await execFileAsync("git", ["rev-parse", "--show-toplevel"], { cwd: base.cwd, env: base.env }).then(r => r.stdout.trim());
-        return worktrees.map(wt => ({
+        const mainPath = await execFile(
+          "git",
+          ["rev-parse", "--show-toplevel"],
+          { cwd: base.cwd, env: base.env }
+        ).then((r) => r.stdout.trim());
+        return worktrees.map((wt) => ({
           ...wt,
-          isMain: wt.path === mainPath
+          isMain: wt.path === mainPath,
         }));
       } catch {
         // Fallback to single worktree
         const { execFile } = await import("node:child_process");
         const { promisify } = await import("node:util");
-        const execFileAsync = promisify(execFile);
-        
+        const execFile = promisify(execFile);
+
         const [worktree, head, branch] = await Promise.all([
-          execFileAsync("git", ["rev-parse", "--show-toplevel"], { cwd: base.cwd, env: base.env }).then(r => r.stdout.trim()),
-          execFileAsync("git", ["rev-parse", "HEAD"], { cwd: base.cwd, env: base.env }).then(r => r.stdout.trim()),
-          execFileAsync("git", ["rev-parse", "--abbrev-ref", "HEAD"], { cwd: base.cwd, env: base.env }).then(r => r.stdout.trim()).catch(() => "HEAD"),
+          execFile("git", ["rev-parse", "--show-toplevel"], {
+            cwd: base.cwd,
+            env: base.env,
+          }).then((r) => r.stdout.trim()),
+          execFile("git", ["rev-parse", "HEAD"], {
+            cwd: base.cwd,
+            env: base.env,
+          }).then((r) => r.stdout.trim()),
+          execFile("git", ["rev-parse", "--abbrev-ref", "HEAD"], {
+            cwd: base.cwd,
+            env: base.env,
+          })
+            .then((r) => r.stdout.trim())
+            .catch(() => "HEAD"),
         ]);
-        
+
         return [
           {
             path: worktree,
             head: head,
             branch: branch,
-            isMain: true
-          }
+            isMain: true,
+          },
         ];
       }
     },
@@ -131,7 +165,7 @@ export function useWorktree() {
     async create(path, branch, { startFrom = "HEAD" } = {}) {
       const git = useGit();
       const args = ["worktree", "add"];
-      
+
       if (branch && !branch.startsWith("refs/")) {
         // Create new branch
         args.push("-b", branch);
@@ -139,9 +173,9 @@ export function useWorktree() {
         // Use existing branch/ref
         args.push(branch);
       }
-      
+
       args.push(path);
-      
+
       if (startFrom !== "HEAD") {
         args.push(startFrom);
       }
@@ -153,13 +187,13 @@ export function useWorktree() {
     async remove(path, { force = false } = {}) {
       const git = useGit();
       const args = ["worktree", "remove"];
-      
+
       if (force) {
         args.push("--force");
       }
-      
+
       args.push(path);
-      
+
       await git.runVoid(args);
     },
 
@@ -210,7 +244,7 @@ export function useWorktree() {
     async status() {
       const worktrees = await this.list();
       const current = await this.info();
-      
+
       return {
         current: {
           path: current.worktree,
@@ -219,7 +253,7 @@ export function useWorktree() {
         },
         all: worktrees,
         count: worktrees.length,
-        isMain: worktrees.find(wt => wt.isMain)?.path === current.worktree,
+        isMain: worktrees.find((wt) => wt.isMain)?.path === current.worktree,
       };
     },
 
@@ -232,7 +266,7 @@ export function useWorktree() {
     async getCurrent() {
       const info = await this.info();
       const worktrees = await this.list();
-      return worktrees.find(wt => wt.path === info.worktree);
+      return worktrees.find((wt) => wt.path === info.worktree);
     },
 
     async isMain() {

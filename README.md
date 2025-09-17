@@ -41,6 +41,55 @@ This creates a complete GitVan project structure with:
 gitvan run hello
 ```
 
+## 🧩 Composables API
+
+GitVan v2 provides a comprehensive set of composables for building automation workflows:
+
+### Core Composables
+- **`useGit`** - Git operations and repository management
+- **`useWorktree`** - Git worktree management  
+- **`useTemplate`** - Template rendering with Nunjucks
+
+### Job & Event Composables
+- **`useJob`** - Job lifecycle and execution management
+- **`useEvent`** - Event system and triggering
+- **`useSchedule`** - Cron and scheduling management
+
+### Infrastructure Composables
+- **`useReceipt`** - Receipt and audit management
+- **`useLock`** - Distributed locking
+- **`useRegistry`** - Job and event registry management
+
+### Example Usage
+
+```javascript
+import { withGitVan, useJob, useEvent, useSchedule } from './src/composables/index.mjs';
+
+await withGitVan({ cwd: process.cwd(), env: process.env }, async () => {
+  const job = useJob();
+  const event = useEvent();
+  const schedule = useSchedule();
+  
+  // Schedule a job
+  await schedule.add('daily-backup', '0 3 * * *', 'backup-job');
+  
+  // Register events
+  await event.register('backup-complete', {
+    name: 'Backup Complete',
+    type: 'custom',
+    job: 'notify-job'
+  });
+  
+  // Execute job with event triggering
+  const result = await job.run('backup-job');
+  if (result.success) {
+    await event.trigger('backup-complete', { result });
+  }
+});
+```
+
+**📚 Documentation**: [Composables API](docs/api/composables.md) | [Quick Reference](docs/api/composables-quick-reference.md) | [Examples](docs/examples/composables-examples.md)
+
 ## ✨ Features
 
 ### 🎯 **Core Capabilities**
@@ -48,6 +97,7 @@ gitvan run hello
 - **Template Engine**: Nunjucks-powered with front-matter support
 - **Job System**: Automated task execution with scheduling
 - **Pack System**: Reusable automation components
+- **Composables API**: Comprehensive composables for automation workflows
 - **AI Integration**: Generate jobs and templates with AI assistance
 
 ### 📋 **Front-Matter Templates**

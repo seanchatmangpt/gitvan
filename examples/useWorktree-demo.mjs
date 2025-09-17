@@ -37,8 +37,8 @@ async function demonstrateUseWorktree() {
     worktrees.forEach((wt, i) => {
       const status = wt.isMain ? " (main)" : "";
       console.log(`${i + 1}. ${wt.path}`);
-      console.log(`   Branch: ${wt.branch || 'detached'}`);
-      console.log(`   HEAD: ${wt.head?.slice(0, 8) || 'N/A'}${status}`);
+      console.log(`   Branch: ${wt.branch || "detached"}`);
+      console.log(`   HEAD: ${wt.head?.slice(0, 8) || "N/A"}${status}`);
     });
 
     // Worktree status
@@ -48,7 +48,7 @@ async function demonstrateUseWorktree() {
     console.log(`Current: ${status.current.path}`);
     console.log(`Branch: ${status.current.branch}`);
     console.log(`Total Worktrees: ${status.count}`);
-    console.log(`Is Main: ${status.isMain ? 'Yes' : 'No'}`);
+    console.log(`Is Main: ${status.isMain ? "Yes" : "No"}`);
 
     // Worktree key for locking
     console.log("\n🔐 Worktree Key (for locking):");

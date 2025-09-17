@@ -2,7 +2,7 @@
 // GitVan v2 — Event-Driven Job System
 // Git-native event predicates and triggers
 
-import { getEventJobs } from "./scan.mjs";
+import { scanJobs } from "./scan.mjs";
 import { JobRunner } from "./runner.mjs";
 import { loadOptions } from "../config/loader.mjs";
 import { useGit } from "../composables/git.mjs";
@@ -51,7 +51,7 @@ export class EventEvaluator {
    */
   async evaluateLogicalPredicate(operator, predicates, context) {
     const results = await Promise.all(
-      predicates.map((pred) => this.evaluatePredicates(pred, context)),
+      predicates.map((pred) => this.evaluatePredicates(pred, context))
     );
 
     if (operator === "any") {
@@ -78,7 +78,7 @@ export class EventEvaluator {
       }
       // For other objects, check if any property is true
       return Object.values(result).some((value) =>
-        typeof value === "boolean" ? value : this.isPredicateTrue(value),
+        typeof value === "boolean" ? value : this.isPredicateTrue(value)
       );
     }
     return false;
@@ -231,7 +231,7 @@ export class EventEvaluator {
 
       const files = changedFiles.split("\n").filter(Boolean);
       return patterns.some((pattern) =>
-        files.some((file) => this.matchesPattern(file, pattern)),
+        files.some((file) => this.matchesPattern(file, pattern))
       );
     } catch {
       return false;
@@ -255,7 +255,7 @@ export class EventEvaluator {
 
       const files = addedFiles.split("\n").filter(Boolean);
       return patterns.some((pattern) =>
-        files.some((file) => this.matchesPattern(file, pattern)),
+        files.some((file) => this.matchesPattern(file, pattern))
       );
     } catch {
       return false;
@@ -279,7 +279,7 @@ export class EventEvaluator {
 
       const files = modifiedFiles.split("\n").filter(Boolean);
       return patterns.some((pattern) =>
-        files.some((file) => this.matchesPattern(file, pattern)),
+        files.some((file) => this.matchesPattern(file, pattern))
       );
     } catch {
       return false;
@@ -387,7 +387,7 @@ export class EventJobRunner {
    */
   async loadEventJobs() {
     await this.init();
-    const jobs = await getEventJobs({ cwd: this.config.rootDir });
+    const jobs = await scanJobs({ cwd: this.config.rootDir });
 
     this.eventJobs.clear();
 
@@ -408,7 +408,7 @@ export class EventJobRunner {
       try {
         const results = await this.evaluator.evaluatePredicates(
           job.on,
-          context,
+          context
         );
 
         if (this.evaluator.isPredicateTrue(results)) {
@@ -417,7 +417,7 @@ export class EventJobRunner {
       } catch (error) {
         console.warn(
           `Failed to evaluate predicates for job ${jobId}:`,
-          error.message,
+          error.message
         );
       }
     }
@@ -470,7 +470,7 @@ export class EventJobRunner {
       try {
         const results = await this.evaluator.evaluatePredicates(
           job.on,
-          context,
+          context
         );
         jobResults[jobId] = results;
 

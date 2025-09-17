@@ -4,9 +4,6 @@
  */
 
 import { execFile } from "node:child_process";
-import { promisify } from "node:util";
-
-const exec = promisify(execFile);
 
 /**
  * Check if a command is allowed based on allowlist
@@ -22,11 +19,11 @@ function isAllowed(cmd, allowlist = []) {
 
 /**
  * Execute shell commands with allowlist validation
- * @param {string[]} cmds - Array of shell commands to execute
+ * @param {string[]} cmds - Array of shell commands to execFileute
  * @param {Object} options - Execution options
  * @param {Object} options.config - GitVan configuration
  * @param {Object} options.context - Execution context
- * @returns {Promise<Array>} Array of execution results
+ * @returns {Promise<Array>} Array of execFileution results
  */
 export async function runShellHooks(cmds = [], { config, context }) {
   const allowlist = config.templates?.shell?.allow || [];
@@ -44,7 +41,7 @@ export async function runShellHooks(cmds = [], { config, context }) {
 
     try {
       const [bin, ...args] = cmd.split(/\s+/);
-      const { stdout, stderr } = await exec(bin, args, {
+      const { stdout, stderr } = await execFile(bin, args, {
         cwd: context.root,
         env: {
           TZ: "UTC",

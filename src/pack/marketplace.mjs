@@ -278,24 +278,33 @@ export class Marketplace {
 
     // Use fast auto-detection instead of heavy registry operations
     const packs = detectPacks();
-    
+
     // Apply filters
     let filteredPacks = packs;
     if (options.filters) {
-      filteredPacks = packs.filter(pack => {
-        if (options.filters.capability && !pack.capabilities.includes(options.filters.capability)) {
+      filteredPacks = packs.filter((pack) => {
+        if (
+          options.filters.capability &&
+          !pack.capabilities.includes(options.filters.capability)
+        ) {
           return false;
         }
         if (options.filters.tag && !pack.tags.includes(options.filters.tag)) {
           return false;
         }
-        if (options.filters.category && !pack.manifest.categories?.includes(options.filters.category)) {
+        if (
+          options.filters.category &&
+          !pack.manifest.categories?.includes(options.filters.category)
+        ) {
           return false;
         }
         if (options.filters.author && pack.author !== options.filters.author) {
           return false;
         }
-        if (options.filters.license && pack.license !== options.filters.license) {
+        if (
+          options.filters.license &&
+          pack.license !== options.filters.license
+        ) {
           return false;
         }
         return true;
@@ -305,10 +314,11 @@ export class Marketplace {
     // Apply search query
     if (options.query) {
       const query = options.query.toLowerCase();
-      filteredPacks = filteredPacks.filter(pack => 
-        pack.name.toLowerCase().includes(query) ||
-        pack.description.toLowerCase().includes(query) ||
-        pack.tags.some(tag => tag.toLowerCase().includes(query))
+      filteredPacks = filteredPacks.filter(
+        (pack) =>
+          pack.name.toLowerCase().includes(query) ||
+          pack.description.toLowerCase().includes(query) ||
+          pack.tags.some((tag) => tag.toLowerCase().includes(query))
       );
     }
 
@@ -316,9 +326,9 @@ export class Marketplace {
     if (options.sort) {
       filteredPacks.sort((a, b) => {
         switch (options.sort) {
-          case 'name':
+          case "name":
             return a.name.localeCompare(b.name);
-          case 'updated':
+          case "updated":
             return (b.lastModified || 0) - (a.lastModified || 0);
           default:
             return 0;
@@ -334,7 +344,7 @@ export class Marketplace {
 
     // Format results
     const formatted = {
-      packs: paginatedPacks.map(pack => ({
+      packs: paginatedPacks.map((pack) => ({
         id: pack.id,
         name: pack.name,
         description: pack.description,
@@ -343,21 +353,23 @@ export class Marketplace {
         capabilities: pack.capabilities,
         author: pack.author,
         license: pack.license,
-        categories: pack.manifest.categories || []
+        categories: pack.manifest.categories || [],
       })),
       pagination: {
         page: page,
         limit: limit,
         total: filteredPacks.length,
-        pages: Math.ceil(filteredPacks.length / limit)
+        pages: Math.ceil(filteredPacks.length / limit),
       },
       facets: {
-        categories: [...new Set(packs.flatMap(p => p.manifest.categories || []))],
-        tags: [...new Set(packs.flatMap(p => p.tags))],
-        capabilities: [...new Set(packs.flatMap(p => p.capabilities))],
-        authors: [...new Set(packs.map(p => p.author).filter(Boolean))],
-        licenses: [...new Set(packs.map(p => p.license).filter(Boolean))]
-      }
+        categories: [
+          ...new Set(packs.flatMap((p) => p.manifest.categories || [])),
+        ],
+        tags: [...new Set(packs.flatMap((p) => p.tags))],
+        capabilities: [...new Set(packs.flatMap((p) => p.capabilities))],
+        authors: [...new Set(packs.map((p) => p.author).filter(Boolean))],
+        licenses: [...new Set(packs.map((p) => p.license).filter(Boolean))],
+      },
     };
 
     // Cache results

@@ -9,6 +9,9 @@
   },
   "scripts": {
     "test": "vitest",
+    "test:docs": "node scripts/test-docs.mjs",
+    "test:docs:verbose": "node scripts/test-docs.mjs --verbose",
+    "test:docs:dry-run": "node scripts/test-docs.mjs --dry-run",
     "build": "echo 'Build step'",
     "dev": "node bin/gitvan.mjs"
   },

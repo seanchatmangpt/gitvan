@@ -485,7 +485,7 @@ export default defineJob({
 
 ## 📚 **Resources**
 
-- [GitVan Configuration Guide](../../docs/configuration.md)
+- [GitVan Configuration Guide](../../reference/configuration.md)
 - [Environment Variables](../../docs/environment-variables.md)
 - [Security Best Practices](../../docs/security.md)
 

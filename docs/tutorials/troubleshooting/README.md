@@ -463,6 +463,6 @@ fi
 ## Next Steps
 
 - Review the [FAQ](./faq.md) for frequently asked questions
-- Check [Configuration Guide](../configuration.md) for setup optimization
+- Check [Configuration Guide](../reference/configuration.md) for setup optimization
 - See [Performance Tuning](../performance.md) for optimization tips
 - Visit [GitHub Issues](https://github.com/sac/gitvan/issues) for known issues

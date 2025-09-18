@@ -5,7 +5,8 @@
  * with the unified hooks system
  */
 
-import { glob } from "glob";
+import pkg from "glob";
+const { glob } = pkg;
 import { join } from "path";
 import { jobRegistry } from "./job-registry.mjs";
 

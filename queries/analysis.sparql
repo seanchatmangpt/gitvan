@@ -12,3 +12,4 @@ SELECT ?name ?age ?city ?department ?salary WHERE {
 ORDER BY ?name
 
 
+

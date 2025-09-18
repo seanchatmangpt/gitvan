@@ -343,3 +343,4 @@ Generate a complete GitVan template with graph capabilities:
 export const graphAwareTemplateGenerator = new GraphAwareTemplateGenerator();
 
 
+

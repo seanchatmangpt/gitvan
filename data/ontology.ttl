@@ -34,3 +34,4 @@ ex:salary rdf:type rdf:Property ;
     rdfs:range xsd:integer .
 
 
+

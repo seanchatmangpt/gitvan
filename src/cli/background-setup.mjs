@@ -16,17 +16,21 @@ export async function startBackgroundDaemon(cwd = process.cwd()) {
 
     // Resolve the local CLI path - never spawn bare "gitvan"
     const cliPath = join(__dirname, "..", "..", "bin", "gitvan.mjs");
-    
+
     // Spawn daemon as completely detached process using absolute Node + local CLI
-    const daemonProcess = spawn(process.execPath, [cliPath, "daemon", "start"], {
-      cwd: cwd,
-      detached: true,
-      stdio: ["ignore", "pipe", "pipe"],
-      env: {
-        ...process.env,
-        NODE_ENV: "production",
-      },
-    });
+    const daemonProcess = spawn(
+      process.execPath,
+      [cliPath, "daemon", "start"],
+      {
+        cwd: cwd,
+        detached: true,
+        stdio: ["ignore", "pipe", "pipe"],
+        env: {
+          ...process.env,
+          NODE_ENV: "production",
+        },
+      }
+    );
 
     // Handle process events
     daemonProcess.on("error", (error) => {
@@ -60,8 +64,14 @@ export async function installHooksAsync(cwd = process.cwd()) {
     consola.info("Installing Git hooks...");
 
     // Resolve the hook setup script path directly
-    const hookSetupPath = join(__dirname, "..", "..", "bin", "git-hooks-setup.mjs");
-    
+    const hookSetupPath = join(
+      __dirname,
+      "..",
+      "..",
+      "bin",
+      "git-hooks-setup.mjs"
+    );
+
     const hookProcess = spawn(process.execPath, [hookSetupPath, "setup"], {
       cwd: cwd,
       stdio: ["ignore", "pipe", "pipe"],
@@ -69,6 +79,7 @@ export async function installHooksAsync(cwd = process.cwd()) {
 
     let output = "";
     let errorOutput = "";
+    let completed = false;
 
     hookProcess.stdout?.on("data", (data) => {
       output += data.toString();
@@ -79,6 +90,7 @@ export async function installHooksAsync(cwd = process.cwd()) {
     });
 
     hookProcess.on("close", (code) => {
+      completed = true;
       if (code === 0) {
         consola.success("Git hooks installed successfully");
         resolve({ success: true, output });
@@ -89,13 +101,14 @@ export async function installHooksAsync(cwd = process.cwd()) {
     });
 
     hookProcess.on("error", (error) => {
+      completed = true;
       consola.error("Failed to install hooks:", error.message);
       reject(error);
     });
 
     // Timeout after 5 seconds (reduced from 10 since we're calling the script directly)
     setTimeout(() => {
-      if (!hookProcess.killed) {
+      if (!completed && !hookProcess.killed) {
         hookProcess.kill();
         consola.warn("Hook installation timed out");
         resolve({ success: false, error: "Timeout" });

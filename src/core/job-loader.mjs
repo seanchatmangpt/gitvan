@@ -5,8 +5,8 @@
  * with the unified hooks system
  */
 
-import { glob } from "glob";
-import { join } from "path";
+import { readdir } from "node:fs/promises";
+import { join, extname } from "path";
 import { jobRegistry } from "./job-registry.mjs";
 
 /**
@@ -25,12 +25,16 @@ export class JobLoader {
     console.log("🔍 GitVan: Loading jobs for unified hooks system");
 
     try {
-      // Find all job files
-      const jobFiles = await glob(join(this.jobsDir, "*.mjs"));
-      console.log(`   📁 Found ${jobFiles?.length || 0} job files`);
+      // Find all job files using readdir
+      const files = await readdir(this.jobsDir);
+      const jobFiles = files
+        .filter(file => extname(file) === '.mjs')
+        .map(file => join(this.jobsDir, file));
       
-      if (!jobFiles || !Array.isArray(jobFiles)) {
-        console.log("   ✅ No job files found or glob returned invalid result");
+      console.log(`   📁 Found ${jobFiles.length} job files`);
+      
+      if (jobFiles.length === 0) {
+        console.log("   ✅ No job files found");
         return;
       }
 

@@ -71,7 +71,7 @@ export class GitVanHookable {
   async processStagedChanges(context) {
     console.log("🔍 GitVan: Processing staged changes (surgical precision)");
 
-    await withGitVan({ cwd: context.cwd }, async () => {
+    return await withGitVan({ cwd: context.cwd }, async () => {
       const git = useGit();
       const unrouting = useUnrouting();
 
@@ -101,7 +101,7 @@ export class GitVanHookable {
   async processCommittedChanges(context) {
     console.log("🔍 GitVan: Processing committed changes (surgical precision)");
 
-    await withGitVan({ cwd: context.cwd }, async () => {
+    return await withGitVan({ cwd: context.cwd }, async () => {
       const git = useGit();
       const unrouting = useUnrouting();
 
@@ -137,7 +137,7 @@ export class GitVanHookable {
   async processPushChanges(context) {
     console.log("🔍 GitVan: Processing push changes (surgical precision)");
 
-    await withGitVan({ cwd: context.cwd }, async () => {
+    return await withGitVan({ cwd: context.cwd }, async () => {
       const git = useGit();
       const unrouting = useUnrouting();
 
@@ -171,7 +171,7 @@ export class GitVanHookable {
   async processMergedChanges(context) {
     console.log("🔍 GitVan: Processing merged changes (surgical precision)");
 
-    await withGitVan({ cwd: context.cwd }, async () => {
+    return await withGitVan({ cwd: context.cwd }, async () => {
       const git = useGit();
       const unrouting = useUnrouting();
 
@@ -207,7 +207,7 @@ export class GitVanHookable {
   async processCheckoutChanges(context) {
     console.log("🔍 GitVan: Processing checkout changes (surgical precision)");
 
-    await withGitVan({ cwd: context.cwd }, async () => {
+    return await withGitVan({ cwd: context.cwd }, async () => {
       const git = useGit();
       const unrouting = useUnrouting();
 

@@ -25,6 +25,22 @@ export const scaffoldCommand = defineCommand({
     }
   },
   async run({ args }) {
+    // Handle help case
+    if (args.scaffold === 'help') {
+      consola.info('GitVan Scaffold Command');
+      consola.info('Usage: gitvan scaffold <pack:scaffold>');
+      consola.info('');
+      consola.info('Options:');
+      consola.info('  --inputs <json>        JSON inputs for the scaffold');
+      consola.info('  --target <dir>         Target directory (defaults to current)');
+      consola.info('');
+      consola.info('Examples:');
+      consola.info('  gitvan scaffold next-minimal:page');
+      consola.info('  gitvan scaffold next-minimal:api --inputs \'{"name":"users"}\'');
+      consola.info('  gitvan scaffold nodejs-basic:component --target ./src');
+      return;
+    }
+
     try {
       const { ScaffoldRunner } = await import('../pack/scaffold.mjs');
       const runner = new ScaffoldRunner();

@@ -31,6 +31,23 @@ export const composeCommand = defineCommand({
     }
   },
   async run({ args }) {
+    // Handle help case
+    if (args.packs && args.packs.includes('help')) {
+      consola.info('GitVan Compose Command');
+      consola.info('Usage: gitvan compose <pack1> [pack2] ...');
+      consola.info('');
+      consola.info('Options:');
+      consola.info('  --inputs <json>        JSON inputs for packs');
+      consola.info('  --ignore-conflicts     Continue despite conflicts');
+      consola.info('  --continue-on-error    Continue if a pack fails');
+      consola.info('');
+      consola.info('Examples:');
+      consola.info('  gitvan compose next-minimal');
+      consola.info('  gitvan compose next-minimal nodejs-basic');
+      consola.info('  gitvan compose next-minimal --inputs \'{"name":"my-app"}\'');
+      return;
+    }
+
     const composer = new PackComposer({
       ignoreConflicts: args['ignore-conflicts'],
       continueOnError: args['continue-on-error']

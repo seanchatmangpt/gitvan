@@ -1,0 +1,123 @@
+{
+  "name": "GitVan Marketplace Scan Configuration",
+  "version": "1.0.0",
+  "description": "Configuration for marketplace pack scanning and indexing",
+  "scanConfig": {
+    "github": {
+      "organizations": [
+        "unjs",
+        "nuxt",
+        "vuejs",
+        "vitejs",
+        "rollup",
+        "webpack"
+      ],
+      "auth": "${GITHUB_TOKEN}",
+      "filters": {
+        "topics": ["gitvan", "pack", "template", "starter"],
+        "hasPackJson": true,
+        "minStars": 10
+      }
+    },
+    "gitlab": {
+      "groups": [
+        "gitlab-org",
+        "unjs"
+      ],
+      "auth": "${GITLAB_TOKEN}",
+      "filters": {
+        "topics": ["gitvan", "pack", "template"],
+        "hasPackJson": true
+      }
+    },
+    "registries": [
+      {
+        "name": "GitVan Official",
+        "url": "https://registry.gitvan.dev",
+        "auth": "${GITVAN_REGISTRY_TOKEN}"
+      },
+      {
+        "name": "UnJS Templates",
+        "url": "https://raw.githubusercontent.com/unjs/giget/main/templates",
+        "auth": null
+      }
+    ],
+    "local": {
+      "directories": [
+        "packs",
+        "packs/builtin",
+        "packs/remote"
+      ],
+      "recursive": true
+    },
+    "filters": {
+      "categories": [
+        "automation",
+        "template",
+        "starter",
+        "unplugin",
+        "build-tool"
+      ],
+      "tags": [
+        "gitvan",
+        "template",
+        "starter",
+        "unplugin",
+        "vite",
+        "webpack",
+        "rollup"
+      ],
+      "capabilities": [
+        "automation",
+        "template-processing",
+        "unplugin-integration",
+        "build-time"
+      ]
+    },
+    "schedule": {
+      "enabled": true,
+      "interval": "daily",
+      "time": "02:00",
+      "timezone": "UTC"
+    },
+    "notifications": {
+      "enabled": true,
+      "channels": [
+        "git-notes",
+        "console"
+      ],
+      "webhook": "${MARKETPLACE_WEBHOOK_URL}"
+    }
+  },
+  "indexing": {
+    "enabled": true,
+    "autoUpdate": true,
+    "cache": {
+      "enabled": true,
+      "ttl": 3600,
+      "maxSize": 1000
+    },
+    "search": {
+      "enabled": true,
+      "indexFields": [
+        "name",
+        "description",
+        "tags",
+        "capabilities",
+        "author"
+      ]
+    }
+  },
+  "unplugin": {
+    "enabled": true,
+    "autoGenerate": true,
+    "frameworks": [
+      "vite",
+      "webpack",
+      "rollup",
+      "esbuild"
+    ],
+    "outputDir": ".gitvan/unplugin",
+    "template": "unplugin-template.mjs"
+  }
+}

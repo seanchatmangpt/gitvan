@@ -1,0 +1,72 @@
+{
+  "id": "nextjs-cms-pack",
+  "name": "Next.js Static CMS Pack",
+  "version": "1.0.0",
+  "description": "A GitVan pack for creating Next.js static CMS with React components embedded in markdown pages",
+  "author": "GitVan Team",
+  "license": "MIT",
+  "tags": ["nextjs", "react", "cms", "markdown", "static", "github-pages"],
+  "capabilities": [
+    "project-scaffolding",
+    "markdown-processing",
+    "component-embedding",
+    "static-site-generation",
+    "github-pages-deployment"
+  ],
+  "provides": {
+    "jobs": [
+      {
+        "name": "cms:create-project",
+        "file": "jobs/create-cms-project.mjs",
+        "description": "Creates a complete Next.js CMS project structure"
+      },
+      {
+        "name": "cms:build",
+        "file": "jobs/build-cms.mjs",
+        "description": "Builds the static CMS site"
+      },
+      {
+        "name": "cms:dev",
+        "file": "jobs/dev-cms.mjs",
+        "description": "Starts the CMS development server"
+      },
+      {
+        "name": "cms:deploy",
+        "file": "jobs/deploy-cms.mjs",
+        "description": "Deploys to GitHub Pages"
+      },
+      {
+        "name": "cms:create-page",
+        "file": "jobs/create-page.mjs",
+        "description": "Creates a new markdown page with React components"
+      }
+    ],
+    "templates": [
+      "templates/next.config.mjs",
+      "templates/package.json",
+      "templates/tailwind.config.js",
+      "templates/tsconfig.json",
+      "templates/src/app/layout.tsx",
+      "templates/src/app/page.tsx",
+      "templates/src/app/globals.css",
+      "templates/src/components/MDXComponents.tsx",
+      "templates/src/components/Layout.tsx",
+      "templates/src/components/ContentRenderer.tsx",
+      "templates/src/lib/mdx.ts",
+      "templates/src/lib/utils.ts",
+      "templates/content/pages/index.md",
+      "templates/content/pages/about.md",
+      "templates/content/components/Button.tsx",
+      "templates/content/components/Card.tsx",
+      "templates/.github/workflows/deploy.yml",
+      "templates/public/.nojekyll"
+    ]
+  },
+  "gitvan": {
+    "packType": "cms-template",
+    "version": "2.0.0",
+    "compatibility": {
+      "gitvan": ">=2.0.0"
+    }
+  }
+}

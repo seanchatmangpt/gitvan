@@ -1,0 +1,42 @@
+{
+  "projectName": "GitVan",
+  "type": "monorepo",
+  "structure": {
+    "root": {
+      "package.json": "GitVan monorepo configuration with workspaces",
+      "pnpm-workspace.yaml": "PNPM workspace configuration",
+      "gitvan.config.js": "Main GitVan configuration file",
+      ".gitignore": "Comprehensive gitignore with GitVan specifics",
+      "README.md": "Complete project documentation"
+    },
+    "packages": {
+      "cli": "Command-line interface for GitVan",
+      "core": "Core GitVan engine with Git integration",
+      "daemon": "Background service for automation",
+      "llm": "LLM provider integrations",
+      "cookbook": "Recipe system for workflows",
+      "schemas": "TypeScript schemas and validation"
+    },
+    "features": [
+      "AI-powered commit analysis",
+      "Smart changelog generation",
+      "Development diary automation",
+      "Code review assistance", 
+      "Scheduled workflows",
+      "Event-driven actions",
+      "Multiple LLM support",
+      "Recipe system",
+      "Git hooks integration"
+    ],
+    "technologies": {
+      "packageManager": "pnpm",
+      "language": "TypeScript/JavaScript",
+      "module": "ESM",
+      "nodeVersion": ">=18.0.0",
+      "buildTool": "obuild",
+      "testing": "vitest",
+      "linting": "eslint + prettier"
+    }
+  },
+  "created": "2025-09-16T06:26:48Z"
+}

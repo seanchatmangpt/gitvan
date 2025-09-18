@@ -1,0 +1,258 @@
+{
+  "abi": "1.0",
+  "id": "gv/next-min",
+  "name": "Next.js Minimal",
+  "version": "2.0.0",
+  "description": "Minimal Next.js application with GitVan automation",
+  "tags": ["nextjs", "react", "docs", "starter"],
+  "license": "MIT",
+  "source": {
+    "url": "https://registry.gitvan.dev/packs/next-min/2.0.0.tar.gz",
+    "hash": "sha256:abcd1234567890..."
+  },
+  "requires": {
+    "gitvan": ">=2.0.0",
+    "node": ">=18.0.0",
+    "git": ">=2.30.0"
+  },
+  "detects": [
+    {
+      "kind": "file",
+      "pattern": "package.json",
+      "negate": true
+    }
+  ],
+  "modes": ["new-repo", "existing-repo"],
+  "inputs": [
+    {
+      "key": "projectName",
+      "type": "string",
+      "default": "my-app",
+      "prompt": "Project name?"
+    },
+    {
+      "key": "org",
+      "type": "string",
+      "default": "acme",
+      "prompt": "Organization name?"
+    },
+    {
+      "key": "appRouter",
+      "type": "boolean",
+      "default": true,
+      "prompt": "Use App Router?"
+    },
+    {
+      "key": "useTypescript",
+      "type": "boolean",
+      "default": true,
+      "prompt": "Use TypeScript?"
+    },
+    {
+      "key": "docsMdx",
+      "type": "boolean",
+      "default": false,
+      "prompt": "Enable MDX for documentation?"
+    },
+    {
+      "key": "ci",
+      "type": "enum",
+      "enum": ["none", "github", "gitlab"],
+      "default": "github",
+      "prompt": "CI/CD platform?"
+    }
+  ],
+  "capabilities": ["nextjs", "react", "docs-ops", "ci-cd"],
+  "dependencies": {
+    "npm": {
+      "dependencies": {
+        "next": "^14.0.0",
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0"
+      },
+      "devDependencies": {
+        "@types/node": "^20.0.0",
+        "@types/react": "^18.2.0",
+        "@types/react-dom": "^18.2.0",
+        "typescript": "^5.0.0",
+        "eslint": "^8.0.0",
+        "eslint-config-next": "^14.0.0"
+      },
+      "scripts": {
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start",
+        "lint": "next lint"
+      }
+    }
+  },
+  "provides": {
+    "templates": [
+      {
+        "src": "README.njk",
+        "target": "README.md",
+        "mode": "write"
+      },
+      {
+        "src": "package.njk",
+        "target": "package.json",
+        "mode": "write",
+        "when": "mode === 'new-repo'"
+      },
+      {
+        "src": "gitignore.njk",
+        "target": ".gitignore",
+        "mode": "skip"
+      },
+      {
+        "src": "next-config.njk",
+        "target": "next.config.js",
+        "mode": "skip"
+      },
+      {
+        "src": "page.njk",
+        "target": "{{ 'app' if inputs.appRouter else 'pages' }}/page.{{ 'tsx' if inputs.useTypescript else 'jsx' }}",
+        "mode": "write"
+      },
+      {
+        "src": "layout.njk",
+        "target": "{{ 'app' if inputs.appRouter else 'pages' }}/layout.{{ 'tsx' if inputs.useTypescript else 'jsx' }}",
+        "mode": "write",
+        "when": "inputs.appRouter"
+      }
+    ],
+    "files": [
+      {
+        "src": "public/favicon.ico",
+        "target": "public/favicon.ico",
+        "mode": "write"
+      },
+      {
+        "src": "styles/globals.css",
+        "target": "styles/globals.css",
+        "mode": "write"
+      }
+    ],
+    "jobs": [
+      {
+        "src": "changelog.mjs",
+        "id": "docs:changelog",
+        "targetDir": "jobs/docs"
+      },
+      {
+        "src": "release-notes.mjs",
+        "id": "docs:release-notes",
+        "targetDir": "jobs/docs"
+      },
+      {
+        "src": "dev-diary.mjs",
+        "id": "dev:diary",
+        "targetDir": "jobs/dev"
+      }
+    ],
+    "events": [
+      {
+        "src": "on-tag.evt.mjs",
+        "id": "release",
+        "targetDir": "events"
+      }
+    ],
+    "schedules": [
+      {
+        "job": "dev:diary",
+        "cron": "0 9 * * *",
+        "when": "inputs.docsMdx"
+      },
+      {
+        "job": "docs:changelog",
+        "cron": "0 0 * * 0"
+      }
+    ],
+    "scaffolds": [
+      {
+        "id": "next:page",
+        "title": "Create Next.js Page",
+        "description": "Generate a new page component",
+        "inputs": [
+          {
+            "key": "route",
+            "type": "string",
+            "prompt": "Page route (e.g., /about)?"
+          },
+          {
+            "key": "title",
+            "type": "string",
+            "prompt": "Page title?"
+          }
+        ],
+        "templates": [
+          {
+            "src": "scaffolds/page.njk",
+            "target": "{{ 'app' if inputs.appRouter else 'pages' }}{{ route }}/page.{{ 'tsx' if inputs.useTypescript else 'jsx' }}"
+          }
+        ]
+      },
+      {
+        "id": "next:api",
+        "title": "Create API Route",
+        "description": "Generate a new API endpoint",
+        "inputs": [
+          {
+            "key": "route",
+            "type": "string",
+            "prompt": "API route (e.g., /api/users)?"
+          }
+        ],
+        "templates": [
+          {
+            "src": "scaffolds/api.njk",
+            "target": "{{ 'app' if inputs.appRouter else 'pages' }}{{ route }}/route.{{ 'ts' if inputs.useTypescript else 'js' }}"
+          }
+        ]
+      }
+    ],
+    "transforms": [
+      {
+        "target": "package.json",
+        "kind": "json-merge",
+        "spec": {
+          "gitvan": {
+            "pack": "gv/next-min",
+            "version": "2.0.0"
+          }
+        }
+      }
+    ]
+  },
+  "postInstall": [
+    {
+      "action": "run",
+      "args": ["npm", "install"]
+    },
+    {
+      "action": "git",
+      "args": ["add", "."]
+    },
+    {
+      "action": "job",
+      "args": ["docs:changelog"]
+    }
+  ],
+  "uninstall": {
+    "reverseTransforms": true,
+    "paths": ["jobs/docs", "events"]
+  },
+  "compose": {
+    "dependsOn": [],
+    "conflictsWith": ["gv/next-full"],
+    "order": 1
+  },
+  "idempotency": {
+    "fingerprint": ["files", "templates", "jobs", "events"],
+    "conflict": "skip"
+  },
+  "audit": {
+    "receiptsRef": "refs/notes/gitvan/results",
+    "categories": ["bootstrap", "docs", "release"]
+  }
+}

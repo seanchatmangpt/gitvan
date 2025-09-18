@@ -1,0 +1,16 @@
+{
+  "job": {
+    "future-job": {
+      "file": "/Users/sac/gitvan/demo-simple-future/extensions/job/future-job.mjs",
+      "registered": "2025-09-17T07:43:46.868Z",
+      "enabled": true
+    }
+  },
+  "plugin": {
+    "future-plugin": {
+      "file": "/Users/sac/gitvan/demo-simple-future/extensions/plugin/future-plugin.mjs",
+      "registered": "2025-09-17T07:43:46.870Z",
+      "enabled": true
+    }
+  }
+}

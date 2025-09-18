@@ -1,0 +1,18 @@
+{
+  "name": "gitvan-playground",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "vite-node dev.mjs",
+    "list": "node -e \"import('./dev.mjs').then(m=>m.list())\"",
+    "run:changelog": "node -e \"import('./dev.mjs').then(m=>m.run('docs:changelog'))\"",
+    "run:simple": "node -e \"import('./dev.mjs').then(m=>m.run('test:simple'))\"",
+    "run:cleanup": "node -e \"import('./dev.mjs').then(m=>m.run('test:cleanup'))\"",
+    "daemon": "node -e \"import('./dev.mjs').then(m=>m.startDaemon())\"",
+    "status": "node -e \"import('./dev.mjs').then(m=>m.status())\""
+  },
+  "devDependencies": {
+    "vite-node": "^1.6.0",
+    "gitvan": "link:.."
+  }
+}

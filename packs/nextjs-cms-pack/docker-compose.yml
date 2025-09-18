@@ -1,0 +1,68 @@
+version: "3.8"
+
+services:
+  # Next.js CMS Development Environment
+  nextjs-cms:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "9000:3000" # Next.js dev server
+      - "9001:3001" # Alternative port
+    volumes:
+      - .:/workspace
+      - /workspace/node_modules # Prevent host node_modules from overriding
+      - /workspace/.next # Next.js cache
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_BASE_PATH=
+      - WATCHPACK_POLLING=true # For file watching in Docker
+    working_dir: /workspace
+    command: >
+      sh -c "
+        echo '🚀 Starting GitVan Next.js CMS Development Environment...' &&
+        echo '📦 Installing dependencies...' &&
+        npm install &&
+        echo '🌐 Starting Next.js development server...' &&
+        npm run dev
+      "
+    stdin_open: true
+    tty: true
+    networks:
+      - cms-network
+
+  # Optional: Database for CMS (if needed)
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: cms_dev
+      POSTGRES_USER: cms_user
+      POSTGRES_PASSWORD: cms_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - cms-network
+    profiles:
+      - database # Only start with --profile database
+
+  # Optional: Redis for caching (if needed)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - cms-network
+    profiles:
+      - cache # Only start with --profile cache
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  cms-network:
+    driver: bridge

@@ -1,0 +1,36 @@
+{
+  "abi": "1.0",
+  "id": "nextjs-github-pack",
+  "name": "Next.js GitHub Pack",
+  "version": "1.0.0",
+  "description": "A GitVan pack for creating Next.js projects with jobs only, designed for GitHub distribution",
+  "author": "GitVan Team",
+  "license": "MIT",
+  "tags": ["nextjs", "react", "starter", "jobs-only", "github"],
+  "capabilities": [
+    "project-scaffolding",
+    "job-execution",
+    "github-distribution"
+  ],
+  "provides": {
+    "jobs": [
+      {
+        "name": "create-next-app",
+        "file": "create-next-app.job.mjs",
+        "description": "Creates a new Next.js project structure"
+      },
+      {
+        "name": "start-next-app",
+        "file": "start-next-app.job.mjs",
+        "description": "Starts the Next.js development server"
+      }
+    ]
+  },
+  "gitvan": {
+    "packType": "starter",
+    "version": "2.0.0",
+    "compatibility": {
+      "gitvan": ">=2.0.0"
+    }
+  }
+}

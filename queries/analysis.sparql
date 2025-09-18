@@ -1,0 +1,17 @@
+PREFIX ex: <https://example.org/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT ?name ?age ?city ?department ?salary WHERE {
+    ?person rdf:type ex:Person ;
+            ex:name ?name ;
+            ex:age ?age ;
+            ex:city ?city ;
+            ex:department ?department ;
+            ex:salary ?salary .
+}
+ORDER BY ?name
+
+
+
+
+

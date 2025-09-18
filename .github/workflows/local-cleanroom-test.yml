@@ -1,0 +1,161 @@
+name: Local Clean Room Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to test (e.g., 2.0.0)"
+        required: true
+        default: "2.0.0"
+
+jobs:
+  local-test:
+    name: Local Clean Room Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Get Version
+        id: version
+        run: |
+          echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+
+      - name: Create Clean Test Directory
+        run: |
+          mkdir -p /tmp/gitvan-test
+          cd /tmp/gitvan-test
+          echo "Test directory: $(pwd)"
+
+      - name: Install GitVan from npm
+        run: |
+          cd /tmp/gitvan-test
+          echo "Installing gitvan@${{ steps.version.outputs.version }} with npm"
+          npm init -y
+          npm install gitvan@${{ steps.version.outputs.version }}
+
+      - name: Verify Installation
+        run: |
+          cd /tmp/gitvan-test
+          echo "Verifying installation..."
+
+          CLI_PATH="./node_modules/.bin/gitvan"
+
+          if [ ! -f "$CLI_PATH" ]; then
+            echo "❌ GitVan CLI not found at $CLI_PATH"
+            exit 1
+          fi
+
+          if [ ! -x "$CLI_PATH" ]; then
+            echo "❌ GitVan CLI not executable at $CLI_PATH"
+            exit 1
+          fi
+
+          echo "✅ GitVan CLI found and executable"
+
+      - name: Test Version Command
+        run: |
+          cd /tmp/gitvan-test
+          echo "Testing version command..."
+
+          VERSION_OUTPUT=$(npx gitvan --version)
+          echo "Version output: $VERSION_OUTPUT"
+
+          if [ "$VERSION_OUTPUT" != "${{ steps.version.outputs.version }}" ]; then
+            echo "❌ Version mismatch! Expected: ${{ steps.version.outputs.version }}, Got: $VERSION_OUTPUT"
+            exit 1
+          fi
+
+          echo "✅ Version command works correctly"
+
+      - name: Test Basic Commands
+        run: |
+          cd /tmp/gitvan-test
+          echo "Testing basic commands..."
+
+          # Initialize git repo
+          git init
+          git config user.name "Test User"
+          git config user.email "test@example.com"
+
+          # Test help command
+          npx gitvan help > /dev/null
+          echo "✅ Help command works"
+
+      - name: Verify Dependencies
+        run: |
+          cd /tmp/gitvan-test
+          echo "Verifying all runtime dependencies are installed..."
+
+          # Check that all required dependencies are present
+          REQUIRED_DEPS=(
+            "@babel/parser"
+            "@babel/traverse"
+            "ai"
+            "c12"
+            "cacache"
+            "citty"
+            "consola"
+            "defu"
+            "fuse.js"
+            "giget"
+            "gray-matter"
+            "hookable"
+            "inflection"
+            "klona"
+            "lru-cache"
+            "minimatch"
+            "node-cron"
+            "nunjucks"
+            "ollama"
+            "pathe"
+            "prompts"
+            "semver"
+            "toml"
+            "unctx"
+            "zod"
+          )
+
+          for dep in "${REQUIRED_DEPS[@]}"; do
+            if ! npm list "$dep" > /dev/null 2>&1; then
+              echo "❌ Missing dependency: $dep"
+              exit 1
+            fi
+          done
+
+          echo "✅ All runtime dependencies are present"
+
+      - name: Test Package Contents
+        run: |
+          cd /tmp/gitvan-test
+          echo "Testing package contents..."
+
+          # Check that bin files are present
+          if [ ! -f "./node_modules/gitvan/bin/gitvan.mjs" ]; then
+            echo "❌ Main CLI file missing"
+            exit 1
+          fi
+
+          if [ ! -f "./node_modules/gitvan/bin/git-hook-handler.mjs" ]; then
+            echo "❌ Hook handler missing"
+            exit 1
+          fi
+
+          if [ ! -f "./node_modules/gitvan/bin/git-hooks-setup.mjs" ]; then
+            echo "❌ Hook setup missing"
+            exit 1
+          fi
+
+          echo "✅ All required files are present"
+
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -rf /tmp/gitvan-test
+          echo "Cleanup completed"

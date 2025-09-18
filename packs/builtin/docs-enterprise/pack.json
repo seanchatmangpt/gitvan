@@ -1,0 +1,62 @@
+{
+  "abi": "1.0",
+  "id": "builtin/docs-enterprise",
+  "name": "Enterprise Documentation System",
+  "version": "1.0.0",
+  "description": "Complete enterprise documentation system with MDBook, changelog generation, and release management",
+  "tags": [
+    "documentation",
+    "enterprise",
+    "mdbook",
+    "changelog",
+    "builtin"
+  ],
+  "capabilities": [
+    "scaffold",
+    "documentation",
+    "automation"
+  ],
+  "author": "GitVan",
+  "license": "MIT",
+  "modes": [
+    "scaffold",
+    "dev"
+  ],
+  "requires": {
+    "node": ">=18.0.0"
+  },
+  "inputs": [
+    {
+      "key": "project_name",
+      "type": "string",
+      "default": "my-docs",
+      "prompt": "Documentation project name"
+    },
+    {
+      "key": "include_changelog",
+      "type": "boolean",
+      "default": true,
+      "prompt": "Include changelog generation?"
+    },
+    {
+      "key": "include_releases",
+      "type": "boolean",
+      "default": true,
+      "prompt": "Include release management?"
+    }
+  ],
+  "provides": {
+    "jobs": [
+      {
+        "src": "create-docs-system.mjs",
+        "id": "create-docs-system"
+      }
+    ]
+  },
+  "postInstall": [
+    {
+      "action": "run",
+      "args": ["npm", "install"]
+    }
+  ]
+}

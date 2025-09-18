@@ -1,0 +1,115 @@
+@startuml GitVan v2 Component Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title GitVan v2 Components - Single Package with 5 Exec Types & Composables
+
+Container(cli, "CLI Interface", "Citty")
+Container(daemon, "Daemon Process", "Node.js")
+
+Container_Boundary(job_engine, "Job Execution Engine") {
+    Component(exec_dispatcher, "Exec Dispatcher", "runExec()", "Routes to appropriate executor\nbased on exec type")
+    Component(cli_executor, "CLI Executor", "spawnSync", "Executes shell commands\nwith environment variables")
+    Component(js_executor, "JS Executor", "dynamic import", "Loads and executes\nJavaScript modules")
+    Component(llm_executor, "LLM Executor", "fetch", "Makes HTTP calls\nto Ollama API")
+    Component(tmpl_executor, "Template Executor", "Nunjucks", "Renders templates\nwith Git context")
+    Component(job_executor, "Job Executor", "registry lookup", "Executes named jobs\nfrom job registry")
+}
+
+Container_Boundary(composables_layer, "Composables Layer (unctx)") {
+    Component(git_composable, "Git Composable", "useGit()", "Worktree-aware Git operations\nrepoRun() vs run() for context")
+    Component(template_composable, "Template Composable", "useTemplate()", "Nunjucks rendering utilities\nwith preconfigured environment")
+    Component(exec_composable, "Exec Composable", "useExec()", "Programmatic execution\nwrappers for all exec types")
+    Component(context_manager, "Context Manager", "withGitVan()", "unctx context injection\nfor all composables")
+}
+
+Container_Boundary(event_system, "Event System") {
+    Component(job_loader, "Job Loader", "loadJobsFromFS()", "Filesystem discovery\nof jobs/**/*.mjs files")
+    Component(event_loader, "Event Loader", "loadEventsFromFS()", "Filesystem discovery\nof events/**/*.mjs files")
+    Component(event_matcher, "Event Matcher", "eventFires()", "Regex pattern matching\nfor Git events")
+    Component(commit_analyzer, "Commit Analyzer", "commitMeta()", "Extracts Git commit\nmetadata for matching")
+}
+
+Container_Boundary(worktree_support, "Worktree Support") {
+    Component(worktree_manager, "Worktree Manager", "listWorktrees()", "Git worktree discovery\nand management")
+    Component(lock_manager, "Lock Manager", "acquireLock()", "Per-worktree locking\nusing Git refs")
+    Component(receipt_writer, "Receipt Writer", "writeReceipt()", "Writes execution results\nto Git notes with worktree metadata")
+}
+
+ContainerDb(git_repo, "Git Repository", "Git + Worktrees")
+ContainerDb(templates, "Templates", "*.njk files")
+ContainerDb(jobs, "Jobs", "jobs/**/*.mjs")
+ContainerDb(events, "Events", "events/**/*.mjs")
+
+' CLI and Daemon usage
+Rel(cli, exec_dispatcher, "Single job execution")
+Rel(daemon, event_matcher, "Event checking")
+Rel(daemon, lock_manager, "Lock acquisition")
+Rel(daemon, exec_dispatcher, "Job execution")
+Rel(daemon, receipt_writer, "Result recording")
+
+' Exec dispatcher routes
+Rel(exec_dispatcher, cli_executor, "exec: 'cli'")
+Rel(exec_dispatcher, js_executor, "exec: 'js'")
+Rel(exec_dispatcher, llm_executor, "exec: 'llm'")
+Rel(exec_dispatcher, tmpl_executor, "exec: 'tmpl'")
+Rel(exec_dispatcher, job_executor, "exec: 'job'")
+
+' Composables usage
+Rel(tmpl_executor, template_composable, "Uses for rendering")
+Rel(js_executor, context_manager, "Runs in context")
+Rel(git_composable, worktree_manager, "Worktree operations")
+
+' Event system flows
+Rel(event_loader, events, "Loads definitions")
+Rel(job_loader, jobs, "Loads definitions")
+Rel(event_matcher, commit_analyzer, "Gets commit metadata")
+Rel(commit_analyzer, git_composable, "Uses Git operations")
+
+' Template and data flows
+Rel(template_composable, templates, "Loads .njk files")
+Rel(lock_manager, git_repo, "Manages lock refs")
+Rel(receipt_writer, git_repo, "Writes to Git notes")
+Rel(git_composable, git_repo, "Git operations")
+
+note right of exec_dispatcher
+  **5 Exec Types in v2:**
+  • 'cli' - Shell commands with env
+  • 'js' - Dynamic module imports
+  • 'llm' - Ollama API calls
+  • 'job' - Named job execution
+  • 'tmpl' - Nunjucks template rendering
+
+  **Execution Flow:**
+  1. Parse ExecSpec
+  2. Route to appropriate executor
+  3. Execute with GitVan context
+  4. Return standardized result
+end note
+
+note left of composables_layer
+  **unctx Composables Pattern:**
+  • Context injection via withGitVan()
+  • useGit() - worktree-aware operations
+  • useTemplate() - preconfigured Nunjucks
+  • useExec() - programmatic execution
+
+  **Context Data:**
+  • root, repoRoot, worktreeRoot
+  • env, now(), jobs registry
+  • worktree: { id, branch }
+  • LLM configuration
+end note
+
+note bottom of worktree_support
+  **Worktree Features:**
+  • Per-worktree daemon execution
+  • Worktree-scoped lock refs:
+    refs/gitvan/locks/<wt>/<event>/<sha>
+  • Receipts include worktree metadata
+  • Git operations context-aware
+  • Independent execution per worktree
+end note
+
+@enduml

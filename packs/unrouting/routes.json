@@ -1,0 +1,78 @@
+[
+  {
+    "id": "jd-intake",
+    "pattern": "inbox/jobs/[slug]/jd.md",
+    "batchKey": ":slug",
+    "jobs": [
+      { "name": "intake:jd", "with": { "slug": ":slug", "path": ":__file" } },
+      { "name": "pitch:plan", "with": { "slug": ":slug" } },
+      { "name": "pitch:compose", "with": { "slug": ":slug" } }
+    ]
+  },
+  {
+    "id": "script-edit",
+    "pattern": "pitch/[slug]/script.mdx",
+    "batchKey": ":slug",
+    "jobs": [
+      { "name": "pitch:compose", "with": { "slug": ":slug" } }
+    ]
+  },
+  {
+    "id": "persona-mode",
+    "pattern": "pitch/[slug]/modes/[persona].json",
+    "batchKey": ":slug",
+    "jobs": [
+      { "name": "pitch:plan", "with": { "slug": ":slug", "persona": ":persona" } },
+      { "name": "pitch:compose", "with": { "slug": ":slug" } }
+    ]
+  },
+  {
+    "id": "prepared",
+    "pattern": "ops/[slug]/prepared.touch",
+    "batchKey": ":slug",
+    "jobs": [
+      { "name": "pitch:compose", "with": { "slug": ":slug" } }
+    ]
+  },
+  {
+    "id": "meeting",
+    "pattern": "ops/[slug]/meeting/[stamp].touch",
+    "batchKey": ":slug",
+    "jobs": [
+      { "name": "pitch:render:docx", "with": { "slug": ":slug", "stamp": ":stamp" } },
+      { "name": "pitch:render:pdf", "with": { "slug": ":slug", "stamp": ":stamp" } },
+      { "name": "pitch:package", "with": { "slug": ":slug", "stamp": ":stamp" } }
+    ]
+  },
+  {
+    "id": "sent",
+    "pattern": "ops/[slug]/sent.touch",
+    "batchKey": ":slug",
+    "jobs": [
+      { "name": "site:deploy", "with": { "slug": ":slug" } },
+      { "name": "outreach:draft", "with": { "slug": ":slug" } },
+      { "name": "pitch:package", "with": { "slug": ":slug" } }
+    ]
+  },
+  {
+    "id": "evidence",
+    "pattern": "evidence/[slug]/[...artifact]",
+    "batchKey": ":slug",
+    "jobs": [
+      { "name": "artifact:attach", "with": { "slug": ":slug", "artifact": ":artifact" } }
+    ]
+  },
+  {
+    "id": "page-variants",
+    "pattern": "sites/[slug]/pages/[section]@[view].[mode].mdx",
+    "batchKey": ":slug",
+    "jobs": [
+      { "name": "pitch:compose", "with": { "slug": ":slug", "section": ":section", "view": ":view", "mode": ":mode" } }
+    ]
+  }
+]
+
+
+
+
+

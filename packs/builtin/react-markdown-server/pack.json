@@ -1,0 +1,72 @@
+{
+  "abi": "1.0",
+  "id": "builtin/react-markdown-server",
+  "name": "React Markdown Components Server",
+  "version": "1.0.0",
+  "description": "Complete React markdown rendering system with custom components and server-side rendering",
+  "tags": [
+    "react",
+    "markdown",
+    "ssr",
+    "components",
+    "builtin"
+  ],
+  "categories": [
+    "react",
+    "api"
+  ],
+  "capabilities": [
+    "scaffold",
+    "ssr",
+    "components"
+  ],
+  "author": "GitVan",
+  "license": "MIT",
+  "modes": [
+    "scaffold",
+    "dev"
+  ],
+  "requires": {
+    "node": ">=18.0.0"
+  },
+  "inputs": [
+    {
+      "key": "project_name",
+      "type": "string",
+      "default": "markdown-server",
+      "prompt": "Project name"
+    },
+    {
+      "key": "use_typescript",
+      "type": "boolean",
+      "default": true,
+      "prompt": "Use TypeScript?"
+    },
+    {
+      "key": "include_ssr",
+      "type": "boolean",
+      "default": true,
+      "prompt": "Include server-side rendering?"
+    },
+    {
+      "key": "port",
+      "type": "string",
+      "default": "3000",
+      "prompt": "Server port"
+    }
+  ],
+  "provides": {
+    "jobs": [
+      {
+        "src": "create-markdown-server.mjs",
+        "id": "create-markdown-server"
+      }
+    ]
+  },
+  "postInstall": [
+    {
+      "action": "run",
+      "args": ["npm", "install"]
+    }
+  ]
+}

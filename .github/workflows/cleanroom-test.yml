@@ -1,0 +1,57 @@
+name: Clean Room Test
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to test"
+        required: true
+        default: "2.0.0"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Get Version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            VERSION=${GITHUB_REF#refs/tags/v}
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Test Directory
+        run: |
+          mkdir -p /tmp/test
+          cd /tmp/test
+          echo "Test directory: $(pwd)"
+
+      - name: Install GitVan
+        run: |
+          cd /tmp/test
+          npm init -y
+          npm install gitvan@${{ steps.version.outputs.version }}
+
+      - name: Test Installation
+        run: |
+          cd /tmp/test
+          npx gitvan --version
+          npx gitvan help
+
+      - name: Cleanup
+        if: always()
+        run: rm -rf /tmp/test

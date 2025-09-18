@@ -1,0 +1,1 @@
+export const defineJob = (def) => def

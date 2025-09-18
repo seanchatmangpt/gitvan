@@ -1,0 +1,52 @@
+@startuml GitVan v2 Context Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+LAYOUT_WITH_LEGEND()
+
+title GitVan v2 System Context - Git-Native Automation with Templates & Composables
+
+Person(developer, "Developer", "Creates jobs, defines events, writes templates")
+Person(devops, "DevOps Engineer", "Manages daemon, configures schedules, monitors worktrees")
+Person(auditor, "Security Auditor", "Reviews execution receipts stored in Git notes")
+
+System(gitvan_v2, "GitVan v2", "Single-package Git-native automation system\nwith Nunjucks templates, composables, and worktree support")
+
+System_Ext(git_repo, "Git Repository", "Source code with worktrees, branches, and Git notes\nStores jobs, events, templates, and execution receipts")
+System_Ext(ollama, "Ollama LLM", "Local language model service\nfor AI-powered job execution")
+System_Ext(filesystem, "File System", "Nunjucks templates, job definitions\nartifacts, and configuration files")
+System_Ext(external_tools, "External CLI Tools", "System commands, build tools\nexternal executables")
+
+Rel(developer, gitvan_v2, "Defines jobs", "gitvan job run changelog")
+Rel(developer, gitvan_v2, "Creates templates", "templates/changelog.njk")
+Rel(devops, gitvan_v2, "Manages daemon", "gitvan daemon start --worktrees all")
+Rel(auditor, gitvan_v2, "Reviews receipts", "git notes show refs/notes/gitvan/results")
+
+Rel(gitvan_v2, git_repo, "Executes in worktrees", "Git operations, notes, refs")
+Rel(gitvan_v2, ollama, "LLM execution", "HTTP API with prompts")
+Rel(gitvan_v2, filesystem, "Template rendering", "Nunjucks files, artifacts")
+Rel(gitvan_v2, external_tools, "CLI execution", "Shell commands")
+
+Rel(git_repo, gitvan_v2, "Event triggers", "Commits, merges, tags")
+
+note right of gitvan_v2
+  **GitVan v2 Features:**
+  • Single package (NO monorepo)
+  • 5 exec types: cli, js, llm, job, tmpl
+  • Nunjucks template engine
+  • unctx composables pattern
+  • Per-worktree daemon execution
+  • Git refs for locking per worktree
+  • Deterministic, signed receipts
+end note
+
+note left of git_repo
+  **Git Storage v2:**
+  • Jobs: jobs/**/*.mjs files
+  • Events: events/**/*.mjs files
+  • Templates: templates/**/*.njk files
+  • Receipts: refs/notes/gitvan/results
+  • Locks: refs/gitvan/locks/<wt>/<event>/<sha>
+  • Schedules: refs/gitvan/schedule/*
+end note
+
+@enduml

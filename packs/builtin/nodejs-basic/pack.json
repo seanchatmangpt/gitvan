@@ -1,0 +1,25 @@
+{
+  "id": "builtin/nodejs-basic",
+  "name": "Node.js Basic Starter",
+  "version": "1.0.0",
+  "description": "A basic Node.js application starter pack",
+  "tags": [
+    "nodejs",
+    "javascript",
+    "basic",
+    "builtin"
+  ],
+  "capabilities": [
+    "scaffold",
+    "development"
+  ],
+  "author": "GitVan",
+  "license": "MIT",
+  "modes": [
+    "scaffold",
+    "dev"
+  ],
+  "requires": {
+    "node": ">=16.0.0"
+  }
+}

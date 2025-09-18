@@ -1,0 +1,64 @@
+{
+  "abi": "1.0",
+  "id": "builtin/next-minimal",
+  "name": "Next.js Minimal Starter",
+  "version": "1.0.0",
+  "description": "A minimal Next.js application starter pack",
+  "tags": [
+    "nextjs",
+    "react",
+    "minimal",
+    "builtin"
+  ],
+  "categories": [
+    "next",
+    "react"
+  ],
+  "capabilities": [
+    "scaffold",
+    "development"
+  ],
+  "author": "GitVan",
+  "license": "MIT",
+  "modes": [
+    "scaffold",
+    "dev"
+  ],
+  "requires": {
+    "node": ">=18.0.0"
+  },
+  "inputs": [
+    {
+      "key": "project_name",
+      "type": "string",
+      "default": "my-nextjs-app",
+      "prompt": "Project name"
+    },
+    {
+      "key": "use_typescript",
+      "type": "boolean",
+      "default": true,
+      "prompt": "Use TypeScript?"
+    },
+    {
+      "key": "port",
+      "type": "string",
+      "default": "3000",
+      "prompt": "Development port"
+    }
+  ],
+  "provides": {
+    "jobs": [
+      {
+        "src": "create-nextjs-project.mjs",
+        "id": "create-nextjs-project"
+      }
+    ]
+  },
+  "postInstall": [
+    {
+      "action": "run",
+      "args": ["npm", "install"]
+    }
+  ]
+}

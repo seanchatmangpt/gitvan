@@ -1,0 +1,63 @@
+name: Local Package Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test-local-package:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build package
+        run: npm run build
+
+      - name: Pack package
+        run: npm pack
+
+      - name: Create test directory
+        run: |
+          mkdir -p /tmp/test-package
+          cp gitvan-2.0.0.tgz /tmp/test-package/
+          cd /tmp/test-package
+          echo "Test directory: $(pwd)"
+
+      - name: Install packed package
+        run: |
+          cd /tmp/test-package
+          npm init -y
+          npm install gitvan-2.0.0.tgz
+
+      - name: Test installation
+        run: |
+          cd /tmp/test-package
+          npx gitvan --version
+          npx gitvan help
+
+      - name: Test basic functionality
+        run: |
+          cd /tmp/test-package
+          git init
+          git config user.name "Test User"
+          git config user.email "test@example.com"
+          npx gitvan init --help
+
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -rf /tmp/test-package
+          rm -f gitvan-2.0.0.tgz

@@ -1,0 +1,114 @@
+{
+  "title": "GitVan v2: Investor Network Effects Dashboard",
+  "executiveSummary": {
+    "thesis": "Developer automation platform with strong network effects and high switching costs",
+    "traction": "Ecosystem validation: 75% success rate",
+    "moats": [
+      "Network effects",
+      "Switching costs",
+      "Data advantages",
+      "Ecosystem lock-in"
+    ],
+    "scalability": "Multi-sided marketplace with viral growth loops"
+  },
+  "keyMetrics": {
+    "ecosystemHealth": {
+      "componentIntegration": "8 core components fully interconnected",
+      "networkInteractions": 12,
+      "valueAcceleration": "Compound value increases with ecosystem size",
+      "userStickiness": "Git-native approach creates high switching costs"
+    },
+    "networkEffects": {
+      "directNetwork": "Users → Packs → More Users (viral loop)",
+      "dataNetwork": "Usage → AI Improvement → Better UX",
+      "platformNetwork": "Creators ↔ Consumers (two-sided market)",
+      "technicalNetwork": "Components amplify each other's value"
+    },
+    "scalabilityIndicators": {
+      "technicalScaling": "Microservices architecture ready for scale",
+      "economicScaling": "Marketplace economics with network effects",
+      "operationalScaling": "Automation reduces operational overhead",
+      "marketScaling": "Developer tools market growing 15% annually"
+    }
+  },
+  "competitiveAdvantages": {
+    "uniquePositioning": {
+      "gitNative": "Only automation platform built Git-first",
+      "aiIntegrated": "AI throughout the stack, not bolt-on",
+      "packEcosystem": "Composable automation, not monolithic tools",
+      "networkEffects": "Multi-sided marketplace creates moats"
+    },
+    "switchingCosts": {
+      "technical": "Git repositories become dependent on GitVan state",
+      "behavioral": "Teams learn GitVan workflows and commands",
+      "data": "Custom packs and templates represent significant investment",
+      "network": "Pack dependencies create ecosystem lock-in"
+    },
+    "economicMoats": {
+      "networkEffects": "Value increases super-linearly with users",
+      "dataAdvantages": "AI improves with usage, creating performance gaps",
+      "ecosystemLockIn": "Pack dependencies make switching painful",
+      "brandingNetwork": "Early users become advocates and contributors"
+    }
+  },
+  "growthVectors": {
+    "viral": {
+      "packSharing": "Users share packs → new users discover GitVan",
+      "gitIntegration": "GitVan files in repos → team adoption",
+      "automationShowcase": "Impressive automation → word-of-mouth",
+      "aiFeatures": "AI-generated content includes GitVan attribution"
+    },
+    "expansion": {
+      "horizontalScaling": "New use cases via pack ecosystem",
+      "verticalScaling": "Enterprise features and compliance packs",
+      "geographicScaling": "Developer tools scale globally",
+      "productScaling": "Additional dev tools in ecosystem"
+    },
+    "retention": {
+      "habitFormation": "Daily CLI usage creates habits",
+      "valueAccrual": "Custom automation represents user investment",
+      "networkDependency": "Pack ecosystem creates switching costs",
+      "continuousImprovement": "Regular updates maintain engagement"
+    }
+  },
+  "riskMitigation": {
+    "technicalRisks": {
+      "scalability": "Microservices architecture ready for scale",
+      "reliability": "Git-native storage is battle-tested",
+      "security": "Pack signing and verification system",
+      "performance": "Caching and optimization built-in"
+    },
+    "marketRisks": {
+      "competition": "Network effects create defensive moats",
+      "adoption": "Developer-friendly design reduces friction",
+      "timing": "AI and automation trends are accelerating",
+      "platformRisk": "Git ubiquity reduces platform risk"
+    },
+    "executionRisks": {
+      "team": "Proven engineering team with domain expertise",
+      "funding": "Clear path to profitability via marketplace",
+      "partnerships": "Developer tool ecosystem integrations",
+      "community": "Open source components build community"
+    }
+  },
+  "nextMilestones": {
+    "technical": [
+      "Complete pack dependency resolution",
+      "Enhance marketplace with ratings/reviews",
+      "Advanced AI features for job generation",
+      "Enterprise security and compliance features"
+    ],
+    "business": [
+      "Developer community building and engagement",
+      "Enterprise customer acquisition",
+      "Marketplace monetization model",
+      "Strategic partnerships with dev tool vendors"
+    ],
+    "metrics": [
+      "Pack creation and adoption rates",
+      "User retention and engagement",
+      "Network effects measurement",
+      "Revenue per user scaling"
+    ]
+  }
+}

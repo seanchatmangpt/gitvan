@@ -1,0 +1,63 @@
+{
+  "abi": "1.0",
+  "id": "test-pack",
+  "name": "Test Pack",
+  "version": "1.0.0",
+  "description": "A test pack for GitVan lifecycle testing",
+  "license": "MIT",
+  "modes": ["existing-repo", "new-repo"],
+  "inputs": [
+    {
+      "key": "projectName",
+      "type": "string",
+      "default": "my-project",
+      "prompt": "What is your project name?"
+    }
+  ],
+  "provides": {
+    "files": [
+      {
+        "src": "readme.txt",
+        "target": "README.md",
+        "mode": "write"
+      }
+    ],
+    "templates": [
+      {
+        "src": "config.json.njk",
+        "target": "config.json",
+        "mode": "write"
+      }
+    ],
+    "jobs": [
+      {
+        "src": "test-job.mjs",
+        "id": "test-job"
+      }
+    ],
+    "transforms": [
+      {
+        "target": "package.json",
+        "kind": "json-merge",
+        "spec": {
+          "scripts": {
+            "test": "vitest"
+          }
+        }
+      }
+    ]
+  },
+  "dependencies": {
+    "npm": {
+      "devDependencies": {
+        "vitest": "^1.0.0"
+      }
+    }
+  },
+  "postInstall": [
+    {
+      "action": "run",
+      "args": ["echo", "Pack installed successfully"]
+    }
+  ]
+}

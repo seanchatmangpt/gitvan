@@ -1,0 +1,13 @@
+{
+  "version": "1.0",
+  "packs": {
+    "test-pack": {
+      "version": "1.0.0",
+      "fingerprint": "fingerprint123",
+      "installedAt": "2025-09-18T21:25:16.220Z",
+      "artifacts": []
+    }
+  },
+  "operations": [],
+  "lastUpdated": "2025-09-18T21:25:16.221Z"
+}

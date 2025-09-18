@@ -1,0 +1,41 @@
+{
+  "id": "remote-example-pack",
+  "name": "Remote Example Pack",
+  "version": "1.0.0",
+  "description": "Example pack demonstrating remote installation via giget",
+  "author": "GitVan Team",
+  "license": "MIT",
+  "keywords": ["example", "remote", "giget", "gitvan"],
+  "main": "index.mjs",
+  "files": [
+    "index.mjs",
+    "jobs/",
+    "templates/"
+  ],
+  "jobs": [
+    {
+      "name": "example:hello",
+      "file": "jobs/hello.mjs",
+      "description": "Simple hello world job"
+    }
+  ],
+  "dependencies": {
+    "unrouting": "^1.0.0"
+  },
+  "gitvan": {
+    "packType": "example",
+    "version": "2.0.0",
+    "compatibility": {
+      "gitvan": ">=2.0.0"
+    }
+  },
+  "capabilities": ["example", "remote"],
+  "tags": ["example", "remote"],
+  "categories": ["examples"],
+  "source": "remote",
+  "remoteSource": {
+    "provider": "giget",
+    "originalSource": "github:gitvan/example-pack",
+    "installedAt": "2024-01-15T10:30:00Z"
+  }
+}

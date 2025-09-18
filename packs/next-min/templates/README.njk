@@ -1,0 +1,58 @@
+---
+title: {{ inputs.projectName }}
+organization: {{ inputs.org }}
+created: {{ nowISO }}
+pack: gv/next-min
+---
+# {{ inputs.projectName }}
+
+A Next.js application built with GitVan automation.
+
+## Getting Started
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) to see your application.
+
+## Project Structure
+
+```
+{{ inputs.projectName }}/
+├── {{ 'app/' if inputs.appRouter else 'pages/' }}    # Application routes
+├── public/           # Static assets
+├── styles/           # Global styles
+├── jobs/             # GitVan automation jobs
+├── events/           # Git event handlers
+└── package.json      # Dependencies
+```
+
+## GitVan Automation
+
+This project includes GitVan automation for:
+
+- **Changelog Generation**: Automatically generated from commits
+- **Release Notes**: Created on version tags
+{% if inputs.docsMdx -%}
+- **Development Diary**: Daily summaries of development activity
+{%- endif %}
+
+## Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
+
+## Configuration
+
+This project was bootstrapped with the GitVan Next.js pack:
+- Organization: {{ inputs.org }}
+- TypeScript: {{ 'Enabled' if inputs.useTypescript else 'Disabled' }}
+- App Router: {{ 'Enabled' if inputs.appRouter else 'Disabled' }}
+- CI/CD: {{ inputs.ci | capitalize }}
+
+## License
+
+MIT © {{ inputs.org }}

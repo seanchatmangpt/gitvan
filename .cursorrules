@@ -1,0 +1,217 @@
+# GitVan v2 - Cursor Rules
+
+## Project Overview
+GitVan is a Git-native development automation platform that uses Git as a runtime environment. This project follows FAANG-level architecture principles with comprehensive testing and deterministic operations.
+
+## Core Development Principles
+
+### Test-Driven Development (TDD)
+- **ALWAYS TEST BEFORE CLAIMING COMPLETION** - Run actual commands, verify they work
+- **IMPLEMENT 80/20 TEST-FIX LOOP** - Test → Fix → Verify (minimum 3 iterations)
+- **NEVER REPORT "COMPLETE" WITHOUT TESTING** - All features must be actually working
+- Use `pnpm test` to verify functionality before claiming completion
+
+### File Organization
+- **NEVER save working files to root folder**
+- Use appropriate subdirectories:
+  - `/src` - Source code files
+  - `/tests` - Test files  
+  - `/docs` - Documentation and markdown files
+  - `/config` - Configuration files
+  - `/scripts` - Utility scripts
+  - `/examples` - Example code
+
+### Code Style & Standards
+- **Modular Design**: Files under 500 lines
+- **Environment Safety**: Never hardcode secrets
+- **Test-First**: Write tests before implementation
+- **Clean Architecture**: Separate concerns
+- **FAANG-level solutions**: Create code at the level of a FAANG solution architect
+
+## GitVan-Specific Rules
+
+### Context Management
+- Use `unctx` for async context management
+- Always wrap operations in `withGitVan(context, async () => { ... })`
+- Context must be properly bound for async operations
+- Use `useGitVan()` and `tryUseGitVan()` for context access
+
+### Template System
+- Use Nunjucks for template rendering
+- All templates must be deterministic (no `now()` or `random()` calls)
+- Use inflection filters for string transformations
+- Templates should be cached for performance
+- Support both file-based and string-based templates
+
+### Configuration Discovery
+- Use `findGitVanConfig()` to discover configuration files
+- Support multiple config formats: `.js`, `.mjs`, `.ts`
+- Search up directory tree for config files
+- Provide fallback strategies for missing config
+
+### Git Integration
+- Use Git refs/notes for metadata storage
+- Implement atomic operations where possible
+- Handle Git errors gracefully
+- Support both sync and async Git operations
+
+### Testing Requirements
+- All composables must have comprehensive tests
+- Use `withGitVan()` wrapper in tests for proper context
+- Test both success and error scenarios
+- Verify async context preservation
+- Test inflection filters thoroughly
+
+## Package Management
+- **ALWAYS USE pnpm NOT npm** for package management
+- Install dependencies with `pnpm install`
+- **NEVER manually edit package.json** - use `pnpm install <package-name>` to add dependencies
+- Run tests with `pnpm test`
+- Build with `pnpm run build`
+
+## Import/Export Patterns
+- Use ES modules (`import`/`export`)
+- Prefer named exports over default exports
+- Use absolute imports for better clarity
+- Import from `../src/` paths in tests
+
+## Error Handling
+- Implement comprehensive error handling
+- Use deterministic error messages
+- Handle async context loss gracefully
+- Provide meaningful error context
+
+## Performance Considerations
+- Cache expensive operations (template environments, config loading)
+- Use parallel operations where possible
+- Implement efficient path resolution
+- Minimize file system operations
+
+## Documentation Standards
+- Keep documentation updated with code changes
+- Use clear, concise descriptions
+- Document async context requirements
+- Explain configuration options
+
+## Trust Building Protocol
+1. **Under-promise, over-deliver**
+2. **Show actual test output**
+3. **Admit when things are untested**
+4. **Verify before claiming success**
+
+## CRITICAL: Error Checking Protocol
+- **ALWAYS CHECK CONSOLE OUTPUT FOR ERRORS** before declaring success
+- **NEVER declare success if there are ANY error messages** (❌, ⚠️, Error:, Failed:, etc.)
+- **READ THE FULL OUTPUT** - don't just look for ✅ symbols
+- **VERIFY EXIT CODES** - commands must exit with code 0
+- **CHECK FOR WARNINGS** - warnings indicate potential issues
+- **VALIDATE ACTUAL FUNCTIONALITY** - not just that commands run
+
+### Error Detection Patterns
+- Look for: `❌`, `⚠️`, `Error:`, `Failed:`, `Cannot`, `TypeError`, `ReferenceError`
+- Check exit codes: `exit code: 0` = success, anything else = failure
+- Verify no warnings: `warning:`, `WARN:`, `⚠️`
+- Ensure clean output: no stack traces or error messages
+
+### Success Criteria
+- ✅ **ALL** console output shows success indicators
+- ✅ **ZERO** error messages or warnings
+- ✅ **ZERO** exit code (success)
+- ✅ **ACTUAL** functionality verified, not just "command ran"
+
+### MANDATORY: Pre-Declaration Checklist
+Before declaring ANY task complete, you MUST:
+
+1. **SCAN FOR FAILURE INDICATORS**: Run `grep -E "(❌|ERROR|Failed|✗|WARN|⚠️)"` on the output
+2. **CHECK EXIT CODE**: Verify the command exited with code 0
+3. **READ EVERY LINE**: Don't skip any output, especially at the end
+4. **VERIFY FUNCTIONALITY**: Test that the feature actually works, not just that a command ran
+5. **ADMIT FAILURES**: If there are ANY errors/warnings, state them explicitly
+
+### FAILURE EXAMPLES TO NEVER MISS:
+- `❌ Pre-commit hook not installed`
+- `ERROR ✗ Not a Git repository`
+- `WARN ✗ Git identity not configured`
+- `⚠️ Configuration incomplete (2/6 checks passed)`
+- `WARN Hook installation timed out`
+- Any exit code != 0
+- Any stack traces or error messages
+
+**REMEMBER:**
+- Writing a file to disk DOES NOT mean it works
+- Finishing a TODO is NOT enough without verification
+- You MUST verify with actual command execution
+- **NEVER declare success without checking ALL console output for errors**
+- **ALWAYS read the full output before claiming anything works**
+- **IF YOU SEE ANY FAILURE INDICATORS, THE TASK IS NOT COMPLETE**
+
+## Quick Commands
+```bash
+# Run tests
+pnpm test
+
+# Run specific test file
+pnpm test tests/template-simple.test.mjs
+
+# Install dependencies
+pnpm install
+
+# Build project
+pnpm run build
+
+# Lint code
+pnpm run lint
+```
+
+## Project Structure
+```
+src/
+├── composables/     # Core composables (useGit, useTemplate, etc.)
+├── core/           # Core context and runtime
+├── runtime/        # Runtime configuration and daemon
+├── utils/          # Utility functions (config-finder, etc.)
+└── cli/           # CLI implementation
+
+tests/
+├── composables/    # Composable tests
+├── core/          # Core tests
+└── *.test.mjs     # Integration tests
+
+templates/          # Nunjucks templates
+docs/              # Documentation
+config/            # Configuration files
+```
+
+## Context Usage Pattern
+```javascript
+// Correct context usage
+await withGitVan(context, async () => {
+  const template = await useTemplate({ paths: [templatesDir] });
+  const result = template.render('template.njk', data);
+  // ... rest of operations
+});
+```
+
+## Template Usage Pattern
+```javascript
+// Correct template usage
+const template = await useTemplate({ 
+  paths: ['templates'],
+  autoescape: false,
+  noCache: true 
+});
+
+const result = template.renderString('{{ name | capitalize }}', { name: 'john' });
+```
+
+## Configuration Pattern
+```javascript
+// Correct config discovery
+const configResult = await findGitVanConfig(process.cwd());
+if (configResult) {
+  const { config, root } = configResult;
+  // Use discovered config
+}
+```
+
+This project prioritizes reliability, testability, and maintainability while leveraging Git as a runtime environment for development automation.

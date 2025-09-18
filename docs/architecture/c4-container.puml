@@ -1,0 +1,88 @@
+@startuml GitVan v2 Container Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+title GitVan v2 Container Architecture - Single Package with Composables
+
+Person(developer, "Developer", "Creates jobs and templates")
+
+System_Boundary(gitvan_v2_system, "GitVan v2 (Single Package)") {
+    Container(cli, "CLI Interface", "Node.js, Citty", "Command interface for job management\ngitvan job:run, daemon:start, worktree:list")
+
+    Container(daemon, "Daemon Process", "Node.js", "Per-worktree background processor\nMonitors Git events, executes jobs")
+
+    Container(job_engine, "Job Execution Engine", "Node.js", "Executes 5 job types:\ncli, js, llm, job, tmpl")
+
+    Container(composables, "Composables Layer", "unctx", "Context-aware utilities:\nuseGit(), useTemplate(), useExec()")
+
+    Container(template_engine, "Template Engine", "Nunjucks", "Renders .njk templates with\nGit context and custom filters")
+
+    Container(event_system, "Event System", "Node.js", "Filesystem-based event discovery\nPattern matching for Git events")
+
+    Container(lock_manager, "Lock Manager", "Git refs", "Per-worktree locking:\nrefs/gitvan/locks/<wt>/<event>/<sha>")
+}
+
+ContainerDb(git_repo, "Git Repository", "Git + Worktrees", "Source code with multiple worktrees\nEach daemon runs per worktree")
+ContainerDb(git_notes, "Git Notes", "refs/notes/gitvan", "Job definitions, event configs\nExecution receipts with worktree metadata")
+ContainerDb(templates, "Templates", "File System", "Nunjucks template files\ntemplates/**/*.njk")
+ContainerDb(jobs, "Jobs", "File System", "Job definitions\njobs/**/*.mjs")
+ContainerDb(events, "Events", "File System", "Event definitions\nevents/**/*.mjs")
+
+System_Ext(ollama_api, "Ollama API", "Local LLM service")
+System_Ext(external_cli, "External CLI", "System commands")
+
+' User interactions
+Rel(developer, cli, "Manages jobs", "gitvan job:run changelog")
+Rel(developer, daemon, "Manages daemon", "gitvan daemon:start --worktrees all")
+
+' Internal relationships
+Rel(cli, job_engine, "Executes jobs on demand")
+Rel(daemon, event_system, "Discovers events")
+Rel(daemon, lock_manager, "Acquires/releases locks")
+Rel(daemon, job_engine, "Executes triggered jobs")
+
+Rel(job_engine, composables, "Uses context utilities")
+Rel(job_engine, template_engine, "Renders templates")
+Rel(job_engine, ollama_api, "LLM execution")
+Rel(job_engine, external_cli, "CLI execution")
+
+Rel(composables, git_repo, "Git operations per worktree")
+Rel(template_engine, templates, "Loads .njk files")
+
+' Data flows
+Rel(event_system, events, "Loads from filesystem")
+Rel(job_engine, jobs, "Loads job modules")
+Rel(lock_manager, git_notes, "Manages lock refs")
+Rel(daemon, git_notes, "Writes execution receipts")
+
+note right of daemon
+  **v2 Daemon Features:**
+  • Runs per worktree independently
+  • Filesystem-based job/event discovery
+  • Worktree-scoped lock refs
+  • Execution receipts include worktree metadata
+  • Single daemon process can handle multiple worktrees
+
+  **Execution Model:**
+  • Event loop per worktree
+  • Git refs for atomic locking
+  • Composables for context sharing
+  • Template rendering with Git context
+end note
+
+note left of composables
+  **Composables Pattern (unctx):**
+  • useGit() - Git operations with worktree support
+  • useTemplate() - Nunjucks rendering utilities
+  • useExec() - Programmatic execution helpers
+  • withGitVan() - Context injection
+
+  **Context Includes:**
+  • root, repoRoot, worktreeRoot
+  • Git environment and helpers
+  • Worktree metadata (id, branch)
+  • Template rendering environment
+end note
+
+@enduml

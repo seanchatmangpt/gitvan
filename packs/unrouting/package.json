@@ -1,0 +1,39 @@
+{
+  "name": "unrouting",
+  "version": "1.0.0",
+  "description": "File-based routing system for GitVan jobs",
+  "author": "GitVan Team",
+  "license": "MIT",
+  "keywords": ["routing", "file-based", "automation", "gitvan"],
+  "main": "parser.mjs",
+  "files": [
+    "routes.json",
+    "parser.mjs",
+    "jobs/"
+  ],
+  "jobs": [
+    {
+      "name": "unrouting:route",
+      "file": "jobs/unrouting.route.mjs",
+      "description": "Route file changes to GitVan jobs using unrouting patterns"
+    },
+    {
+      "name": "unrouting:plan", 
+      "file": "jobs/unrouting.plan.mjs",
+      "description": "Plan unrouting jobs without executing them (dry-run)"
+    }
+  ],
+  "dependencies": {},
+  "gitvan": {
+    "packType": "routing",
+    "version": "2.1.0",
+    "compatibility": {
+      "gitvan": ">=2.1.0"
+    }
+  }
+}
+
+
+
+
+

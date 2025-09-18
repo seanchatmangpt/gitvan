@@ -1,0 +1,8 @@
+{
+  "name": "original-config",
+  "version": "1.0.0",
+  "settings": {
+    "debug": false,
+    "timeout": 5000
+  }
+}

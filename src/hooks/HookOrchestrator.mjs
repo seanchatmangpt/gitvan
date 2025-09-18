@@ -9,6 +9,7 @@ import { StepRunner } from "../workflow/StepRunner.mjs";
 import { ContextManager } from "../workflow/ContextManager.mjs";
 import { useTurtle } from "../composables/turtle.mjs";
 import { useGraph } from "../composables/graph.mjs";
+import { GitNativeIO } from "../git-native/GitNativeIO.mjs";
 
 /**
  * Main orchestrator for the Knowledge Hook Engine
@@ -27,6 +28,13 @@ export class HookOrchestrator {
     this.context = options.context;
     this.logger = options.logger || console;
     this.timeoutMs = options.timeoutMs || 300000; // 5 minutes default
+
+    // Initialize Git-Native I/O Layer
+    this.gitNativeIO = new GitNativeIO({
+      cwd: options.cwd || process.cwd(),
+      logger: this.logger,
+      ...options.gitNativeIO,
+    });
 
     // Initialize components
     this.parser = new HookParser({ logger: this.logger });
@@ -74,7 +82,7 @@ export class HookOrchestrator {
       // Finalize evaluation
       const evaluationResult = await this._finalizeEvaluation(
         evaluationResults,
-        executionResults,
+        executionResults || [],
         startTime
       );
 
@@ -133,14 +141,15 @@ export class HookOrchestrator {
 
   /**
    * Get evaluation statistics
-   * @returns {object} Evaluation statistics
+   * @returns {Promise<object>} Evaluation statistics
    */
-  getStats() {
+  async getStats() {
     return {
       hooksLoaded: this.turtle ? this.turtle.files.length : 0,
       contextInitialized: !!this.contextManager,
       lastEvaluation: this.contextManager?.getLastExecution() || null,
       graphSize: this.graph ? this.graph.store.size : 0,
+      gitNativeIO: await this.gitNativeIO.getStatus(),
     };
   }
 
@@ -298,52 +307,155 @@ export class HookOrchestrator {
 
     const executionResults = [];
 
-    for (const { hook, evaluation } of triggeredHooks) {
-      try {
-        if (options.verbose) {
-          this.logger.info(`⚡ Executing workflow for hook: ${hook.id}`);
-        }
+    // Use Git-Native I/O Layer for concurrent workflow execution
+    const workflowJobs = triggeredHooks.map(({ hook, evaluation }) => {
+      return this.gitNativeIO.addJob(
+        "high",
+        async () => {
+          const executionId = this._generateExecutionId();
 
-        // Initialize execution context
-        await this.contextManager.initialize({
-          workflowId: hook.id,
-          inputs: evaluation.context || {},
-          startTime: Date.now(),
-        });
+          try {
+            if (options.verbose) {
+              this.logger.info(`⚡ Executing workflow for hook: ${hook.id}`);
+            }
 
-        // Create execution plan
-        const workflow = hook.workflows[0]; // Use first workflow
-        const plan = await this.planner.createPlan(workflow.steps, this.graph);
+            // Acquire lock for this hook execution
+            const lockName = `hook-execution-${hook.id.replace(
+              /[^a-zA-Z0-9-_]/g,
+              "_"
+            )}`;
+            const lockAcquired = await this.gitNativeIO.acquireLock(lockName, {
+              timeout: this.timeoutMs,
+              exclusive: true,
+            });
 
-        // Execute the plan
-        const stepResults = [];
-        for (const step of plan) {
-          const stepResult = await this.runner.executeStep(
-            step,
-            this.contextManager,
-            this.graph,
-            this.turtle,
-            options
-          );
-          stepResults.push(stepResult);
-        }
+            if (!lockAcquired) {
+              throw new Error(`Could not acquire lock for hook ${hook.id}`);
+            }
 
-        executionResults.push({
+            try {
+              // Initialize execution context
+              await this.contextManager.initialize({
+                workflowId: hook.id,
+                inputs: evaluation.context || {},
+                startTime: Date.now(),
+              });
+
+              // Create execution plan
+              const workflow = hook.workflows[0]; // Use first workflow
+              const plan = await this.planner.createPlan(
+                workflow.steps,
+                this.graph
+              );
+
+              // Execute the plan using worker pool
+              const stepResults = [];
+              for (const step of plan) {
+                const stepResult = await this.gitNativeIO.executeJob(
+                  async () => {
+                    return await this.runner.executeStep(
+                      step,
+                      this.contextManager,
+                      this.graph,
+                      this.turtle,
+                      options
+                    );
+                  },
+                  { timeout: this.timeoutMs }
+                );
+                stepResults.push(stepResult);
+              }
+
+              const executionResult = {
+                hookId: hook.id,
+                success: true,
+                stepResults,
+                outputs: this.contextManager.getOutputs(),
+                executionId,
+              };
+
+              // Write execution receipt
+              await this.gitNativeIO.writeReceipt(hook.id, executionResult, {
+                executionId,
+                timestamp: Date.now(),
+                duration: Date.now() - evaluation.startTime,
+              });
+
+              // Write execution metrics
+              await this.gitNativeIO.writeMetrics({
+                hookId: hook.id,
+                executionId,
+                duration: Date.now() - evaluation.startTime,
+                stepsExecuted: stepResults.length,
+                success: true,
+              });
+
+              // Store execution snapshot
+              await this.gitNativeIO.storeSnapshot(
+                `execution-${executionId}`,
+                executionResult,
+                { hookId: hook.id, timestamp: Date.now() }
+              );
+
+              if (options.verbose) {
+                this.logger.info(`✅ Workflow completed for hook: ${hook.id}`);
+              }
+
+              return executionResult;
+            } finally {
+              // Always release the lock
+              await this.gitNativeIO.releaseLock(lockName);
+            }
+          } catch (error) {
+            this.logger.error(`❌ Workflow failed for hook ${hook.id}:`, error);
+
+            const errorResult = {
+              hookId: hook.id,
+              success: false,
+              error: error.message,
+              executionId,
+            };
+
+            // Write error receipt
+            await this.gitNativeIO.writeReceipt(hook.id, errorResult, {
+              executionId,
+              timestamp: Date.now(),
+              error: error.message,
+            });
+
+            // Write error metrics
+            await this.gitNativeIO.writeMetrics({
+              hookId: hook.id,
+              executionId,
+              duration: Date.now() - evaluation.startTime,
+              stepsExecuted: 0,
+              success: false,
+              error: error.message,
+            });
+
+            return errorResult;
+          }
+        },
+        {
           hookId: hook.id,
-          success: true,
-          stepResults,
-          outputs: this.contextManager.getOutputs(),
-        });
-
-        if (options.verbose) {
-          this.logger.info(`✅ Workflow completed for hook: ${hook.id}`);
+          priority: "high",
+          timeout: this.timeoutMs,
         }
-      } catch (error) {
-        this.logger.error(`❌ Workflow failed for hook ${hook.id}:`, error);
+      );
+    });
+
+    // Wait for all workflow executions to complete
+    const results = await Promise.allSettled(workflowJobs);
+
+    for (const result of results) {
+      if (result.status === "fulfilled") {
+        executionResults.push(result.value);
+      } else {
+        this.logger.error(`Workflow job failed: ${result.reason}`);
         executionResults.push({
-          hookId: hook.id,
+          hookId: "unknown",
           success: false,
-          error: error.message,
+          error: result.reason?.message || "Unknown error",
         });
       }
     }
@@ -436,5 +548,14 @@ export class HookOrchestrator {
     }
 
     return validation;
+  }
+
+  /**
+   * Generate a unique execution ID
+   * @private
+   * @returns {string} Unique execution ID
+   */
+  _generateExecutionId() {
+    return `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 }

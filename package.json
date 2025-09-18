@@ -1,44 +1,64 @@
 {
   "name": "gitvan",
-  "version": "2.1.0",
-  "description": "Autonomic Git-native development automation platform with AI-powered workflows",
-  "main": "bin/gitvan.mjs",
+  "version": "2.0.1",
+  "description": "Git-native development automation platform with AI-powered workflows",
   "type": "module",
+  "main": "src/index.mjs",
   "bin": {
-    "gitvan": "./bin/gitvan.mjs"
+    "gitvan": "bin/gitvan.mjs"
+  },
+  "exports": {
+    ".": { 
+      "import": "./src/index.mjs", 
+      "types": "./types/index.d.ts" 
+    },
+    "./define": { 
+      "import": "./src/define.mjs", 
+      "types": "./types/index.d.ts" 
+    },
+    "./composables": { 
+      "import": "./src/composables/index.mjs", 
+      "types": "./types/index.d.ts" 
+    },
+    "./daemon": { 
+      "import": "./src/runtime/daemon.mjs", 
+      "types": "./types/index.d.ts" 
+    },
+    "./runtime": { 
+      "import": "./src/runtime/config.mjs", 
+      "types": "./types/index.d.ts" 
+    },
+    "./types": "./types/index.d.ts"
   },
   "files": [
-    "bin/",
     "src/",
-    "jobs/",
-    "packs/",
+    "bin/",
+    "types/",
     "templates/",
-    "docs/",
+    "packs/",
     "README.md",
     "LICENSE"
   ],
-  "scripts": {
-    "test": "vitest",
-    "build": "echo \"GitVan is ready for distribution\"",
-    "prepublishOnly": "npm run build && npm run verify-release",
-    "verify-release": "node scripts/verify-release.mjs",
-    "postpublish": "echo \"GitVan v2.1.0 published successfully!\""
-  },
   "keywords": [
     "git",
     "automation",
-    "ai",
-    "workflows",
     "development",
-    "autonomic",
-    "ollama",
-    "hooks",
+    "cli",
+    "templates",
     "jobs",
-    "packs",
-    "marketplace"
+    "hooks",
+    "ai",
+    "workflow",
+    "cicd",
+    "devops",
+    "remote-packs",
+    "giget",
+    "unplugin",
+    "build-tools"
   ],
-  "author": "Sean Chatman <sean@gitvan.dev>",
+  "author": "GitVan Team",
   "license": "MIT",
+  "homepage": "https://github.com/seanchatmangpt/gitvan",
   "repository": {
     "type": "git",
     "url": "https://github.com/seanchatmangpt/gitvan.git"
@@ -46,54 +66,49 @@
   "bugs": {
     "url": "https://github.com/seanchatmangpt/gitvan/issues"
   },
-  "homepage": "https://github.com/seanchatmangpt/gitvan#readme",
+  "dependencies": {
+    "hookable": "^5.5.3",
+    "nunjucks": "^3.2.4",
+    "unctx": "^2.4.1",
+    "citty": "^0.1.6",
+    "pathe": "^2.0.3",
+    "unrouting": "^0.0.1",
+    "consola": "^3.2.3",
+    "gray-matter": "^4.0.3",
+    "inflection": "^3.0.2",
+    "js-yaml": "^4.1.0",
+    "json5": "^2.2.3",
+    "lru-cache": "^11.2.1",
+    "zod": "^4.1.9",
+    "tinyglobby": "^0.2.15",
+    "defu": "^6.1.4",
+    "klona": "^2.0.6",
+    "giget": "^1.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.15",
+    "@types/nunjucks": "^3.2.6",
+    "eslint": "^9.35.0",
+    "eslint-config-unjs": "^0.5.0",
+    "vitest": "^1.0.0"
+  },
   "engines": {
     "node": ">=18.0.0"
   },
-  "dependencies": {
-    "@babel/parser": "^7.28.4",
-    "@babel/traverse": "^7.28.4",
-    "@comunica/query-sparql": "^4.4.0",
-    "@rdfjs/data-model": "^2.1.1",
-    "@rdfjs/dataset": "^2.0.2",
-    "@rdfjs/environment": "^1.0.0",
-    "@rdfjs/namespace": "^2.0.1",
-    "@rdfjs/types": "^2.0.1",
-    "@zazuko/env": "^3.0.1",
-    "ai": "^3.4.33",
-    "c12": "^3.3.0",
-    "cacache": "^17.1.4",
-    "citty": "^0.1.6",
-    "clownface": "^2.0.3",
-    "consola": "^3.2.3",
-    "defu": "^6.1.0",
-    "eyereasoner": "^18.19.17",
-    "fuse.js": "^7.1.0",
-    "giget": "^1.2.2",
-    "gray-matter": "^4.0.3",
-    "hookable": "^5.5.3",
-    "inflection": "^2.0.1",
-    "js-yaml": "^4.1.0",
-    "jsonld": "^8.3.3",
-    "klona": "^2.0.6",
-    "lru-cache": "^10.0.0",
-    "minimatch": "^9.0.5",
-    "n3": "^1.26.0",
-    "node-cron": "^3.0.3",
-    "nunjucks": "^3.2.4",
-    "ollama": "^0.5.18",
-    "pathe": "^1.1.1",
-    "prompts": "^2.4.2",
-    "rdf-canonize": "^4.0.1",
-    "rdf-ext": "^2.6.0",
-    "rdf-validate-shacl": "^0.6.5",
-    "semver": "^7.7.2",
-    "toml": "^3.0.0",
-    "unctx": "^2.3.1",
-    "unrouting": "^0.0.1",
-    "zod": "^3.22.0"
+  "scripts": {
+    "dev": "node bin/gitvan.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest --coverage",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "types": "echo 'TypeScript definitions only'",
+    "build": "echo 'No build step needed - pure ESM'",
+    "release": "npm publish --access public",
+    "release:beta": "npm publish --tag beta --access public",
+    "prepublishOnly": "npm run test && npm run lint"
   },
-  "devDependencies": {
-    "vitest": "^1.0.0"
+  "publishConfig": {
+    "access": "public"
   }
 }

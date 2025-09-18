@@ -988,7 +988,7 @@ export default {
 
   setup(options) {
     this.apiKey = options.apiKey
-    this.model = options.model || 'gpt-4'
+    this.model = options.model || 'qwen3-coder:30b'
     this.maxTokens = options.maxTokens || 1000
     this.reviewComments = options.reviewComments !== false
     this.enabledBranches = options.enabledBranches || ['main', 'develop']
@@ -1228,7 +1228,7 @@ export default {
       provider: 'openai',
       baseUrl: 'https://api.openai.com/v1',
       apiKey: process.env.OPENAI_API_KEY,
-      model: 'gpt-4',
+      model: 'qwen3-coder:30b',
       prompts: {
         errorAnalysis: `
 Analyze this GitVan job error and provide suggestions for resolution:

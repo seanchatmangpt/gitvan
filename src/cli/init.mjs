@@ -64,20 +64,22 @@ export const initCommand = defineCommand({
       // Step 9: Create package.json scripts
       await createPackageScripts(cwd);
 
-      // Step 10: Verify installation
+      // Step 10: Install dependencies automatically
+      await installDependencies(cwd);
+
+      // Step 11: Verify installation
       await verifyInstallation(cwd);
 
       console.log("\n🎉 GitVan project initialization complete!");
       console.log("\n📋 Next steps:");
-      console.log("   1. Install dependencies: npm install");
-      console.log('   2. Configure Git user: git config user.name "Your Name"');
+      console.log('   1. Configure Git user: git config user.name "Your Name"');
       console.log(
-        '   3. Configure Git email: git config user.email "your@email.com"'
+        '   2. Configure Git email: git config user.email "your@email.com"'
       );
-      console.log("   4. Complete setup: gitvan setup");
-      console.log("   5. Test hooks: gitvan hooks list");
-      console.log("   6. Test workflows: gitvan workflow list");
-      console.log("   7. Save changes: gitvan save");
+      console.log("   3. Complete setup: gitvan setup");
+      console.log("   4. Test hooks: gitvan hooks list");
+      console.log("   5. Test workflows: gitvan workflow list");
+      console.log("   6. Save changes: gitvan save");
       console.log("\n📚 Documentation:");
       console.log("   • Knowledge Hooks: ./hooks/README.md");
       console.log("   • Workflows: ./workflows/README.md");
@@ -758,6 +760,28 @@ async function createPackageScripts(cwd) {
     console.log("   ✅ package.json scripts updated");
   } catch (error) {
     console.log("   ⚠️  Failed to update package.json scripts:", error.message);
+  }
+}
+
+/**
+ * Install dependencies automatically
+ */
+async function installDependencies(cwd) {
+  console.log("\n📦 Installing dependencies...");
+
+  try {
+    // Check if node_modules already exists
+    if (existsSync(join(cwd, "node_modules"))) {
+      console.log("   ✅ Dependencies already installed");
+      return;
+    }
+
+    // Run npm install
+    execSync("npm install", { cwd, stdio: "inherit" });
+    console.log("   ✅ Dependencies installed successfully");
+  } catch (error) {
+    console.log("   ⚠️  Dependency installation had issues:", error.message);
+    console.log("   💡 You can run 'npm install' manually later");
   }
 }
 

@@ -309,7 +309,7 @@ export default {
 export default {
   ai: {
     provider: 'openai',
-    model: 'gpt-4',
+    model: 'qwen3-coder:30b',
     baseURL: 'https://api.openai.com/v1',
     apiKey: process.env.OPENAI_API_KEY,
     timeout: 30000,
@@ -614,7 +614,7 @@ export default {
   
   ai: {
     provider: 'openai',
-    model: 'gpt-4',
+    model: 'qwen3-coder:30b',
     baseURL: 'https://api.openai.com/v1',
     apiKey: process.env.OPENAI_API_KEY,
     timeout: 30000,
@@ -696,7 +696,7 @@ export default {
   
   ai: {
     provider: 'openai',
-    model: 'gpt-3.5-turbo',
+    model: 'qwen3-coder:30b',
     baseURL: 'https://api.openai.com/v1',
     apiKey: process.env.OPENAI_API_KEY,
     timeout: 15000,

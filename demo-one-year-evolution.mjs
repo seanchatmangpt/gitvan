@@ -318,7 +318,7 @@ export default defineJob({
     {
       type: 'llm',
       prompt: 'Analyze and improve this ${job.name} process',
-      model: 'ollama/codellama'
+      model: 'qwen3-coder:30b'
     }`
         : ""
     }

@@ -65,6 +65,7 @@ GitVan is a Git-native development automation platform that uses Git as a runtim
 ## Package Management
 - **ALWAYS USE pnpm NOT npm** for package management
 - Install dependencies with `pnpm install`
+- **NEVER manually edit package.json** - use `pnpm install <package-name>` to add dependencies
 - Run tests with `pnpm test`
 - Build with `pnpm run build`
 

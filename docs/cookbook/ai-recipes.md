@@ -95,7 +95,7 @@ export default {
 # .gitvan/config.yaml
 release:
   ai:
-    model: 'gpt-4'
+    model: 'qwen3-coder:30b'
     temperature: 0.3
   github:
     enabled: true

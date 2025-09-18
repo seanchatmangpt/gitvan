@@ -20,27 +20,7 @@ echo "✅ Docker image built successfully"
 echo "🚀 Running GitVan initialization in Docker cleanroom..."
 
 # Run the initialization in Docker with volume mount
-docker run --rm -v $(pwd)/test-output:/workspace gitvan-cleanroom bash -c "
-cd /workspace
-echo '🐳 Running GitVan initialization in Docker cleanroom...'
-node -e '
-import(\"/gitvan/src/cli/init.mjs\").then(async (module) => {
-  try {
-    await module.initCommand.run({
-      args: {
-        cwd: \"/workspace\",
-        name: \"docker-cleanroom-project\",
-        description: \"A GitVan project initialized in Docker cleanroom\"
-      }
-    });
-    console.log(\"✅ GitVan initialization completed in Docker\");
-  } catch (error) {
-    console.log(\"❌ Init command failed:\", error.message);
-    process.exit(1);
-  }
-}).catch(console.error);
-'
-"
+docker run --rm -v $(pwd)/test-output:/workspace gitvan-cleanroom
 
 if [ $? -ne 0 ]; then
     echo "❌ Docker run failed"

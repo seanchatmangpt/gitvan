@@ -68,7 +68,7 @@ Example configuration:
 {
   "ai": {
     "provider": "ollama",
-    "model": "llama2",
+    "model": "qwen3-coder:30b",
     "timeout": 30000
   },
   "daemon": {
@@ -87,7 +87,7 @@ Example configuration:
   "ai": {
     "provider": "ollama",
     "baseUrl": "http://localhost:11434",
-    "model": "llama2"
+    "model": "qwen3-coder:30b"
   }
 }
 ```
@@ -98,7 +98,7 @@ Example configuration:
   "ai": {
     "provider": "openai",
     "apiKey": "${OPENAI_API_KEY}",
-    "model": "gpt-3.5-turbo"
+    "model": "qwen3-coder:30b"
   }
 }
 ```
@@ -107,7 +107,7 @@ Example configuration:
 ```bash
 export OPENAI_API_KEY="your-api-key"
 export GITVAN_AI_PROVIDER="openai"
-export GITVAN_AI_MODEL="gpt-4"
+export GITVAN_AI_MODEL="qwen3-coder:30b"
 ```
 
 ### Q: Can I disable AI features entirely?
@@ -301,13 +301,13 @@ EOF
 **A:** Recommended models by use case:
 
 **Local Development (Ollama):**
-- `llama2:7b` - Fast, good for code completion
-- `codellama:7b` - Specialized for code generation
-- `mistral:7b` - Good balance of speed/quality
+- `qwen3-coder:30b` - Fast, good for code completion
+- `qwen3-coder:30b` - Specialized for code generation
+- `qwen3-coder:30b` - Good balance of speed/quality
 
 **Cloud APIs:**
-- `gpt-3.5-turbo` - Fast, cost-effective
-- `gpt-4` - Best quality, slower
+- `qwen3-coder:30b` - Fast, cost-effective
+- `qwen3-coder:30b` - Best quality, slower
 - `qwen3-coder:30b` - Good for complex analysis
 
 ### Q: How do I reduce AI costs?
@@ -341,7 +341,7 @@ ollama pull llama2
 echo '{
   "ai": {
     "provider": "ollama",
-    "model": "llama2"
+    "model": "qwen3-coder:30b"
   }
 }' > gitvan.config.json
 

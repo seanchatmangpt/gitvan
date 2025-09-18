@@ -60,7 +60,7 @@ export class HookOrchestrator {
       await this._loadPreviousState();
 
       // Parse all hook definitions
-      const hooks = await this._parseAllHooks();
+      const hooks = await this._parseAllHooks(options);
 
       // Evaluate each hook's predicate
       const evaluationResults = await this._evaluateHooks(hooks, options);
@@ -181,15 +181,21 @@ export class HookOrchestrator {
    * Parse all hook definitions
    * @private
    */
-  async _parseAllHooks() {
-    this.logger.info("🔍 Parsing all hook definitions");
+  async _parseAllHooks(options = {}) {
+    if (options.verbose) {
+      this.logger.info("🔍 Parsing all hook definitions");
+    }
 
     const hooks = this.turtle.getHooks();
     const parsedHooks = [];
 
     for (const hook of hooks) {
       try {
-        const parsedHook = await this.parser.parseHook(this.turtle, hook.id);
+        const parsedHook = await this.parser.parseHook(
+          this.turtle,
+          hook.id,
+          options
+        );
         if (parsedHook) {
           parsedHooks.push(parsedHook);
         }
@@ -200,7 +206,9 @@ export class HookOrchestrator {
       }
     }
 
-    this.logger.info(`🔍 Parsed ${parsedHooks.length} hooks`);
+    if (options.verbose) {
+      this.logger.info(`🔍 Parsed ${parsedHooks.length} hooks`);
+    }
     return parsedHooks;
   }
 
@@ -217,17 +225,22 @@ export class HookOrchestrator {
    * @private
    */
   async _evaluateHooks(hooks, options) {
-    this.logger.info(`🧠 Evaluating ${hooks.length} hook predicates`);
+    if (options.verbose) {
+      this.logger.info(`🧠 Evaluating ${hooks.length} hook predicates`);
+    }
 
     const results = [];
 
     for (const hook of hooks) {
       try {
-        this.logger.info(`🧠 Evaluating hook: ${hook.id}`);
+        if (options.verbose) {
+          this.logger.info(`🧠 Evaluating hook: ${hook.id}`);
+        }
         const evaluation = await this.predicateEvaluator.evaluate(
           hook,
           this.graph,
-          this.previousGraph
+          this.previousGraph,
+          options
         );
 
         results.push({
@@ -236,10 +249,12 @@ export class HookOrchestrator {
           triggered: evaluation.result,
         });
 
-        if (evaluation.result) {
-          this.logger.info(`✅ Hook triggered: ${hook.id}`);
-        } else {
-          this.logger.debug(`⏸️ Hook not triggered: ${hook.id}`);
+        if (options.verbose) {
+          if (evaluation.result) {
+            this.logger.info(`✅ Hook triggered: ${hook.id}`);
+          } else {
+            this.logger.debug(`⏸️ Hook not triggered: ${hook.id}`);
+          }
         }
       } catch (error) {
         this.logger.error(`❌ Failed to evaluate hook ${hook.id}:`, error);
@@ -252,9 +267,11 @@ export class HookOrchestrator {
     }
 
     const triggeredCount = results.filter((r) => r.triggered).length;
-    this.logger.info(
-      `🧠 Evaluation complete: ${triggeredCount}/${hooks.length} hooks triggered`
-    );
+    if (options.verbose) {
+      this.logger.info(
+        `🧠 Evaluation complete: ${triggeredCount}/${hooks.length} hooks triggered`
+      );
+    }
 
     return results;
   }
@@ -265,15 +282,27 @@ export class HookOrchestrator {
    */
   async _executeTriggeredWorkflows(evaluationResults, options) {
     const triggeredHooks = evaluationResults.filter((r) => r.triggered);
-    this.logger.info(
-      `⚡ Executing workflows for ${triggeredHooks.length} triggered hooks`
-    );
+
+    if (triggeredHooks.length === 0) {
+      if (options.verbose) {
+        this.logger.info("⏸️ No workflows to execute");
+      }
+      return { workflowsExecuted: 0, executions: [] };
+    }
+
+    if (options.verbose) {
+      this.logger.info(
+        `⚡ Executing workflows for ${triggeredHooks.length} triggered hooks`
+      );
+    }
 
     const executionResults = [];
 
     for (const { hook, evaluation } of triggeredHooks) {
       try {
-        this.logger.info(`⚡ Executing workflow for hook: ${hook.id}`);
+        if (options.verbose) {
+          this.logger.info(`⚡ Executing workflow for hook: ${hook.id}`);
+        }
 
         // Initialize execution context
         await this.contextManager.initialize({
@@ -283,7 +312,8 @@ export class HookOrchestrator {
         });
 
         // Create execution plan
-        const plan = await this.planner.createPlan(hook.steps, this.graph);
+        const workflow = hook.workflows[0]; // Use first workflow
+        const plan = await this.planner.createPlan(workflow.steps, this.graph);
 
         // Execute the plan
         const stepResults = [];
@@ -292,7 +322,8 @@ export class HookOrchestrator {
             step,
             this.contextManager,
             this.graph,
-            this.turtle
+            this.turtle,
+            options
           );
           stepResults.push(stepResult);
         }
@@ -304,7 +335,9 @@ export class HookOrchestrator {
           outputs: this.contextManager.getOutputs(),
         });
 
-        this.logger.info(`✅ Workflow completed for hook: ${hook.id}`);
+        if (options.verbose) {
+          this.logger.info(`✅ Workflow completed for hook: ${hook.id}`);
+        }
       } catch (error) {
         this.logger.error(`❌ Workflow failed for hook ${hook.id}:`, error);
         executionResults.push({

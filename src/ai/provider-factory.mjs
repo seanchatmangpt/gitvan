@@ -77,13 +77,13 @@ async function createOpenAIProvider(aiConfig) {
 
   const provider = openai({
     apiKey: aiConfig.apiKey || process.env.OPENAI_API_KEY,
-    model: aiConfig.model || "gpt-4",
+    model: aiConfig.model || "qwen3-coder:30b",
     temperature: aiConfig.temperature || 0.7,
     ...aiConfig.options,
   });
 
   logger.info(
-    `OpenAI provider created with model: ${aiConfig.model || "gpt-4"}`
+    `OpenAI provider created with model: ${aiConfig.model || "qwen3-coder:30b"}`
   );
   return provider;
 }
@@ -104,7 +104,9 @@ async function createAnthropicProvider(aiConfig) {
   });
 
   logger.info(
-    `Anthropic provider created with model: ${aiConfig.model || "qwen3-coder:30b"}`
+    `Anthropic provider created with model: ${
+      aiConfig.model || "qwen3-coder:30b"
+    }`
   );
   return provider;
 }

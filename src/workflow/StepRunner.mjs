@@ -29,11 +29,14 @@ export class StepRunner {
    * @param {object} contextManager - Context manager instance
    * @param {object} graph - useGraph instance
    * @param {object} turtle - useTurtle instance
+   * @param {object} [options] - Execution options
    * @returns {Promise<object>} Step execution result
    */
-  async executeStep(step, contextManager, graph, turtle) {
+  async executeStep(step, contextManager, graph, turtle, options = {}) {
     const startTime = performance.now();
-    this.logger.info(`⚡ Executing step: ${step.id} (${step.type})`);
+    if (options.verbose) {
+      this.logger.info(`⚡ Executing step: ${step.id} (${step.type})`);
+    }
 
     try {
       // Get step inputs from context
@@ -67,9 +70,11 @@ export class StepRunner {
       const endTime = performance.now();
       const duration = endTime - startTime;
 
-      this.logger.info(
-        `✅ Step completed: ${step.id} (${Math.round(duration)}ms)`
-      );
+      if (options.verbose) {
+        this.logger.info(
+          `✅ Step completed: ${step.id} (${Math.round(duration)}ms)`
+        );
+      }
 
       return {
         stepId: step.id,

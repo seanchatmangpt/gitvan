@@ -182,7 +182,7 @@ ollama show qwen3-coder:30b
 #### OpenAI Compatible
 ```javascript
 {
-  "model": "gpt-4",
+  "model": "qwen3-coder:30b",
   "messages": [
     {"role": "user", "content": "Generate a GitVan job"}
   ],
@@ -245,11 +245,11 @@ export AI_API_KEY="your-api-key"
 - Provider fallback and load balancing
 
 ### Supported Providers (Planned)
-- OpenAI (GPT-3.5, GPT-4, GPT-4o)
+- OpenAI (Qwen3-Coder family)
 - Ollama (Qwen3-Coder family)
 - Google (Gemini Pro)
 - Cohere (Command R+)
-- Mistral AI
+- Qwen3-Coder AI
 - Hugging Face Inference
 
 ### Configuration Preview
@@ -262,7 +262,7 @@ export AI_API_KEY="your-api-key"
       "providers": [
         {
           "name": "openai",
-          "model": "gpt-4o",
+          "model": "qwen3-coder:30b",
           "priority": 1
         },
         {

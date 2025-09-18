@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 2,
+            "activePatchIndex": 3,
             "patches": [
                 {
                     "date": 1758045807388,
@@ -16,6 +16,10 @@
                 {
                     "date": 1758210105654,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -117,14 +117,33 @@\n - ✅ **ZERO** error messages or warnings\n - ✅ **ZERO** exit code (success)\n - ✅ **ACTUAL** functionality verified, not just \"command ran\"\n \n+### MANDATORY: Pre-Declaration Checklist\n+Before declaring ANY task complete, you MUST:\n+\n+1. **SCAN FOR FAILURE INDICATORS**: Run `grep -E \"(❌|ERROR|Failed|✗|WARN|⚠️)\"` on the output\n+2. **CHECK EXIT CODE**: Verify the command exited with code 0\n+3. **READ EVERY LINE**: Don't skip any output, especially at the end\n+4. **VERIFY FUNCTIONALITY**: Test that the feature actually works, not just that a command ran\n+5. **ADMIT FAILURES**: If there are ANY errors/warnings, state them explicitly\n+\n+### FAILURE EXAMPLES TO NEVER MISS:\n+- `❌ Pre-commit hook not installed`\n+- `ERROR ✗ Not a Git repository`\n+- `WARN ✗ Git identity not configured`\n+- `⚠️ Configuration incomplete (2/6 checks passed)`\n+- `WARN Hook installation timed out`\n+- Any exit code != 0\n+- Any stack traces or error messages\n+\n **REMEMBER:**\n - Writing a file to disk DOES NOT mean it works\n - Finishing a TODO is NOT enough without verification\n - You MUST verify with actual command execution\n - **NEVER declare success without checking ALL console output for errors**\n - **ALWAYS read the full output before claiming anything works**\n+- **IF YOU SEE ANY FAILURE INDICATORS, THE TASK IS NOT COMPLETE**\n \n ## Quick Commands\n ```bash\n # Run tests\n"
+                },
+                {
+                    "date": 1758231104748,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -64,8 +64,9 @@\n \n ## Package Management\n - **ALWAYS USE pnpm NOT npm** for package management\n - Install dependencies with `pnpm install`\n+- **NEVER manually edit package.json** - use `pnpm install <package-name>` to add dependencies\n - Run tests with `pnpm test`\n - Build with `pnpm run build`\n \n ## Import/Export Patterns\n"
                 }
             ],
             "date": 1758045807388,

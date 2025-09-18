@@ -9,10 +9,10 @@ importers:
   .:
     dependencies:
       '@babel/parser':
-        specifier: ^7.23.0
+        specifier: ^7.28.4
         version: 7.28.4
       '@babel/traverse':
-        specifier: ^7.23.0
+        specifier: ^7.28.4
         version: 7.28.4
       '@comunica/query-sparql':
         specifier: ^4.4.0
@@ -36,13 +36,13 @@ importers:
         specifier: ^3.0.1
         version: 3.0.1(@rdfjs/types@2.0.1)(@types/clownface@2.0.10)(@types/rdf-dataset-ext@1.0.8)(@types/rdfjs__data-model@2.0.9)(@types/rdfjs__dataset@2.0.7)(@types/rdfjs__environment@1.0.0)(@types/rdfjs__formats@4.0.1)(@types/rdfjs__namespace@2.0.10)(@types/rdfjs__term-map@2.0.10)(@types/rdfjs__term-set@2.0.9)(@types/rdfjs__traverser@0.1.5)(web-streams-polyfill@3.3.3)
       ai:
-        specifier: ^3.0.0
-        version: 3.4.33(react@19.1.1)(sswr@2.2.0(svelte@5.39.2))(svelte@5.39.2)(vue@3.5.21)(zod@3.25.76)
+        specifier: ^3.4.33
+        version: 3.4.33(react@19.1.1)(sswr@2.2.0(svelte@5.39.2))(svelte@5.39.2)(vue@3.5.21(typescript@5.9.2))(zod@3.25.76)
       c12:
         specifier: ^3.3.0
         version: 3.3.0
       cacache:
-        specifier: ^17.1.0
+        specifier: ^17.1.4
         version: 17.1.4
       citty:
         specifier: ^0.1.6
@@ -60,7 +60,7 @@ importers:
         specifier: ^18.19.17
         version: 18.19.17(@rdfjs/types@2.0.1)
       fuse.js:
-        specifier: ^7.0.0
+        specifier: ^7.1.0
         version: 7.1.0
       giget:
         specifier: ^1.2.2
@@ -74,6 +74,9 @@ importers:
       inflection:
         specifier: ^2.0.1
         version: 2.0.1
+      js-yaml:
+        specifier: ^4.1.0
+        version: 4.1.0
       jsonld:
         specifier: ^8.3.3
         version: 8.3.3(web-streams-polyfill@3.3.3)
@@ -84,7 +87,7 @@ importers:
         specifier: ^10.0.0
         version: 10.4.3
       minimatch:
-        specifier: ^9.0.0
+        specifier: ^9.0.5
         version: 9.0.5
       n3:
         specifier: ^1.26.0
@@ -96,7 +99,7 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4
       ollama:
-        specifier: ^0.5.0
+        specifier: ^0.5.18
         version: 0.5.18
       pathe:
         specifier: ^1.1.1
@@ -114,7 +117,7 @@ importers:
         specifier: ^0.6.5
         version: 0.6.5
       semver:
-        specifier: ^7.5.0
+        specifier: ^7.7.2
         version: 7.7.2
       toml:
         specifier: ^3.0.0
@@ -1845,6 +1848,9 @@ packages:
   argparse@1.0.10:
     resolution: {integrity: sha512-o5Roy6tNG4SL/FOkCAN6RzjiakZS25RLYFrcMttJqbdd8BWrnA+fGz57iN5Pb06pvBGvl5gQ0B48dJlslXvoTg==}
 
+  argparse@2.0.1:
+    resolution: {integrity: sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==}
+
   aria-query@5.3.2:
     resolution: {integrity: sha512-COROpnaoap1E2F000S62r6A60uHZnmlvomhfyT2DlTcrY1OrBKn2UhH7qn5wTC9zMvD0AY7csdPSNwKP+7WiQw==}
     engines: {node: '>= 0.4'}
@@ -2310,6 +2316,10 @@ packages:
 
   js-yaml@3.14.1:
     resolution: {integrity: sha512-okMH7OXXJ7YrN9Ok3/SXrnu4iX9yOk+25nqX4imS2npuvTYDmo/QEZoqwZkYaIDk3jVvBOTOIEgEhaLOynBS9g==}
+    hasBin: true
+
+  js-yaml@4.1.0:
+    resolution: {integrity: sha512-wpxZs9NoxZaJESJGIZTyDEaYpl0FKSA+FB9aJiyemKhMwkxQg63h4T1KJgUGHpTqPDNRcmmYLugrRjJlBtWvRA==}
     hasBin: true
 
   jsesc@3.1.0:
@@ -2948,6 +2958,11 @@ packages:
     resolution: {integrity: sha512-Acylog8/luQ8L7il+geoSxhEkazvkslg7PSNKOX59mbB9cOveP5aq9h74Y7YU8yDpJwetzQQrfIwtf4Wp4LKcw==}
     engines: {node: '>=4'}
 
+  typescript@5.9.2:
+    resolution: {integrity: sha512-CWBzXQrc/qOkhidw1OzBTQuYRbfyxDXJMVJ1XNwUHGROVmuaeiEm3OslpZ1RV96d7SKKjZKrSJu3+t/xlw3R9A==}
+    engines: {node: '>=14.17'}
+    hasBin: true
+
   ufo@1.6.1:
     resolution: {integrity: sha512-9a4/uxlTWJ4+a5i0ooc1rU7C7YOw3wT+UGqdeNNHWnOF9qcMBgLRS+4IYUqbczewFx4mLEig6gawh7X6mFlEkA==}
 
@@ -3200,13 +3215,13 @@ snapshots:
     optionalDependencies:
       zod: 3.25.76
 
-  '@ai-sdk/vue@0.0.59(vue@3.5.21)(zod@3.25.76)':
+  '@ai-sdk/vue@0.0.59(vue@3.5.21(typescript@5.9.2))(zod@3.25.76)':
     dependencies:
       '@ai-sdk/provider-utils': 1.0.22(zod@3.25.76)
       '@ai-sdk/ui-utils': 0.0.50(zod@3.25.76)
-      swrv: 1.1.0(vue@3.5.21)
+      swrv: 1.1.0(vue@3.5.21(typescript@5.9.2))
     optionalDependencies:
-      vue: 3.5.21
+      vue: 3.5.21(typescript@5.9.2)
     transitivePeerDependencies:
       - zod
 
@@ -6942,11 +6957,11 @@ snapshots:
       '@vue/shared': 3.5.21
       csstype: 3.1.3
 
-  '@vue/server-renderer@3.5.21(vue@3.5.21)':
+  '@vue/server-renderer@3.5.21(vue@3.5.21(typescript@5.9.2))':
     dependencies:
       '@vue/compiler-ssr': 3.5.21
       '@vue/shared': 3.5.21
-      vue: 3.5.21
+      vue: 3.5.21(typescript@5.9.2)
 
   '@vue/shared@3.5.21': {}
 
@@ -7003,7 +7018,7 @@ snapshots:
       clean-stack: 2.2.0
       indent-string: 4.0.0
 
-  ai@3.4.33(react@19.1.1)(sswr@2.2.0(svelte@5.39.2))(svelte@5.39.2)(vue@3.5.21)(zod@3.25.76):
+  ai@3.4.33(react@19.1.1)(sswr@2.2.0(svelte@5.39.2))(svelte@5.39.2)(vue@3.5.21(typescript@5.9.2))(zod@3.25.76):
     dependencies:
       '@ai-sdk/provider': 0.0.26
       '@ai-sdk/provider-utils': 1.0.22(zod@3.25.76)
@@ -7011,7 +7026,7 @@ snapshots:
       '@ai-sdk/solid': 0.0.54(zod@3.25.76)
       '@ai-sdk/svelte': 0.0.57(svelte@5.39.2)(zod@3.25.76)
       '@ai-sdk/ui-utils': 0.0.50(zod@3.25.76)
-      '@ai-sdk/vue': 0.0.59(vue@3.5.21)(zod@3.25.76)
+      '@ai-sdk/vue': 0.0.59(vue@3.5.21(typescript@5.9.2))(zod@3.25.76)
       '@opentelemetry/api': 1.9.0
       eventsource-parser: 1.1.2
       json-schema: 0.4.0
@@ -7042,6 +7057,8 @@ snapshots:
   argparse@1.0.10:
     dependencies:
       sprintf-js: 1.0.3
+
+  argparse@2.0.1: {}
 
   aria-query@5.3.2: {}
 
@@ -7552,6 +7569,10 @@ snapshots:
     dependencies:
       argparse: 1.0.10
       esprima: 4.0.1
+
+  js-yaml@4.1.0:
+    dependencies:
+      argparse: 2.0.1
 
   jsesc@3.1.0: {}
 
@@ -8342,9 +8363,9 @@ snapshots:
 
   swrev@4.0.0: {}
 
-  swrv@1.1.0(vue@3.5.21):
+  swrv@1.1.0(vue@3.5.21(typescript@5.9.2)):
     dependencies:
-      vue: 3.5.21
+      vue: 3.5.21(typescript@5.9.2)
 
   tar@6.2.1:
     dependencies:
@@ -8376,6 +8397,9 @@ snapshots:
   triple-beam@1.4.1: {}
 
   type-detect@4.1.0: {}
+
+  typescript@5.9.2:
+    optional: true
 
   ufo@1.6.1: {}
 
@@ -8489,13 +8513,15 @@ snapshots:
       - supports-color
       - terser
 
-  vue@3.5.21:
+  vue@3.5.21(typescript@5.9.2):
     dependencies:
       '@vue/compiler-dom': 3.5.21
       '@vue/compiler-sfc': 3.5.21
       '@vue/runtime-dom': 3.5.21
-      '@vue/server-renderer': 3.5.21(vue@3.5.21)
+      '@vue/server-renderer': 3.5.21(vue@3.5.21(typescript@5.9.2))
       '@vue/shared': 3.5.21
+    optionalDependencies:
+      typescript: 5.9.2
 
   web-streams-polyfill@3.3.3: {}
 

@@ -212,11 +212,11 @@ ai_models:
   allowed:
     - qwen3-coder:30b    # Approved for code review
     - qwen3-coder:30b  # Approved for documentation
-    - gpt-4           # Approved for testing
+    - qwen3-coder:30b           # Approved for testing
 
   restricted:
-    - gpt-3.5-turbo   # Not approved for production
-    - text-davinci-003 # Deprecated
+    - qwen3-coder:30b   # Not approved for production
+    - qwen3-coder:30b # Deprecated
 
   configuration:
     max_context_length: 100000

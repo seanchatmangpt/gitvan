@@ -1,0 +1,51 @@
+# Next.js CMS Development Dockerfile
+FROM node:20-alpine
+
+# Install system dependencies
+RUN apk add --no-cache \
+    git \
+    bash \
+    curl \
+    vim \
+    nano \
+    htop \
+    && npm install -g pnpm
+
+# Set working directory
+WORKDIR /workspace
+
+# Copy package files first for better caching
+COPY package*.json ./
+COPY pnpm-lock.yaml* ./
+
+# Install dependencies
+RUN if [ -f pnpm-lock.yaml ]; then pnpm install; else npm install; fi
+
+# Copy source code
+COPY . .
+
+# Create necessary directories
+RUN mkdir -p \
+    src/app \
+    src/components \
+    src/lib \
+    content/pages \
+    content/components \
+    public \
+    .next
+
+# Set up GitVan (if not already initialized)
+RUN if [ ! -f gitvan.config.js ]; then \
+    echo "Initializing GitVan..." && \
+    npx gitvan init --name "nextjs-cms-dev" --description "Next.js CMS Development Environment" || true; \
+    fi
+
+# Expose ports
+EXPOSE 3000 3001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:3000/api/health || exit 1
+
+# Default command
+CMD ["npm", "run", "dev"]

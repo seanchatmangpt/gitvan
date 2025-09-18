@@ -22,12 +22,15 @@ export class PredicateEvaluator {
    * @param {object} hook - Parsed hook definition
    * @param {object} currentGraph - Current knowledge graph
    * @param {object} [previousGraph] - Previous knowledge graph for comparison
+   * @param {object} [options] - Evaluation options
    * @returns {Promise<object>} Evaluation result
    */
-  async evaluate(hook, currentGraph, previousGraph = null) {
-    this.logger.info(
-      `🧠 Evaluating predicate: ${hook.predicateDefinition.type}`
-    );
+  async evaluate(hook, currentGraph, previousGraph = null, options = {}) {
+    if (options.verbose) {
+      this.logger.info(
+        `🧠 Evaluating predicate: ${hook.predicateDefinition.type}`
+      );
+    }
 
     try {
       const predicate = hook.predicateDefinition;
@@ -72,7 +75,9 @@ export class PredicateEvaluator {
           throw new Error(`Unknown predicate type: ${predicate.type}`);
       }
 
-      this.logger.info(`🧠 Predicate evaluation result: ${result}`);
+      if (options.verbose) {
+        this.logger.info(`🧠 Predicate evaluation result: ${result}`);
+      }
 
       return {
         result: result,

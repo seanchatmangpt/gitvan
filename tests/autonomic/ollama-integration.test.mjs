@@ -191,7 +191,7 @@ describe("Ollama-First AI Integration - Security", () => {
         export default {
           ai: {
             provider: 'ollama',
-            model: 'custom-model:latest',
+            model: 'qwen3-coder:30b',
             endpoint: 'http://localhost:11434'
           }
         };
@@ -204,7 +204,7 @@ describe("Ollama-First AI Integration - Security", () => {
 
       expect(ollama.default.generate).toHaveBeenCalledWith(
         expect.objectContaining({
-          model: "custom-model:latest",
+          model: "qwen3-coder:30b",
         })
       );
     });

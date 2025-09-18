@@ -20,10 +20,13 @@ export class HookParser {
    * Parse a hook definition from Turtle data
    * @param {object} turtle - useTurtle instance
    * @param {string} hookId - The ID of the hook to parse
+   * @param {object} [options] - Parsing options
    * @returns {Promise<object|null>} Parsed hook or null if not found
    */
-  async parseHook(turtle, hookId) {
-    this.logger.info(`🔍 Looking for hook: ${hookId}`);
+  async parseHook(turtle, hookId, options = {}) {
+    if (options.verbose) {
+      this.logger.info(`🔍 Looking for hook: ${hookId}`);
+    }
 
     try {
       // Find the hook definition
@@ -31,11 +34,15 @@ export class HookParser {
       const hookDef = hooks.find((hook) => hook.id === hookId);
 
       if (!hookDef) {
-        this.logger.warn(`⚠️ Hook not found: ${hookId}`);
+        if (options.verbose) {
+          this.logger.warn(`⚠️ Hook not found: ${hookId}`);
+        }
         return null;
       }
 
-      this.logger.info(`🔍 Found hook: ${hookDef.title}`);
+      if (options.verbose) {
+        this.logger.info(`🔍 Found hook: ${hookDef.title}`);
+      }
 
       // Parse hook predicate
       const predicate = await this._parsePredicate(turtle, hookDef);
@@ -58,9 +65,11 @@ export class HookParser {
         },
       };
 
-      this.logger.info(
-        `✅ Parsed hook: ${hookId} with ${workflows.length} workflows`
-      );
+      if (options.verbose) {
+        this.logger.info(
+          `✅ Parsed hook: ${hookId} with ${workflows.length} workflows`
+        );
+      }
       return hook;
     } catch (error) {
       this.logger.error(`❌ Failed to parse hook: ${hookId}`, error);

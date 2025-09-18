@@ -154,7 +154,7 @@ export class MigrationUtils {
         {
           type: "llm",
           prompt: "Review this code for quality and best practices",
-          model: "ollama/codellama",
+          model: "qwen3-coder:30b",
         },
       ],
     });
@@ -166,7 +166,7 @@ export class MigrationUtils {
         {
           type: "llm",
           prompt: "Generate comprehensive documentation for this code",
-          model: "ollama/codellama",
+          model: "qwen3-coder:30b",
         },
         { type: "js", module: "./doc-generation.mjs" },
       ],

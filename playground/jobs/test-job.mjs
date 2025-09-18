@@ -1,38 +1,81 @@
-import { defineJob, useGit, useTemplate, useNotes } from 'file:///Users/sac/gitvan/src/index.mjs'
-import { readFile, writeFile } from 'node:fs/promises'
-
-export default defineJob({
+defineJob({
   meta: {
-    desc: "Generated job for: You are GitVan, a Git-native development automatio...",
-    tags: ["ai-generated","automation"],
-    author: "GitVan AI",
+    name: "test-job",
+    description: "A test job to verify GitVan functionality",
     version: "1.0.0"
   },
   
+  on: {
+    cron: "0 */5 * * *"
+  },
+  
   async run({ ctx, payload, meta }) {
+    const git = useGit();
+    const receipt = useReceipt();
+    const notes = useNotes();
+    const pack = usePack();
+    
+    // Destructure methods
+    const { writeFile, add, commit } = git;
+    const { write: writeReceipt } = receipt;
+    const { write: writeNote } = notes;
+    const { apply: applyPack } = pack;
+    
+    const startTime = Date.now();
+    
     try {
-      const git = useGit();
-      const template = useTemplate();
-      const notes = useNotes();
+      // Write a test file
+      await writeFile("test-output.txt", `Test run at ${new Date().toISOString()}\n`);
       
-      console.log("Executing job: Generated job for: You are GitVan, a Git-native development automatio...");
+      // Add and commit the file
+      await add(["test-output.txt"]);
+      await commit("Add test output file");
       
-      // Execute operations
-      // Execute task
-    console.log('Execute task')
+      // Apply a test pack
+      const packResult = await applyPack("changelog-generator");
       
-      return {
-        ok: true,
-        artifacts: ["output.txt"],
-        summary: "Task completed successfully"
+      // Write receipt
+      await writeReceipt({
+        status: "success",
+        artifacts: ["test-output.txt"],
+        duration: Date.now() - startTime,
+        packResult: packResult
+      });
+      
+      // Write audit note
+      await writeNote(`Test job completed successfully at ${new Date().toISOString()}`);
+      
+      return { 
+        ok: true, 
+        artifacts: ["test-output.txt"], 
+        summary: "Test job completed successfully",
+        metadata: {
+          duration: Date.now() - startTime,
+          packApplied: "changelog-generator"
+        }
       };
     } catch (error) {
-      console.error('Job failed:', error.message);
-      return {
-        ok: false,
+      // Write error receipt
+      await writeReceipt({
+        status: "error",
         error: error.message,
-        artifacts: []
+        duration: Date.now() - startTime
+      });
+      
+      // Write audit note
+      await writeNote(`Test job failed at ${new Date().toISOString()}: ${error.message}`);
+      
+      console.error('Test job failed:', error.message);
+      
+      return { 
+        ok: false, 
+        error: error.message, 
+        artifacts: [],
+        summary: "Test job failed",
+        metadata: {
+          duration: Date.now() - startTime
+        }
       };
     }
   }
-})
+});

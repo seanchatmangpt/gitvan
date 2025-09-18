@@ -1,7 +1,7 @@
 {
   "kind": "receipt-collection",
-  "timestamp": "2025-09-17T18:57:16.496Z",
-  "count": 64,
+  "timestamp": "2025-09-18T00:36:17.001Z",
+  "count": 90,
   "receipts": [
     {
       "kind": "workflow-receipt",
@@ -274,7 +274,154 @@
       "kind": "workflow-receipt",
       "id": "unknown",
       "status": "SKIP",
-      "ts": "2025-09-17T18:57:16.413Z",
+      "ts": "2025-09-18T00:36:15.935Z",
+      "action": "unknown",
+      "artifacts": []
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "bcf03dd200782c6e",
+      "status": "OK",
+      "ts": "2025-09-18T00:29:47.509Z",
+      "commit": "2908bb95017c52a576151712d1a56019fdfa908d",
+      "action": "event",
+      "artifacts": [],
+      "fingerprint": "c685c3726d03bc2c",
+      "worktree": "/Users/sac/gitvan",
+      "branch": "main"
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "force-skip.njk",
+      "status": "SKIP",
+      "ts": "2025-09-18T00:30:10.473Z",
+      "commit": "2908bb95017c52a576151712d1a56019fdfa908d",
+      "action": "unknown",
+      "artifacts": []
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "force-append.njk",
+      "status": "SKIP",
+      "ts": "2025-09-18T00:30:10.620Z",
+      "commit": "2908bb95017c52a576151712d1a56019fdfa908d",
+      "action": "unknown",
+      "artifacts": []
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "copy.njk",
+      "status": "SKIP",
+      "ts": "2025-09-18T00:30:10.896Z",
+      "commit": "2908bb95017c52a576151712d1a56019fdfa908d",
+      "action": "unknown",
+      "artifacts": []
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "escape.njk",
+      "status": "SKIP",
+      "ts": "2025-09-18T00:30:11.022Z",
+      "commit": "2908bb95017c52a576151712d1a56019fdfa908d",
+      "action": "unknown",
+      "artifacts": []
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "idempotent.njk",
+      "status": "SKIP",
+      "ts": "2025-09-18T00:30:11.134Z",
+      "commit": "2908bb95017c52a576151712d1a56019fdfa908d",
+      "action": "unknown",
+      "artifacts": []
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "force-skip.njk",
+      "status": "SKIP",
+      "ts": "2025-09-18T00:31:15.945Z",
+      "commit": "2908bb95017c52a576151712d1a56019fdfa908d",
+      "action": "unknown",
+      "artifacts": []
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "force-append.njk",
+      "status": "SKIP",
+      "ts": "2025-09-18T00:31:16.121Z",
+      "commit": "2908bb95017c52a576151712d1a56019fdfa908d",
+      "action": "unknown",
+      "artifacts": []
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "copy.njk",
+      "status": "SKIP",
+      "ts": "2025-09-18T00:31:16.411Z",
+      "commit": "2908bb95017c52a576151712d1a56019fdfa908d",
+      "action": "unknown",
+      "artifacts": []
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "escape.njk",
+      "status": "SKIP",
+      "ts": "2025-09-18T00:31:16.523Z",
+      "commit": "2908bb95017c52a576151712d1a56019fdfa908d",
+      "action": "unknown",
+      "artifacts": []
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "idempotent.njk",
+      "status": "SKIP",
+      "ts": "2025-09-18T00:31:16.686Z",
+      "commit": "2908bb95017c52a576151712d1a56019fdfa908d",
+      "action": "unknown",
+      "artifacts": []
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "force-skip.njk",
+      "status": "SKIP",
+      "ts": "2025-09-18T00:35:48.277Z",
+      "commit": "2908bb95017c52a576151712d1a56019fdfa908d",
+      "action": "unknown",
+      "artifacts": []
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "force-append.njk",
+      "status": "SKIP",
+      "ts": "2025-09-18T00:35:48.522Z",
+      "commit": "2908bb95017c52a576151712d1a56019fdfa908d",
+      "action": "unknown",
+      "artifacts": []
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "copy.njk",
+      "status": "SKIP",
+      "ts": "2025-09-18T00:35:48.870Z",
+      "commit": "2908bb95017c52a576151712d1a56019fdfa908d",
+      "action": "unknown",
+      "artifacts": []
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "escape.njk",
+      "status": "SKIP",
+      "ts": "2025-09-18T00:35:48.984Z",
+      "commit": "2908bb95017c52a576151712d1a56019fdfa908d",
+      "action": "unknown",
+      "artifacts": []
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "idempotent.njk",
+      "status": "SKIP",
+      "ts": "2025-09-18T00:35:49.167Z",
+      "commit": "2908bb95017c52a576151712d1a56019fdfa908d",
       "action": "unknown",
       "artifacts": []
     },
@@ -327,9 +474,57 @@
       "kind": "workflow-receipt",
       "id": "unknown",
       "status": "SKIP",
-      "ts": "2025-09-17T18:57:16.439Z",
+      "ts": "2025-09-18T00:36:16.102Z",
       "action": "unknown",
       "artifacts": []
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "943879f84bc6a7ed",
+      "status": "OK",
+      "ts": "2025-09-17T21:13:33.595Z",
+      "commit": "3c437418be72104924d1cb5f42ca28e664054e46",
+      "action": "event",
+      "artifacts": [],
+      "fingerprint": "c63223d3c654bb47",
+      "worktree": "/Users/sac/gitvan",
+      "branch": "main"
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "6bd209cd2dd3d89c",
+      "status": "OK",
+      "ts": "2025-09-17T20:24:09.881Z",
+      "commit": "4a1294ff6ca44f3ab33dd71e101263b17b6885a7",
+      "action": "event",
+      "artifacts": [],
+      "fingerprint": "7de1c45275a39d99",
+      "worktree": "/Users/sac/gitvan",
+      "branch": "main"
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "4a26d48a29e36543",
+      "status": "OK",
+      "ts": "2025-09-17T20:23:51.212Z",
+      "commit": "5619165a0447c69fa90851a0eed19dc4192e2728",
+      "action": "event",
+      "artifacts": [],
+      "fingerprint": "745c181581f92c7f",
+      "worktree": "/Users/sac/gitvan",
+      "branch": "main"
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "334245cf1968ad51",
+      "status": "OK",
+      "ts": "2025-09-17T22:04:20.994Z",
+      "commit": "571e460c6c74e9b517e72377119e8ea4b28065a0",
+      "action": "event",
+      "artifacts": [],
+      "fingerprint": "8c758f327a86ab8d",
+      "worktree": "/Users/sac/gitvan",
+      "branch": "main"
     },
     {
       "kind": "workflow-receipt",
@@ -540,6 +735,42 @@
     },
     {
       "kind": "workflow-receipt",
+      "id": "27aa5fbc49d7771f",
+      "status": "OK",
+      "ts": "2025-09-17T21:13:44.743Z",
+      "commit": "81141bc9c593007dca5a5df2c14f1abd966c2687",
+      "action": "event",
+      "artifacts": [],
+      "fingerprint": "1b27022172c8df86",
+      "worktree": "/Users/sac/gitvan",
+      "branch": "main"
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "f624f70521e270f8",
+      "status": "OK",
+      "ts": "2025-09-18T00:29:36.175Z",
+      "commit": "9a4043563d75c5c5cc4f52d5ed0c37f1f1a23fec",
+      "action": "event",
+      "artifacts": [],
+      "fingerprint": "47779fffa2e2362f",
+      "worktree": "/Users/sac/gitvan",
+      "branch": "main"
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "8b02ad71dbb39875",
+      "status": "OK",
+      "ts": "2025-09-18T00:06:40.584Z",
+      "commit": "a9e3fe88362483aefc5f8f445f17098c36957628",
+      "action": "event",
+      "artifacts": [],
+      "fingerprint": "8a3c4cb1468ca3e2",
+      "worktree": "/Users/sac/gitvan",
+      "branch": "main"
+    },
+    {
+      "kind": "workflow-receipt",
       "id": "force-skip.njk",
       "status": "SKIP",
       "ts": "2025-09-17T05:57:08.457Z",
@@ -585,6 +816,30 @@
     },
     {
       "kind": "workflow-receipt",
+      "id": "6cae9a652058808d",
+      "status": "OK",
+      "ts": "2025-09-17T21:12:37.352Z",
+      "commit": "c74cf8866c31e189f52ba53f4d0d41e27ed2df81",
+      "action": "event",
+      "artifacts": [],
+      "fingerprint": "52fc3a4abaf75d88",
+      "worktree": "/Users/sac/gitvan",
+      "branch": "main"
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "d45119f22fa1f953",
+      "status": "OK",
+      "ts": "2025-09-17T21:12:29.717Z",
+      "commit": "def5eab5626e497098263c5cf160b5c792488497",
+      "action": "event",
+      "artifacts": [],
+      "fingerprint": "7999ca03cafc4d0f",
+      "worktree": "/Users/sac/gitvan",
+      "branch": "main"
+    },
+    {
+      "kind": "workflow-receipt",
       "id": "force-skip.njk",
       "status": "SKIP",
       "ts": "2025-09-17T08:47:37.729Z",
@@ -627,17 +882,29 @@
       "commit": "defb0ba9a8f8f644331bcd3d75deac680581113e",
       "action": "unknown",
       "artifacts": []
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "016690cad778457e",
+      "status": "OK",
+      "ts": "2025-09-17T22:55:49.740Z",
+      "commit": "f36c5b8d3f030eda5c66f897791c10b29340a7ee",
+      "action": "event",
+      "artifacts": [],
+      "fingerprint": "e1ac2df6ea661ebc",
+      "worktree": "/Users/sac/gitvan",
+      "branch": "main"
     }
   ],
   "summary": {
-    "ok": 9,
+    "ok": 20,
     "error": 0,
-    "skip": 55
+    "skip": 70
   },
   "metadata": {
-    "totalProcessed": 9,
-    "validReceipts": 64,
-    "invalidReceipts": 38,
+    "totalProcessed": 20,
+    "validReceipts": 90,
+    "invalidReceipts": 82,
     "gitRef": "refs/notes/gitvan/results",
     "generatedBy": "gitvan-audit-cli"
   }

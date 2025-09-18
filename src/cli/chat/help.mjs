@@ -25,12 +25,40 @@ All commands generate production-ready code, not skeleton templates.
   gitvan chat design "Create CI pipeline"    - Interactive design wizard
   gitvan chat help                            - Show this help
 
+### AI Template Loop Commands
+  gitvan chat template "Create React component" - Generate template with AI loop integration
+  gitvan chat optimize templates/component.njk   - Optimize template based on execution metrics
+  gitvan chat feedback templates/component.njk --rating 5 --comment "Great!" - Collect user feedback
+  gitvan chat insights templates/component.njk  - Get comprehensive template insights
+  gitvan chat metrics                           - Get system-wide AI metrics
+  gitvan chat persist                           - Persist all learning data
+  gitvan chat history                           - Show execution history
+  gitvan chat clear                             - Clear execution history
+
 ### Command Options
   --temp <number>     - Temperature (0.0-1.0, default: 0.7)
   --model <name>      - AI model name (from gitvan.config.js)
   --name <name>       - Custom job name (for apply command)
   --kind <type>       - Job type (job, event, default: job)
   --path <path>       - Custom output path (for generate command)
+
+## 🔄 AI Template Loop System
+
+GitVan's AI Template Loop creates a tight feedback loop between Large Language Models and front-matter templates:
+
+### Learning Components
+- **Template Learning**: Tracks execution patterns and learns from success/failure
+- **Prompt Evolution**: AI prompts improve based on template execution results
+- **Context Awareness**: Generates templates with rich project context
+- **Continuous Optimization**: Templates improve based on metrics and user feedback
+- **User Feedback Integration**: Collects and integrates user feedback for improvements
+
+### Benefits
+- **Self-Improving Templates**: Templates get better with every use
+- **Context-Aware Generation**: AI understands project structure and user patterns
+- **Learning from Success**: Successful patterns are preserved and reused
+- **Failure Pattern Avoidance**: Known failure patterns are avoided
+- **User-Driven Improvements**: Templates evolve based on user feedback
 
 ## 🎯 Command Workflow
 

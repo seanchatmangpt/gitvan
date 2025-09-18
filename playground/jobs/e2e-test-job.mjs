@@ -1,38 +1,93 @@
-import { defineJob, useGit, useTemplate, useNotes } from 'file:///Users/sac/gitvan/src/index.mjs'
-import { readFile, writeFile } from 'node:fs/promises'
-
-export default defineJob({
-  meta: {
-    desc: "Generated job for: You are GitVan, a Git-native development automatio...",
-    tags: ["ai-generated","automation"],
-    author: "GitVan AI",
-    version: "1.0.0"
+defineJob({
+  name: "e2e-test-job",
+  description: "Run end-to-end tests for the application",
+  on: {
+    push: "refs/heads/main",
+    cron: "0 4 * * *"
   },
-  
   async run({ ctx, payload, meta }) {
+    const git = useGit();
+    const receipt = useReceipt();
+    const notes = useNotes();
+    const pack = usePack();
+    
+    // Destructure methods
+    const { writeFile, add, commit } = git;
+    const { write: writeReceipt } = receipt;
+    const { write: writeNote } = notes;
+    const { apply: applyPack } = pack;
+    
+    const startTime = Date.now();
+    
     try {
-      const git = useGit();
-      const template = useTemplate();
-      const notes = useNotes();
+      // Write start note
+      await writeNote(`E2E test job started at ${new Date().toISOString()}`);
       
-      console.log("Executing job: Generated job for: You are GitVan, a Git-native development automatio...");
+      // Apply the testing automation pack
+      const testResult = await applyPack("e2e-test-runner");
       
-      // Execute operations
-      // Execute task
-    console.log('Execute task')
+      // Generate test report
+      const reportContent = `
+        E2E Test Report
+        ===============
+        
+        Status: ${testResult.status}
+        Duration: ${testResult.duration}ms
+        Artifacts: ${JSON.stringify(testResult.artifacts)}
+        Tests Run: ${testResult.testsRun || 0}
+        Failures: ${testResult.failures || 0}
+        
+        Generated at: ${new Date().toISOString()}
+      `;
+      
+      // Write test report file
+      await writeFile("test-report.txt", reportContent);
+      
+      // Add and commit the report
+      await add(["test-report.txt"]);
+      await commit("Add E2E test report");
+      
+      // Write receipt
+      await writeReceipt({
+        status: "success",
+        artifacts: ["test-report.txt"],
+        duration: Date.now() - startTime,
+        testsRun: testResult.testsRun || 0,
+        failures: testResult.failures || 0
+      });
+      
+      await writeNote(`E2E test job completed successfully at ${new Date().toISOString()}`);
       
       return {
         ok: true,
-        artifacts: ["output.txt"],
-        summary: "Task completed successfully"
+        artifacts: ["test-report.txt"],
+        summary: "End-to-end tests completed successfully",
+        metadata: {
+          duration: Date.now() - startTime,
+          testsRun: testResult.testsRun || 0,
+          failures: testResult.failures || 0
+        }
       };
+      
     } catch (error) {
-      console.error('Job failed:', error.message);
+      // Write error receipt
+      await writeReceipt({
+        status: "error",
+        error: error.message,
+        duration: Date.now() - startTime
+      });
+      
+      await writeNote(`E2E test job failed at ${new Date().toISOString()}: ${error.message}`);
+      
       return {
         ok: false,
         error: error.message,
-        artifacts: []
+        artifacts: [],
+        summary: "End-to-end tests failed",
+        metadata: {
+          duration: Date.now() - startTime
+        }
       };
     }
   }
-})
+});

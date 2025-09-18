@@ -15,6 +15,16 @@ import { explainCommand } from "./chat/explain.mjs";
 import { designCommand } from "./chat/design.mjs";
 import { helpCommand } from "./chat/help.mjs";
 
+// Import AI template loop commands
+import { generateTemplateCommand } from "./ai-template-loop.mjs";
+import { optimizeTemplateCommand } from "./ai-template-loop.mjs";
+import { collectFeedbackCommand } from "./ai-template-loop.mjs";
+import { getInsightsCommand } from "./ai-template-loop.mjs";
+import { getSystemMetricsCommand } from "./ai-template-loop.mjs";
+import { persistLearningDataCommand } from "./ai-template-loop.mjs";
+import { showHistoryCommand } from "./ai-template-loop.mjs";
+import { clearHistoryCommand } from "./ai-template-loop.mjs";
+
 const logger = createLogger("chat-cli");
 
 /**
@@ -44,6 +54,31 @@ export async function chatCommand(subcommand = "help", args = {}) {
 
     case "design":
       return await designCommand(config, args);
+
+    // AI Template Loop commands
+    case "template":
+      return await generateTemplateCommand(args);
+
+    case "optimize":
+      return await optimizeTemplateCommand(args);
+
+    case "feedback":
+      return await collectFeedbackCommand(args);
+
+    case "insights":
+      return await getInsightsCommand(args);
+
+    case "metrics":
+      return await getSystemMetricsCommand(args);
+
+    case "persist":
+      return await persistLearningDataCommand(args);
+
+    case "history":
+      return await showHistoryCommand(args);
+
+    case "clear":
+      return await clearHistoryCommand(args);
 
     case "help":
       return await helpCommand();

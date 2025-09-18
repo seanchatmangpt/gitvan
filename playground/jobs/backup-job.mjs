@@ -1,45 +1,103 @@
-import { defineJob, useGit, useTemplate, useNotes } from 'file:///Users/sac/gitvan/src/index.mjs'
-import { readFile, writeFile } from 'node:fs/promises'
+import { defineJob } from 'gitvan/index.js';
 
 export default defineJob({
   meta: {
-    desc: "Backup important files using GitVan composables",
-    tags: ["backup","automation","file-operation"],
-    author: "GitVan AI",
+    name: "backup-job",
+    description: "Creates a backup of the repository with timestamped files",
     version: "1.0.0"
   },
-  config: {
-  "cron": "0 2 * * *"
-},
+  
+  on: {
+    cron: "0 2 * * *"
+  },
+
   async run({ ctx, payload, meta }) {
+    const git = useGit();
+    const receipt = useReceipt();
+    const notes = useNotes();
+    
+    // Destructure methods
+    const { 
+      writeFile, 
+      add, 
+      commit,
+      getBranchName,
+      getCommitHash
+    } = git;
+    
+    const { write: writeReceipt } = receipt;
+    const { write: writeNote } = notes;
+    
+    const startTime = Date.now();
+    
     try {
-      const git = useGit();
-      const template = useTemplate();
-      const notes = useNotes();
+      // Get current branch and commit hash for backup metadata
+      const branch = await getBranchName();
+      const commitHash = await getCommitHash();
       
-      console.log("Executing job: Backup important files using GitVan composables");
+      // Create timestamped backup files
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const backupFiles = [];
       
-      // Execute operations
-      // Create backup directory using git.writeFile()
-    await writeFile('output.txt', 'Generated content')
-    // Log backup completion using notes.write()
-    await notes.write('Job executed')
-    // Copy files to backup using git.readFile() and git.writeFile()
-    const sourceContent = await readFile('source.txt')
-    await writeFile('backup.txt', sourceContent)
-      
-      return {
-        ok: true,
-        artifacts: ["backup/"],
-        summary: "Backup completed successfully with GitVan composables"
+      // Backup current state
+      const backupContent = {
+        timestamp,
+        branch,
+        commit: commitHash,
+        files: []
       };
+      
+      // Create backup manifest file
+      const manifestFile = `backup-${timestamp}.json`;
+      await writeFile(manifestFile, JSON.stringify(backupContent, null, 2));
+      backupFiles.push(manifestFile);
+      
+      // Add manifest to git
+      await add([manifestFile]);
+      
+      // Commit the backup
+      const commitMessage = `Backup: ${branch} at ${timestamp}`;
+      await commit(commitMessage);
+      
+      // Log backup completion
+      await writeNote(`Backup completed successfully at ${timestamp}`);
+      
+      // Track job result
+      await writeReceipt({
+        status: "success",
+        artifacts: backupFiles,
+        duration: Date.now() - startTime,
+        metadata: {
+          branch,
+          commit: commitHash
+        }
+      });
+      
+      return { 
+        ok: true, 
+        artifacts: backupFiles,
+        summary: `Backup created for branch ${branch} at ${timestamp}`,
+        metadata: {
+          branch,
+          commit: commitHash
+        }
+      };
+      
     } catch (error) {
-      console.error('Job failed:', error.message);
-      return {
-        ok: false,
+      // Track failure
+      await writeReceipt({
+        status: "error",
         error: error.message,
-        artifacts: []
+        duration: Date.now() - startTime
+      });
+      
+      console.error('Backup job failed:', error);
+      return { 
+        ok: false, 
+        error: error.message,
+        artifacts: [],
+        summary: "Backup job failed"
       };
     }
   }
-})
+});

@@ -27,6 +27,7 @@ import { scaffoldCommand } from "./cli/scaffold.mjs";
 import { marketplaceCommand } from "./cli/marketplace.mjs";
 import { marketplaceScanCommand } from "./cli/marketplace-scan.mjs";
 import { composeCommand } from "./cli/compose.mjs";
+import { saveCommand } from "./cli/save.mjs";
 import { ensureCommand } from "./cli/ensure.mjs";
 
 const commands = {
@@ -51,6 +52,7 @@ const commands = {
   'marketplace-scan': marketplaceScanCommand,
   compose: handleCompose,
   ensure: handleEnsure,
+  save: async (...args) => await saveCommand.run({ args: {} }),
 };
 
 async function main() {
@@ -174,6 +176,14 @@ async function handleInit() {
     model: "${GitVanDefaults.ai.model}",
   },
   
+  // Auto-install packs on gitvan init
+  autoInstall: {
+    packs: [
+      // Add packs here that should be auto-installed
+      // Example: "nextjs-github-pack"
+    ]
+  },
+  
   // Custom data available in templates
   data: {
     project: {
@@ -274,13 +284,136 @@ Generated at: {{ nowISO }}
   }
 
   console.log("\n🎉 GitVan initialization complete!");
-  console.log("\nNext steps:");
-  console.log("   1. Configure Git user: git config user.name \"Your Name\"");
-  console.log("   2. Configure Git email: git config user.email \"your@email.com\"");
-  console.log("   3. Test the setup: gitvan ensure");
-  console.log("   4. Run the sample job: gitvan run hello");
-  console.log("   5. Try the sample scaffold: gitvan scaffold example-pack:component --inputs '{\"name\":\"MyComponent\"}'");
-  console.log("\nFor more help: gitvan help");
+  
+  // Now do the complete autonomic setup
+  console.log("\n🤖 Starting autonomic setup...");
+  try {
+    const { backgroundSetup } = await import("./cli/background-setup.mjs");
+    const results = await backgroundSetup(cwd);
+    
+    console.log("\n🎉 Autonomic setup complete!");
+    console.log("\nYour GitVan project is now fully autonomous:");
+    
+    if (results.daemon) {
+      console.log("   ✅ Daemon is running");
+    } else {
+      console.log("   ⚠️  Daemon startup failed");
+    }
+    
+    if (results.hooks?.success) {
+      console.log("   ✅ Git hooks are installed");
+    } else {
+      console.log("   ⚠️  Hook installation had issues");
+    }
+    
+    if (results.packs?.success) {
+      console.log("   ✅ Pack registry is ready");
+    } else {
+      console.log("   ⚠️  Pack loading had issues");
+    }
+    
+    console.log("   • Jobs will run automatically on commits");
+    console.log("\nNext: gitvan save");
+    
+  } catch (error) {
+    console.log("\n⚠️  Setup completed with some issues:");
+    console.log("   Error:", error.message);
+    console.log("\nYou can continue with: gitvan save");
+  }
+}
+
+/**
+ * Auto-install packs from gitvan.config.js
+ */
+export async function autoInstallPacksFromConfig(cwd) {
+  const { existsSync } = await import('node:fs');
+  const { join } = await import('pathe');
+  
+  const configPath = join(cwd, "gitvan.config.js");
+  
+  if (!existsSync(configPath)) {
+    return; // No config file
+  }
+  
+  try {
+    // Load the config file
+    const configModule = await import(`file://${configPath}`);
+    const config = configModule.default || configModule;
+    
+    // Check for auto-install packs
+    if (config.autoInstall && Array.isArray(config.autoInstall.packs)) {
+      const packs = config.autoInstall.packs;
+      
+      if (packs.length === 0) {
+        console.log("   ℹ️  No packs configured for auto-install");
+        return;
+      }
+      
+      console.log(`   📦 Found ${packs.length} packs to auto-install`);
+      
+      for (const packConfig of packs) {
+        const packId = typeof packConfig === 'string' ? packConfig : packConfig.id;
+        const packOptions = typeof packConfig === 'object' ? packConfig : {};
+        
+        console.log(`   📥 Installing ${packId}...`);
+        
+        try {
+          // Use the marketplace install logic
+          await handleMarketplaceInstall(packId, packOptions);
+          console.log(`   ✅ Installed ${packId}`);
+        } catch (error) {
+          console.log(`   ⚠️  Failed to install ${packId}:`, error.message);
+        }
+      }
+      
+      console.log("   ✅ Auto-install completed");
+    } else {
+      console.log("   ℹ️  No auto-install packs configured");
+    }
+    
+  } catch (error) {
+    console.log("   ⚠️  Failed to read config:", error.message);
+  }
+}
+
+/**
+ * Handle marketplace install (extracted from marketplace command)
+ */
+async function handleMarketplaceInstall(packId, options = {}) {
+  const { Marketplace } = await import('./pack/marketplace.mjs');
+  const { PackManager } = await import('./pack/manager.mjs');
+  
+  const marketplace = new Marketplace();
+  const manager = new PackManager();
+  
+  // Get pack info
+  const packInfo = await marketplace.inspect(packId);
+  
+  // Parse inputs
+  let inputs = {};
+  if (options.inputs) {
+    try {
+      inputs = JSON.parse(options.inputs);
+    } catch (e) {
+      throw new Error('Invalid JSON inputs: ' + e.message);
+    }
+  }
+  
+  // Download and install
+  const registry = marketplace.getRegistry();
+  const packPath = await registry.resolve(packId);
+  
+  if (!packPath) {
+    throw new Error('Failed to download pack');
+  }
+  
+  const result = await manager.applier.apply(packPath, process.cwd(), inputs);
+  
+  if (result.status === 'OK') {
+    console.log(`   ✅ Pack ${packId} installed successfully`);
+  } else {
+    throw new Error(`Installation failed: ${result.message}`);
+  }
 }
 
 async function handleDaemon(action = "start", ...options) {
@@ -704,7 +837,7 @@ function handleHelp() {
 GitVan v2 - AI-powered Git workflow automation
 
 Usage:
-  gitvan init                                             Initialize GitVan in current directory
+  gitvan init                                             Initialize GitVan with complete autonomic setup
   gitvan daemon [start|stop|status] [--worktrees all]    Manage daemon
   gitvan job [list|run] [--name <job-name>]              Job management
   gitvan event [list|simulate|test]                      Event management
@@ -717,7 +850,7 @@ Usage:
   gitvan marketplace [browse|search|inspect|quickstart]  Marketplace commands
   gitvan marketplace-scan [index|scan|status|config]     Marketplace scanning
   gitvan compose <pack1> <pack2> [--inputs '{}']         Compose multiple packs
-  gitvan ensure [--init-config] [--skip-git]             Ensure GitVan setup
+  gitvan save [--message <msg>] [--no-ai]                   Save changes with AI commit message
   gitvan schedule apply                                  Apply scheduled tasks
   gitvan worktree list                                   List all worktrees
   gitvan run <job-name>                                  Run a specific job (legacy)
@@ -740,7 +873,7 @@ Examples:
   gitvan marketplace search "changelog"                Search for packs
   gitvan marketplace quickstart docs                   Get docs quickstart
   gitvan compose my-pack1 my-pack2                     Compose multiple packs
-  gitvan ensure --init-config                          Initialize GitVan config
+  gitvan save                                            Save changes with AI commit message
 `);
 }
 

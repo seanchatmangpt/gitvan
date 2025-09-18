@@ -9,9 +9,9 @@ tags: ["git", "automation", "templating", "ai", "workflows"]
 
 # GitVan v2
 
-**Git-native development automation platform with unified hooks system**
+**Autonomic Git-native development automation platform with AI-powered workflows**
 
-GitVan transforms Git into a runtime environment for development automation, providing intelligent job scheduling, template generation, and AI-powered workflow creation through a unified hooks system.
+GitVan transforms Git into a runtime environment for development automation, providing intelligent job scheduling, template generation, and AI-powered workflow creation through a unified autonomic system. Everything happens automatically after initialization.
 
 ## 🚀 Quick Start
 
@@ -23,51 +23,189 @@ npm install -g gitvan
 npm install gitvan
 ```
 
-### Deterministic First Run
+### Autonomic First Run
 
 ```bash
+# 1. Initialize GitVan (does everything automatically)
 git init my-repo && cd my-repo
 gitvan init
-echo 'console.log(1)' > index.js
-git add . && git commit -m "init"
 
-# Add a real job with unified hooks system
-echo "import { defineJob, useGit, useNotes } from 'file:///Users/sac/gitvan/src/index.mjs'
+# 2. Start coding - GitVan handles everything
+echo 'console.log("Hello GitVan!")' > index.js
+gitvan save  # AI generates commit message, jobs run automatically
 
-export default defineJob({
-  meta: { name: 'touch', desc: 'Touch file on commit/merge' },
-  hooks: ['post-commit', 'post-merge'], // Unified hooks system
-  async run(context) {
-    const git = useGit()
-    const notes = useNotes()
-    await git.writeFile('TOUCHED', 'ok')
-    await notes.write(\`touch for \${await git.headSha()}\`)
-    return { ok: true, artifacts: ['TOUCHED'] }
+# 3. That's it! The system is fully autonomic
+```
+
+**What happens automatically:**
+- ✅ Daemon starts and monitors Git events
+- ✅ Git hooks install for automatic job execution  
+- ✅ Pack registry loads for project scaffolding
+- ✅ AI generates intelligent commit messages (local Ollama)
+- ✅ Jobs run automatically on commits
+- ✅ Complete 360 project lifecycle automation
+
+## 🔒 Security-First AI Integration
+
+GitVan prioritizes security with **Ollama-first AI processing**:
+
+- **🔐 Local AI Processing**: All AI operations happen on your machine
+- **🛡️ No API Keys Required**: Completely self-contained operation  
+- **🏠 Offline Capable**: Works without internet connection
+- **⚡ Fast & Reliable**: Local processing with timeout protection
+
+```bash
+# AI commit messages generated locally with Ollama
+gitvan save  # Uses qwen3-coder:30b model locally
+
+# Fallback to external AI only if explicitly configured
+export ANTHROPIC_API_KEY="your-key"  # Optional external fallback
+```
+
+## 🏗️ Architecture Features
+
+### **Autonomic System**
+- **Single Command Setup**: `gitvan init` does everything automatically
+- **Background Processing**: Non-blocking daemon and pack loading
+- **Lazy Loading**: Packs loaded only when needed
+- **Event-Driven**: All operations triggered by Git events
+
+### **Job-Only Architecture** 
+- **Unified Execution**: Jobs handle all automation tasks
+- **No Hooks Directory**: Simplified architecture eliminates complexity
+- **Direct Git Integration**: Jobs interact with Git directly
+- **Automatic Discovery**: Jobs discovered and executed automatically
+
+### **Pack System**
+- **GitHub Templates**: Auto-install packs from `gitvan.config.js`
+- **Lazy Registry**: Packs loaded on-demand for performance
+- **Built-in Packs**: Next.js, React, Node.js starters included
+- **Remote Support**: Install packs from GitHub/GitLab via Giget
+
+### **Non-Blocking Operations**
+- **Fast Init**: Completes in < 1 second with background setup
+- **Timeout Protection**: All operations have safety timeouts
+- **Graceful Degradation**: Continue on errors with fallbacks
+- **Resource Efficient**: Load only what's needed when needed
+
+## 🎯 GitHub Templates
+
+Create repositories with just `gitvan.config.js` - everything else happens automatically:
+
+### **Next.js Template**
+```javascript
+// gitvan.config.js
+export default {
+  autoInstall: {
+    packs: ["nextjs-github-pack"]
+  },
+  ai: {
+    provider: "ollama",
+    model: "qwen3-coder:30b"
   }
-})" > jobs/touch.mjs
-
-git commit -m "feat: add touch job"
-gitvan hook post-commit
-test -f TOUCHED && echo ok
+};
 ```
 
-### Initialize a Project
-
+**Usage:**
 ```bash
+# 1. Create repository from template
+# 2. Clone repository  
+# 3. One command:
 gitvan init
+
+# 4. Start coding:
+gitvan save
 ```
 
-This creates a complete GitVan project structure with:
-- 📁 Directory structure (`.gitvan/`, `jobs/`, `templates/`, `packs/`)
-- ⚙️ Configuration file (`gitvan.config.js`)
-- 📝 Sample files (job, template, pack)
-- 🔧 Git repository setup
+### **React Template**
+```javascript
+// gitvan.config.js  
+export default {
+  autoInstall: {
+    packs: ["react-vite-pack", "tailwind-pack"]
+  },
+  ai: {
+    provider: "ollama", 
+    model: "qwen3-coder:30b"
+  }
+};
+```
 
-### Run Your First Job
+**Result**: Complete project setup with:
+- ✅ Next.js/React project structure
+- ✅ TypeScript configuration
+- ✅ ESLint and Tailwind CSS
+- ✅ Development server ready
+- ✅ AI-powered commit messages
 
+## 🚀 Core Commands
+
+### **Essential Commands**
 ```bash
-gitvan run hello
+gitvan init          # Complete autonomic setup (daemon + hooks + packs)
+gitvan save          # AI-powered commit with automatic job execution
+gitvan help          # Show all available commands
 ```
+
+### **Job Management**
+```bash
+gitvan list          # List available jobs
+gitvan run <job>     # Run specific job manually
+gitvan job list      # Detailed job information
+```
+
+### **Daemon Control**
+```bash
+gitvan daemon start  # Start background daemon
+gitvan daemon stop   # Stop daemon
+gitvan daemon status # Check daemon status
+```
+
+### **Pack Management**
+```bash
+gitvan pack list     # List installed packs
+gitvan pack apply    # Apply pack to project
+gitvan marketplace   # Browse and install packs
+```
+
+### **Advanced Features**
+```bash
+gitvan event simulate --files "src/**"  # Test job execution
+gitvan audit build                      # Generate audit reports
+gitvan chat generate "Create a job"     # AI job generation
+```
+
+## 🔄 360 Project Lifecycle
+
+GitVan provides complete automation from initialization to deployment:
+
+### **1. Initialization**
+```bash
+gitvan init  # Sets up everything automatically
+```
+
+### **2. Development** 
+```bash
+# Edit files
+echo "console.log('Hello World')" > src/index.js
+
+# Save with AI commit message
+gitvan save  # AI generates: "feat: add Hello World console log"
+```
+
+### **3. Automation**
+- Jobs run automatically on commits
+- Templates generate project files
+- Packs scaffold complete applications
+- AI provides intelligent commit messages
+
+### **4. Deployment**
+- Built-in deployment jobs
+- CI/CD integration via Git hooks
+- Automated testing and validation
+- Production-ready configurations
+
+**The Result**: Complete autonomic development workflow where everything happens automatically after `gitvan init`.
 
 ## 🧩 Composables API
 
@@ -493,7 +631,18 @@ console.log(`Is main worktree: ${status.isMain}`);
 
 ## 🚀 Performance
 
-GitVan is optimized for sub-second execution of single-file jobs on local repositories. For complex workflows, performance scales linearly with job complexity.
+GitVan is optimized for autonomic operation with:
+- **Fast Init**: < 1 second initialization with background setup
+- **Non-Blocking**: All operations run asynchronously
+- **Lazy Loading**: Packs and jobs loaded only when needed
+- **Timeout Protection**: No hanging operations
+- **Resource Efficient**: Minimal memory and CPU usage
+
+## 🎯 Vision: The Autonomic Future
+
+GitVan represents the future of development automation - where everything happens automatically after initialization. No more manual setup, no more configuration complexity, no more external dependencies for basic operations.
+
+**The Dream**: A user can `gitvan init` and have a complete, intelligent development environment that handles everything from commit messages to deployment - all powered by local AI and autonomic systems.
 
 ## 🤝 Contributing
 
@@ -501,7 +650,7 @@ GitVan is optimized for sub-second execution of single-file jobs on local reposi
 2. Create a feature branch: `git checkout -b feature-name`
 3. Make your changes
 4. Run tests: `pnpm test`
-5. Commit: `git commit -m "Add feature"`
+5. Commit: `gitvan save` (uses AI commit messages!)
 6. Push: `git push origin feature-name`
 7. Submit a pull request
 

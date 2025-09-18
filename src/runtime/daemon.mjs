@@ -4,7 +4,7 @@ import { useExec } from "../composables/exec.mjs";
 import { acquireLock, worktreeLockRef, releaseLock } from "./locks.mjs";
 import { writeReceipt } from "./receipt.mjs";
 import { recentShas, sleep, eventFires } from "./utils.mjs";
-import { discoverHooks, loadHookDefinition } from "./events.mjs";
+import { discoverJobs } from "./jobs.mjs";
 import { loadConfig } from "./config.mjs";
 import { join } from "pathe";
 
@@ -15,27 +15,23 @@ export async function startDaemon(opts = {}, registry = null, sel = "current") {
   const config = await loadConfig(opts.rootDir);
   const mergedOpts = { ...config, ...opts };
 
-  // Discover hooks if not provided in registry
+  // Discover jobs if not provided in registry
   if (!registry) {
-    const hooksDir = join(
+    const jobsDir = join(
       mergedOpts.rootDir || process.cwd(),
-      mergedOpts.hooks?.directory || "hooks",
+      mergedOpts.jobs?.dirs?.[0] || "jobs",
     );
-    const hookFiles = discoverHooks(hooksDir);
-    const hooks = [];
+    const jobs = discoverJobs(jobsDir);
+    
+    // Convert jobs to hooks for compatibility
+    const hooks = jobs.map(job => ({
+      name: job.name,
+      file: job.file,
+      run: job.run,
+      job: job.name,
+    }));
 
-    for (const hookFile of hookFiles) {
-      const definition = await loadHookDefinition(hookFile.file);
-      if (definition) {
-        hooks.push({
-          ...hookFile,
-          run: definition.run || definition,
-          job: definition.job,
-        });
-      }
-    }
-
-    registry = { hooks, jobs: {} };
+    registry = { hooks, jobs };
   }
 
   const git = useGit();

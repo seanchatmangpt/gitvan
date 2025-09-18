@@ -8,6 +8,7 @@ import {
   mkdirSync,
   readdirSync,
   statSync,
+  copyFileSync,
   rmSync,
 } from "node:fs";
 import { homedir } from "node:os";
@@ -1204,6 +1205,70 @@ export class PackRegistry {
         join(nextMinPath, "pack.json"),
         JSON.stringify(manifest, null, 2)
       );
+    }
+
+    // Create nextjs-github-pack builtin pack
+    const nextjsGithubPath = join(this.builtinDir, "nextjs-github-pack");
+    if (!existsSync(nextjsGithubPath)) {
+      mkdirSync(nextjsGithubPath, { recursive: true });
+
+      const manifest = {
+        id: "nextjs-github-pack",
+        name: "Next.js GitHub Pack",
+        version: "1.0.0",
+        description: "A GitVan pack for creating Next.js projects with jobs only, designed for GitHub distribution",
+        author: "GitVan Team",
+        license: "MIT",
+        tags: ["nextjs", "react", "starter", "jobs-only", "github"],
+        capabilities: [
+          "project-scaffolding",
+          "job-execution",
+          "template-rendering"
+        ],
+        provides: {
+          jobs: [
+            {
+              name: "nextjs:create-app",
+              file: "jobs/create-next-app.job.mjs",
+              description: "Creates a complete Next.js project structure"
+            },
+            {
+              name: "nextjs:start-app", 
+              file: "jobs/start-next-app.job.mjs",
+              description: "Starts the Next.js development server"
+            }
+          ]
+        },
+        gitvan: {
+          packType: "github-template",
+          version: "2.0.0",
+          compatibility: {
+            gitvan: ">=2.0.0"
+          }
+        }
+      };
+
+      writeFileSync(
+        join(nextjsGithubPath, "pack.json"),
+        JSON.stringify(manifest, null, 2)
+      );
+      
+      // Copy job files from packs directory
+      const sourceJobsDir = join(process.cwd(), "packs", "nextjs-github-pack", "jobs");
+      const targetJobsDir = join(nextjsGithubPath, "jobs");
+      
+      if (existsSync(sourceJobsDir)) {
+        mkdirSync(targetJobsDir, { recursive: true });
+        
+        const jobFiles = readdirSync(sourceJobsDir);
+        for (const jobFile of jobFiles) {
+          if (jobFile.endsWith('.mjs')) {
+            const sourcePath = join(sourceJobsDir, jobFile);
+            const targetPath = join(targetJobsDir, jobFile);
+            copyFileSync(sourcePath, targetPath);
+          }
+        }
+      }
     }
 
     // Create nodejs-basic builtin pack

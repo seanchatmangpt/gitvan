@@ -6,6 +6,19 @@ This guide provides step-by-step instructions for deploying GitVan v2 to npm, in
 
 ## 📋 **Pre-Deployment Checklist**
 
+### **0. Release Hygiene Verification**
+```bash
+# Run release verification script
+npm run verify-release
+
+# This checks:
+# ✅ All runtime dependencies are in dependencies (not devDependencies)
+# ✅ Version consistency between package.json and CLI
+# ✅ All required files are present and executable
+# ✅ Hook spawn paths use absolute Node + local CLI paths
+# ✅ hookable@^5.5.3 is pinned correctly
+```
+
 ### **1. Code Quality Verification**
 ```bash
 # Run all tests
@@ -562,6 +575,28 @@ echo "✅ Release verification complete!"
 - 💬 User feedback
 - ⭐ GitHub stars
 - 🔄 Issue resolution
+
+## 🔧 **Troubleshooting Common Issues**
+
+### **Issue: CLI reports wrong version (1.0.0 instead of 2.0.0)**
+**Root Cause:** Version hardcoded in CLI instead of reading from package.json
+**Fix:** Ensure CLI uses `join(__dirname, "..", "package.json")` to read version
+
+### **Issue: Missing dependencies at runtime**
+**Root Cause:** Runtime dependencies in devDependencies instead of dependencies
+**Fix:** Move all runtime deps to dependencies array in package.json
+
+### **Issue: Hooks fail with ENOENT error**
+**Root Cause:** Spawning bare "gitvan" command instead of absolute Node + local CLI path
+**Fix:** Use `spawn(process.execPath, [cliPath, ...args])` with resolved CLI path
+
+### **Issue: hookable version conflicts**
+**Root Cause:** hookable range doesn't include fixed version
+**Fix:** Pin to `hookable@^5.5.3` or update range to include fixed version
+
+### **Issue: Clean-room install fails**
+**Root Cause:** Package missing required files or dependencies
+**Fix:** Run `npm run verify-release` before publishing
 
 ## 🏆 **Conclusion**
 

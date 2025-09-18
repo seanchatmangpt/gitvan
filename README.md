@@ -1,12 +1,3 @@
----
-title: "GitVan v2"
-description: "Git-native development automation platform with AI-powered workflows"
-version: "2.0.0"
-author: "GitVan Team"
-license: "MIT"
-tags: ["git", "automation", "templating", "ai", "workflows"]
----
-
 # GitVan v2
 
 **Autonomic Git-native development automation platform with AI-powered workflows**

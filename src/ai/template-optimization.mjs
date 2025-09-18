@@ -486,3 +486,5 @@ Generate an optimized version of the template:
 
 // Export singleton instance
 export const templateOptimizer = new TemplateOptimizer();
+
+

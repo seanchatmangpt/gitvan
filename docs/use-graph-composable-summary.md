@@ -150,3 +150,5 @@ The useGraph composable is now ready for:
 The useGraph composable successfully integrates RDF/SPARQL data processing with GitVan's commit-scoped snapshot system. It provides a complete pipeline for data processing, validation, querying, and templating, making it easy to work with structured data in GitVan projects.
 
 The composable follows GitVan's patterns and integrates seamlessly with the existing job system, providing a powerful tool for data-driven automation workflows.
+
+

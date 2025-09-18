@@ -75,7 +75,8 @@ class GitHooksSetup {
 # GitVan Pre-Commit Hook - Surgical Precision
 # Only processes staged changes, not entire repository
 
-node "${this.handlerPath}" pre-commit
+ROOT="$(git rev-parse --show-toplevel)"
+exec "$(command -v node)" "$ROOT/node_modules/gitvan/bin/git-hook-handler.mjs" pre-commit "$@"
 `;
 
     this.writeHook("pre-commit", hookContent);
@@ -90,7 +91,8 @@ node "${this.handlerPath}" pre-commit
 # GitVan Post-Commit Hook - Surgical Precision
 # Only processes last commit, not entire history
 
-node "${this.handlerPath}" post-commit
+ROOT="$(git rev-parse --show-toplevel)"
+exec "$(command -v node)" "$ROOT/node_modules/gitvan/bin/git-hook-handler.mjs" post-commit "$@"
 `;
 
     this.writeHook("post-commit", hookContent);
@@ -105,7 +107,8 @@ node "${this.handlerPath}" post-commit
 # GitVan Pre-Push Hook - Surgical Precision
 # Only processes push changes, not entire repository
 
-node "${this.handlerPath}" pre-push
+ROOT="$(git rev-parse --show-toplevel)"
+exec "$(command -v node)" "$ROOT/node_modules/gitvan/bin/git-hook-handler.mjs" pre-push "$@"
 `;
 
     this.writeHook("pre-push", hookContent);
@@ -120,7 +123,8 @@ node "${this.handlerPath}" pre-push
 # GitVan Post-Merge Hook - Surgical Precision
 # Only processes merged changes, not entire repository
 
-node "${this.handlerPath}" post-merge
+ROOT="$(git rev-parse --show-toplevel)"
+exec "$(command -v node)" "$ROOT/node_modules/gitvan/bin/git-hook-handler.mjs" post-merge "$@"
 `;
 
     this.writeHook("post-merge", hookContent);
@@ -135,7 +139,8 @@ node "${this.handlerPath}" post-merge
 # GitVan Post-Checkout Hook - Surgical Precision
 # Only processes checkout changes, not entire repository
 
-node "${this.handlerPath}" post-checkout
+ROOT="$(git rev-parse --show-toplevel)"
+exec "$(command -v node)" "$ROOT/node_modules/gitvan/bin/git-hook-handler.mjs" post-checkout "$@"
 `;
 
     this.writeHook("post-checkout", hookContent);

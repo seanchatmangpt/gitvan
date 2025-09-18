@@ -353,3 +353,5 @@ export async function clearHistoryCommand(args) {
     throw error;
   }
 }
+
+

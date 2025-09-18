@@ -118,12 +118,31 @@ GitVan is a Git-native development automation platform that uses Git as a runtim
 - ✅ **ZERO** exit code (success)
 - ✅ **ACTUAL** functionality verified, not just "command ran"
 
+### MANDATORY: Pre-Declaration Checklist
+Before declaring ANY task complete, you MUST:
+
+1. **SCAN FOR FAILURE INDICATORS**: Run `grep -E "(❌|ERROR|Failed|✗|WARN|⚠️)"` on the output
+2. **CHECK EXIT CODE**: Verify the command exited with code 0
+3. **READ EVERY LINE**: Don't skip any output, especially at the end
+4. **VERIFY FUNCTIONALITY**: Test that the feature actually works, not just that a command ran
+5. **ADMIT FAILURES**: If there are ANY errors/warnings, state them explicitly
+
+### FAILURE EXAMPLES TO NEVER MISS:
+- `❌ Pre-commit hook not installed`
+- `ERROR ✗ Not a Git repository`
+- `WARN ✗ Git identity not configured`
+- `⚠️ Configuration incomplete (2/6 checks passed)`
+- `WARN Hook installation timed out`
+- Any exit code != 0
+- Any stack traces or error messages
+
 **REMEMBER:**
 - Writing a file to disk DOES NOT mean it works
 - Finishing a TODO is NOT enough without verification
 - You MUST verify with actual command execution
 - **NEVER declare success without checking ALL console output for errors**
 - **ALWAYS read the full output before claiming anything works**
+- **IF YOU SEE ANY FAILURE INDICATORS, THE TASK IS NOT COMPLETE**
 
 ## Quick Commands
 ```bash

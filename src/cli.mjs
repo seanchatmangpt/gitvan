@@ -2,6 +2,11 @@
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, extname } from "pathe";
+import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 import { GitVanDaemon, startDaemon } from "./runtime/daemon.mjs";
 import { discoverEvents, loadEventDefinition } from "./runtime/events.mjs";
 import { readReceiptsRange } from "./runtime/receipt.mjs";
@@ -822,9 +827,9 @@ async function handleLLM(subcommand = "call", ...args) {
 }
 
 function handleVersion() {
-  // Read version from package.json
+  // Read version from package.json - single source of truth
   try {
-    const packageJson = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8"));
+    const packageJson = JSON.parse(readFileSync(join(__dirname, "..", "package.json"), "utf8"));
     console.log(packageJson.version);
   } catch (error) {
     // Fallback to hardcoded version if package.json not found

@@ -32,3 +32,5 @@ ex:salary rdf:type rdf:Property ;
     rdfs:label "salary" ;
     rdfs:domain ex:Person ;
     rdfs:range xsd:integer .
+
+

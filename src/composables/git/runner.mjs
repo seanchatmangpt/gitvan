@@ -13,13 +13,14 @@ const execFileAsync = promisify(execFile);
 
 async function runGit(args, { cwd, env, maxBuffer = 12 * 1024 * 1024 } = {}) {
   try {
-    const { stdout } = await execFileAsync("git", args, {
+    const result = await execFileAsync("git", args, {
       cwd,
       env,
       maxBuffer,
       encoding: "utf8",
     });
-    return stdout.trim();
+    const stdout = result.stdout || "";
+    return typeof stdout === "string" ? stdout.trim() : "";
   } catch (error) {
     // Handle specific cases for empty repositories
     const command = `git ${args.join(" ")}`;
@@ -27,13 +28,14 @@ async function runGit(args, { cwd, env, maxBuffer = 12 * 1024 * 1024 } = {}) {
     const stderr = error.stderr || "";
     const fullError = `${errorMsg} ${stderr}`;
 
-    // Handle empty repository cases for rev-list commands
+    // Handle empty repository cases for rev-parse HEAD and rev-list commands
     if (
-      args[0] === "rev-list" &&
-      (fullError.includes("ambiguous argument") ||
-        fullError.includes("unknown revision") ||
-        fullError.includes("not in the working tree") ||
-        fullError.includes("fatal: ambiguous argument"))
+      (args[0] === "rev-parse" && args[1] === "HEAD") ||
+      (args[0] === "rev-list" &&
+        (fullError.includes("ambiguous argument") ||
+          fullError.includes("unknown revision") ||
+          fullError.includes("not in the working tree") ||
+          fullError.includes("fatal: ambiguous argument")))
     ) {
       return ""; // Return empty string for empty repo
     }

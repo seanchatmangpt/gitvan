@@ -532,3 +532,5 @@ Generate a complete GitVan template with front-matter:
 
 // Export singleton instance
 export const contextAwareGenerator = new ContextAwareGenerator();
+
+

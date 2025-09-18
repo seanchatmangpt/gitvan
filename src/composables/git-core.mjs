@@ -17,7 +17,7 @@ export async function runGit(
       env,
       maxBuffer,
     });
-    return stdout.trim();
+    return typeof stdout === "string" ? stdout.trim() : "";
   } catch (error) {
     // Handle specific cases for empty repositories
     const command = `git ${args.join(" ")}`;

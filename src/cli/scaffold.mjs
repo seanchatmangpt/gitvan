@@ -1,54 +1,58 @@
-import { defineCommand } from 'citty';
-import { createLogger } from '../utils/logger.mjs';
-import consola from 'consola';
+import { defineCommand } from "citty";
+import { createLogger } from "../utils/logger.mjs";
+import consola from "consola";
 
-const logger = createLogger('cli:scaffold');
+const logger = createLogger("cli:scaffold");
 
 export const scaffoldCommand = defineCommand({
   meta: {
-    name: 'scaffold',
-    description: 'Run a pack scaffold to generate content'
+    name: "scaffold",
+    description: "Run a pack scaffold to generate content",
   },
   args: {
     scaffold: {
-      type: 'positional',
+      type: "positional",
       required: true,
-      description: 'Scaffold ID (pack:scaffold format)'
+      description: "Scaffold ID (pack:scaffold format)",
     },
     inputs: {
-      type: 'string',
-      description: 'JSON inputs for the scaffold'
+      type: "string",
+      description: "JSON inputs for the scaffold",
     },
     target: {
-      type: 'string',
-      description: 'Target directory (defaults to current directory)'
-    }
+      type: "string",
+      description: "Target directory (defaults to current directory)",
+    },
   },
   async run({ args }) {
     // Handle help case
-    if (args.scaffold === 'help') {
-      consola.info('GitVan Scaffold Command');
-      consola.info('Usage: gitvan scaffold <pack:scaffold>');
-      consola.info('');
-      consola.info('Options:');
-      consola.info('  --inputs <json>        JSON inputs for the scaffold');
-      consola.info('  --target <dir>         Target directory (defaults to current)');
-      consola.info('');
-      consola.info('Examples:');
-      consola.info('  gitvan scaffold next-minimal:page');
-      consola.info('  gitvan scaffold next-minimal:api --inputs \'{"name":"users"}\'');
-      consola.info('  gitvan scaffold nodejs-basic:component --target ./src');
+    if (args.scaffold === "help") {
+      consola.info("GitVan Scaffold Command");
+      consola.info("Usage: gitvan scaffold <pack:scaffold>");
+      consola.info("");
+      consola.info("Options:");
+      consola.info("  --inputs <json>        JSON inputs for the scaffold");
+      consola.info(
+        "  --target <dir>         Target directory (defaults to current)"
+      );
+      consola.info("");
+      consola.info("Examples:");
+      consola.info("  gitvan scaffold next-minimal:page");
+      consola.info(
+        '  gitvan scaffold next-minimal:api --inputs \'{"name":"users"}\''
+      );
+      consola.info("  gitvan scaffold nodejs-basic:component --target ./src");
       return;
     }
 
     try {
-      const { ScaffoldRunner } = await import('../pack/scaffold.mjs');
+      const { ScaffoldRunner } = await import("../pack/scaffold.mjs");
       const runner = new ScaffoldRunner();
 
       // Parse scaffold ID
-      const [packId, scaffoldId] = args.scaffold.split(':');
+      const [packId, scaffoldId] = args.scaffold.split(":");
       if (!packId || !scaffoldId) {
-        consola.error('Invalid scaffold ID. Use format: pack:scaffold');
+        consola.error("Invalid scaffold ID. Use format: pack:scaffold");
         return;
       }
 
@@ -58,7 +62,7 @@ export const scaffoldCommand = defineCommand({
         try {
           inputs = JSON.parse(args.inputs);
         } catch (e) {
-          consola.error('Invalid JSON inputs:', e.message);
+          consola.error("Invalid JSON inputs:", e.message);
           return;
         }
       }
@@ -68,11 +72,11 @@ export const scaffoldCommand = defineCommand({
 
       const result = await runner.run(packId, scaffoldId, inputs, {
         targetDir,
-        interactive: true
+        interactive: true,
       });
 
-      if (result.status === 'OK') {
-        consola.success('Scaffold completed successfully');
+      if (result.status === "OK") {
+        consola.success("Scaffold completed successfully");
         consola.info(`Created ${result.created.length} files`);
         for (const file of result.created) {
           consola.info(`  + ${file}`);
@@ -86,26 +90,28 @@ export const scaffoldCommand = defineCommand({
         }
 
         if (result.commands && result.commands.length > 0) {
-          consola.info('\nRun these commands to complete setup:');
+          consola.info("\nRun these commands to complete setup:");
           for (const cmd of result.commands) {
             consola.info(`  $ ${cmd}`);
           }
         }
-      } else if (result.status === 'ERROR') {
-        consola.error('Scaffold failed:', result.errors);
+      } else if (result.status === "ERROR") {
+        consola.error("Scaffold failed:", result.errors);
         if (result.partialResults) {
-          consola.warn('Some files were created before the error occurred');
+          consola.warn("Some files were created before the error occurred");
         }
-      } else if (result.status === 'PARTIAL') {
-        consola.warn(`Scaffold partially completed with ${result.errors.length} errors`);
+      } else if (result.status === "PARTIAL") {
+        consola.warn(
+          `Scaffold partially completed with ${result.errors.length} errors`
+        );
         consola.info(`Created ${result.created.length} files successfully`);
         for (const error of result.errors) {
           consola.error(`  - ${error.step}: ${error.error}`);
         }
       }
     } catch (error) {
-      consola.error('Failed to run scaffold:', error.message);
-      logger.error('Scaffold error:', error);
+      consola.error("Failed to run scaffold:", error.message);
+      logger.error("Scaffold error:", error);
     }
-  }
+  },
 });

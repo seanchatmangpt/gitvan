@@ -28,11 +28,11 @@ export class JobLoader {
       // Find all job files using readdir
       const files = await readdir(this.jobsDir);
       const jobFiles = files
-        .filter(file => extname(file) === '.mjs')
-        .map(file => join(this.jobsDir, file));
-      
+        .filter((file) => extname(file) === ".mjs")
+        .map((file) => join(this.jobsDir, file));
+
       console.log(`   📁 Found ${jobFiles.length} job files`);
-      
+
       if (jobFiles.length === 0) {
         console.log("   ✅ No job files found");
         return;

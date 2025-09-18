@@ -381,3 +381,5 @@ export class TemplateLearningManager {
 
 // Export singleton instance
 export const templateLearning = new TemplateLearningManager();
+
+

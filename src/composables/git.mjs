@@ -17,7 +17,7 @@ async function runGit(args, { cwd, env, maxBuffer = 12 * 1024 * 1024 } = {}) {
       env,
       maxBuffer,
     });
-    return stdout.trim();
+    return typeof stdout === "string" ? stdout.trim() : "";
   } catch (error) {
     // Handle specific cases for empty repositories
     const command = `git ${args.join(" ")}`;

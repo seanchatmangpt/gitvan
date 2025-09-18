@@ -1,6 +1,11 @@
 import { spawn } from "node:child_process";
 import { join } from "pathe";
+import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
 import consola from "consola";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 /**
  * Start daemon in background process - completely non-blocking
@@ -9,8 +14,11 @@ export async function startBackgroundDaemon(cwd = process.cwd()) {
   return new Promise((resolve, reject) => {
     consola.info("Starting GitVan daemon in background...");
 
-    // Spawn daemon as completely detached process
-    const daemonProcess = spawn("gitvan", ["daemon", "start"], {
+    // Resolve the local CLI path - never spawn bare "gitvan"
+    const cliPath = join(__dirname, "..", "..", "bin", "gitvan.mjs");
+    
+    // Spawn daemon as completely detached process using absolute Node + local CLI
+    const daemonProcess = spawn(process.execPath, [cliPath, "daemon", "start"], {
       cwd: cwd,
       detached: true,
       stdio: ["ignore", "pipe", "pipe"],
@@ -51,7 +59,10 @@ export async function installHooksAsync(cwd = process.cwd()) {
   return new Promise((resolve, reject) => {
     consola.info("Installing Git hooks...");
 
-    const hookProcess = spawn("gitvan", ["ensure", "--init-config"], {
+    // Resolve the hook setup script path directly
+    const hookSetupPath = join(__dirname, "..", "..", "bin", "git-hooks-setup.mjs");
+    
+    const hookProcess = spawn(process.execPath, [hookSetupPath, "setup"], {
       cwd: cwd,
       stdio: ["ignore", "pipe", "pipe"],
     });
@@ -82,14 +93,14 @@ export async function installHooksAsync(cwd = process.cwd()) {
       reject(error);
     });
 
-    // Timeout after 10 seconds
+    // Timeout after 5 seconds (reduced from 10 since we're calling the script directly)
     setTimeout(() => {
       if (!hookProcess.killed) {
         hookProcess.kill();
         consola.warn("Hook installation timed out");
         resolve({ success: false, error: "Timeout" });
       }
-    }, 10000);
+    }, 5000);
   });
 }
 

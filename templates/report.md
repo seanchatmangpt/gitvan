@@ -38,3 +38,5 @@ Total people: {{ people | length }}
 {% for city, cityPeople in cities %}
 - **{{ city }}**: {{ cityPeople | length }} people
 {% endfor %}
+
+

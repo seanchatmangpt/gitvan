@@ -49,7 +49,7 @@ export async function useGraph(opts = {}) {
   const queriesUsed = new Set();
 
   const sha = async () =>
-    (await sh("git", ["rev-parse", "HEAD"])).stdout.trim();
+    (await sh("git", ["rev-parse", "HEAD"])).stdout ? (await sh("git", ["rev-parse", "HEAD"])).stdout.trim() : "";
 
   const addTurtle = async (ttl) => {
     store.addQuads(parser.parse(ttl));
@@ -260,3 +260,5 @@ export async function useGraph(opts = {}) {
     receipt,
   };
 }
+
+

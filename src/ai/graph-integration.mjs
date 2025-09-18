@@ -341,3 +341,5 @@ Generate a complete GitVan template with graph capabilities:
 
 // Export singleton instance
 export const graphAwareTemplateGenerator = new GraphAwareTemplateGenerator();
+
+

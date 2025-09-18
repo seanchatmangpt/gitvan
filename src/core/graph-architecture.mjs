@@ -727,3 +727,5 @@ export class GitVanGraphArchitecture {
 
 // Export the main architecture class
 export default GitVanGraphArchitecture;
+
+

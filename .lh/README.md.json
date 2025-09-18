@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 14,
+            "activePatchIndex": 15,
             "patches": [
                 {
                     "date": 1758042393509,
@@ -64,6 +64,10 @@
                 {
                     "date": 1758156416480,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -12,18 +12,34 @@\n **Autonomic Git-native development automation platform with AI-powered workflows**\n \n GitVan transforms Git into a runtime environment for development automation, providing intelligent job scheduling, template generation, and AI-powered workflow creation through a unified autonomic system. Everything happens automatically after initialization.\n \n+## 📦 NPM Package\n+\n+GitVan v2.0.0 is now available on npm! Install it globally or locally:\n+\n+- **Package:** [gitvan@2.0.0](https://www.npmjs.com/package/gitvan)\n+- **Registry:** npmjs.org\n+- **Size:** 3.1 MB unpacked\n+- **Dependencies:** 7 core packages (Ollama, Giget, Hookable, etc.)\n+\n ## 🚀 Quick Start\n \n ### Installation\n \n ```bash\n+# Install globally for CLI access\n npm install -g gitvan\n-# or\n+\n+# Or install locally in your project\n npm install gitvan\n+\n+# Verify installation\n+gitvan --version\n ```\n \n+**📦 Available on npm:** [gitvan@2.0.0](https://www.npmjs.com/package/gitvan)\n+\n ### Autonomic First Run\n \n ```bash\n # 1. Initialize GitVan (does everything automatically)\n"
+                },
+                {
+                    "date": 1758209909846,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,13 +1,4 @@\n----\n-title: \"GitVan v2\"\n-description: \"Git-native development automation platform with AI-powered workflows\"\n-version: \"2.0.0\"\n-author: \"GitVan Team\"\n-license: \"MIT\"\n-tags: [\"git\", \"automation\", \"templating\", \"ai\", \"workflows\"]\n----\n-\n # GitVan v2\n \n **Autonomic Git-native development automation platform with AI-powered workflows**\n \n"
                 }
             ],
             "date": 1758042393509,

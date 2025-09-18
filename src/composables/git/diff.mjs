@@ -3,7 +3,7 @@
 // - File diff and change detection helpers
 // - Changed paths filtering with glob support
 
-import minimatch from "minimatch";
+import { minimatch } from "minimatch";
 
 export default function makeDiff(base, run, runVoid, toArr) {
   return {

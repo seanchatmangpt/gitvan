@@ -9,8 +9,8 @@
  * 4. Zero-overhead repository scanning
  */
 
-import { gitvanHookable } from './src/core/hookable.mjs';
-import { withGitVan } from './src/core/context.mjs';
+import { gitvanHookable } from '../src/core/hookable.mjs';
+import { withGitVan } from '../src/core/context.mjs';
 
 /**
  * Git Hook Handler - Surgical Precision for AI Swarms
@@ -24,14 +24,18 @@ import { withGitVan } from './src/core/context.mjs';
 class GitHookHandler {
   constructor() {
     this.hookable = gitvanHookable;
-    this.context = this.extractGitContext();
+    this.context = null; // Will be set in init()
+  }
+
+  async init() {
+    this.context = await this.extractGitContext();
   }
 
   /**
    * Extract Git context from environment - Dark Matter 80/20
    * Only extracts what's needed, not entire Git state
    */
-  extractGitContext() {
+  async extractGitContext() {
     const context = {
       cwd: process.cwd(),
       hookName: process.argv[2] || 'unknown',
@@ -42,23 +46,23 @@ class GitHookHandler {
     switch (context.hookName) {
       case 'pre-commit':
         // Pre-commit: Only staged changes
-        context.stagedFiles = this.getStagedFiles();
+        context.stagedFiles = await this.getStagedFiles();
         break;
       
       case 'post-commit':
         // Post-commit: Only last commit
-        context.lastCommit = this.getLastCommit();
+        context.lastCommit = await this.getLastCommit();
         break;
       
       case 'pre-push':
         // Pre-push: Only push changes
         context.remote = process.env.GIT_REMOTE || 'origin';
-        context.branch = this.getCurrentBranch();
+        context.branch = await this.getCurrentBranch();
         break;
       
       case 'post-merge':
         // Post-merge: Only merged changes
-        context.mergeCommit = this.getMergeCommit();
+        context.mergeCommit = await this.getMergeCommit();
         break;
       
       case 'post-checkout':
@@ -74,7 +78,7 @@ class GitHookHandler {
   /**
    * Get staged files - Surgical precision
    */
-  getStagedFiles() {
+  async getStagedFiles() {
     try {
       const { execSync } = await import('child_process');
       const output = execSync('git diff --cached --name-only', { encoding: 'utf8' });
@@ -88,7 +92,7 @@ class GitHookHandler {
   /**
    * Get last commit - Surgical precision
    */
-  getLastCommit() {
+  async getLastCommit() {
     try {
       const { execSync } = await import('child_process');
       const sha = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
@@ -103,7 +107,7 @@ class GitHookHandler {
   /**
    * Get current branch - Surgical precision
    */
-  getCurrentBranch() {
+  async getCurrentBranch() {
     try {
       const { execSync } = await import('child_process');
       return execSync('git branch --show-current', { encoding: 'utf8' }).trim();
@@ -116,7 +120,7 @@ class GitHookHandler {
   /**
    * Get merge commit - Surgical precision
    */
-  getMergeCommit() {
+  async getMergeCommit() {
     try {
       const { execSync } = await import('child_process');
       const sha = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
@@ -162,6 +166,7 @@ class GitHookHandler {
  */
 async function main() {
   const handler = new GitHookHandler();
+  await handler.init();
   
   try {
     await handler.handleHook();

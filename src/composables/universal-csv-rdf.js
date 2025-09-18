@@ -114,3 +114,5 @@ function formatRDFValue(value) {
   // Default to string literal
   return `"${trimmed.replace(/"/g, '\\"')}"`;
 }
+
+

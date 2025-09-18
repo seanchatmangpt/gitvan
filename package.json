@@ -1,6 +1,6 @@
 {
   "name": "gitvan",
-  "version": "2.0.0",
+  "version": "2.0.2",
   "description": "Autonomic Git-native development automation platform with AI-powered workflows",
   "main": "bin/gitvan.mjs",
   "type": "module",
@@ -20,7 +20,9 @@
   "scripts": {
     "test": "vitest",
     "build": "echo \"GitVan is ready for distribution\"",
-    "postpublish": "echo \"GitVan v2.0.0 published successfully!\""
+    "prepublishOnly": "npm run build && npm run verify-release",
+    "verify-release": "node scripts/verify-release.mjs",
+    "postpublish": "echo \"GitVan v2.0.2 published successfully!\""
   },
   "keywords": [
     "git",
@@ -49,15 +51,32 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
+    "@babel/parser": "^7.23.0",
+    "@babel/traverse": "^7.23.0",
+    "ai": "^3.0.0",
     "c12": "^3.3.0",
+    "cacache": "^17.1.0",
     "citty": "^0.1.6",
     "consola": "^3.2.3",
+    "defu": "^6.1.0",
+    "fuse.js": "^7.0.0",
     "giget": "^1.2.2",
+    "gray-matter": "^4.0.3",
     "hookable": "^5.5.3",
+    "inflection": "^2.0.1",
+    "klona": "^2.0.6",
+    "lru-cache": "^10.0.0",
+    "minimatch": "^9.0.0",
+    "node-cron": "^3.0.3",
     "nunjucks": "^3.2.4",
     "ollama": "^0.5.0",
     "pathe": "^1.1.1",
-    "unctx": "^2.3.1"
+    "prompts": "^2.4.2",
+    "semver": "^7.5.0",
+    "toml": "^3.0.0",
+    "unrouting": "^0.0.1",
+    "unctx": "^2.3.1",
+    "zod": "^3.22.0"
   },
   "devDependencies": {
     "vitest": "^1.0.0"

@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 18,
+            "activePatchIndex": 19,
             "patches": [
                 {
                     "date": 1758057329115,
@@ -80,6 +80,10 @@
                 {
                     "date": 1758152688918,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -51,9 +51,9 @@\n   marketplace: handleMarketplace,\n   'marketplace-scan': marketplaceScanCommand,\n   compose: handleCompose,\n   ensure: handleEnsure,\n-  save: saveCommand,\n+  save: async (...args) => await saveCommand.run({ args: {} }),\n };\n \n async function main() {\n   const [, , command, ...args] = process.argv;\n"
+                },
+                {
+                    "date": 1758210105646,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,8 +1,13 @@\n #!/usr/bin/env node\n \n import { readFileSync, readdirSync, statSync } from \"node:fs\";\n import { join, extname } from \"pathe\";\n+import { fileURLToPath } from \"node:url\";\n+import { dirname } from \"node:path\";\n+\n+const __filename = fileURLToPath(import.meta.url);\n+const __dirname = dirname(__filename);\n import { GitVanDaemon, startDaemon } from \"./runtime/daemon.mjs\";\n import { discoverEvents, loadEventDefinition } from \"./runtime/events.mjs\";\n import { readReceiptsRange } from \"./runtime/receipt.mjs\";\n import {\n@@ -821,11 +826,11 @@\n   }\n }\n \n function handleVersion() {\n-  // Read version from package.json\n+  // Read version from package.json - single source of truth\n   try {\n-    const packageJson = JSON.parse(readFileSync(join(process.cwd(), \"package.json\"), \"utf8\"));\n+    const packageJson = JSON.parse(readFileSync(join(__dirname, \"..\", \"package.json\"), \"utf8\"));\n     console.log(packageJson.version);\n   } catch (error) {\n     // Fallback to hardcoded version if package.json not found\n     console.log(\"2.0.0\");\n"
                 }
             ],
             "date": 1758057329115,

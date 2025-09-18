@@ -3,28 +3,28 @@
  * Integrates jobs with the graph architecture for enhanced data processing
  */
 
-import { defineJob } from '../runtime/define-job.mjs'
-import { GitVanGraphArchitecture } from './graph-architecture.mjs'
+import { defineJob } from "../runtime/define-job.mjs";
+import { GitVanGraphArchitecture } from "./graph-architecture.mjs";
 
 /**
  * Graph-Based Job Definition
  * Extends defineJob with graph capabilities
  */
 export function defineGraphJob(config) {
-  const { graphId, graphConfig, ...jobConfig } = config
+  const { graphId, graphConfig, ...jobConfig } = config;
 
   return defineJob({
     ...jobConfig,
     async run({ inputs, context }) {
       // Initialize graph architecture if needed
-      const graphArch = new GitVanGraphArchitecture()
-      await graphArch.initialize()
+      const graphArch = new GitVanGraphArchitecture();
+      await graphArch.initialize();
 
       // Get the specified graph
       const graph = await graphArch.graphManager.registry.getGraph(
-        graphId || 'jobs',
+        graphId || "jobs",
         graphConfig || {}
-      )
+      );
 
       // Execute the original job logic with graph context
       if (jobConfig.run) {
@@ -32,13 +32,13 @@ export function defineGraphJob(config) {
           inputs,
           context,
           graph,
-          graphArch
-        })
+          graphArch,
+        });
       }
 
-      return { status: 'completed', graphId }
-    }
-  })
+      return { status: "completed", graphId };
+    },
+  });
 }
 
 /**
@@ -48,15 +48,15 @@ export function defineGraphJob(config) {
 // Project Analysis Job
 export const projectAnalysisJob = defineGraphJob({
   meta: {
-    name: 'project:analysis',
-    description: 'Analyze project structure and metadata using graph queries'
+    name: "project:analysis",
+    description: "Analyze project structure and metadata using graph queries",
   },
-  graphId: 'project',
-  hooks: ['post-commit'],
+  graphId: "project",
+  hooks: ["post-commit"],
   async run({ graph, inputs }) {
     // Analyze project files
-    const projectFiles = inputs.files || []
-    
+    const projectFiles = inputs.files || [];
+
     // Add project analysis to graph
     await graph.addTurtle(`
       @prefix gv: <https://gitvan.dev/project/> .
@@ -66,7 +66,7 @@ export const projectAnalysisJob = defineGraphJob({
         gv:analyzedAt "${new Date().toISOString()}" ;
         gv:fileCount "${projectFiles.length}" ;
         gv:files "${JSON.stringify(projectFiles)}" .
-    `)
+    `);
 
     // Query project metrics
     await graph.setQuery(`
@@ -78,54 +78,58 @@ export const projectAnalysisJob = defineGraphJob({
       }
       ORDER BY DESC(?analyzedAt)
       LIMIT 1
-    `)
+    `);
 
-    const metrics = await graph.select()
+    const metrics = await graph.select();
 
     return {
-      status: 'completed',
+      status: "completed",
       metrics: metrics[0] || {},
-      analysis: 'Project structure analyzed using graph queries'
-    }
-  }
-})
+      analysis: "Project structure analyzed using graph queries",
+    };
+  },
+});
 
 // AI Template Processing Job
 export const aiTemplateJob = defineGraphJob({
   meta: {
-    name: 'ai:template-processing',
-    description: 'Process templates using AI graph loop enhancement'
+    name: "ai:template-processing",
+    description: "Process templates using AI graph loop enhancement",
   },
-  graphId: 'ai',
-  hooks: ['post-commit'],
+  graphId: "ai",
+  hooks: ["post-commit"],
   async run({ graph, graphArch, inputs }) {
-    const templateId = inputs.templateId || `template_${Date.now()}`
-    const templateData = inputs.templateData || {}
-    const context = inputs.context || {}
+    const templateId = inputs.templateId || `template_${Date.now()}`;
+    const templateData = inputs.templateData || {};
+    const context = inputs.context || {};
 
     // Process template with AI enhancement
-    const result = await graphArch.processAITemplate(templateId, templateData, context)
+    const result = await graphArch.processAITemplate(
+      templateId,
+      templateData,
+      context
+    );
 
     return {
-      status: 'completed',
+      status: "completed",
       templateId,
       result,
-      aiEnhanced: true
-    }
-  }
-})
+      aiEnhanced: true,
+    };
+  },
+});
 
 // Pack Dependency Analysis Job
 export const packDependencyJob = defineGraphJob({
   meta: {
-    name: 'pack:dependency-analysis',
-    description: 'Analyze pack dependencies using graph queries'
+    name: "pack:dependency-analysis",
+    description: "Analyze pack dependencies using graph queries",
   },
-  graphId: 'packs',
-  hooks: ['post-commit'],
+  graphId: "packs",
+  hooks: ["post-commit"],
   async run({ graph, inputs }) {
-    const packId = inputs.packId || 'current'
-    
+    const packId = inputs.packId || "current";
+
     // Analyze pack dependencies
     await graph.setQuery(`
       PREFIX gv: <https://gitvan.dev/packs/>
@@ -135,30 +139,30 @@ export const packDependencyJob = defineGraphJob({
           gv:dependencies ?dependencies .
         FILTER(?packId = "${packId}")
       }
-    `)
+    `);
 
-    const dependencies = await graph.select()
+    const dependencies = await graph.select();
 
     return {
-      status: 'completed',
+      status: "completed",
       packId,
       dependencies,
-      analysis: 'Pack dependencies analyzed using graph queries'
-    }
-  }
-})
+      analysis: "Pack dependencies analyzed using graph queries",
+    };
+  },
+});
 
 // Marketplace Indexing Job
 export const marketplaceIndexJob = defineGraphJob({
   meta: {
-    name: 'marketplace:index',
-    description: 'Index marketplace data using graph storage'
+    name: "marketplace:index",
+    description: "Index marketplace data using graph storage",
   },
-  graphId: 'marketplace',
-  hooks: ['post-commit'],
+  graphId: "marketplace",
+  hooks: ["post-commit"],
   async run({ graph, inputs }) {
-    const marketplaceData = inputs.marketplaceData || []
-    
+    const marketplaceData = inputs.marketplaceData || [];
+
     // Index marketplace data
     for (const item of marketplaceData) {
       await graph.addTurtle(`
@@ -171,38 +175,38 @@ export const marketplaceIndexJob = defineGraphJob({
           gv:type "${item.type}" ;
           gv:category "${item.category}" ;
           gv:indexedAt "${new Date().toISOString()}" .
-      `)
+      `);
     }
 
     return {
-      status: 'completed',
+      status: "completed",
       indexed: marketplaceData.length,
-      analysis: 'Marketplace data indexed using graph storage'
-    }
-  }
-})
+      analysis: "Marketplace data indexed using graph storage",
+    };
+  },
+});
 
 // Graph Analytics Job
 export const graphAnalyticsJob = defineGraphJob({
   meta: {
-    name: 'graph:analytics',
-    description: 'Generate analytics from graph data'
+    name: "graph:analytics",
+    description: "Generate analytics from graph data",
   },
-  graphId: 'jobs',
-  hooks: ['post-commit'],
+  graphId: "jobs",
+  hooks: ["post-commit"],
   async run({ graph, graphArch }) {
     // Generate analytics from all graphs
-    const analytics = {}
+    const analytics = {};
 
     // Project analytics
-    const projectGraph = graphArch.graphManager.getDefaultGraph('project')
+    const projectGraph = graphArch.graphManager.getDefaultGraph("project");
     await projectGraph.setQuery(`
       PREFIX gv: <https://gitvan.dev/project/>
       SELECT (COUNT(?event) as ?eventCount) WHERE {
         ?event rdf:type gv:GitEvent .
       }
-    `)
-    analytics.project = await projectGraph.select()
+    `);
+    analytics.project = await projectGraph.select();
 
     // Jobs analytics
     await graph.setQuery(`
@@ -212,48 +216,50 @@ export const graphAnalyticsJob = defineGraphJob({
           gv:status ?status .
       }
       GROUP BY ?status
-    `)
-    analytics.jobs = await graph.select()
+    `);
+    analytics.jobs = await graph.select();
 
     // Packs analytics
-    const packsGraph = graphArch.graphManager.getDefaultGraph('packs')
+    const packsGraph = graphArch.graphManager.getDefaultGraph("packs");
     await packsGraph.setQuery(`
       PREFIX gv: <https://gitvan.dev/packs/>
       SELECT (COUNT(?pack) as ?packCount) WHERE {
         ?pack rdf:type gv:Pack .
       }
-    `)
-    analytics.packs = await packsGraph.select()
+    `);
+    analytics.packs = await packsGraph.select();
 
     // AI analytics
-    const aiGraph = graphArch.graphManager.getDefaultGraph('ai')
+    const aiGraph = graphArch.graphManager.getDefaultGraph("ai");
     await aiGraph.setQuery(`
       PREFIX gv: <https://gitvan.dev/ai/>
       SELECT (COUNT(?template) as ?templateCount) WHERE {
         ?template rdf:type gv:Template .
       }
-    `)
-    analytics.ai = await aiGraph.select()
+    `);
+    analytics.ai = await aiGraph.select();
 
     return {
-      status: 'completed',
+      status: "completed",
       analytics,
-      generatedAt: new Date().toISOString()
-    }
-  }
-})
+      generatedAt: new Date().toISOString(),
+    };
+  },
+});
 
 // Graph-Based Report Generation Job
 export const graphReportJob = defineGraphJob({
   meta: {
-    name: 'graph:report-generation',
-    description: 'Generate reports using graph data and templates'
+    name: "graph:report-generation",
+    description: "Generate reports using graph data and templates",
   },
-  graphId: 'jobs',
-  hooks: ['post-commit'],
+  graphId: "jobs",
+  hooks: ["post-commit"],
   async run({ graph, inputs }) {
-    const reportType = inputs.reportType || 'summary'
-    const template = inputs.template || `
+    const reportType = inputs.reportType || "summary";
+    const template =
+      inputs.template ||
+      `
 # GitVan Graph Report
 
 ## Summary
@@ -268,7 +274,7 @@ Generated at: {{ generatedAt }}
 {% for stat in jobStats %}
 - {{ stat.status }}: {{ stat.count }}
 {% endfor %}
-`
+`;
 
     // Query data for report
     await graph.setQuery(`
@@ -278,44 +284,49 @@ Generated at: {{ generatedAt }}
           gv:status ?status .
       }
       GROUP BY ?status
-    `)
+    `);
 
-    const jobStats = await graph.select()
+    const jobStats = await graph.select();
 
     // Generate report using template
-    await graph.setTemplate(template)
+    await graph.setTemplate(template);
     const report = await graph.render({
       generatedAt: new Date().toISOString(),
       projectMetrics: [
-        { metric: 'Total Jobs', value: jobStats.reduce((sum, stat) => sum + parseInt(stat.count), 0) }
+        {
+          metric: "Total Jobs",
+          value: jobStats.reduce((sum, stat) => sum + parseInt(stat.count), 0),
+        },
       ],
-      jobStats
-    })
+      jobStats,
+    });
 
     // Save report
-    await graph.snapshotText('reports', `${reportType}_report`, report, 'md')
+    await graph.snapshotText("reports", `${reportType}_report`, report, "md");
 
     return {
-      status: 'completed',
+      status: "completed",
       reportType,
       report,
-      saved: true
-    }
-  }
-})
+      saved: true,
+    };
+  },
+});
 
 // Graph-Based Data Migration Job
 export const graphMigrationJob = defineGraphJob({
   meta: {
-    name: 'graph:data-migration',
-    description: 'Migrate data between graph systems'
+    name: "graph:data-migration",
+    description: "Migrate data between graph systems",
   },
-  graphId: 'jobs',
-  hooks: ['post-commit'],
+  graphId: "jobs",
+  hooks: ["post-commit"],
   async run({ graph, inputs }) {
-    const sourceGraphId = inputs.sourceGraphId || 'jobs'
-    const targetGraphId = inputs.targetGraphId || 'project'
-    const migrationQuery = inputs.migrationQuery || `
+    const sourceGraphId = inputs.sourceGraphId || "jobs";
+    const targetGraphId = inputs.targetGraphId || "project";
+    const migrationQuery =
+      inputs.migrationQuery ||
+      `
       PREFIX gv: <https://gitvan.dev/jobs/>
       SELECT ?jobId ?status ?createdAt WHERE {
         ?job rdf:type gv:Job ;
@@ -323,17 +334,21 @@ export const graphMigrationJob = defineGraphJob({
           gv:status ?status ;
           gv:createdAt ?createdAt .
       }
-    `
+    `;
 
     // Get source graph
-    const graphArch = new GitVanGraphArchitecture()
-    await graphArch.initialize()
-    const sourceGraph = await graphArch.graphManager.registry.getGraph(sourceGraphId)
-    const targetGraph = await graphArch.graphManager.registry.getGraph(targetGraphId)
+    const graphArch = new GitVanGraphArchitecture();
+    await graphArch.initialize();
+    const sourceGraph = await graphArch.graphManager.registry.getGraph(
+      sourceGraphId
+    );
+    const targetGraph = await graphArch.graphManager.registry.getGraph(
+      targetGraphId
+    );
 
     // Execute migration query
-    await sourceGraph.setQuery(migrationQuery)
-    const migrationData = await sourceGraph.select()
+    await sourceGraph.setQuery(migrationQuery);
+    const migrationData = await sourceGraph.select();
 
     // Migrate data to target graph
     for (const item of migrationData) {
@@ -346,18 +361,18 @@ export const graphMigrationJob = defineGraphJob({
           gv:status "${item.status}" ;
           gv:createdAt "${item.createdAt}" ;
           gv:migratedAt "${new Date().toISOString()}" .
-      `)
+      `);
     }
 
     return {
-      status: 'completed',
+      status: "completed",
       migrated: migrationData.length,
       sourceGraphId,
       targetGraphId,
-      migration: 'Data migration completed using graph queries'
-    }
-  }
-})
+      migration: "Data migration completed using graph queries",
+    };
+  },
+});
 
 // Export all graph-based jobs
 export const graphJobs = {
@@ -367,7 +382,7 @@ export const graphJobs = {
   marketplaceIndex: marketplaceIndexJob,
   graphAnalytics: graphAnalyticsJob,
   graphReport: graphReportJob,
-  graphMigration: graphMigrationJob
-}
+  graphMigration: graphMigrationJob,
+};
 
-export default graphJobs
+export default graphJobs;

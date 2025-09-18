@@ -105,7 +105,7 @@ export default defineJob({
       mkdirSync(dirname(resultsPath), { recursive: true });
       writeFileSync(resultsPath, JSON.stringify(results, null, 2));
 
-      logger.success("Marketplace scanner completed successfully");
+      logger.info("Marketplace scanner completed successfully");
 
       return {
         success: true,

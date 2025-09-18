@@ -13,15 +13,31 @@ tags: ["git", "automation", "templating", "ai", "workflows"]
 
 GitVan transforms Git into a runtime environment for development automation, providing intelligent job scheduling, template generation, and AI-powered workflow creation through a unified autonomic system. Everything happens automatically after initialization.
 
+## 📦 NPM Package
+
+GitVan v2.0.0 is now available on npm! Install it globally or locally:
+
+- **Package:** [gitvan@2.0.0](https://www.npmjs.com/package/gitvan)
+- **Registry:** npmjs.org
+- **Size:** 3.1 MB unpacked
+- **Dependencies:** 7 core packages (Ollama, Giget, Hookable, etc.)
+
 ## 🚀 Quick Start
 
 ### Installation
 
 ```bash
+# Install globally for CLI access
 npm install -g gitvan
-# or
+
+# Or install locally in your project
 npm install gitvan
+
+# Verify installation
+gitvan --version
 ```
+
+**📦 Available on npm:** [gitvan@2.0.0](https://www.npmjs.com/package/gitvan)
 
 ### Autonomic First Run
 

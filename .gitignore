@@ -68,6 +68,7 @@ hive-mind-prompt-*.txt
 .nyc_output/
 coverage/
 test-results/
+test-results.json
 playwright-report/
 
 # Temporary files

@@ -5,8 +5,7 @@
  * with the unified hooks system
  */
 
-import pkg from "glob";
-const { glob } = pkg;
+import { glob } from "glob";
 import { join } from "path";
 import { jobRegistry } from "./job-registry.mjs";
 
@@ -28,7 +27,12 @@ export class JobLoader {
     try {
       // Find all job files
       const jobFiles = await glob(join(this.jobsDir, "*.mjs"));
-      console.log(`   📁 Found ${jobFiles.length} job files`);
+      console.log(`   📁 Found ${jobFiles?.length || 0} job files`);
+      
+      if (!jobFiles || !Array.isArray(jobFiles)) {
+        console.log("   ✅ No job files found or glob returned invalid result");
+        return;
+      }
 
       // Load and register each job
       for (const jobFile of jobFiles) {

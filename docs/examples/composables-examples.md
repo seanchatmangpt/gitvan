@@ -453,7 +453,7 @@ await withGitVan({ cwd: process.cwd(), env: process.env }, async () => {
     timeout: 300000, // 5 minutes
     metadata: {
       operation: 'migration',
-      version: 'v2.0.0'
+      version: 'v2.1.0'
     }
   });
   
@@ -463,7 +463,7 @@ await withGitVan({ cwd: process.cwd(), env: process.env }, async () => {
       
       // Execute critical job
       const result = await job.run('database-migration', {
-        version: 'v2.0.0',
+        version: 'v2.1.0',
         backup: true
       });
       
@@ -475,7 +475,7 @@ await withGitVan({ cwd: process.cwd(), env: process.env }, async () => {
         meta: {
           locked: true,
           lockId: lockResult.id,
-          version: 'v2.0.0'
+          version: 'v2.1.0'
         }
       });
       

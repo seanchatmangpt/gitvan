@@ -454,7 +454,7 @@ echo "   • Scaffold commands"
 echo "   • Compose commands"
 echo "   • Final system verification"
 echo ""
-echo "📦 GitVan 2.0.0 local package is fully functional!"
+echo "📦 GitVan 2.1.0 local package is fully functional!"
 echo "🚀 All README.md features work correctly in clean-room environment!"
 
 # Cleanup

@@ -14,7 +14,7 @@ GitVan now supports remote pack installation using [giget](https://unjs.io/packa
 
 ## Installation
 
-Giget is automatically included with GitVan v2.0.0+. If you need to install it separately:
+Giget is automatically included with GitVan v2.1.0+. If you need to install it separately:
 
 ```bash
 pnpm add giget

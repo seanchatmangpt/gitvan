@@ -112,8 +112,8 @@ export const REPO_FIXTURES = {
     branch: 'main',
     head: 'tagged123def456789012345678901234567890a',
     status: '',
-    log: 'tagged123\tv2.0.0 release\nrelease1\tv1.1.0 release\ninitial1\tv1.0.0 initial',
-    tags: ['v1.0.0', 'v1.1.0', 'v2.0.0'],
+    log: 'tagged123\tv2.1.0 release\nrelease1\tv1.1.0 release\ninitial1\tv1.0.0 initial',
+    tags: ['v1.0.0', 'v1.1.0', 'v2.1.0'],
     hasChanges: false
   }
 };

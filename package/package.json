@@ -22,7 +22,7 @@
     "build": "echo \"GitVan is ready for distribution\"",
     "prepublishOnly": "npm run build && npm run verify-release",
     "verify-release": "node scripts/verify-release.mjs",
-    "postpublish": "echo \"GitVan v2.0.1 published successfully!\""
+    "postpublish": "echo \"GitVan v2.1.0 published successfully!\""
   },
   "keywords": [
     "git",

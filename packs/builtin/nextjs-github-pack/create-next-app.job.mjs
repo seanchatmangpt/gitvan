@@ -1,36 +1,39 @@
 export default {
   name: "create-next-app",
   description: "Creates a new Next.js project structure",
-  
+
   async run(ctx) {
     // Try to get project name from various sources
-    const projectName = process.env.PROJECT_NAME || 
-                       process.argv.find(arg => arg.startsWith('--projectName='))?.split('=')[1] ||
-                       'my-nextjs-app';
-    
+    const projectName =
+      process.env.PROJECT_NAME ||
+      process.argv
+        .find((arg) => arg.startsWith("--projectName="))
+        ?.split("=")[1] ||
+      "my-nextjs-app";
+
     console.log(`🚀 Creating Next.js project: ${projectName}`);
-    
+
     // Import Node.js modules
-    const { mkdirSync, writeFileSync } = await import('node:fs');
-    const { join } = await import('node:path');
-    
+    const { mkdirSync, writeFileSync } = await import("node:fs");
+    const { join } = await import("node:path");
+
     const projectPath = join(process.cwd(), projectName);
-    
+
     // Create main directories
     const directories = [
       "src/app",
-      "src/components", 
+      "src/components",
       "src/lib",
       "src/styles",
       "public",
-      "config"
+      "config",
     ];
-    
+
     for (const dir of directories) {
       mkdirSync(join(projectPath, dir), { recursive: true });
       console.log(`   📁 Created directory: ${dir}`);
     }
-    
+
     // Create package.json
     const packageJson = {
       name: projectName,
@@ -40,12 +43,12 @@ export default {
         dev: "next dev",
         build: "next build",
         start: "next start",
-        lint: "next lint"
+        lint: "next lint",
       },
       dependencies: {
         next: "^14.0.0",
         react: "^18.0.0",
-        "react-dom": "^18.0.0"
+        "react-dom": "^18.0.0",
       },
       devDependencies: {
         "@types/node": "^20.0.0",
@@ -53,15 +56,15 @@ export default {
         "@types/react-dom": "^18.0.0",
         eslint: "^8.0.0",
         "eslint-config-next": "^14.0.0",
-        typescript: "^5.0.0"
-      }
+        typescript: "^5.0.0",
+      },
     };
-    
+
     writeFileSync(
-      join(projectPath, "package.json"), 
+      join(projectPath, "package.json"),
       JSON.stringify(packageJson, null, 2)
     );
-    
+
     // Create README.md
     const readmeContent = `# ${projectName}
 
@@ -84,8 +87,8 @@ npm run dev
 - **Language**: TypeScript
 - **Styling**: CSS Modules + Tailwind CSS
 - **Linting**: ESLint + Next.js config
-- **Created**: ${new Date().toISOString().slice(0, 19).replace('T', ' ')}
-- **GitVan Version**: 2.0.0
+- **Created**: ${new Date().toISOString().slice(0, 19).replace("T", " ")}
+- **GitVan Version**: 2.1.0
 - **Pack Source**: GitHub (via giget)
 
 ## Quick Start
@@ -96,9 +99,9 @@ Run the startup job to automatically install dependencies and start the dev serv
 gitvan run start-next-app
 \`\`\`
 `;
-    
+
     writeFileSync(join(projectPath, "README.md"), readmeContent);
-    
+
     // Create next.config.js
     const nextConfigContent = `/** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -120,9 +123,9 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;`;
-    
+
     writeFileSync(join(projectPath, "next.config.js"), nextConfigContent);
-    
+
     // Create tsconfig.json
     const tsConfigContent = `{
   "compilerOptions": {
@@ -151,9 +154,9 @@ module.exports = nextConfig;`;
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]
 }`;
-    
+
     writeFileSync(join(projectPath, "tsconfig.json"), tsConfigContent);
-    
+
     // Create .gitignore
     const gitignoreContent = `# Dependencies
 node_modules/
@@ -192,9 +195,9 @@ next-env.d.ts
 # GitVan
 .gitvan/
 `;
-    
+
     writeFileSync(join(projectPath, ".gitignore"), gitignoreContent);
-    
+
     // Create basic page.tsx
     const pageContent = `export default function Home() {
   return (
@@ -240,20 +243,20 @@ next-env.d.ts
     </div>
   );
 }`;
-    
+
     writeFileSync(join(projectPath, "src/app/page.tsx"), pageContent);
-    
+
     console.log(`✅ Next.js project structure created successfully`);
-    
+
     return {
-      status: 'success',
+      status: "success",
       message: `Created Next.js project structure for ${projectName}`,
       data: {
         projectName,
         projectPath,
         directories: directories.length,
-        files: 6
-      }
+        files: 6,
+      },
     };
-  }
+  },
 };

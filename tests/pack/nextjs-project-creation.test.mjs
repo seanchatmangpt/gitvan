@@ -340,7 +340,7 @@ next-env.d.ts
     );
     expect(readmeContentCheck).toContain(projectName);
     expect(readmeContentCheck).toContain("Next.js ^14.0.0");
-    expect(readmeContentCheck).toContain("**GitVan Version**: 2.0.0");
+    expect(readmeContentCheck).toContain("**GitVan Version**: 2.1.0");
 
     // Verify next.config.js has GitVan environment variables
     const nextConfigContentCheck = readFileSync(

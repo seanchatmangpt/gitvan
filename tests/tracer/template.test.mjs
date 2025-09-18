@@ -58,7 +58,7 @@ describe('Template System', () => {
       };
 
       const result = env.render('welcome.njk', data);
-      expect(result).toBe('Welcome to GitVan v2.0.0');
+      expect(result).toBe('Welcome to GitVan v2.1.0');
     });
 
     it('should handle missing variables gracefully', async () => {
@@ -585,7 +585,7 @@ Item {{ i }}: {{ data.value }}
       const data = { title: 'Job Receipt' };
 
       const result = env.renderString(template, data);
-      expect(result).toBe('GitVan v2.0.0 - Job Receipt');
+      expect(result).toBe('GitVan v2.1.0 - Job Receipt');
     });
 
     it('should support global functions', async () => {

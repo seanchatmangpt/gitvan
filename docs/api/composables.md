@@ -1,8 +1,8 @@
 # GitVan Composables API Reference
 
-GitVan v2.0.0 provides a comprehensive set of composables for Git operations, template rendering, execution, and context management based on the actual implementation.
+GitVan v2.1.0 provides a comprehensive set of composables for Git operations, template rendering, execution, and context management based on the actual implementation.
 
-> **📚 Updated for v2.0.0**: This documentation reflects the actual implementation in the codebase, including the modular Git composable architecture, advanced template system, and execution composables.
+> **📚 Updated for v2.1.0**: This documentation reflects the actual implementation in the codebase, including the modular Git composable architecture, advanced template system, execution composables, and the new Knowledge Hook Engine.
 
 ## Table of Contents
 

@@ -26,12 +26,14 @@
   "dependencies": {},
   "gitvan": {
     "packType": "routing",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "compatibility": {
-      "gitvan": ">=2.0.0"
+      "gitvan": ">=2.1.0"
     }
   }
 }
+
+
 
 
 

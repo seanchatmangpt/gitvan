@@ -127,7 +127,7 @@ export class RegistryClient {
         signal: controller.signal,
         headers: {
           'Accept': 'application/json',
-          'User-Agent': 'GitVan/2.0.0'
+          'User-Agent': 'GitVan/2.1.0'
         }
       });
 
@@ -226,7 +226,7 @@ export class RegistryClient {
         signal: controller.signal,
         headers: {
           'Accept': 'application/json',
-          'User-Agent': 'GitVan/2.0.0'
+          'User-Agent': 'GitVan/2.1.0'
         }
       });
 

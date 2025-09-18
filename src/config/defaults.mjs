@@ -81,4 +81,17 @@ export const GitVanDefaults = {
   events: {
     directory: "events",
   },
+
+  // Graph configuration
+  graph: {
+    dir: "graph",
+    snapshotsDir: ".gitvan/graphs/snapshots",
+    uriRoots: {
+      "graph://": "graph/",
+      "templates://": "templates/",
+      "queries://": "queries/",
+    },
+    autoLoad: true,
+    validateOnLoad: false,
+  },
 };

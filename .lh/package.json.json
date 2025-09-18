@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 11,
+            "activePatchIndex": 12,
             "patches": [
                 {
                     "date": 1758049591877,
@@ -52,6 +52,10 @@
                 {
                     "date": 1758210424502,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,7 +1,7 @@\n {\n   \"name\": \"gitvan\",\n-  \"version\": \"2.0.1\",\n+  \"version\": \"2.0.2\",\n   \"description\": \"Autonomic Git-native development automation platform with AI-powered workflows\",\n   \"main\": \"bin/gitvan.mjs\",\n   \"type\": \"module\",\n   \"bin\": {\n@@ -21,9 +21,9 @@\n     \"test\": \"vitest\",\n     \"build\": \"echo \\\"GitVan is ready for distribution\\\"\",\n     \"prepublishOnly\": \"npm run build && npm run verify-release\",\n     \"verify-release\": \"node scripts/verify-release.mjs\",\n-    \"postpublish\": \"echo \\\"GitVan v2.0.1 published successfully!\\\"\"\n+    \"postpublish\": \"echo \\\"GitVan v2.0.2 published successfully!\\\"\"\n   },\n   \"keywords\": [\n     \"git\",\n     \"automation\",\n"
+                },
+                {
+                    "date": 1758220514192,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -52,31 +52,45 @@\n   },\n   \"dependencies\": {\n     \"@babel/parser\": \"^7.23.0\",\n     \"@babel/traverse\": \"^7.23.0\",\n+    \"@comunica/query-sparql\": \"^4.4.0\",\n+    \"@rdfjs/data-model\": \"^2.1.1\",\n+    \"@rdfjs/dataset\": \"^2.0.2\",\n+    \"@rdfjs/environment\": \"^1.0.0\",\n+    \"@rdfjs/namespace\": \"^2.0.1\",\n+    \"@rdfjs/types\": \"^2.0.1\",\n+    \"@zazuko/env\": \"^3.0.1\",\n     \"ai\": \"^3.0.0\",\n     \"c12\": \"^3.3.0\",\n     \"cacache\": \"^17.1.0\",\n     \"citty\": \"^0.1.6\",\n+    \"clownface\": \"^2.0.3\",\n     \"consola\": \"^3.2.3\",\n     \"defu\": \"^6.1.0\",\n+    \"eyereasoner\": \"^18.19.17\",\n     \"fuse.js\": \"^7.0.0\",\n     \"giget\": \"^1.2.2\",\n     \"gray-matter\": \"^4.0.3\",\n     \"hookable\": \"^5.5.3\",\n     \"inflection\": \"^2.0.1\",\n+    \"jsonld\": \"^8.3.3\",\n     \"klona\": \"^2.0.6\",\n     \"lru-cache\": \"^10.0.0\",\n     \"minimatch\": \"^9.0.0\",\n+    \"n3\": \"^1.26.0\",\n     \"node-cron\": \"^3.0.3\",\n     \"nunjucks\": \"^3.2.4\",\n     \"ollama\": \"^0.5.0\",\n     \"pathe\": \"^1.1.1\",\n     \"prompts\": \"^2.4.2\",\n+    \"rdf-canonize\": \"^4.0.1\",\n+    \"rdf-ext\": \"^2.6.0\",\n+    \"rdf-validate-shacl\": \"^0.6.5\",\n     \"semver\": \"^7.5.0\",\n     \"toml\": \"^3.0.0\",\n+    \"unctx\": \"^2.3.1\",\n     \"unrouting\": \"^0.0.1\",\n-    \"unctx\": \"^2.3.1\",\n     \"zod\": \"^3.22.0\"\n   },\n   \"devDependencies\": {\n     \"vitest\": \"^1.0.0\"\n"
                 }
             ],
             "date": 1758049591877,

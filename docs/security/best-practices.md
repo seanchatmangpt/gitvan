@@ -183,7 +183,7 @@ steps:
       output_sanitization: enabled
 
     config:
-      model: claude-3-opus
+      model: qwen3-coder:30b
       max_tokens: 4000
       temperature: 0.1
 
@@ -210,8 +210,8 @@ steps:
 # AI model security policy
 ai_models:
   allowed:
-    - claude-3-opus    # Approved for code review
-    - claude-3-sonnet  # Approved for documentation
+    - qwen3-coder:30b    # Approved for code review
+    - qwen3-coder:30b  # Approved for documentation
     - gpt-4           # Approved for testing
 
   restricted:

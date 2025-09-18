@@ -194,7 +194,7 @@ ollama show qwen3-coder:30b
 #### Anthropic Compatible
 ```javascript
 {
-  "model": "claude-3-sonnet",
+  "model": "qwen3-coder:30b",
   "prompt": "Generate a GitVan job",
   "max_tokens": 4096,
   "temperature": 0.7
@@ -246,7 +246,7 @@ export AI_API_KEY="your-api-key"
 
 ### Supported Providers (Planned)
 - OpenAI (GPT-3.5, GPT-4, GPT-4o)
-- Anthropic (Claude 3 family)
+- Ollama (Qwen3-Coder family)
 - Google (Gemini Pro)
 - Cohere (Command R+)
 - Mistral AI
@@ -267,7 +267,7 @@ export AI_API_KEY="your-api-key"
         },
         {
           "name": "anthropic",
-          "model": "claude-3-sonnet",
+          "model": "qwen3-coder:30b",
           "priority": 2
         }
       ],

@@ -12,6 +12,17 @@ export default defineGitVanConfig({
   templates: { dirs: ["templates"], autoescape: false, noCache: true },
   receipts: { ref: "refs/notes/gitvan/audit" },
   policy: { requireSignedCommits: true, allowUnsignedReceipts: true },
+  graph: {
+    dir: "graph",
+    snapshotsDir: ".gitvan/graphs/snapshots",
+    uriRoots: {
+      "graph://": "graph/",
+      "templates://": "templates/",
+      "queries://": "queries/",
+    },
+    autoLoad: true,
+    validateOnLoad: false,
+  },
   now: () => "2027-01-01T00:00:00Z",
   runtimeConfig: {
     app: { name: "demo" },

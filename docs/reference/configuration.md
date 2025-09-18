@@ -325,7 +325,7 @@ export default {
 export default {
   ai: {
     provider: 'anthropic',
-    model: 'claude-3-sonnet-20240229',
+    model: 'qwen3-coder:30b',
     baseURL: 'https://api.anthropic.com',
     apiKey: process.env.ANTHROPIC_API_KEY,
     timeout: 30000,

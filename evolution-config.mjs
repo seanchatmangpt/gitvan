@@ -92,7 +92,7 @@ export class EvolutionConfig {
       ai: {
         enabled: false,
         provider: "ollama",
-        model: "codellama",
+        model: "qwen3-coder:30b",
         maxTokens: 4000,
         temperature: 0.7,
         features: {

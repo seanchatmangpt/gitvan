@@ -1,7 +1,7 @@
 # GitVan v2 Implementation Delta Report
 
 ## Executive Summary
-This document identifies the gap between what was claimed as "implemented" versus what actually exists in the codebase. After applying the test-fix-verify loop mandated by the updated CLAUDE.md, significant gaps were discovered.
+This document identifies the gap between what was claimed as "implemented" versus what actually exists in the codebase. After applying the test-fix-verify loop mandated by the updated OLLAMA.md, significant gaps were discovered.
 
 ## 🔴 Critical Finding
 **The implementation was reported as 95% complete, but actual testing reveals only ~70% is truly functional.**
@@ -194,4 +194,4 @@ Configuration loading from `gitvan.config.js` works with proper defaults and mer
 
 The GitVan v2 implementation has a solid foundation with working Git operations, templates, and configuration. However, critical components like the daemon, locks, receipts, and event system are only partially implemented. The test-fix-verify loop revealed that approximately 25% of the claimed functionality doesn't actually work.
 
-**Key Takeaway**: Without actual testing, it's impossible to know what truly works. The updated CLAUDE.md now enforces this discipline to prevent future false completion reports.
+**Key Takeaway**: Without actual testing, it's impossible to know what truly works. The updated OLLAMA.md now enforces this discipline to prevent future false completion reports.

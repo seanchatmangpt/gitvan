@@ -98,15 +98,13 @@ async function createAnthropicProvider(aiConfig) {
 
   const provider = anthropic({
     apiKey: aiConfig.apiKey || process.env.ANTHROPIC_API_KEY,
-    model: aiConfig.model || "claude-3-sonnet-20240229",
+    model: aiConfig.model || "qwen3-coder:30b",
     temperature: aiConfig.temperature || 0.7,
     ...aiConfig.options,
   });
 
   logger.info(
-    `Anthropic provider created with model: ${
-      aiConfig.model || "claude-3-sonnet-20240229"
-    }`
+    `Anthropic provider created with model: ${aiConfig.model || "qwen3-coder:30b"}`
   );
   return provider;
 }

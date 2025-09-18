@@ -1,4 +1,4 @@
-# Claude Code Configuration - SPARC Development Environment
+# Ollama Configuration - SPARC Development Environment
 
 ## 🚨 CRITICAL: TEST-DRIVEN IMPLEMENTATION & VERIFICATION
 
@@ -9,7 +9,7 @@
 4. ALL operations MUST be concurrent/parallel in a single message
 5. **NEVER save working files, text/mds and tests to the root folder**
 6. ALWAYS organize files in appropriate subdirectories
-7. **USE CLAUDE CODE'S TASK TOOL** for spawning agents concurrently, not just MCP
+7. **USE OLLAMA'S TASK TOOL** for spawning agents concurrently, not just MCP
 
 ### 🔄 MANDATORY TEST-FIX-VERIFY LOOP (80/20 Technique)
 
@@ -35,16 +35,16 @@
 
 **MANDATORY PATTERNS:**
 - **TodoWrite**: ALWAYS batch ALL todos in ONE call (5-10+ todos minimum)
-- **Task tool (Claude Code)**: ALWAYS spawn ALL agents in ONE message with full instructions
+- **Task tool (Ollama)**: ALWAYS spawn ALL agents in ONE message with full instructions
 - **File operations**: ALWAYS batch ALL reads/writes/edits in ONE message
 - **Bash commands**: ALWAYS batch ALL terminal operations in ONE message
 - **Memory operations**: ALWAYS batch ALL memory store/retrieve in ONE message
 
-### 🎯 CRITICAL: Claude Code Task Tool for Agent Execution
+### 🎯 CRITICAL: Ollama Task Tool for Agent Execution
 
-**Claude Code's Task tool is the PRIMARY way to spawn agents:**
+**Ollama's Task tool is the PRIMARY way to spawn agents:**
 ```javascript
-// ✅ CORRECT: Use Claude Code's Task tool for parallel agent execution
+// ✅ CORRECT: Use Ollama's Task tool for parallel agent execution
 [Single Message]:
   Task("Research agent", "Analyze requirements and patterns...", "researcher")
   Task("Coder agent", "Implement core features using 80/20 technique...", "coder")
@@ -56,9 +56,9 @@
 ```
 
 **MCP tools are ONLY for coordination setup:**
-- `mcp__claude-flow__swarm_init` - Initialize coordination topology
-- `mcp__claude-flow__agent_spawn` - Define agent types for coordination
-- `mcp__claude-flow__task_orchestrate` - Orchestrate high-level workflows
+- `mcp__ollama-flow__swarm_init` - Initialize coordination topology
+- `mcp__ollama-flow__agent_spawn` - Define agent types for coordination
+- `mcp__ollama-flow__task_orchestrate` - Orchestrate high-level workflows
 
 ### 📁 File Organization Rules
 
@@ -72,20 +72,20 @@
 
 ## Project Overview
 
-This project uses SPARC (Specification, Pseudocode, Architecture, Refinement, Completion) methodology with Claude-Flow orchestration for systematic Test-Driven Development.
+This project uses SPARC (Specification, Pseudocode, Architecture, Refinement, Completion) methodology with Ollama-Flow orchestration for systematic Test-Driven Development.
 
 ## SPARC Commands
 
 ### Core Commands
-- `npx claude-flow sparc modes` - List available modes
-- `npx claude-flow sparc run <mode> "<task>"` - Execute specific mode
-- `npx claude-flow sparc tdd "<feature>"` - Run complete TDD workflow
-- `npx claude-flow sparc info <mode>` - Get mode details
+- `npx ollama-flow sparc modes` - List available modes
+- `npx ollama-flow sparc run <mode> "<task>"` - Execute specific mode
+- `npx ollama-flow sparc tdd "<feature>"` - Run complete TDD workflow
+- `npx ollama-flow sparc info <mode>` - Get mode details
 
 ### Batchtools Commands
-- `npx claude-flow sparc batch <modes> "<task>"` - Parallel execution
-- `npx claude-flow sparc pipeline "<task>"` - Full pipeline processing
-- `npx claude-flow sparc concurrent <mode> "<tasks-file>"` - Multi-task processing
+- `npx ollama-flow sparc batch <modes> "<task>"` - Parallel execution
+- `npx ollama-flow sparc pipeline "<task>"` - Full pipeline processing
+- `npx ollama-flow sparc concurrent <mode> "<tasks-file>"` - Multi-task processing
 
 ### Build Commands
 - `pnpm run build` - Build project
@@ -139,9 +139,9 @@ This project uses SPARC (Specification, Pseudocode, Architecture, Refinement, Co
 
 THERE IS NO 'analyst' use 'researcher' instead
 
-## 🎯 Claude Code vs MCP Tools
+## 🎯 Ollama Code vs MCP Tools
 
-### Claude Code Handles ALL EXECUTION:
+### Ollama Handles ALL EXECUTION:
 - **Task tool**: Spawn and run agents concurrently for actual work
 - File operations (Read, Write, Edit, MultiEdit, Glob, Grep)
 - Code generation and programming
@@ -162,13 +162,13 @@ THERE IS NO 'analyst' use 'researcher' instead
 - Performance tracking
 - GitHub integration
 
-**KEY**: MCP coordinates the strategy, Claude Code's Task tool executes with real agents.
+**KEY**: MCP coordinates the strategy, Ollama's Task tool executes with real agents.
 
 ## 🚀 Quick Setup
 
 ```bash
-# Add MCP servers (Claude Flow required, others optional)
-claude mcp add claude-flow npx claude-flow@alpha mcp start
+# Add MCP servers (Ollama Flow required, others optional)
+claude mcp add ollama-flow npx ollama-flow@alpha mcp start
 claude mcp add ruv-swarm npx ruv-swarm mcp start  # Optional: Enhanced coordination
 claude mcp add flow-nexus npx flow-nexus@latest mcp start  # Optional: Cloud features
 ```
@@ -204,19 +204,19 @@ Flow-Nexus extends MCP capabilities with 70+ cloud-based orchestration tools:
 - Login: `mcp__flow-nexus__user_login` or `npx flow-nexus@latest login`
 - Access 70+ specialized MCP tools for advanced orchestration
 
-## 🚀 Agent Execution Flow with Claude Code
+## 🚀 Agent Execution Flow with Ollama
 
 ### The Correct Pattern:
 
 1. **Optional**: Use MCP tools to set up coordination topology
-2. **REQUIRED**: Use Claude Code's Task tool to spawn agents that do actual work
+2. **REQUIRED**: Use Ollama's Task tool to spawn agents that do actual work
 3. **REQUIRED**: Each agent runs hooks for coordination
 4. **REQUIRED**: Batch all operations in single messages
 
 ### Example Full-Stack Development:
 
 ```javascript
-// Single message with all agent spawning via Claude Code's Task tool
+// Single message with all agent spawning via Ollama's Task tool
 [Parallel Agent Execution]:
   Task("Test Runner", "Run Vitest tests to identify failing components. Use hooks for coordination.", "tester")
   Task("GitVan Core Developer", "Fix failing composables using 80/20 technique. Coordinate via memory.", "backend-dev")
@@ -240,37 +240,37 @@ Flow-Nexus extends MCP capabilities with 70+ cloud-based orchestration tools:
 
 **1️⃣ BEFORE Work:**
 ```bash
-npx claude-flow@alpha hooks pre-task --description "[task]"
-npx claude-flow@alpha hooks session-restore --session-id "swarm-[id]"
+npx ollama-flow@alpha hooks pre-task --description "[task]"
+npx ollama-flow@alpha hooks session-restore --session-id "swarm-[id]"
 ```
 
 **2️⃣ DURING Work:**
 ```bash
-npx claude-flow@alpha hooks post-edit --file "[file]" --memory-key "swarm/[agent]/[step]"
-npx claude-flow@alpha hooks notify --message "[what was done]"
+npx ollama-flow@alpha hooks post-edit --file "[file]" --memory-key "swarm/[agent]/[step]"
+npx ollama-flow@alpha hooks notify --message "[what was done]"
 ```
 
 **3️⃣ AFTER Work:**
 ```bash
-npx claude-flow@alpha hooks post-task --task-id "[task]"
-npx claude-flow@alpha hooks session-end --export-metrics true
+npx ollama-flow@alpha hooks post-task --task-id "[task]"
+npx ollama-flow@alpha hooks session-end --export-metrics true
 ```
 
 ## 🎯 Concurrent Execution Examples
 
-### ✅ CORRECT WORKFLOW: MCP Coordinates, Claude Code Executes
+### ✅ CORRECT WORKFLOW: MCP Coordinates, Ollama Executes
 
 ```javascript
 // Step 1: MCP tools set up coordination (optional, for complex tasks)
 [Single Message - Coordination Setup]:
-  mcp__claude-flow__swarm_init { topology: "mesh", maxAgents: 6 }
-  mcp__claude-flow__agent_spawn { type: "researcher" }
-  mcp__claude-flow__agent_spawn { type: "coder" }
-  mcp__claude-flow__agent_spawn { type: "tester" }
+  mcp__ollama-flow__swarm_init { topology: "mesh", maxAgents: 6 }
+  mcp__ollama-flow__agent_spawn { type: "researcher" }
+  mcp__ollama-flow__agent_spawn { type: "coder" }
+  mcp__ollama-flow__agent_spawn { type: "tester" }
 
-// Step 2: Claude Code Task tool spawns ACTUAL agents that do the work
+// Step 2: Ollama Task tool spawns ACTUAL agents that do the work
 [Single Message - Parallel Agent Execution]:
-  // Claude Code's Task tool spawns real agents concurrently
+  // Ollama's Task tool spawns real agents concurrently
   Task("Test Runner", "Run Vitest tests to identify failing GitVan components. Check memory for test patterns.", "tester")
   Task("Composables Fixer", "Fix failing useGit/useTemplate composables using 80/20 technique. Coordinate via hooks.", "coder")
   Task("CLI Fixer", "Fix citty CLI command failures found by tests. Store fixes in memory.", "code-analyzer")
@@ -299,7 +299,7 @@ npx claude-flow@alpha hooks session-end --export-metrics true
 
 ### ❌ WRONG (Multiple Messages):
 ```javascript
-Message 1: mcp__claude-flow__swarm_init
+Message 1: mcp__ollama-flow__swarm_init
 Message 2: Task("agent 1")
 Message 3: TodoWrite { todos: [single todo] }
 Message 4: Write "file.js"
@@ -359,13 +359,13 @@ Message 4: Write "file.js"
 
 ## Support
 
-- Documentation: https://github.com/ruvnet/claude-flow
-- Issues: https://github.com/ruvnet/claude-flow/issues
+- Documentation: https://github.com/ruvnet/ollama-flow
+- Issues: https://github.com/ruvnet/ollama-flow/issues
 - Flow-Nexus Platform: https://flow-nexus.ruv.io (registration required for cloud features)
 
 ---
 
-Remember: **Claude Flow coordinates, Claude Code creates!**
+Remember: **Ollama Flow coordinates, Ollama creates!**
 
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.

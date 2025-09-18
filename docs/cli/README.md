@@ -257,7 +257,7 @@ Execute custom prompts against configured AI models.
 
 ```bash
 gitvan llm call "Summarize the last 5 commits in this repository"
-gitvan llm call "What security best practices should I follow for CI/CD?" --model claude-3-sonnet
+gitvan llm call "What security best practices should I follow for CI/CD?" --model qwen3-coder:30b
 ```
 
 **Options:**
@@ -270,7 +270,7 @@ Check AI provider availability and configured models.
 gitvan llm models
 # Output:
 # Provider: anthropic
-# Model: claude-3-haiku
+# Model: qwen3-coder:30b
 # Available: Yes
 ```
 

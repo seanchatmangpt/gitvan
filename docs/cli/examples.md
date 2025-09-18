@@ -271,14 +271,14 @@ gitvan chat generate \
 gitvan llm models
 # Output:
 # Provider: anthropic
-# Model: claude-3-haiku
+# Model: qwen3-coder:30b
 # Available: Yes
 
 # Direct AI interaction
 gitvan llm call "What are the security implications of the changes in the last commit?"
 
 # Use specific models
-gitvan llm call "Generate a Git hook script for pre-commit linting" --model claude-3-sonnet
+gitvan llm call "Generate a Git hook script for pre-commit linting" --model qwen3-coder:30b
 
 # Generate documentation
 gitvan llm call "Create documentation for this job file: $(cat jobs/deploy.mjs)"

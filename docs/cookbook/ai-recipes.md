@@ -344,7 +344,7 @@ export default {
 ```javascript
 // .gitvan/ai/custom-model.mjs
 export const customAI = {
-  model: 'claude-3-sonnet',
+  model: 'qwen3-coder:30b',
   apiKey: process.env.ANTHROPIC_API_KEY,
   prompts: {
     changelog: './prompts/changelog.txt',

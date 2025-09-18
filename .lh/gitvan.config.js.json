@@ -3,11 +3,15 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 1,
             "patches": [
                 {
                     "date": 1758046934640,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1758218092728,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -11,9 +11,9 @@\n   jobs: { dir: \"jobs\" },\n   templates: { dirs: [\"templates\"], autoescape: false, noCache: true },\n   receipts: { ref: \"refs/notes/gitvan/audit\" },\n   policy: { requireSignedCommits: true, allowUnsignedReceipts: true },\n-  graph: { \n+  graph: {\n     dir: \"graph\",\n     snapshotsDir: \".gitvan/graphs/snapshots\",\n     uriRoots: {\n       \"graph://\": \"graph/\",\n"
                 }
             ],
             "date": 1758046934640,

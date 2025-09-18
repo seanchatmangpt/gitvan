@@ -110,7 +110,7 @@ Based on the implementation delta, these tests will fail:
 
 ## Test-Fix-Verify Loop
 
-Following CLAUDE.md requirements, each test should:
+Following OLLAMA.md requirements, each test should:
 
 1. **TEST** - Run the actual command/function
 2. **CAPTURE** - Document what fails

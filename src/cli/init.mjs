@@ -265,8 +265,8 @@ async function createGitVanConfig(cwd, projectName, projectDescription) {
   },
   
   ai: {
-    provider: "anthropic",
-    model: "claude-3-haiku-20240307",
+    provider: "ollama",
+    model: "qwen3-coder:30b",
   },
   
   // Auto-install packs on gitvan init

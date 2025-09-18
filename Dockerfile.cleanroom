@@ -1,0 +1,22 @@
+# GitVan Cleanroom Test Dockerfile
+FROM node:20-alpine
+
+# Install Git, pnpm, and other dependencies
+RUN apk add --no-cache git bash && \
+    npm install -g pnpm
+
+# Set working directory
+WORKDIR /workspace
+
+# Copy only necessary files for GitVan
+COPY package.json pnpm-lock.yaml /gitvan/
+COPY src/ /gitvan/src/
+
+# Install GitVan dependencies
+WORKDIR /gitvan
+RUN pnpm install --frozen-lockfile
+
+# Set working directory back to workspace
+WORKDIR /workspace
+
+# No entrypoint - we'll run commands directly

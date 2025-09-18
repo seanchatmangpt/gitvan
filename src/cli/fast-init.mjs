@@ -23,7 +23,7 @@ async function handleInitFast() {
   const dirs = [
     ".gitvan",
     ".gitvan/packs",
-    ".gitvan/state", 
+    ".gitvan/state",
     ".gitvan/backups",
     "jobs",
     "events",
@@ -44,7 +44,7 @@ async function handleInitFast() {
   // Create configuration file (sync, fast)
   console.log("\n⚙️  Creating configuration...");
   const configPath = join(cwd, "gitvan.config.js");
-  
+
   if (existsSync(configPath)) {
     console.log("   ⚠️  Exists: gitvan.config.js");
   } else {
@@ -78,8 +78,8 @@ async function handleInitFast() {
   },
   
   ai: {
-    provider: "anthropic",
-    model: "claude-3-haiku-20240307",
+    provider: "ollama",
+    model: "qwen3-coder:30b",
   },
   
   // Auto-install packs on gitvan init
@@ -106,7 +106,7 @@ async function handleInitFast() {
 
   // Create sample files (sync, fast)
   console.log("\n📝 Creating sample files...");
-  
+
   // Sample job
   const jobContent = `import { defineJob } from "../src/define.mjs";
 
@@ -160,25 +160,33 @@ Description: {{ project.description }}
   console.log("\n🔧 Checking Git configuration...");
   try {
     const { execSync } = await import("node:child_process");
-    const userName = execSync("git config user.name", { cwd, encoding: "utf8" }).trim();
-    const userEmail = execSync("git config user.email", { cwd, encoding: "utf8" }).trim();
-    
+    const userName = execSync("git config user.name", {
+      cwd,
+      encoding: "utf8",
+    }).trim();
+    const userEmail = execSync("git config user.email", {
+      cwd,
+      encoding: "utf8",
+    }).trim();
+
     if (userName && userEmail) {
       console.log(`   ✅ Git user: ${userName} <${userEmail}>`);
     } else {
       console.log("   ⚠️  Git user not configured");
-      console.log("   ℹ️  Run: git config user.name \"Your Name\"");
-      console.log("   ℹ️  Run: git config user.email \"your@email.com\"");
+      console.log('   ℹ️  Run: git config user.name "Your Name"');
+      console.log('   ℹ️  Run: git config user.email "your@email.com"');
     }
   } catch (error) {
     console.log("   ❌ Failed to check Git configuration");
   }
 
   console.log("\n🎉 GitVan initialization complete!");
-  
+
   console.log("\nNext steps:");
-  console.log("   1. Configure Git user: git config user.name \"Your Name\"");
-  console.log("   2. Configure Git email: git config user.email \"your@email.com\"");
+  console.log('   1. Configure Git user: git config user.name "Your Name"');
+  console.log(
+    '   2. Configure Git email: git config user.email "your@email.com"'
+  );
   console.log("   3. Complete setup: gitvan setup");
   console.log("   4. Save changes: gitvan save");
   console.log("\nFor more help: gitvan help");

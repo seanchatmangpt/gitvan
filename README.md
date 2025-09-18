@@ -177,7 +177,7 @@ ex:generate-report rdf:type gv:TemplateStep ;
 ## 🎯 Core Features
 
 ### 🤖 AI-Powered Automation
-- **Claude Integration**: Anthropic Claude for intelligent task execution
+- **Ollama Integration**: Local Ollama models for intelligent task execution
 - **Context-Aware**: AI understands your project structure and history
 - **Natural Language**: Describe tasks in plain English
 - **Learning System**: Improves over time based on your patterns
@@ -277,7 +277,7 @@ GitVan is licensed under the MIT License. See [LICENSE](./LICENSE) for details.
 
 ## 🙏 Acknowledgments
 
-- **Anthropic**: For Claude AI integration
+- **Ollama**: For local AI model integration
 - **RDF.js Community**: For excellent RDF tooling
 - **Nunjucks**: For powerful templating
 - **Contributors**: All the amazing developers who make GitVan possible

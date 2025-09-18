@@ -308,7 +308,7 @@ EOF
 **Cloud APIs:**
 - `gpt-3.5-turbo` - Fast, cost-effective
 - `gpt-4` - Best quality, slower
-- `claude-3-sonnet` - Good for complex analysis
+- `qwen3-coder:30b` - Good for complex analysis
 
 ### Q: How do I reduce AI costs?
 **A:** Several strategies:

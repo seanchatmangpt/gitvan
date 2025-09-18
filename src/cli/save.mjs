@@ -147,7 +147,7 @@ Format: type(scope): description
 Examples: feat: add user authentication, fix: resolve login bug, docs: update README`;
 
   const result = await generateText({
-    model: anthropic("claude-3-haiku-20240307"),
+    model: anthropic("qwen3-coder:30b"),
     prompt,
     maxTokens: 100,
   });

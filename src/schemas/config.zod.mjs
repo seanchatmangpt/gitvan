@@ -65,6 +65,17 @@ export const ConfigSchema = z.object({
     })
     .default({}),
 
+  // Graph configuration
+  graph: z
+    .object({
+      dir: z.string().default("graph"),
+      snapshotsDir: z.string().default(".gitvan/graphs/snapshots"),
+      uriRoots: z.record(z.string(), z.string()).default({}),
+      autoLoad: z.boolean().default(true),
+      validateOnLoad: z.boolean().default(false),
+    })
+    .default({}),
+
   // Hooks configuration
   hooks: z.record(z.string(), z.any()).default({}),
 

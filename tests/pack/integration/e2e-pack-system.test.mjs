@@ -894,21 +894,21 @@ JSON: {{ data | jsonStringify(0) }}
         }
 
         // VERIFY: GitHub pack ID parsing works
-        const parsed = registry.parseGitHubPackId("ruvnet/claude-flow");
+        const parsed = registry.parseGitHubPackId("ruvnet/ollama-flow");
         expect(parsed).toEqual({
           owner: "ruvnet",
-          repo: "claude-flow",
+          repo: "ollama-flow",
           ref: "main",
           path: null,
         });
 
         const parsedWithRef = registry.parseGitHubPackId(
-          "ruvnet/claude-flow#v1.0.0"
+          "ruvnet/ollama-flow#v1.0.0"
         );
         expect(parsedWithRef.ref).toBe("v1.0.0");
 
         const parsedWithPath = registry.parseGitHubPackId(
-          "ruvnet/claude-flow/packages/core"
+          "ruvnet/ollama-flow/packages/core"
         );
         expect(parsedWithPath.path).toBe("packages/core");
 

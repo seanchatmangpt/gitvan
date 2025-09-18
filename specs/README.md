@@ -195,7 +195,7 @@ Each specification includes detailed validation checklists covering:
 
 - [GitVan v1 Documentation](../docs/) - Legacy system reference
 - [v2.md](../v2.md) - Original requirements and implementation notes
-- [CLAUDE.md](../CLAUDE.md) - Development environment configuration
+- [OLLAMA.md](../OLLAMA.md) - Development environment configuration
 - [Architecture Decision Records](./ADRs/) - Design decision history (coming soon)
 
 ---

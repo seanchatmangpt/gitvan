@@ -192,5 +192,5 @@ The architecture is well-positioned for scaling and future performance optimizat
 
 ---
 
-**Performance Analyst**: Claude Code - GitVan Hive Mind
+**Performance Analyst**: Ollama Code - GitVan Hive Mind
 **Report Generated**: 2025-09-16T17:44:28.000Z

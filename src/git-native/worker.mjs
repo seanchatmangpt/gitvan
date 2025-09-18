@@ -5,9 +5,8 @@ import { parentPort } from "node:worker_threads";
 
 parentPort.on("message", async (message) => {
   try {
-    console.log("Worker received message:", JSON.stringify(message, null, 2));
     const { jobId, jobFunction, timeout } = message;
-    
+
     if (!jobId) {
       throw new Error("jobId is not defined in message");
     }

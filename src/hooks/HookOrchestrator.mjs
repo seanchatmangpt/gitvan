@@ -82,7 +82,7 @@ export class HookOrchestrator {
       // Finalize evaluation
       const evaluationResult = await this._finalizeEvaluation(
         evaluationResults,
-        executionResults,
+        executionResults || [],
         startTime
       );
 

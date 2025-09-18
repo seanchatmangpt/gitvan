@@ -156,40 +156,8 @@ export class GitNativeIO {
       throw new Error("GitNativeIO is shutting down");
     }
 
-    const jobId = this._generateJobId();
-    const timeout = options.timeout || this.config.workers.timeout;
-
-    return new Promise((resolve, reject) => {
-      // Add to worker queue
-      this.workerQueue.push({
-        id: jobId,
-        resolve,
-        reject,
-        jobFunction: jobFunction.toString(),
-        timeout,
-      });
-
-      // Find available worker
-      const availableWorker = this.workers.find(
-        (worker) => !this.workerQueue.some((job) => job.worker === worker)
-      );
-
-      if (availableWorker) {
-        // Assign job to worker
-        const job = this.workerQueue.find((job) => job.id === jobId);
-        job.worker = availableWorker;
-
-        // Send job to worker
-        availableWorker.postMessage({
-          jobId,
-          jobFunction: jobFunction.toString(),
-          timeout,
-        });
-      } else {
-        // No available workers, job will be picked up when a worker becomes available
-        this.logger.debug(`Job ${jobId} queued, waiting for available worker`);
-      }
-    });
+    // Execute job directly for now to avoid worker context issues
+    return await jobFunction();
   }
 
   /**

@@ -1,15 +1,39 @@
-// src/composables/git.mjs
-// GitVan v2 — useGit() - 80/20 Implementation
-// - POSIX-first. No external deps. ESM.
-// - Deterministic env: TZ=UTC, LANG=C.
-// - UnJS context-aware (unctx). Captures context once to avoid loss after await.
-// - Happy path only. No retries. No shell string interpolation.
-// - 80/20 commands: Only the essential Git operations that GitVan actually uses.
+/**
+ * @fileoverview GitVan v2 — Git Operations Composable
+ *
+ * This module provides comprehensive Git operations within the GitVan context.
+ * It implements an 80/20 approach focusing on essential Git operations that
+ * GitVan actually uses, with POSIX-first design and no external dependencies.
+ *
+ * Key Features:
+ * - POSIX-first implementation with no external dependencies
+ * - Deterministic environment: TZ=UTC, LANG=C
+ * - UnJS context-aware (unctx) to avoid context loss after await
+ * - Happy path only: no retries, no shell string interpolation
+ * - Essential Git operations: commit, branch, merge, worktree, notes, refs
+ *
+ * @version 2.0.0
+ * @author GitVan Team
+ * @license Apache-2.0
+ */
 
 import { execFile } from "node:child_process";
 import path from "node:path";
 import { useGitVan, tryUseGitVan } from "../core/context.mjs";
 
+/**
+ * Execute Git command with error handling
+ *
+ * @async
+ * @function runGit
+ * @param {string[]} args - Git command arguments
+ * @param {Object} options - Execution options
+ * @param {string} [options.cwd] - Working directory
+ * @param {Object} [options.env] - Environment variables
+ * @param {number} [options.maxBuffer=12*1024*1024] - Maximum buffer size
+ * @returns {Promise<string>} Git command output
+ * @throws {Error} When Git command fails
+ */
 async function runGit(args, { cwd, env, maxBuffer = 12 * 1024 * 1024 } = {}) {
   try {
     const { stdout } = await execFile("git", args, {
@@ -46,6 +70,16 @@ async function runGit(args, { cwd, env, maxBuffer = 12 * 1024 * 1024 } = {}) {
   }
 }
 
+/**
+ * Execute Git command without expecting output
+ *
+ * @async
+ * @function runGitVoid
+ * @param {string[]} args - Git command arguments
+ * @param {Object} options - Execution options
+ * @returns {Promise<void>} Resolves when command completes
+ * @throws {Error} When Git command fails
+ */
 async function runGitVoid(args, opts) {
   await runGit(args, opts);
 }
@@ -54,6 +88,65 @@ function toArr(x) {
   return Array.isArray(x) ? x : [x];
 }
 
+/**
+ * Git operations composable
+ *
+ * Provides comprehensive Git operations within the GitVan context.
+ * This function returns an object with methods for all essential Git operations
+ * including commits, branches, merges, worktrees, notes, and references.
+ *
+ * @function useGit
+ * @returns {Object} Git operations interface
+ * @returns {string} returns.root - Repository root directory
+ * @returns {Function} returns.head - Get current HEAD commit SHA
+ * @returns {Function} returns.branch - Get current branch name
+ * @returns {Function} returns.run - Run arbitrary Git command
+ * @returns {Function} returns.note - Add note to Git object
+ * @returns {Function} returns.appendNote - Append note to Git object
+ * @returns {Function} returns.setRef - Set Git reference
+ * @returns {Function} returns.delRef - Delete Git reference
+ * @returns {Function} returns.listRefs - List Git references with prefix
+ * @returns {Function} returns.init - Initialize Git repository
+ * @returns {Function} returns.clone - Clone Git repository
+ * @returns {Function} returns.add - Add files to staging
+ * @returns {Function} returns.commit - Commit changes
+ * @returns {Function} returns.push - Push changes
+ * @returns {Function} returns.pull - Pull changes
+ * @returns {Function} returns.fetch - Fetch changes
+ * @returns {Function} returns.branchCreate - Create branch
+ * @returns {Function} returns.branchDelete - Delete branch
+ * @returns {Function} returns.branchList - List branches
+ * @returns {Function} returns.checkout - Switch branch
+ * @returns {Function} returns.merge - Merge branch
+ * @returns {Function} returns.rebase - Rebase branch
+ * @returns {Function} returns.worktreeAdd - Create worktree
+ * @returns {Function} returns.worktreeRemove - Remove worktree
+ * @returns {Function} returns.worktreeList - List worktrees
+ * @returns {Function} returns.tagCreate - Create tag
+ * @returns {Function} returns.tagDelete - Delete tag
+ * @returns {Function} returns.tagList - List tags
+ * @returns {Function} returns.submoduleAdd - Add submodule
+ * @returns {Function} returns.submoduleUpdate - Update submodule
+ * @returns {Function} returns.nowISO - Get current timestamp in ISO format
+ * @returns {Function} returns.verifyCommit - Verify commit exists
+ * @returns {Function} returns.worktreeId - Get worktree identifier
+ *
+ * @example
+ * ```javascript
+ * const git = useGit();
+ *
+ * // Get current branch
+ * const branch = git.branch();
+ *
+ * // Commit changes
+ * git.add(['file1.js', 'file2.js']);
+ * git.commit('feat: add new features');
+ *
+ * // Create and switch to new branch
+ * git.branchCreate('feature/new-feature');
+ * git.checkout('feature/new-feature');
+ * ```
+ */
 export function useGit() {
   // Get context from unctx - this must be called synchronously
   let ctx;

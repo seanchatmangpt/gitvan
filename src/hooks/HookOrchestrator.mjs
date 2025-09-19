@@ -1,6 +1,22 @@
-// src/hooks/HookOrchestrator.mjs
-// Main orchestrator for the Knowledge Hook Engine
-// Manages the full evaluation lifecycle for all defined hooks
+/**
+ * @fileoverview GitVan v2 — Knowledge Hook Orchestrator
+ *
+ * This module provides the main orchestrator for the Knowledge Hook Engine.
+ * It manages the complete lifecycle from hook evaluation to workflow execution,
+ * including predicate evaluation, workflow planning, and step execution.
+ *
+ * Key Features:
+ * - Hook parsing and validation
+ * - Predicate evaluation against knowledge graphs
+ * - Workflow planning and execution
+ * - Git-native I/O integration
+ * - Concurrent execution management
+ * - Comprehensive error handling and logging
+ *
+ * @version 2.0.0
+ * @author GitVan Team
+ * @license Apache-2.0
+ */
 
 import { HookParser } from "./HookParser.mjs";
 import { PredicateEvaluator } from "./PredicateEvaluator.mjs";
@@ -13,15 +29,24 @@ import { GitNativeIO } from "../git-native/GitNativeIO.mjs";
 
 /**
  * Main orchestrator for the Knowledge Hook Engine
- * Manages the complete lifecycle from hook evaluation to workflow execution
+ *
+ * Manages the complete lifecycle from hook evaluation to workflow execution.
+ * This class coordinates hook parsing, predicate evaluation, workflow planning,
+ * and step execution using Git-native I/O for persistence and concurrency control.
+ *
+ * @class HookOrchestrator
+ * @description Main orchestrator for the Knowledge Hook Engine
  */
 export class HookOrchestrator {
   /**
-   * @param {object} options
-   * @param {string} [options.graphDir] - Directory containing hook definitions
-   * @param {object} [options.context] - GitVan context
-   * @param {object} [options.logger] - Logger instance
-   * @param {number} [options.timeoutMs] - Evaluation timeout in milliseconds
+   * Create HookOrchestrator instance
+   *
+   * @constructor
+   * @param {Object} [options={}] - Configuration options
+   * @param {string} [options.graphDir="./hooks"] - Directory containing hook definitions
+   * @param {Object} [options.context] - GitVan context
+   * @param {Object} [options.logger=console] - Logger instance
+   * @param {number} [options.timeoutMs=300000] - Evaluation timeout in milliseconds
    */
   constructor(options = {}) {
     this.graphDir = options.graphDir || "./hooks";
@@ -472,21 +497,30 @@ export class HookOrchestrator {
     const duration = endTime - startTime;
 
     const triggeredHooks = evaluationResults.filter((r) => r.triggered);
-    const successfulExecutions = executionResults.filter((r) => r.success);
+
+    // Handle both array and object return types from _executeTriggeredWorkflows
+    let executions = [];
+    if (Array.isArray(executionResults)) {
+      executions = executionResults;
+    } else if (executionResults && executionResults.executions) {
+      executions = executionResults.executions;
+    }
+
+    const successfulExecutions = executions.filter((r) => r.success);
 
     const result = {
       success: true,
       duration: Math.round(duration),
       hooksEvaluated: evaluationResults.length,
       hooksTriggered: triggeredHooks.length,
-      workflowsExecuted: executionResults.length,
+      workflowsExecuted: executions.length,
       workflowsSuccessful: successfulExecutions.length,
       triggeredHooks: triggeredHooks.map((r) => ({
         id: r.hook.id,
         title: r.hook.title,
         predicateType: r.evaluation.predicateType,
       })),
-      executions: executionResults,
+      executions: executions,
       metadata: {
         startTime: new Date(startTime).toISOString(),
         endTime: new Date(endTime).toISOString(),

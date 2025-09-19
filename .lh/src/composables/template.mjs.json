@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 5,
+            "activePatchIndex": 6,
             "patches": [
                 {
                     "date": 1758045809012,
@@ -28,6 +28,10 @@
                 {
                     "date": 1758074896344,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -297,14 +297,14 @@\n       try {\n         // Acquire all necessary locks first\n         for (const op of plan.operations) {\n           const targetPath = presolve(binding.root, op.to || op.into);\n-          \n+\n           // Path Sandboxing: Ensure target is within the root directory\n           if (!targetPath.startsWith(binding.root)) {\n             throw new Error(`Path escape violation: ${targetPath}`);\n           }\n-          \n+\n           const lockPath = generateLockRef(\"template\", op.to || op.into);\n           if (!(await acquireLock(lockPath, head))) {\n             throw new Error(`Failed to acquire lock for: ${op.to || op.into}`);\n           }\n"
+                },
+                {
+                    "date": 1758250065485,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,6 +1,23 @@\n-// src/composables/template.mjs\n-// GitVan v2 — useTemplate() with inflection filters and config discovery\n+/**\n+ * @fileoverview GitVan v2 — Template Rendering Composable\n+ * \n+ * This module provides template rendering capabilities within the GitVan context.\n+ * It integrates with Nunjucks templating engine and provides inflection filters,\n+ * config discovery, and deterministic template rendering.\n+ * \n+ * Key Features:\n+ * - Nunjucks templating with inflection filters\n+ * - Config discovery for template path resolution\n+ * - Deterministic rendering (no random/time-based functions)\n+ * - Frontmatter parsing and injection\n+ * - Shell hook integration\n+ * - Receipt writing and lock management\n+ * \n+ * @version 2.0.0\n+ * @author GitVan Team\n+ * @license Apache-2.0\n+ */\n \n import { promises as fs } from \"node:fs\";\n import {\n   join,\n"
                 }
             ],
             "date": 1758045809012,

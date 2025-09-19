@@ -1,369 +1,308 @@
-// src/git-native/QueueManager.mjs
-// Git-Native Queue Management with p-queue and Git refs
-
-import PQueue from "p-queue";
-import { execSync } from "node:child_process";
-import { promises as fs } from "node:fs";
-import { join, dirname } from "node:path";
-import { randomBytes } from "node:crypto";
+import { promises as fs } from 'fs';
+import { join, dirname } from 'path';
+import { randomUUID } from 'crypto';
 
 /**
- * Git-Native Queue Manager
- * Manages priority queues using Git refs and file-backed queues
+ * Priority queues with durable mailboxes (.gitvan/queue/*) and optional git-ref mailbox.
  */
 export class QueueManager {
+  /**
+   * @param {{cwd?:string,logger?:Console,queue?:import("../types.js").QueueConfig,paths?:import("../types.js").PathConfig}} [options]
+   */
   constructor(options = {}) {
     this.cwd = options.cwd || process.cwd();
     this.logger = options.logger || console;
-
-    // Queue configuration
-    this.config = {
-      concurrency: 256, // Conservative, smooth processing
-      interval: 50, // Queue processing interval (ms)
-      intervalCap: 32, // Operations per interval
-      ...options.queue,
-    };
-
-    // Paths configuration
-    this.paths = {
-      tmp: ".gitvan/tmp",
-      queue: ".gitvan/queue",
-      cache: ".gitvan/cache",
-      artifacts: ".gitvan/artifacts",
-      notesRef: "refs/notes/gitvan/results",
-      locksRef: "refs/gitvan/locks",
-      execRef: "refs/gitvan/executions",
-      ...options.paths,
-    };
-
-    // Initialize priority queues
-    this.queues = {
-      high: new PQueue({
-        concurrency: this.config.concurrency,
-        interval: this.config.interval,
-        intervalCap: this.config.intervalCap,
-        priority: 1,
-      }),
-      medium: new PQueue({
-        concurrency: this.config.concurrency,
-        interval: this.config.interval,
-        intervalCap: this.config.intervalCap,
-        priority: 2,
-      }),
-      low: new PQueue({
-        concurrency: this.config.concurrency,
-        interval: this.config.interval,
-        intervalCap: this.config.intervalCap,
-        priority: 3,
-      }),
-    };
-
-    // Initialize Git refs for mailbox queues
-    this.mailboxRefs = {
-      high: "refs/gitvan/queue/hi",
-      medium: "refs/gitvan/queue/med",
-      low: "refs/gitvan/queue/lo",
-    };
-
-    // File queue paths
-    this.fileQueuePaths = {
-      high: join(this.cwd, this.paths.queue, "hi"),
-      medium: join(this.cwd, this.paths.queue, "med"),
-      low: join(this.cwd, this.paths.queue, "lo"),
-    };
-
-    // Initialize directories
-    this._initializeDirectories();
+    this.config = options.queue || {};
+    this.paths = options.paths || {};
+    
+    // Priority queues using p-queue
+    this._queues = new Map();
+    this._mailboxes = new Map();
+    this._initialized = false;
   }
 
   /**
-   * Initialize required directories
-   * @private
+   * Initialize queues and mailboxes.
+   * @returns {Promise<void>}
    */
-  async _initializeDirectories() {
-    const dirs = [
-      this.paths.tmp,
-      this.paths.queue,
-      this.paths.cache,
-      this.paths.artifacts,
-      ...Object.values(this.fileQueuePaths),
-    ];
-
-    for (const dir of dirs) {
-      const fullPath = join(this.cwd, dir);
-      try {
-        await fs.mkdir(fullPath, { recursive: true });
-        this.logger.debug(`Created directory: ${fullPath}`);
-      } catch (error) {
-        this.logger.warn(`Failed to create directory ${dir}: ${error.message}`);
-      }
+  async initialize() {
+    if (this._initialized) return;
+    
+    this.logger.info('Initializing QueueManager...');
+    
+    // Create queue directories
+    const queueDir = join(this.cwd, this.paths.queue || '.gitvan/queue');
+    await this._ensureDir(queueDir);
+    
+    // Initialize priority queues
+    const priorities = ['high', 'medium', 'low'];
+    for (const priority of priorities) {
+      const priorityDir = join(queueDir, priority);
+      await this._ensureDir(priorityDir);
+      
+      // Initialize p-queue for this priority
+      const { default: PQueue } = await import('p-queue');
+      const queue = new PQueue({
+        concurrency: this.config.concurrency || 3,
+        interval: this.config.interval || 100,
+        intervalCap: this.config.intervalCap || 5
+      });
+      
+      this._queues.set(priority, queue);
+      this._mailboxes.set(priority, priorityDir);
     }
+    
+    this._initialized = true;
+    this.logger.info('QueueManager initialized successfully');
   }
 
   /**
-   * Add a job to the queue
-   * @param {string} priority - 'high', 'medium', or 'low'
-   * @param {Function} job - The job function to execute
-   * @param {object} metadata - Job metadata
-   * @returns {Promise} Job execution promise
+   * Add a job to the queue with persistence and status tracking.
+   * @template T
+   * @param {import("../types.js").JobPriority} priority
+   * @param {() => Promise<T>} job
+   * @param {import("../types.js").JobMetadata} [metadata]
+   * @returns {Promise<T>}
    */
   async addJob(priority, job, metadata = {}) {
-    const queue = this.queues[priority];
-    if (!queue) {
-      throw new Error(
-        `Invalid priority: ${priority}. Must be 'high', 'medium', or 'low'`
-      );
-    }
-
-    const jobId = this._generateJobId();
-    const jobData = {
+    await this._ensureInitialized();
+    
+    const jobId = randomUUID();
+    const jobRecord = {
       id: jobId,
       priority,
-      metadata,
+      status: 'queued',
       timestamp: Date.now(),
-      status: "queued",
+      metadata: metadata || {}
     };
-
-    // Write to file queue for persistence
-    await this._writeToFileQueue(priority, jobId, jobData);
-
-    // Write to Git ref for mailbox
-    await this._writeToMailboxRef(priority, jobId, jobData);
-
+    
+    // Persist job to mailbox
+    await this._persistJob(jobRecord);
+    
     // Add to priority queue
-    return queue.add(
-      async () => {
-        try {
-          jobData.status = "running";
-          jobData.startedAt = Date.now();
-
-          const result = await job();
-
-          jobData.status = "completed";
-          jobData.completedAt = Date.now();
-          jobData.result = result;
-
-          // Update file queue
-          await this._updateFileQueue(priority, jobId, jobData);
-
-          return result;
-        } catch (error) {
-          jobData.status = "failed";
-          jobData.completedAt = Date.now();
-          jobData.error = error.message;
-
-          // Update file queue
-          await this._updateFileQueue(priority, jobId, jobData);
-
-          throw error;
-        }
-      },
-      { priority: this._getPriorityValue(priority) }
-    );
-  }
-
-  /**
-   * Write job to file queue
-   * @private
-   */
-  async _writeToFileQueue(priority, jobId, jobData) {
-    const queuePath = this.fileQueuePaths[priority];
-
-    // Ensure the queue directory exists
-    try {
-      await fs.mkdir(queuePath, { recursive: true });
-    } catch (error) {
-      this.logger.warn(
-        `Failed to create queue directory ${queuePath}: ${error.message}`
-      );
+    const queue = this._queues.get(priority);
+    if (!queue) {
+      throw new Error(`Invalid priority: ${priority}`);
     }
-
-    const fileName = `${Date.now()}_${jobId}.json`;
-    const filePath = join(queuePath, fileName);
-
-    // Atomic write: write to temp file then rename
-    const tempPath = `${filePath}.tmp`;
-    await fs.writeFile(tempPath, JSON.stringify(jobData, null, 2));
-    await fs.rename(tempPath, filePath);
-  }
-
-  /**
-   * Update job in file queue
-   * @private
-   */
-  async _updateFileQueue(priority, jobId, jobData) {
-    const queuePath = this.fileQueuePaths[priority];
-
-    try {
-      const files = await fs.readdir(queuePath);
-      const jobFile = files.find((file) => file.includes(jobId));
-
-      if (jobFile) {
-        const filePath = join(queuePath, jobFile);
-        const tempPath = `${filePath}.tmp`;
-
-        await fs.writeFile(tempPath, JSON.stringify(jobData, null, 2));
-        await fs.rename(tempPath, filePath);
+    
+    return queue.add(async () => {
+      try {
+        // Update status to running
+        await this._updateJobStatus(jobId, 'running', { startedAt: Date.now() });
+        
+        // Execute job
+        const result = await job();
+        
+        // Update status to completed
+        await this._updateJobStatus(jobId, 'completed', { 
+          completedAt: Date.now(),
+          result 
+        });
+        
+        return result;
+      } catch (error) {
+        // Update status to failed
+        await this._updateJobStatus(jobId, 'failed', { 
+          completedAt: Date.now(),
+          error: error.message 
+        });
+        
+        throw error;
       }
-    } catch (error) {
-      this.logger.warn(
-        `Failed to update file queue for job ${jobId}: ${error.message}`
-      );
-    }
+    });
   }
 
   /**
-   * Write job to Git mailbox ref
-   * @private
-   */
-  async _writeToMailboxRef(priority, jobId, jobData) {
-    const refName = `${this.mailboxRefs[priority]}/${jobId}`;
-
-    try {
-      // Create a Git ref pointing to the current HEAD
-      execSync(`git update-ref ${refName} HEAD`, {
-        cwd: this.cwd,
-        stdio: "pipe",
-      });
-
-      // Add job metadata as a Git note
-      const noteContent = JSON.stringify(jobData);
-      execSync(`git notes add -f -m "${noteContent}" ${refName}`, {
-        cwd: this.cwd,
-        stdio: "pipe",
-      });
-    } catch (error) {
-      this.logger.warn(
-        `Failed to write to mailbox ref ${refName}: ${error.message}`
-      );
-    }
-  }
-
-  /**
-   * Generate a unique job ID
-   * @private
-   */
-  _generateJobId() {
-    return randomBytes(8).toString("hex");
-  }
-
-  /**
-   * Get priority value for p-queue
-   * @private
-   */
-  _getPriorityValue(priority) {
-    const values = { high: 1, medium: 2, low: 3 };
-    return values[priority] || 3;
-  }
-
-  /**
-   * Get queue status
-   * @returns {object} Queue status information
+   * Current queue status per priority.
+   * @returns {Record<import("../types.js").JobPriority, import("../types.js").QueueStatus>}
    */
   getStatus() {
     const status = {};
-
-    for (const [priority, queue] of Object.entries(this.queues)) {
+    
+    for (const [priority, queue] of this._queues) {
       status[priority] = {
         pending: queue.pending,
         size: queue.size,
         isPaused: queue.isPaused,
-        concurrency: queue.concurrency,
+        concurrency: queue.concurrency
       };
     }
-
+    
     return status;
   }
 
-  /**
-   * Pause all queues
-   */
+  /** Pause all queues. */
   pauseAll() {
-    for (const queue of Object.values(this.queues)) {
+    for (const queue of this._queues.values()) {
       queue.pause();
     }
   }
 
-  /**
-   * Resume all queues
-   */
+  /** Resume all queues. */
   resumeAll() {
-    for (const queue of Object.values(this.queues)) {
+    for (const queue of this._queues.values()) {
       queue.start();
     }
   }
 
-  /**
-   * Clear completed jobs from file queues
-   */
+  /** Remove completed/failed job files from mailboxes. */
   async clearCompleted() {
-    for (const priority of Object.keys(this.fileQueuePaths)) {
-      const queuePath = this.fileQueuePaths[priority];
-
-      try {
-        const files = await fs.readdir(queuePath);
-
-        for (const file of files) {
-          if (file.endsWith(".json")) {
-            const filePath = join(queuePath, file);
-            const content = await fs.readFile(filePath, "utf8");
-            const jobData = JSON.parse(content);
-
-            if (jobData.status === "completed" || jobData.status === "failed") {
-              await fs.unlink(filePath);
-            }
+    await this._ensureInitialized();
+    
+    let clearedCount = 0;
+    
+    for (const [priority, mailboxDir] of this._mailboxes) {
+      const files = await fs.readdir(mailboxDir);
+      
+      for (const file of files) {
+        if (!file.endsWith('.json')) continue;
+        
+        const filePath = join(mailboxDir, file);
+        try {
+          const content = await fs.readFile(filePath, 'utf8');
+          const jobRecord = JSON.parse(content);
+          
+          if (jobRecord.status === 'completed' || jobRecord.status === 'failed') {
+            await fs.unlink(filePath);
+            clearedCount++;
           }
+        } catch (error) {
+          this.logger.warn(`Failed to process job file ${file}: ${error.message}`);
         }
-      } catch (error) {
-        this.logger.warn(
-          `Failed to clear completed jobs in ${priority} queue: ${error.message}`
-        );
+      }
+    }
+    
+    this.logger.info(`Cleared ${clearedCount} completed job files`);
+    return clearedCount;
+  }
+
+  /** Recover interrupted jobs and normalize queue state. */
+  async reconcile() {
+    await this._ensureInitialized();
+    
+    this.logger.info('Reconciling queue state...');
+    
+    let recoveredCount = 0;
+    
+    for (const [priority, mailboxDir] of this._mailboxes) {
+      const files = await fs.readdir(mailboxDir);
+      
+      for (const file of files) {
+        if (!file.endsWith('.json')) continue;
+        
+        const filePath = join(mailboxDir, file);
+        try {
+          const content = await fs.readFile(filePath, 'utf8');
+          const jobRecord = JSON.parse(content);
+          
+          // Recover queued or running jobs
+          if (jobRecord.status === 'queued' || jobRecord.status === 'running') {
+            // Mark as recovered
+            jobRecord.recovered = true;
+            jobRecord.recoveredAt = Date.now();
+            
+            // Update file
+            await fs.writeFile(filePath, JSON.stringify(jobRecord, null, 2));
+            recoveredCount++;
+            
+            this.logger.info(`Recovered job ${jobRecord.id} (${priority})`);
+          }
+        } catch (error) {
+          this.logger.warn(`Failed to reconcile job file ${file}: ${error.message}`);
+        }
+      }
+    }
+    
+    this.logger.info(`Recovered ${recoveredCount} jobs`);
+    return recoveredCount;
+  }
+
+  /**
+   * Shutdown all queues.
+   * @returns {Promise<void>}
+   */
+  async shutdown() {
+    if (!this._initialized) return;
+    
+    this.logger.info('Shutting down QueueManager...');
+    
+    // Wait for all queues to finish
+    await Promise.all(Array.from(this._queues.values()).map(queue => queue.onIdle()));
+    
+    this._initialized = false;
+    this.logger.info('QueueManager shutdown complete');
+  }
+
+  /**
+   * Ensure the system is initialized.
+   * @private
+   * @returns {Promise<void>}
+   */
+  async _ensureInitialized() {
+    if (!this._initialized) {
+      await this.initialize();
+    }
+  }
+
+  /**
+   * Ensure directory exists.
+   * @private
+   * @param {string} dirPath
+   * @returns {Promise<void>}
+   */
+  async _ensureDir(dirPath) {
+    try {
+      await fs.mkdir(dirPath, { recursive: true });
+    } catch (error) {
+      if (error.code !== 'EEXIST') {
+        throw error;
       }
     }
   }
 
   /**
-   * Reconcile queue state on startup
-   * Scans file queues and recovers any incomplete jobs
+   * Persist job record to mailbox.
+   * @private
+   * @param {import("../types.js").JobRecord} jobRecord
+   * @returns {Promise<void>}
    */
-  async reconcile() {
-    this.logger.info("Reconciling queue state...");
+  async _persistJob(jobRecord) {
+    const mailboxDir = this._mailboxes.get(jobRecord.priority);
+    const filePath = join(mailboxDir, `${jobRecord.id}.json`);
+    
+    await fs.writeFile(filePath, JSON.stringify(jobRecord, null, 2));
+  }
 
-    for (const priority of Object.keys(this.fileQueuePaths)) {
-      const queuePath = this.fileQueuePaths[priority];
-
+  /**
+   * Update job status in mailbox.
+   * @private
+   * @param {string} jobId
+   * @param {string} status
+   * @param {any} updates
+   * @returns {Promise<void>}
+   */
+  async _updateJobStatus(jobId, status, updates = {}) {
+    // Find the job file across all mailboxes
+    for (const [priority, mailboxDir] of this._mailboxes) {
+      const filePath = join(mailboxDir, `${jobId}.json`);
+      
       try {
-        const files = await fs.readdir(queuePath);
-        let recovered = 0;
-
-        for (const file of files) {
-          if (file.endsWith(".json")) {
-            const filePath = join(queuePath, file);
-            const content = await fs.readFile(filePath, "utf8");
-            const jobData = JSON.parse(content);
-
-            // Recover running jobs that may have been interrupted
-            if (jobData.status === "running") {
-              jobData.status = "queued";
-              jobData.recovered = true;
-              jobData.recoveredAt = Date.now();
-
-              await this._updateFileQueue(priority, jobData.id, jobData);
-              recovered++;
-            }
-          }
-        }
-
-        if (recovered > 0) {
-          this.logger.info(
-            `Recovered ${recovered} jobs from ${priority} queue`
-          );
-        }
+        const content = await fs.readFile(filePath, 'utf8');
+        const jobRecord = JSON.parse(content);
+        
+        // Update the record
+        Object.assign(jobRecord, updates);
+        jobRecord.status = status;
+        
+        // Write back
+        await fs.writeFile(filePath, JSON.stringify(jobRecord, null, 2));
+        return;
       } catch (error) {
-        this.logger.warn(
-          `Failed to reconcile ${priority} queue: ${error.message}`
-        );
+        // File doesn't exist in this mailbox, continue
+        continue;
       }
     }
+    
+    throw new Error(`Job ${jobId} not found in any mailbox`);
   }
 }

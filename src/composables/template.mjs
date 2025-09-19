@@ -1,5 +1,22 @@
-// src/composables/template.mjs
-// GitVan v2 — useTemplate() with inflection filters and config discovery
+/**
+ * @fileoverview GitVan v2 — Template Rendering Composable
+ *
+ * This module provides template rendering capabilities within the GitVan context.
+ * It integrates with Nunjucks templating engine and provides inflection filters,
+ * config discovery, and deterministic template rendering.
+ *
+ * Key Features:
+ * - Nunjucks templating with inflection filters
+ * - Config discovery for template path resolution
+ * - Deterministic rendering (no random/time-based functions)
+ * - Frontmatter parsing and injection
+ * - Shell hook integration
+ * - Receipt writing and lock management
+ *
+ * @version 2.0.0
+ * @author GitVan Team
+ * @license Apache-2.0
+ */
 
 import { promises as fs } from "node:fs";
 import {

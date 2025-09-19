@@ -1,4 +1,23 @@
-// useTurtle(): Handles loading, parsing, and querying of Turtle (.ttl) files.
+/**
+ * @fileoverview GitVan v2 — Turtle/RDF Composable
+ *
+ * This module provides Turtle/RDF file loading, parsing, and querying capabilities
+ * within the GitVan context. It handles loading .ttl files from directories,
+ * parsing them into N3 stores, and providing methods to query and extract
+ * knowledge hooks and RDF data.
+ *
+ * Key Features:
+ * - Turtle (.ttl) file loading and parsing
+ * - N3 store integration for RDF operations
+ * - Knowledge hook extraction from RDF data
+ * - SPARQL query execution
+ * - Namespace management for RDF vocabularies
+ * - RDF list traversal utilities
+ *
+ * @version 2.0.0
+ * @author GitVan Team
+ * @license Apache-2.0
+ */
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import N3 from "n3";
@@ -62,6 +81,41 @@ async function bindContext(opts = {}) {
   return { root, graphDir, uriRoots, config };
 }
 
+/**
+ * Turtle/RDF operations composable
+ *
+ * Provides Turtle file loading, parsing, and querying capabilities within the GitVan context.
+ * This function loads all .ttl files from a directory, parses them into an N3 store,
+ * and provides methods to query the RDF data and extract knowledge hooks.
+ *
+ * @async
+ * @function useTurtle
+ * @param {Object} [options={}] - Turtle options
+ * @param {string} [options.graphDir] - Directory containing Turtle files
+ * @returns {Promise<Object>} Turtle operations interface
+ * @returns {Function} returns.loadFiles - Load Turtle files from directory
+ * @returns {Function} returns.getHooks - Get knowledge hooks from loaded data
+ * @returns {Function} returns.query - Query the loaded RDF store
+ * @returns {Function} returns.store - Access to the N3 store
+ * @returns {Function} returns.parser - Access to the N3 parser
+ *
+ * @example
+ * ```javascript
+ * const turtle = await useTurtle({ graphDir: './knowledge' });
+ *
+ * // Load files
+ * await turtle.loadFiles();
+ *
+ * // Get knowledge hooks
+ * const hooks = turtle.getHooks();
+ *
+ * // Query RDF data
+ * const results = turtle.query(`
+ *   PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+ *   SELECT ?s ?p ?o WHERE { ?s ?p ?o }
+ * `);
+ * ```
+ */
 export async function useTurtle(options = {}) {
   const { root, graphDir, uriRoots, config } = await bindContext(options);
 

@@ -1,137 +1,148 @@
-// src/git-native/SnapshotStore.mjs
-// Git-Native Snapshot Store with content-addressed storage
+import { promises as fs } from 'fs';
+import { join, dirname } from 'path';
+import { createHash } from 'crypto';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 
-import { execSync } from "node:child_process";
-import { promises as fs } from "node:fs";
-import { join, dirname } from "node:path";
-import { createHash } from "node:crypto";
+const execAsync = promisify(exec);
 
 /**
- * Git-Native Snapshot Store
- * Manages content-addressed cache directories with BLAKE3 keys
+ * Content-addressed snapshot cache (sharded on disk), keyed by SHA-256 of payload.
+ * Each snapshot records key, contentHash, metadata, commit, and branch.
  */
 export class SnapshotStore {
+  /**
+   * @param {{cwd?:string,logger?:Console,snapshot?:import("../types.js").SnapshotOptions}} [options]
+   */
   constructor(options = {}) {
     this.cwd = options.cwd || process.cwd();
     this.logger = options.logger || console;
-
-    // Snapshot configuration
-    this.config = {
-      cacheDir: ".gitvan/cache",
-      tempDir: ".gitvan/tmp",
-      maxCacheSize: 1024 * 1024 * 1024, // 1GB default
-      compressionEnabled: true,
-      ...options.snapshot,
-    };
-
-    // Cache statistics
-    this.cacheStats = {
+    this.config = options.snapshot || {};
+    
+    // Configuration
+    this.cacheDir = this.config.cacheDir || '.gitvan/cache';
+    this.tempDir = this.config.tempDir || '.gitvan/tmp';
+    this.maxCacheSize = this.config.maxCacheSize || 1073741824; // 1GB
+    this.compressionEnabled = this.config.compressionEnabled !== false;
+    
+    // Statistics
+    this._stats = {
       hits: 0,
       misses: 0,
       size: 0,
       entries: 0,
+      hitRate: 0,
+      maxSize: this.maxCacheSize,
+      sizeMB: 0
     };
+    
+    this._initialized = false;
   }
 
   /**
-   * Store a snapshot
-   * @param {string} key - Cache key
-   * @param {any} data - Data to store
-   * @param {object} metadata - Additional metadata
-   * @returns {Promise<string>} Content hash
+   * Initialize snapshot store.
+   * @returns {Promise<void>}
+   */
+  async initialize() {
+    if (this._initialized) return;
+    
+    this.logger.info('Initializing SnapshotStore...');
+    
+    // Create cache directories
+    await this._ensureDir(join(this.cwd, this.cacheDir));
+    await this._ensureDir(join(this.cwd, this.tempDir));
+    
+    // Load existing cache statistics
+    await this._loadCacheStats();
+    
+    this._initialized = true;
+    this.logger.info('SnapshotStore initialized successfully');
+  }
+
+  /**
+   * Store payload under deterministic content hash.
+   * @param {string} key
+   * @param {any} data
+   * @param {Record<string,any>} [metadata]
+   * @returns {Promise<string>} contentHash
    */
   async storeSnapshot(key, data, metadata = {}) {
-    const contentHash = this._generateContentHash(data);
-    const cachePath = this._getCachePath(contentHash);
-
-    try {
-      // Create cache directory
-      await fs.mkdir(cachePath, { recursive: true });
-
-      // Prepare snapshot data
-      const snapshot = {
-        key,
-        contentHash,
-        timestamp: Date.now(),
-        metadata,
-        data,
-        commit: await this._getCurrentCommit(),
-        branch: await this._getCurrentBranch(),
-      };
-
-      // Write snapshot file
-      const snapshotFile = join(cachePath, "snapshot.json");
-      const tempFile = `${snapshotFile}.tmp`;
-
-      await fs.writeFile(tempFile, JSON.stringify(snapshot, null, 2));
-      await fs.rename(tempFile, snapshotFile);
-
-      // Update cache statistics
-      this.cacheStats.entries++;
-      this.cacheStats.size += JSON.stringify(snapshot).length;
-
-      this.logger.debug(`Stored snapshot ${key} with hash ${contentHash}`);
-      return contentHash;
-    } catch (error) {
-      this.logger.error(`Failed to store snapshot ${key}: ${error.message}`);
-      throw error;
-    }
+    await this._ensureInitialized();
+    
+    const contentHash = this._computeContentHash(data);
+    const snapshotPath = this._getSnapshotPath(contentHash);
+    
+    // Create snapshot header
+    const header = {
+      key,
+      contentHash,
+      timestamp: Date.now(),
+      metadata,
+      commit: await this._getCurrentCommit(),
+      branch: await this._getCurrentBranch()
+    };
+    
+    // Store snapshot data
+    const snapshotData = {
+      header,
+      data
+    };
+    
+    // Write to disk
+    await fs.writeFile(snapshotPath, JSON.stringify(snapshotData, null, 2));
+    
+    // Update statistics
+    this._stats.entries++;
+    this._stats.size += JSON.stringify(snapshotData).length;
+    this._stats.sizeMB = this._stats.size / (1024 * 1024);
+    
+    this.logger.debug(`Stored snapshot: ${key} (${contentHash})`);
+    
+    return contentHash;
   }
 
   /**
-   * Retrieve a snapshot
-   * @param {string} key - Cache key
-   * @param {string} contentHash - Content hash (optional)
-   * @returns {Promise<any>} Stored data or null if not found
+   * Retrieve payload by key or key+hash.
+   * @param {string} key
+   * @param {string|null} [contentHash]
+   * @returns {Promise<any|null>}
    */
   async getSnapshot(key, contentHash = null) {
-    try {
-      if (contentHash) {
-        // Direct lookup by content hash
-        const cachePath = this._getCachePath(contentHash);
-        const snapshotFile = join(cachePath, "snapshot.json");
-
-        if (await this._fileExists(snapshotFile)) {
-          const snapshot = JSON.parse(await fs.readFile(snapshotFile, "utf8"));
-          if (snapshot.key === key) {
-            this.cacheStats.hits++;
-            return snapshot.data;
-          }
+    await this._ensureInitialized();
+    
+    if (contentHash) {
+      // Direct lookup by content hash
+      const snapshotPath = this._getSnapshotPath(contentHash);
+      try {
+        const snapshotData = await this._loadSnapshot(snapshotPath);
+        if (snapshotData.header.key === key) {
+          this._stats.hits++;
+          this._updateHitRate();
+          return snapshotData.data;
         }
-      } else {
-        // Search by key
-        const cacheDir = join(this.cwd, this.config.cacheDir);
-        const entries = await fs.readdir(cacheDir);
-
-        for (const entry of entries) {
-          const cachePath = join(cacheDir, entry);
-          const snapshotFile = join(cachePath, "snapshot.json");
-
-          if (await this._fileExists(snapshotFile)) {
-            const snapshot = JSON.parse(
-              await fs.readFile(snapshotFile, "utf8")
-            );
-            if (snapshot.key === key) {
-              this.cacheStats.hits++;
-              return snapshot.data;
-            }
-          }
-        }
+      } catch (error) {
+        this.logger.debug(`Snapshot not found: ${contentHash}`);
       }
-
-      this.cacheStats.misses++;
-      return null;
-    } catch (error) {
-      this.logger.error(`Failed to get snapshot ${key}: ${error.message}`);
-      return null;
+    } else {
+      // Search by key
+      const snapshots = await this.listSnapshots();
+      const matchingSnapshot = snapshots.find(s => s.key === key);
+      
+      if (matchingSnapshot) {
+        return this.getSnapshot(key, matchingSnapshot.contentHash);
+      }
     }
+    
+    this._stats.misses++;
+    this._updateHitRate();
+    return null;
   }
 
   /**
-   * Check if a snapshot exists
-   * @param {string} key - Cache key
-   * @param {string} contentHash - Content hash (optional)
-   * @returns {Promise<boolean>} True if snapshot exists
+   * Snapshot existence check.
+   * @param {string} key
+   * @param {string|null} [contentHash]
+   * @returns {Promise<boolean>}
    */
   async hasSnapshot(key, contentHash = null) {
     const snapshot = await this.getSnapshot(key, contentHash);
@@ -139,254 +150,293 @@ export class SnapshotStore {
   }
 
   /**
-   * Remove a snapshot
-   * @param {string} key - Cache key
-   * @param {string} contentHash - Content hash (optional)
-   * @returns {Promise<boolean>} True if snapshot was removed
+   * Remove a snapshot.
+   * @param {string} key
+   * @param {string|null} [contentHash]
+   * @returns {Promise<boolean>}
    */
   async removeSnapshot(key, contentHash = null) {
-    try {
-      if (contentHash) {
-        // Direct removal by content hash
-        const cachePath = this._getCachePath(contentHash);
-        const snapshotFile = join(cachePath, "snapshot.json");
-
-        if (await this._fileExists(snapshotFile)) {
-          const snapshot = JSON.parse(await fs.readFile(snapshotFile, "utf8"));
-          if (snapshot.key === key) {
-            await fs.rm(cachePath, { recursive: true, force: true });
-            this.cacheStats.entries--;
-            this.cacheStats.size -= JSON.stringify(snapshot).length;
-            return true;
-          }
+    await this._ensureInitialized();
+    
+    if (contentHash) {
+      const snapshotPath = this._getSnapshotPath(contentHash);
+      try {
+        const snapshotData = await this._loadSnapshot(snapshotPath);
+        if (snapshotData.header.key === key) {
+          await fs.unlink(snapshotPath);
+          
+          // Update statistics
+          this._stats.entries--;
+          this._stats.size -= JSON.stringify(snapshotData).length;
+          this._stats.sizeMB = this._stats.size / (1024 * 1024);
+          
+          this.logger.debug(`Removed snapshot: ${key} (${contentHash})`);
+          return true;
         }
-      } else {
-        // Search and remove by key
-        const cacheDir = join(this.cwd, this.config.cacheDir);
-        const entries = await fs.readdir(cacheDir);
-
-        for (const entry of entries) {
-          const cachePath = join(cacheDir, entry);
-          const snapshotFile = join(cachePath, "snapshot.json");
-
-          if (await this._fileExists(snapshotFile)) {
-            const snapshot = JSON.parse(
-              await fs.readFile(snapshotFile, "utf8")
-            );
-            if (snapshot.key === key) {
-              await fs.rm(cachePath, { recursive: true, force: true });
-              this.cacheStats.entries--;
-              this.cacheStats.size -= JSON.stringify(snapshot).length;
-              return true;
-            }
-          }
-        }
+      } catch (error) {
+        this.logger.debug(`Failed to remove snapshot: ${contentHash}`);
       }
-
-      return false;
-    } catch (error) {
-      this.logger.error(`Failed to remove snapshot ${key}: ${error.message}`);
-      return false;
+    } else {
+      const snapshots = await this.listSnapshots();
+      const matchingSnapshot = snapshots.find(s => s.key === key);
+      
+      if (matchingSnapshot) {
+        return this.removeSnapshot(key, matchingSnapshot.contentHash);
+      }
     }
+    
+    return false;
   }
 
   /**
-   * List all snapshots
-   * @returns {Promise<Array>} Array of snapshot information
+   * List snapshot headers (no payload).
+   * @returns {Promise<Array<import("../types.js").SnapshotHeader>>}
    */
   async listSnapshots() {
+    await this._ensureInitialized();
+    
+    const cacheDir = join(this.cwd, this.cacheDir);
     const snapshots = [];
-
+    
     try {
-      const cacheDir = join(this.cwd, this.config.cacheDir);
-      const entries = await fs.readdir(cacheDir);
-
-      for (const entry of entries) {
-        const cachePath = join(cacheDir, entry);
-        const snapshotFile = join(cachePath, "snapshot.json");
-
-        if (await this._fileExists(snapshotFile)) {
-          const snapshot = JSON.parse(await fs.readFile(snapshotFile, "utf8"));
-          snapshots.push({
-            key: snapshot.key,
-            contentHash: snapshot.contentHash,
-            timestamp: snapshot.timestamp,
-            metadata: snapshot.metadata,
-            commit: snapshot.commit,
-            branch: snapshot.branch,
-          });
+      const files = await fs.readdir(cacheDir);
+      
+      for (const file of files) {
+        if (!file.endsWith('.json')) continue;
+        
+        const filePath = join(cacheDir, file);
+        try {
+          const snapshotData = await this._loadSnapshot(filePath);
+          snapshots.push(snapshotData.header);
+        } catch (error) {
+          this.logger.warn(`Failed to load snapshot file ${file}: ${error.message}`);
         }
       }
     } catch (error) {
-      this.logger.error(`Failed to list snapshots: ${error.message}`);
+      this.logger.debug(`No snapshots found: ${error.message}`);
     }
-
-    return snapshots;
+    
+    return snapshots.sort((a, b) => b.timestamp - a.timestamp);
   }
 
   /**
-   * Get cache statistics
-   * @returns {object} Cache statistics
+   * Cache statistics (and derived rates).
+   * @returns {import("../types.js").SnapshotStats}
    */
   getStatistics() {
-    return {
-      ...this.cacheStats,
-      hitRate:
-        this.cacheStats.hits /
-          (this.cacheStats.hits + this.cacheStats.misses) || 0,
-      maxSize: this.config.maxCacheSize,
-      sizeMB: Math.round((this.cacheStats.size / (1024 * 1024)) * 100) / 100,
-    };
+    return { ...this._stats };
   }
 
   /**
-   * Clean up cache based on size limits
-   * @param {number} maxAge - Maximum age in milliseconds
-   * @returns {Promise<number>} Number of entries cleaned up
+   * TTL + size-cap cleanup.
+   * @param {number} [maxAgeMs=86400000]
+   * @returns {Promise<number>} removed
    */
-  async cleanupCache(maxAge = 24 * 60 * 60 * 1000) {
-    // 24 hours default
-    let cleaned = 0;
+  async cleanupCache(maxAgeMs = 24 * 60 * 60 * 1000) {
+    await this._ensureInitialized();
+    
     const now = Date.now();
-
-    try {
-      const snapshots = await this.listSnapshots();
-
-      // Sort by timestamp (oldest first)
-      snapshots.sort((a, b) => a.timestamp - b.timestamp);
-
-      for (const snapshot of snapshots) {
-        const age = now - snapshot.timestamp;
-
-        // Remove old entries
-        if (age > maxAge) {
-          await this.removeSnapshot(snapshot.key, snapshot.contentHash);
-          cleaned++;
+    const snapshots = await this.listSnapshots();
+    let removedCount = 0;
+    
+    // Remove old snapshots
+    for (const snapshot of snapshots) {
+      if (now - snapshot.timestamp > maxAgeMs) {
+        if (await this.removeSnapshot(snapshot.key, snapshot.contentHash)) {
+          removedCount++;
         }
       }
-
-      // If still over size limit, remove oldest entries
-      if (this.cacheStats.size > this.config.maxCacheSize) {
-        const remainingSnapshots = await this.listSnapshots();
-        remainingSnapshots.sort((a, b) => a.timestamp - b.timestamp);
-
-        while (
-          this.cacheStats.size > this.config.maxCacheSize &&
-          remainingSnapshots.length > 0
-        ) {
-          const snapshot = remainingSnapshots.shift();
-          await this.removeSnapshot(snapshot.key, snapshot.contentHash);
-          cleaned++;
-        }
-      }
-
-      if (cleaned > 0) {
-        this.logger.info(`Cleaned up ${cleaned} cache entries`);
-      }
-    } catch (error) {
-      this.logger.error(`Failed to cleanup cache: ${error.message}`);
     }
-
-    return cleaned;
+    
+    // Remove excess snapshots if over size limit
+    if (this._stats.size > this.maxCacheSize) {
+      const sortedSnapshots = snapshots.sort((a, b) => a.timestamp - b.timestamp);
+      
+      while (this._stats.size > this.maxCacheSize && sortedSnapshots.length > 0) {
+        const oldest = sortedSnapshots.shift();
+        if (await this.removeSnapshot(oldest.key, oldest.contentHash)) {
+          removedCount++;
+        }
+      }
+    }
+    
+    if (removedCount > 0) {
+      this.logger.info(`Cleaned up ${removedCount} snapshots`);
+    }
+    
+    return removedCount;
   }
 
   /**
-   * Clear all cache entries
-   * @returns {Promise<number>} Number of entries cleared
+   * Nuke all cache entries and reset counters.
+   * @returns {Promise<number>} removed
    */
   async clearCache() {
-    let cleared = 0;
-
+    await this._ensureInitialized();
+    
+    const cacheDir = join(this.cwd, this.cacheDir);
+    let removedCount = 0;
+    
     try {
-      const cacheDir = join(this.cwd, this.config.cacheDir);
-      const entries = await fs.readdir(cacheDir);
-
-      for (const entry of entries) {
-        const cachePath = join(cacheDir, entry);
-        await fs.rm(cachePath, { recursive: true, force: true });
-        cleared++;
+      const files = await fs.readdir(cacheDir);
+      
+      for (const file of files) {
+        if (file.endsWith('.json')) {
+          await fs.unlink(join(cacheDir, file));
+          removedCount++;
+        }
       }
-
-      // Reset statistics
-      this.cacheStats = {
-        hits: 0,
-        misses: 0,
-        size: 0,
-        entries: 0,
-      };
-
-      this.logger.info(`Cleared ${cleared} cache entries`);
     } catch (error) {
-      this.logger.error(`Failed to clear cache: ${error.message}`);
+      this.logger.debug(`No cache files to clear: ${error.message}`);
     }
-
-    return cleared;
+    
+    // Reset statistics
+    this._stats = {
+      hits: 0,
+      misses: 0,
+      size: 0,
+      entries: 0,
+      hitRate: 0,
+      maxSize: this.maxCacheSize,
+      sizeMB: 0
+    };
+    
+    this.logger.info(`Cleared ${removedCount} cache entries`);
+    return removedCount;
   }
 
   /**
-   * Generate content hash
+   * Ensure the system is initialized.
    * @private
+   * @returns {Promise<void>}
    */
-  _generateContentHash(data) {
-    const content = JSON.stringify(data);
-    return createHash("sha256").update(content).digest("hex");
+  async _ensureInitialized() {
+    if (!this._initialized) {
+      await this.initialize();
+    }
   }
 
   /**
-   * Get cache path for content hash
+   * Ensure directory exists.
    * @private
+   * @param {string} dirPath
+   * @returns {Promise<void>}
    */
-  _getCachePath(contentHash) {
-    // Use first 2 characters for directory sharding
-    const shard = contentHash.substring(0, 2);
-    return join(this.cwd, this.config.cacheDir, shard, contentHash);
-  }
-
-  /**
-   * Check if file exists
-   * @private
-   */
-  async _fileExists(filePath) {
+  async _ensureDir(dirPath) {
     try {
-      await fs.access(filePath);
-      return true;
-    } catch {
-      return false;
+      await fs.mkdir(dirPath, { recursive: true });
+    } catch (error) {
+      if (error.code !== 'EEXIST') {
+        throw error;
+      }
     }
   }
 
   /**
-   * Get current commit SHA
+   * Compute content hash for data.
    * @private
+   * @param {any} data
+   * @returns {string}
+   */
+  _computeContentHash(data) {
+    const hash = createHash('sha256');
+    hash.update(JSON.stringify(data));
+    return hash.digest('hex');
+  }
+
+  /**
+   * Get snapshot file path for content hash.
+   * @private
+   * @param {string} contentHash
+   * @returns {string}
+   */
+  _getSnapshotPath(contentHash) {
+    // Shard by first 2 characters of hash
+    const shard = contentHash.substring(0, 2);
+    const shardDir = join(this.cwd, this.cacheDir, shard);
+    
+    // Ensure shard directory exists
+    this._ensureDir(shardDir);
+    
+    return join(shardDir, `${contentHash}.json`);
+  }
+
+  /**
+   * Load snapshot data from file.
+   * @private
+   * @param {string} filePath
+   * @returns {Promise<any>}
+   */
+  async _loadSnapshot(filePath) {
+    const content = await fs.readFile(filePath, 'utf8');
+    return JSON.parse(content);
+  }
+
+  /**
+   * Update hit rate statistics.
+   * @private
+   * @returns {void}
+   */
+  _updateHitRate() {
+    const total = this._stats.hits + this._stats.misses;
+    this._stats.hitRate = total > 0 ? this._stats.hits / total : 0;
+  }
+
+  /**
+   * Load cache statistics from disk.
+   * @private
+   * @returns {Promise<void>}
+   */
+  async _loadCacheStats() {
+    const cacheDir = join(this.cwd, this.cacheDir);
+    
+    try {
+      const files = await fs.readdir(cacheDir);
+      let totalSize = 0;
+      let entryCount = 0;
+      
+      for (const file of files) {
+        if (file.endsWith('.json')) {
+          const filePath = join(cacheDir, file);
+          const stats = await fs.stat(filePath);
+          totalSize += stats.size;
+          entryCount++;
+        }
+      }
+      
+      this._stats.size = totalSize;
+      this._stats.entries = entryCount;
+      this._stats.sizeMB = totalSize / (1024 * 1024);
+    } catch (error) {
+      this.logger.debug(`No existing cache found: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get current commit hash.
+   * @private
+   * @returns {Promise<string>}
    */
   async _getCurrentCommit() {
     try {
-      return execSync("git rev-parse HEAD", {
-        cwd: this.cwd,
-        stdio: "pipe",
-      })
-        .toString()
-        .trim();
+      const { stdout } = await execAsync('git rev-parse HEAD', { cwd: this.cwd });
+      return stdout.trim();
     } catch (error) {
-      return "unknown";
+      return 'unknown';
     }
   }
 
   /**
-   * Get current branch name
+   * Get current branch name.
    * @private
+   * @returns {Promise<string>}
    */
   async _getCurrentBranch() {
     try {
-      return execSync("git rev-parse --abbrev-ref HEAD", {
-        cwd: this.cwd,
-        stdio: "pipe",
-      })
-        .toString()
-        .trim();
+      const { stdout } = await execAsync('git branch --show-current', { cwd: this.cwd });
+      return stdout.trim() || 'detached';
     } catch (error) {
-      return "unknown";
+      return 'unknown';
     }
   }
 }
-

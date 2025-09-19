@@ -1,386 +1,410 @@
-// src/git-native/GitNativeIO.mjs
-// Git-Native I/O Layer integrating all Git-native components
-
-import { QueueManager } from "./QueueManager.mjs";
-import { LockManager } from "./LockManager.mjs";
-import { ReceiptWriter } from "./ReceiptWriter.mjs";
-import { SnapshotStore } from "./SnapshotStore.mjs";
-import { Worker } from "node:worker_threads";
-import { cpus } from "node:os";
-import { promises as fs } from "node:fs";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { dirname } from "node:path";
-
 /**
- * Git-Native I/O Layer
- * Main orchestrator for all Git-native I/O operations
+ * Git-Native I/O — public façade for queues, locks, receipts, snapshots, and workers.
+ * Deterministic, durable task execution with Git-backed state.
+ *
+ * @example
+ * const io = new GitNativeIO({ cwd: repo, logger: console });
+ * await io.acquireLock("build");
+ * await io.addJob("high", () => doWork(), { name: "build" });
+ * await io.writeReceipt("hook://build", { ok: true });
+ * console.log(await io.getStatus());
  */
 export class GitNativeIO {
+  /**
+   * @param {import("../types.js").GitNativeIOOptions} [options]
+   */
   constructor(options = {}) {
     this.cwd = options.cwd || process.cwd();
     this.logger = options.logger || console;
-
-    // Configuration
-    this.config = {
-      queue: {
-        concurrency: 256, // Conservative, smooth processing
-        interval: 50, // Queue processing interval (ms)
-        intervalCap: 32, // Operations per interval
-      },
-      workers: {
-        threads: Math.min(8, cpus().length),
-        maxJobs: 1000, // Max jobs per worker
-        timeout: 60_000, // Worker timeout (ms)
-      },
-      fs: {
-        retryDelay: 50, // Retry delay (ms)
-        maxOpenFDsGuard: true, // graceful-fs enabled
-      },
-      paths: {
-        tmp: ".gitvan/tmp",
-        queue: ".gitvan/queue",
-        cache: ".gitvan/cache",
-        artifacts: ".gitvan/artifacts",
-        notesRef: "refs/notes/gitvan/results",
-        locksRef: "refs/gitvan/locks",
-        execRef: "refs/gitvan/executions",
-      },
-      git: {
-        notesBatchSize: 100, // Batch notes appends
-        gcAuto: true, // Periodic git gc --auto
-        shardQueues: true, // Sharded queue dirs
-      },
-      ...options,
-    };
-
+    this.config = this._mergeConfig(options.config);
+    
     // Initialize components
-    this.queueManager = new QueueManager({
+    this._queueManager = null;
+    this._lockManager = null;
+    this._receiptWriter = null;
+    this._snapshotStore = null;
+    this._workerPool = null;
+    
+    this._initialized = false;
+  }
+
+  /**
+   * Initialize all components and reconcile state.
+   * @returns {Promise<void>}
+   */
+  async initialize() {
+    if (this._initialized) return;
+    
+    this.logger.info('Initializing GitNativeIO...');
+    
+    // Import components dynamically to avoid circular dependencies
+    const { QueueManager } = await import('./QueueManager.mjs');
+    const { LockManager } = await import('./LockManager.mjs');
+    const { ReceiptWriter } = await import('./ReceiptWriter.mjs');
+    const { SnapshotStore } = await import('./SnapshotStore.mjs');
+    const { WorkerPool } = await import('./WorkerPool.mjs');
+    
+    this._queueManager = new QueueManager({
       cwd: this.cwd,
       logger: this.logger,
       queue: this.config.queue,
-      paths: this.config.paths,
+      paths: this.config.paths
     });
-
-    this.lockManager = new LockManager({
+    
+    this._lockManager = new LockManager({
       cwd: this.cwd,
       logger: this.logger,
-      lock: this.config.lock,
+      lock: { defaultTimeout: 30000 }
     });
-
-    this.receiptWriter = new ReceiptWriter({
+    
+    this._receiptWriter = new ReceiptWriter({
       cwd: this.cwd,
       logger: this.logger,
-      receipt: this.config.git,
+      receipt: this.config.git
     });
-
-    this.snapshotStore = new SnapshotStore({
+    
+    this._snapshotStore = new SnapshotStore({
       cwd: this.cwd,
       logger: this.logger,
-      snapshot: this.config.snapshot,
+      snapshot: this.config.paths
     });
-
-    // Worker pool
-    this.workers = [];
-    this.workerQueue = [];
-    this.isShuttingDown = false;
-
-    // Initialize worker pool
-    this._initializeWorkerPool();
-
-    // Setup graceful shutdown
-    this._setupGracefulShutdown();
+    
+    this._workerPool = new WorkerPool({
+      cwd: this.cwd,
+      logger: this.logger,
+      workers: this.config.workers
+    });
+    
+    // Initialize all components
+    await Promise.all([
+      this._queueManager.initialize(),
+      this._lockManager.initialize(),
+      this._receiptWriter.initialize(),
+      this._snapshotStore.initialize(),
+      this._workerPool.initialize()
+    ]);
+    
+    // Reconcile state on startup
+    await this.reconcile();
+    
+    this._initialized = true;
+    this.logger.info('GitNativeIO initialized successfully');
   }
 
   /**
-   * Initialize worker pool
-   * @private
-   */
-  _initializeWorkerPool() {
-    const numWorkers = this.config.workers.threads;
-    const workerPath = join(
-      dirname(fileURLToPath(import.meta.url)),
-      "worker.mjs"
-    );
-
-    for (let i = 0; i < numWorkers; i++) {
-      const worker = new Worker(workerPath);
-
-      worker.on("message", (message) => {
-        this._handleWorkerMessage(message);
-      });
-
-      worker.on("error", (error) => {
-        this.logger.error(`Worker error: ${error.message}`);
-      });
-
-      this.workers.push(worker);
-    }
-
-    this.logger.info(`Initialized ${numWorkers} workers`);
-  }
-
-  /**
-   * Handle worker message
-   * @private
-   */
-  _handleWorkerMessage(message) {
-    const { jobId, result, error, success } = message;
-
-    // Find the job in the queue
-    const jobIndex = this.workerQueue.findIndex((job) => job.id === jobId);
-    if (jobIndex === -1) {
-      this.logger.warn(`Received message for unknown job ${jobId}`);
-      return;
-    }
-
-    const job = this.workerQueue[jobIndex];
-    this.workerQueue.splice(jobIndex, 1);
-
-    // Resolve or reject the job promise
-    if (success) {
-      job.resolve(result);
-    } else {
-      job.reject(new Error(error));
-    }
-  }
-
-  /**
-   * Execute a job with worker pool
-   * @param {Function} jobFunction - Function to execute
-   * @param {object} options - Job options
-   * @returns {Promise} Job execution promise
+   * Execute a function (currently in-process).
+   * @template T
+   * @param {() => Promise<T>} jobFunction
+   * @param {{timeout?:number}} [options]
+   * @returns {Promise<T>}
    */
   async executeJob(jobFunction, options = {}) {
-    if (this.isShuttingDown) {
-      throw new Error("GitNativeIO is shutting down");
+    await this._ensureInitialized();
+    
+    const startTime = Date.now();
+    try {
+      const result = await jobFunction();
+      const duration = Date.now() - startTime;
+      
+      // Record execution metrics
+      await this.writeMetrics({
+        executionTime: duration,
+        success: true,
+        timestamp: new Date().toISOString()
+      });
+      
+      return result;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      
+      // Record error metrics
+      await this.writeMetrics({
+        executionTime: duration,
+        success: false,
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+      
+      throw error;
     }
-
-    // Execute job directly for now to avoid worker context issues
-    return await jobFunction();
   }
 
   /**
-   * Add a job to the priority queue
-   * @param {string} priority - 'high', 'medium', or 'low'
-   * @param {Function} job - Job function
-   * @param {object} metadata - Job metadata
-   * @returns {Promise} Job execution promise
+   * Enqueue a job with durability and priority.
+   * @template T
+   * @param {import("../types.js").JobPriority} priority
+   * @param {() => Promise<T>} job
+   * @param {import("../types.js").JobMetadata} [metadata]
+   * @returns {Promise<T>}
    */
   async addJob(priority, job, metadata = {}) {
-    return this.queueManager.addJob(priority, job, metadata);
+    await this._ensureInitialized();
+    return this._queueManager.addJob(priority, job, metadata);
   }
 
   /**
-   * Acquire a lock
-   * @param {string} lockName - Lock name
-   * @param {object} options - Lock options
-   * @returns {Promise<boolean>} True if lock acquired
+   * Acquire a CAS lock stored under refs/gitvan/locks/*.
+   * @param {string} lockName
+   * @param {import("../types.js").LockOptions} [options]
+   * @returns {Promise<boolean>}
    */
   async acquireLock(lockName, options = {}) {
-    return this.lockManager.acquireLock(lockName, options);
+    await this._ensureInitialized();
+    return this._lockManager.acquireLock(lockName, options);
   }
 
   /**
-   * Release a lock
-   * @param {string} lockName - Lock name
-   * @returns {Promise<boolean>} True if lock released
+   * Release a previously acquired lock.
+   * @param {string} lockName
+   * @returns {Promise<boolean>}
    */
   async releaseLock(lockName) {
-    return this.lockManager.releaseLock(lockName);
+    await this._ensureInitialized();
+    return this._lockManager.releaseLock(lockName);
   }
 
   /**
-   * Write a receipt
-   * @param {string} hookId - Hook identifier
-   * @param {object} result - Execution result
-   * @param {object} metadata - Additional metadata
+   * Write a result receipt (batched into git-notes).
+   * @param {string} hookId
+   * @param {any} result
+   * @param {Record<string,any>} [metadata]
+   * @returns {Promise<void>}
    */
   async writeReceipt(hookId, result, metadata = {}) {
-    return this.receiptWriter.writeReceipt(hookId, result, metadata);
+    await this._ensureInitialized();
+    return this._receiptWriter.writeReceipt(hookId, result, metadata);
   }
 
   /**
-   * Write metrics
-   * @param {object} metrics - Metrics data
+   * Write execution metrics (batched).
+   * @param {Record<string,any>} metrics
+   * @returns {Promise<void>}
    */
   async writeMetrics(metrics) {
-    return this.receiptWriter.writeMetrics(metrics);
+    await this._ensureInitialized();
+    return this._receiptWriter.writeMetrics(metrics);
   }
 
   /**
-   * Write execution information
-   * @param {string} executionId - Execution identifier
-   * @param {object} execution - Execution data
+   * Write execution descriptor (batched).
+   * @param {string} executionId
+   * @param {Record<string,any>} execution
+   * @returns {Promise<void>}
    */
   async writeExecution(executionId, execution) {
-    return this.receiptWriter.writeExecution(executionId, execution);
+    await this._ensureInitialized();
+    return this._receiptWriter.writeExecution(executionId, execution);
   }
 
   /**
-   * Store a snapshot
-   * @param {string} key - Cache key
-   * @param {any} data - Data to store
-   * @param {object} metadata - Additional metadata
-   * @returns {Promise<string>} Content hash
+   * Store a content-addressed snapshot.
+   * @param {string} key
+   * @param {any} data
+   * @param {Record<string,any>} [metadata]
+   * @returns {Promise<string>} contentHash
    */
   async storeSnapshot(key, data, metadata = {}) {
-    return this.snapshotStore.storeSnapshot(key, data, metadata);
+    await this._ensureInitialized();
+    return this._snapshotStore.storeSnapshot(key, data, metadata);
   }
 
   /**
-   * Get a snapshot
-   * @param {string} key - Cache key
-   * @param {string} contentHash - Content hash (optional)
-   * @returns {Promise<any>} Stored data or null
+   * Retrieve snapshot by key or key+contentHash.
+   * @param {string} key
+   * @param {string|null} [contentHash]
+   * @returns {Promise<any|null>}
    */
   async getSnapshot(key, contentHash = null) {
-    return this.snapshotStore.getSnapshot(key, contentHash);
+    await this._ensureInitialized();
+    return this._snapshotStore.getSnapshot(key, contentHash);
   }
 
   /**
-   * Check if a snapshot exists
-   * @param {string} key - Cache key
-   * @param {string} contentHash - Content hash (optional)
-   * @returns {Promise<boolean>} True if snapshot exists
+   * Check snapshot existence.
+   * @param {string} key
+   * @param {string|null} [contentHash]
+   * @returns {Promise<boolean>}
    */
   async hasSnapshot(key, contentHash = null) {
-    return this.snapshotStore.hasSnapshot(key, contentHash);
+    await this._ensureInitialized();
+    return this._snapshotStore.hasSnapshot(key, contentHash);
   }
 
-  /**
-   * Flush all pending receipts
-   */
+  /** @returns {Promise<void>} */
   async flushAll() {
-    return this.receiptWriter.flushAll();
+    await this._ensureInitialized();
+    await this._receiptWriter.flushAll();
   }
 
   /**
-   * Check if a lock is held
-   * @param {string} lockName - Lock name
-   * @returns {Promise<boolean>} True if lock is held
+   * Is the named lock currently held (and not expired)?
+   * @param {string} lockName
+   * @returns {Promise<boolean>}
    */
   async isLocked(lockName) {
-    return this.lockManager.isLocked(lockName);
+    await this._ensureInitialized();
+    return this._lockManager.isLocked(lockName);
   }
 
   /**
-   * List all snapshots
-   * @returns {Promise<Array>} Array of snapshot information
+   * List all snapshot headers.
+   * @returns {Promise<Array<import("../types.js").SnapshotHeader>>}
    */
   async listSnapshots() {
-    return this.snapshotStore.listSnapshots();
+    await this._ensureInitialized();
+    return this._snapshotStore.listSnapshots();
   }
 
   /**
-   * Get receipt statistics
-   * @returns {Promise<object>} Receipt statistics
+   * Receipt/metrics/executions counters (including in-memory buffers).
+   * @returns {Promise<import("../types.js").ReceiptStats>}
    */
   async getStatistics() {
-    return this.receiptWriter.getStatistics();
+    await this._ensureInitialized();
+    return this._receiptWriter.getStatistics();
   }
 
   /**
-   * Get system status
-   * @returns {Promise<object>} System status
+   * Composite system health snapshot.
+   * @returns {Promise<import("../types.js").SystemStatus>}
    */
   async getStatus() {
-    const [locks, receipts, snapshots] = await Promise.all([
-      this.lockManager.listLocks(),
-      this.receiptWriter.getStatistics(),
-      this.snapshotStore.getStatistics(),
+    await this._ensureInitialized();
+    
+    const [queueStatus, locks, receipts, snapshots, workers] = await Promise.all([
+      this._queueManager.getStatus(),
+      this._lockManager.listLocks(),
+      this._receiptWriter.getStatistics(),
+      this._snapshotStore.getStatistics(),
+      this._workerPool.getStatus()
     ]);
-
+    
     return {
-      queue: this.queueManager.getStatus(),
+      queue: queueStatus,
       locks,
       receipts,
       snapshots,
-      workers: {
-        total: this.workers.length,
-        active: this.workerQueue.length,
-        available: this.workers.length - this.workerQueue.length,
-      },
+      workers
     };
   }
 
-  /**
-   * Reconcile system state
-   */
+  /** Recover queues, clean locks, flush buffers, trim cache. */
   async reconcile() {
-    this.logger.info("Reconciling Git-Native I/O system...");
-
+    await this._ensureInitialized();
+    
+    this.logger.info('Reconciling GitNativeIO state...');
+    
     await Promise.all([
-      this.queueManager.reconcile(),
-      this.lockManager.cleanupExpiredLocks(),
-      this.receiptWriter.flushAll(),
-      this.snapshotStore.cleanupCache(),
+      this._queueManager.reconcile(),
+      this._lockManager.cleanupExpiredLocks(),
+      this._receiptWriter.flushAll(),
+      this._snapshotStore.cleanupCache()
     ]);
-
-    this.logger.info("Git-Native I/O system reconciled");
+    
+    this.logger.info('GitNativeIO reconciliation complete');
   }
 
-  /**
-   * Cleanup system resources
-   */
+  /** Clear completed jobs, trim caches & old notes. */
   async cleanup() {
-    this.logger.info("Cleaning up Git-Native I/O system...");
-
-    // Flush all pending operations
-    await this.receiptWriter.flushAll();
-
-    // Clear completed jobs
-    await this.queueManager.clearCompleted();
-
-    // Cleanup cache
-    await this.snapshotStore.cleanupCache();
-
-    // Cleanup old receipts
-    await this.receiptWriter.cleanupOldReceipts();
-
-    this.logger.info("Git-Native I/O system cleaned up");
+    await this._ensureInitialized();
+    
+    this.logger.info('Cleaning up GitNativeIO...');
+    
+    await Promise.all([
+      this._queueManager.clearCompleted(),
+      this._receiptWriter.cleanupOldReceipts(),
+      this._snapshotStore.cleanupCache()
+    ]);
+    
+    this.logger.info('GitNativeIO cleanup complete');
   }
 
-  /**
-   * Shutdown the system
-   */
+  /** Flush and terminate workers. */
   async shutdown() {
-    this.logger.info("Shutting down Git-Native I/O system...");
-
-    this.isShuttingDown = true;
-
-    // Flush all pending operations
-    await this.receiptWriter.flushAll();
-
-    // Terminate all workers
-    for (const worker of this.workers) {
-      worker.terminate();
-    }
-
-    this.logger.info("Git-Native I/O system shut down");
+    if (!this._initialized) return;
+    
+    this.logger.info('Shutting down GitNativeIO...');
+    
+    await Promise.all([
+      this._receiptWriter.flushAll(),
+      this._workerPool.shutdown(),
+      this._queueManager.shutdown?.()
+    ]);
+    
+    this._initialized = false;
+    this.logger.info('GitNativeIO shutdown complete');
   }
 
   /**
-   * Setup graceful shutdown
+   * Ensure the system is initialized.
    * @private
+   * @returns {Promise<void>}
    */
-  _setupGracefulShutdown() {
-    const shutdown = async () => {
-      this.logger.info("Received shutdown signal, cleaning up...");
-      await this.shutdown();
-      process.exit(0);
+  async _ensureInitialized() {
+    if (!this._initialized) {
+      await this.initialize();
+    }
+  }
+
+  /**
+   * Merge user config with defaults.
+   * @private
+   * @param {any} userConfig
+   * @returns {any}
+   */
+  _mergeConfig(userConfig = {}) {
+    const defaults = {
+      queue: {
+        concurrency: 3,
+        interval: 100,
+        intervalCap: 5
+      },
+      workers: {
+        threads: 2,
+        maxJobs: 10,
+        timeout: 30000
+      },
+      fs: {
+        retryDelay: 100,
+        maxOpenFDsGuard: true
+      },
+      paths: {
+        tmp: '.gitvan/tmp',
+        queue: '.gitvan/queue',
+        cache: '.gitvan/cache',
+        artifacts: '.gitvan/artifacts',
+        notesRef: 'refs/gitvan/notes',
+        locksRef: 'refs/gitvan/locks',
+        execRef: 'refs/gitvan/executions'
+      },
+      git: {
+        notesBatchSize: 100,
+        gcAuto: false,
+        shardQueues: true
+      }
     };
 
-    process.on("SIGINT", shutdown);
-    process.on("SIGTERM", shutdown);
-    process.on("SIGUSR2", shutdown); // For nodemon
+    return this._deepMerge(defaults, userConfig);
   }
 
   /**
-   * Generate a unique job ID
+   * Deep merge objects.
    * @private
+   * @param {any} target
+   * @param {any} source
+   * @returns {any}
    */
-  _generateJobId() {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+  _deepMerge(target, source) {
+    const result = { ...target };
+    
+    for (const key in source) {
+      if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+        result[key] = this._deepMerge(target[key] || {}, source[key]);
+      } else {
+        result[key] = source[key];
+      }
+    }
+    
+    return result;
   }
 }

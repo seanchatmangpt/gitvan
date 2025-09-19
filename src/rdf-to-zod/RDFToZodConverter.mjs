@@ -1,13 +1,44 @@
 /**
- * RDF to Zod Converter
- * Converts RDF/SPARQL query results into strongly-typed TypeScript objects using Zod schemas
+ * @fileoverview GitVan v2 — RDF to Zod Converter
+ *
+ * This module provides conversion of RDF/SPARQL query results into strongly-typed
+ * TypeScript objects using Zod schemas. It enables type-safe RDF data processing
+ * and validation within the GitVan context.
+ *
+ * Key Features:
+ * - SPARQL query result conversion to Zod-validated objects
+ * - Zod schema generation from RDF class definitions
+ * - RDF term to JavaScript value conversion
+ * - Cardinality-aware field creation
+ * - Type-safe RDF data processing
+ *
+ * @version 2.0.0
+ * @author GitVan Team
+ * @license Apache-2.0
  */
 
 import { z } from "zod";
 import pkg from "n3";
 const { N3 } = pkg;
 
+/**
+ * RDF to Zod Converter
+ *
+ * Converts RDF/SPARQL query results into strongly-typed TypeScript objects using Zod schemas.
+ * This class provides methods for querying RDF data, generating Zod schemas from RDF class
+ * definitions, and validating RDF data against schemas.
+ *
+ * @class RDFToZodConverter
+ * @description Converts RDF/SPARQL query results into Zod-validated objects
+ */
 export class RDFToZodConverter {
+  /**
+   * Create RDFToZodConverter instance
+   *
+   * @constructor
+   * @param {Object} [options={}] - Configuration options
+   * @param {Object} [options.namespaces] - Additional RDF namespaces
+   */
   constructor(options = {}) {
     this.namespaces = {
       rdf: "http://www.w3.org/1999/02/22-rdf-syntax-ns#",

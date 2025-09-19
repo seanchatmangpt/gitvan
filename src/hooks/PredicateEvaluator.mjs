@@ -139,14 +139,18 @@ export class PredicateEvaluator {
     }
 
     // Execute query against current graph
-    const currentResult = await currentGraph.query(predicate.definition.query);
+    const queryWithPrefixes = this._injectPrefixes(
+      predicate.definition.query,
+      currentGraph
+    );
+    const currentResult = await currentGraph.query(queryWithPrefixes);
     const currentHash = this._hashQueryResult(currentResult);
 
     let previousHash = null;
     let previousResult = null;
     if (previousGraph) {
       try {
-        previousResult = await previousGraph.query(predicate.definition.query);
+        previousResult = await previousGraph.query(queryWithPrefixes);
         previousHash = this._hashQueryResult(previousResult);
       } catch (error) {
         this.logger.warn(`⚠️ Failed to query previous graph: ${error.message}`);
@@ -181,7 +185,11 @@ export class PredicateEvaluator {
       throw new Error("ASK predicate missing query");
     }
 
-    const result = await currentGraph.query(predicate.definition.query);
+    const queryWithPrefixes = this._injectPrefixes(
+      predicate.definition.query,
+      currentGraph
+    );
+    const result = await currentGraph.query(queryWithPrefixes);
     return result.boolean || false;
   }
 
@@ -196,7 +204,11 @@ export class PredicateEvaluator {
       throw new Error("SELECTThreshold predicate missing query");
     }
 
-    const result = await currentGraph.query(predicate.definition.query);
+    const queryWithPrefixes = this._injectPrefixes(
+      predicate.definition.query,
+      currentGraph
+    );
+    const result = await currentGraph.query(queryWithPrefixes);
     const value = this._extractNumericValue(result);
     const threshold = predicate.definition.threshold || 0;
     const operator = predicate.definition.operator || ">";
@@ -477,9 +489,10 @@ export class PredicateEvaluator {
 
     try {
       const query = predicate.definition.query;
+      const queryWithPrefixes = this._injectPrefixes(query, currentGraph);
 
       // Execute CONSTRUCT query
-      const results = await currentGraph.query(query, {
+      const results = await currentGraph.query(queryWithPrefixes, {
         queryType: "construct",
       });
 
@@ -518,9 +531,10 @@ export class PredicateEvaluator {
 
     try {
       const query = predicate.definition.query;
+      const queryWithPrefixes = this._injectPrefixes(query, currentGraph);
 
       // Execute DESCRIBE query
-      const results = await currentGraph.query(query, {
+      const results = await currentGraph.query(queryWithPrefixes, {
         queryType: "describe",
       });
 
@@ -559,6 +573,7 @@ export class PredicateEvaluator {
 
     try {
       const query = predicate.definition.query;
+      const queryWithPrefixes = this._injectPrefixes(query, currentGraph);
       const endpoints = predicate.definition.endpoints || [];
 
       // Execute federated query across multiple endpoints
@@ -566,7 +581,7 @@ export class PredicateEvaluator {
 
       for (const endpoint of endpoints) {
         try {
-          const endpointResults = await currentGraph.query(query, {
+          const endpointResults = await currentGraph.query(queryWithPrefixes, {
             queryType: "federated",
             endpoint: endpoint.url,
             timeout: endpoint.timeout || 5000,
@@ -627,13 +642,14 @@ export class PredicateEvaluator {
       const query = predicate.definition.query;
       const timeCondition = predicate.definition.timeCondition;
       const timeWindow = predicate.definition.timeWindow || 3600000; // 1 hour default
+      const queryWithPrefixes = this._injectPrefixes(query, currentGraph);
 
       // Get current time
       const now = new Date();
       const timeWindowStart = new Date(now.getTime() - timeWindow);
 
       // Execute temporal query with time constraints
-      const results = await currentGraph.query(query, {
+      const results = await currentGraph.query(queryWithPrefixes, {
         queryType: "temporal",
         timeCondition,
         timeWindow: {
@@ -666,5 +682,77 @@ export class PredicateEvaluator {
         },
       };
     }
+  }
+
+  /**
+   * Automatically inject prefixes from Turtle file into SPARQL query
+   * @private
+   */
+  _injectPrefixes(query, currentGraph) {
+    // If query already has PREFIX declarations, return as-is
+    if (query.includes("PREFIX ")) {
+      return query;
+    }
+
+    // Extract prefixes from the Turtle file
+    const prefixes = this._extractPrefixesFromTurtle(currentGraph);
+
+    if (prefixes.length === 0) {
+      return query;
+    }
+
+    // Build prefix declarations
+    const prefixDeclarations = prefixes
+      .map((prefix) => `PREFIX ${prefix.name}: <${prefix.uri}>`)
+      .join("\n");
+
+    // Inject prefixes at the beginning of the query
+    return `${prefixDeclarations}\n\n${query}`;
+  }
+
+  /**
+   * Extract prefixes from Turtle file content
+   * @private
+   */
+  _extractPrefixesFromTurtle(currentGraph) {
+    const prefixes = [];
+
+    try {
+      // Get all quads from the store
+      const quads = currentGraph.store.getQuads();
+
+      // Look for prefix declarations in the raw Turtle content
+      // This is a simplified approach - in practice, we'd need to parse the original Turtle files
+      const commonPrefixes = [
+        { name: "rdf", uri: "http://www.w3.org/1999/02/22-rdf-syntax-ns#" },
+        { name: "rdfs", uri: "http://www.w3.org/2000/01/rdf-schema#" },
+        { name: "owl", uri: "http://www.w3.org/2002/07/owl#" },
+        { name: "xsd", uri: "http://www.w3.org/2001/XMLSchema#" },
+        { name: "dct", uri: "http://purl.org/dc/terms/" },
+        { name: "gv", uri: "https://gitvan.dev/ontology#" },
+        { name: "gh", uri: "https://gitvan.dev/graph-hook#" },
+        { name: "op", uri: "https://gitvan.dev/op#" },
+        { name: "ex", uri: "http://example.org/" },
+      ];
+
+      // Check which prefixes are actually used in the data
+      for (const prefix of commonPrefixes) {
+        const prefixUri = prefix.uri;
+        const hasUsage = quads.some(
+          (quad) =>
+            quad.subject.value.startsWith(prefixUri) ||
+            quad.predicate.value.startsWith(prefixUri) ||
+            quad.object.value.startsWith(prefixUri)
+        );
+
+        if (hasUsage) {
+          prefixes.push(prefix);
+        }
+      }
+    } catch (error) {
+      this.logger.warn(`⚠️ Failed to extract prefixes: ${error.message}`);
+    }
+
+    return prefixes;
   }
 }

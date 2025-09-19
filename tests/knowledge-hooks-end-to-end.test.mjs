@@ -52,7 +52,7 @@ ex:select-threshold-hook rdf:type gh:Hook ;
     gh:hasPredicate ex:select-threshold ;
     gh:orderedPipelines ex:select-pipeline .
 
-ex:select-threshold rdf:type gh:SELECTThresholdPredicate ;
+ex:select-threshold rdf:type gh:SELECTThreshold ;
     gh:queryText """SELECT ?component ?complexity WHERE {
         ?component rdf:type gv:Component .
         ?component gv:complexity ?complexity .
@@ -165,7 +165,7 @@ ex:complex-scenario-hook rdf:type gh:Hook ;
     gh:hasPredicate ex:complex-scenario-predicate ;
     gh:orderedPipelines ex:complex-scenario-pipeline .
 
-ex:complex-scenario-predicate rdf:type gh:SELECTThresholdPredicate ;
+ex:complex-scenario-predicate rdf:type gh:SELECTThreshold ;
     gh:queryText """SELECT ?project ?component ?complexity WHERE {
         ?project rdf:type gv:Project .
         ?project gv:status "active" .

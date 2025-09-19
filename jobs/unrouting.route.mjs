@@ -1,6 +1,6 @@
 /**
- * GitVan Unrouting Router Job
- * Simple 80/20 implementation: Route file changes to jobs
+ * GitVan Unrouting Router Job - Knowledge Hook Integration
+ * Routes file changes to jobs using Knowledge Hook system
  */
 
 import {
@@ -10,16 +10,18 @@ import {
   useReceipt,
   useUnrouting,
 } from "file:///Users/sac/gitvan/src/index.mjs";
+import { HookOrchestrator } from "../src/hooks/HookOrchestrator.mjs";
 
 export default defineJob({
   meta: {
     name: "unrouting:route",
-    desc: "Route file changes to GitVan jobs using unrouting patterns",
-    tags: ["unrouting", "router", "file-based"],
+    desc: "Route file changes to GitVan jobs using Knowledge Hook system",
+    tags: ["unrouting", "router", "file-based", "knowledge-hooks"],
     version: "1.0.0",
   },
 
-  hooks: ["post-commit", "post-merge"], // Unified hooks system
+  // Git hooks provide signals for Knowledge Hook evaluation
+  hooks: ["post-commit", "post-merge"],
 
   async run(context) {
     const git = useGit();
@@ -31,7 +33,14 @@ export default defineJob({
     const { hookName, timestamp } = context;
 
     try {
-      console.log(`🚀 Starting unrouting router (triggered by ${hookName})...`);
+      console.log(`🚀 Starting unrouting router with Knowledge Hook integration (triggered by ${hookName})...`);
+
+      // Initialize Knowledge Hook Orchestrator
+      const orchestrator = new HookOrchestrator({
+        graphDir: "./hooks",
+        context: { cwd: process.cwd() },
+        logger: console,
+      });
 
       // Get changed files from git diff
       const diffOutput = await git.diff({
@@ -43,7 +52,23 @@ export default defineJob({
 
       console.log(`📄 Found ${changedFiles.length} changed files`);
 
-      // GitVan-specific routes configuration
+      // Evaluate Knowledge Hooks with file change context
+      const evaluationResult = await orchestrator.evaluate({
+        gitSignal: hookName,
+        gitContext: {
+          signalType: hookName,
+          changedFiles: changedFiles,
+          branch: await git.currentBranch(),
+          commitSha: await git.headSha(),
+          timestamp: Date.now(),
+        },
+        verbose: true,
+      });
+
+      console.log(`🧠 Knowledge Hooks evaluated: ${evaluationResult.hooksEvaluated}`);
+      console.log(`⚡ Knowledge Hooks triggered: ${evaluationResult.hooksTriggered}`);
+
+      // GitVan-specific routes configuration (legacy routing for compatibility)
       const routes = [
         {
           id: "composable-change",
@@ -95,14 +120,15 @@ export default defineJob({
         },
       ];
 
-      // Route files to jobs
+      // Route files to jobs (legacy compatibility)
       const jobQueue = unrouting.routeFiles(changedFiles, routes);
 
-      console.log(`🎯 Generated ${jobQueue.length} jobs`);
+      console.log(`🎯 Generated ${jobQueue.length} legacy jobs`);
+      console.log(`🧠 Knowledge Hook workflows executed: ${evaluationResult.workflowsExecuted}`);
 
-      // Execute jobs (simplified - just log for now)
+      // Execute legacy jobs (simplified - just log for now)
       for (const job of jobQueue) {
-        console.log(`⚡ Executing job: ${job.name}`);
+        console.log(`⚡ Executing legacy job: ${job.name}`);
         console.log(`   Payload: ${JSON.stringify(job.payload, null, 2)}`);
         console.log(`   File: ${job.filePath}`);
         console.log(`   Route: ${job.routeId}`);
@@ -110,10 +136,12 @@ export default defineJob({
       }
 
       // Write audit note
-      const auditNote = `Unrouting router completed at ${new Date().toISOString()}
+      const auditNote = `Unrouting router with Knowledge Hook integration completed at ${new Date().toISOString()}
 Files processed: ${changedFiles.length}
-Jobs generated: ${jobQueue.length}
-Routes matched: ${jobQueue.length}`;
+Legacy jobs generated: ${jobQueue.length}
+Knowledge Hooks evaluated: ${evaluationResult.hooksEvaluated}
+Knowledge Hooks triggered: ${evaluationResult.hooksTriggered}
+Knowledge Hook workflows executed: ${evaluationResult.workflowsExecuted}`;
 
       await notes.write(auditNote);
 
@@ -128,29 +156,36 @@ Routes matched: ${jobQueue.length}`;
           routes: routes.length,
         },
         outputs: {
-          jobsGenerated: jobQueue.length,
-          jobsExecuted: jobQueue.length,
+          legacyJobsGenerated: jobQueue.length,
+          legacyJobsExecuted: jobQueue.length,
+          knowledgeHooksEvaluated: evaluationResult.hooksEvaluated,
+          knowledgeHooksTriggered: evaluationResult.hooksTriggered,
+          knowledgeHookWorkflowsExecuted: evaluationResult.workflowsExecuted,
         },
-        summary: `Processed ${changedFiles.length} files, generated ${jobQueue.length} jobs`,
+        summary: `Processed ${changedFiles.length} files, generated ${jobQueue.length} legacy jobs, triggered ${evaluationResult.hooksTriggered} Knowledge Hooks`,
       };
 
       await receipt.create(receiptData);
 
-      console.log("✅ Unrouting router completed successfully!");
+      console.log("✅ Unrouting router with Knowledge Hook integration completed successfully!");
       console.log(`⏱️ Duration: ${receiptData.duration}ms`);
-      console.log(`📊 Jobs generated: ${jobQueue.length}`);
+      console.log(`📊 Legacy jobs generated: ${jobQueue.length}`);
+      console.log(`🧠 Knowledge Hooks triggered: ${evaluationResult.hooksTriggered}`);
 
       return {
         ok: true,
-        summary: `Processed ${changedFiles.length} files, generated ${jobQueue.length} jobs`,
-        jobsGenerated: jobQueue.length,
-        jobsExecuted: jobQueue.length,
+        summary: `Processed ${changedFiles.length} files, generated ${jobQueue.length} legacy jobs, triggered ${evaluationResult.hooksTriggered} Knowledge Hooks`,
+        legacyJobsGenerated: jobQueue.length,
+        legacyJobsExecuted: jobQueue.length,
+        knowledgeHooksEvaluated: evaluationResult.hooksEvaluated,
+        knowledgeHooksTriggered: evaluationResult.hooksTriggered,
+        knowledgeHookWorkflowsExecuted: evaluationResult.workflowsExecuted,
       };
     } catch (error) {
-      console.error("❌ Unrouting router failed:", error);
+      console.error("❌ Unrouting router with Knowledge Hook integration failed:", error);
 
       // Write error note
-      await notes.write(`Unrouting router failed at ${new Date().toISOString()}
+      await notes.write(`Unrouting router with Knowledge Hook integration failed at ${new Date().toISOString()}
 Error: ${error.message}`);
 
       // Write error receipt

@@ -1,18 +1,20 @@
 /**
- * GitVan Marketplace Index Update Job
+ * GitVan Marketplace Index Update Job - Knowledge Hook Integration
  *
- * This job automatically scans and updates the marketplace index by:
+ * This job automatically scans and updates the marketplace index with Knowledge Hook system by:
  * - Scanning local packs directory
  * - Scanning remote pack registries (GitHub, GitLab, etc.)
  * - Scanning custom registries
  * - Updating the marketplace index with new packs
  * - Generating metadata for search and filtering
  * - Creating unplugin integrations
+ * - Integrating with Knowledge Hook evaluation
  */
 
 import { defineJob } from "../src/core/job-registry.mjs";
 import { Marketplace } from "../src/pack/marketplace.mjs";
 import { EnhancedPackManager } from "../src/pack/giget-integration.mjs";
+import { HookOrchestrator } from "../src/hooks/HookOrchestrator.mjs";
 import { useGit } from "../src/composables/git.mjs";
 import { useNotes } from "../src/composables/notes.mjs";
 import { createLogger } from "../src/utils/logger.mjs";
@@ -24,19 +26,46 @@ const logger = createLogger("job:marketplace-index");
 export default defineJob({
   meta: {
     name: "marketplace:index-update",
-    description: "Update marketplace index by scanning local and remote packs",
+    description: "Update marketplace index by scanning local and remote packs with Knowledge Hook integration",
     version: "1.0.0",
     category: "marketplace",
-    tags: ["marketplace", "index", "scan", "remote-packs"],
+    tags: ["marketplace", "index", "scan", "remote-packs", "knowledge-hooks"],
   },
+  // Git hooks provide signals for Knowledge Hook evaluation
   hooks: ["post-commit", "post-merge"],
   async run(context) {
-    logger.info("Starting marketplace index update...");
+    logger.info("Starting marketplace index update with Knowledge Hook integration...");
 
     try {
+      // Initialize Knowledge Hook Orchestrator
+      const orchestrator = new HookOrchestrator({
+        graphDir: "./hooks",
+        context: { cwd: process.cwd() },
+        logger: logger,
+      });
+
+      // Get Git context for Knowledge Hook evaluation
+      const git = useGit();
+      const gitContext = {
+        signalType: context.hookName || "post-commit",
+        branch: await git.currentBranch(),
+        commitSha: await git.headSha(),
+        changedFiles: [], // Will be populated by Git signal processing
+        timestamp: Date.now(),
+      };
+
+      // Evaluate Knowledge Hooks
+      const evaluationResult = await orchestrator.evaluate({
+        gitSignal: context.hookName || "post-commit",
+        gitContext: gitContext,
+        verbose: true,
+      });
+
+      logger.info(`Knowledge Hooks evaluated: ${evaluationResult.hooksEvaluated}`);
+      logger.info(`Knowledge Hooks triggered: ${evaluationResult.hooksTriggered}`);
+
       const marketplace = new Marketplace();
       const packManager = new EnhancedPackManager();
-      const git = useGit();
       const notes = useNotes();
 
       // Get current repository information

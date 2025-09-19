@@ -1,17 +1,19 @@
 /**
- * GitVan Marketplace Scanner Job
+ * GitVan Marketplace Scanner Job - Knowledge Hook Integration
  *
- * This job provides targeted scanning capabilities for the marketplace:
+ * This job provides targeted scanning capabilities for the marketplace with Knowledge Hook system:
  * - Scan specific GitHub organizations
  * - Scan specific GitLab groups
  * - Scan custom registries
  * - Scan local directories
  * - Update specific pack categories
+ * - Integrate with Knowledge Hook evaluation
  */
 
 import { defineJob } from "../src/core/job-registry.mjs";
 import { Marketplace } from "../src/pack/marketplace.mjs";
 import { EnhancedPackManager } from "../src/pack/giget-integration.mjs";
+import { HookOrchestrator } from "../src/hooks/HookOrchestrator.mjs";
 import { createLogger } from "../src/utils/logger.mjs";
 import { join, dirname } from "pathe";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
@@ -21,16 +23,43 @@ const logger = createLogger("job:marketplace-scanner");
 export default defineJob({
   meta: {
     name: "marketplace:scanner",
-    description: "Scan specific sources for marketplace packs",
+    description: "Scan specific sources for marketplace packs with Knowledge Hook integration",
     version: "1.0.0",
     category: "marketplace",
-    tags: ["marketplace", "scanner", "discovery", "remote-packs"],
+    tags: ["marketplace", "scanner", "discovery", "remote-packs", "knowledge-hooks"],
   },
+  // Git hooks provide signals for Knowledge Hook evaluation
   hooks: ["post-commit", "post-merge"],
   async run(context) {
-    logger.info("Starting marketplace scanner...");
+    logger.info("Starting marketplace scanner with Knowledge Hook integration...");
 
     try {
+      // Initialize Knowledge Hook Orchestrator
+      const orchestrator = new HookOrchestrator({
+        graphDir: "./hooks",
+        context: { cwd: process.cwd() },
+        logger: logger,
+      });
+
+      // Get Git context for Knowledge Hook evaluation
+      const gitContext = {
+        signalType: context.hookName || "post-commit",
+        branch: "main", // Will be populated by Git signal processing
+        commitSha: null, // Will be populated by Git signal processing
+        changedFiles: [], // Will be populated by Git signal processing
+        timestamp: Date.now(),
+      };
+
+      // Evaluate Knowledge Hooks
+      const evaluationResult = await orchestrator.evaluate({
+        gitSignal: context.hookName || "post-commit",
+        gitContext: gitContext,
+        verbose: true,
+      });
+
+      logger.info(`Knowledge Hooks evaluated: ${evaluationResult.hooksEvaluated}`);
+      logger.info(`Knowledge Hooks triggered: ${evaluationResult.hooksTriggered}`);
+
       const marketplace = new Marketplace();
       const packManager = new EnhancedPackManager();
 
@@ -48,6 +77,9 @@ export default defineJob({
           updatedPacks: 0,
           errors: 0,
         },
+        knowledgeHooksEvaluated: evaluationResult.hooksEvaluated,
+        knowledgeHooksTriggered: evaluationResult.hooksTriggered,
+        knowledgeHookWorkflowsExecuted: evaluationResult.workflowsExecuted,
       };
 
       // Scan GitHub organizations

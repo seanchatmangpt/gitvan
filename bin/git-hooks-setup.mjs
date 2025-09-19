@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * GitVan Git Hooks Setup - Dark Matter 80/20
+ * GitVan Git Hooks Setup - Knowledge Hook Signal Layer
  *
- * Sets up Git hooks for surgical precision AI swarm processing
+ * Sets up Git hooks as signals for Knowledge Hook evaluation
  */
 
 import { execSync } from "child_process";
@@ -14,13 +14,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 /**
- * Git Hooks Setup - Dark Matter 80/20
+ * Git Hooks Setup - Knowledge Hook Signal Layer
  *
- * Creates Git hooks that provide surgical precision for AI swarms:
+ * Creates Git hooks that provide signals for Knowledge Hook evaluation:
+ * - Git hooks provide signals (when to evaluate)
+ * - Knowledge Hooks provide intelligence (what to evaluate with SPARQL)
  * - Only process what changed (not entire repo)
- * - Immediate event detection
- * - Change-only context
- * - Zero-overhead scanning
+ * - Change-only context for Knowledge Hook system
  */
 class GitHooksSetup {
   constructor() {
@@ -30,28 +30,28 @@ class GitHooksSetup {
   }
 
   /**
-   * Setup Git hooks for surgical precision
+   * Setup Git hooks as signals for Knowledge Hook evaluation
    */
   async setup() {
-    console.log("🔧 GitVan: Setting up Git hooks for surgical precision\n");
+    console.log("🔧 GitVan: Setting up Git hooks as Knowledge Hook signals\n");
 
     // Ensure hooks directory exists
     this.ensureHooksDirectory();
 
-    // Create Git hooks
-    await this.createPreCommitHook();
-    await this.createPostCommitHook();
-    await this.createPrePushHook();
-    await this.createPostMergeHook();
-    await this.createPostCheckoutHook();
+    // Create Git signal hooks
+    await this.createPreCommitSignal();
+    await this.createPostCommitSignal();
+    await this.createPrePushSignal();
+    await this.createPostMergeSignal();
+    await this.createPostCheckoutSignal();
 
-    console.log("✅ GitVan Git hooks setup complete!");
-    console.log("\n🎯 Dark Matter 80/20 Benefits:");
+    console.log("✅ GitVan Git signal hooks setup complete!");
+    console.log("\n🎯 Two-Layer Architecture Benefits:");
+    console.log("   - Git hooks provide signals (when to evaluate)");
+    console.log("   - Knowledge Hooks provide intelligence (SPARQL evaluation)");
     console.log("   - Only processes what changed (not entire repo)");
-    console.log("   - Immediate event detection via Git hooks");
-    console.log("   - Change-only context for AI systems");
-    console.log("   - Zero-overhead repository scanning");
-    console.log("\n🤖 AI Swarms now have surgical precision!");
+    console.log("   - Change-only context for Knowledge Hook system");
+    console.log("\n🧠 Knowledge Hook system now has intelligent signal triggers!");
   }
 
   /**
@@ -68,83 +68,83 @@ class GitHooksSetup {
   }
 
   /**
-   * Create pre-commit hook - Surgical precision
+   * Create pre-commit signal hook - Triggers Knowledge Hook evaluation
    */
-  async createPreCommitHook() {
+  async createPreCommitSignal() {
     const hookContent = `#!/bin/sh
-# GitVan Pre-Commit Hook - Surgical Precision
-# Only processes staged changes, not entire repository
+# GitVan Pre-Commit Signal Hook - Knowledge Hook Trigger
+# Signals Knowledge Hook system to evaluate code quality
 
 ROOT="$(git rev-parse --show-toplevel)"
 exec "$(command -v node)" "$ROOT/node_modules/gitvan/bin/git-hook-handler.mjs" pre-commit "$@"
 `;
 
     this.writeHook("pre-commit", hookContent);
-    console.log("   ✅ Pre-commit hook created (staged changes only)");
+    console.log("   ✅ Pre-commit signal hook created (Knowledge Hook trigger)");
   }
 
   /**
-   * Create post-commit hook - Surgical precision
+   * Create post-commit signal hook - Triggers Knowledge Hook evaluation
    */
-  async createPostCommitHook() {
+  async createPostCommitSignal() {
     const hookContent = `#!/bin/sh
-# GitVan Post-Commit Hook - Surgical Precision
-# Only processes last commit, not entire history
+# GitVan Post-Commit Signal Hook - Knowledge Hook Trigger
+# Signals Knowledge Hook system to evaluate committed changes
 
 ROOT="$(git rev-parse --show-toplevel)"
 exec "$(command -v node)" "$ROOT/node_modules/gitvan/bin/git-hook-handler.mjs" post-commit "$@"
 `;
 
     this.writeHook("post-commit", hookContent);
-    console.log("   ✅ Post-commit hook created (last commit only)");
+    console.log("   ✅ Post-commit signal hook created (Knowledge Hook trigger)");
   }
 
   /**
-   * Create pre-push hook - Surgical precision
+   * Create pre-push signal hook - Triggers Knowledge Hook evaluation
    */
-  async createPrePushHook() {
+  async createPrePushSignal() {
     const hookContent = `#!/bin/sh
-# GitVan Pre-Push Hook - Surgical Precision
-# Only processes push changes, not entire repository
+# GitVan Pre-Push Signal Hook - Knowledge Hook Trigger
+# Signals Knowledge Hook system to evaluate security and quality
 
 ROOT="$(git rev-parse --show-toplevel)"
 exec "$(command -v node)" "$ROOT/node_modules/gitvan/bin/git-hook-handler.mjs" pre-push "$@"
 `;
 
     this.writeHook("pre-push", hookContent);
-    console.log("   ✅ Pre-push hook created (push changes only)");
+    console.log("   ✅ Pre-push signal hook created (Knowledge Hook trigger)");
   }
 
   /**
-   * Create post-merge hook - Surgical precision
+   * Create post-merge signal hook - Triggers Knowledge Hook evaluation
    */
-  async createPostMergeHook() {
+  async createPostMergeSignal() {
     const hookContent = `#!/bin/sh
-# GitVan Post-Merge Hook - Surgical Precision
-# Only processes merged changes, not entire repository
+# GitVan Post-Merge Signal Hook - Knowledge Hook Trigger
+# Signals Knowledge Hook system to evaluate integration changes
 
 ROOT="$(git rev-parse --show-toplevel)"
 exec "$(command -v node)" "$ROOT/node_modules/gitvan/bin/git-hook-handler.mjs" post-merge "$@"
 `;
 
     this.writeHook("post-merge", hookContent);
-    console.log("   ✅ Post-merge hook created (merged changes only)");
+    console.log("   ✅ Post-merge signal hook created (Knowledge Hook trigger)");
   }
 
   /**
-   * Create post-checkout hook - Surgical precision
+   * Create post-checkout signal hook - Triggers Knowledge Hook evaluation
    */
-  async createPostCheckoutHook() {
+  async createPostCheckoutSignal() {
     const hookContent = `#!/bin/sh
-# GitVan Post-Checkout Hook - Surgical Precision
-# Only processes checkout changes, not entire repository
+# GitVan Post-Checkout Signal Hook - Knowledge Hook Trigger
+# Signals Knowledge Hook system to evaluate environment changes
 
 ROOT="$(git rev-parse --show-toplevel)"
 exec "$(command -v node)" "$ROOT/node_modules/gitvan/bin/git-hook-handler.mjs" post-checkout "$@"
 `;
 
     this.writeHook("post-checkout", hookContent);
-    console.log("   ✅ Post-checkout hook created (checkout changes only)");
+    console.log("   ✅ Post-checkout signal hook created (Knowledge Hook trigger)");
   }
 
   /**

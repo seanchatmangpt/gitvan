@@ -3,6 +3,7 @@
 // Provides command-line interface for hook management and evaluation
 
 import { HookOrchestrator } from "../hooks/HookOrchestrator.mjs";
+import { KnowledgeHookRegistry } from "../hooks/KnowledgeHookRegistry.mjs";
 import { useGitVan } from "../core/context.mjs";
 
 /**
@@ -16,6 +17,7 @@ export class HooksCLI {
   constructor(options = {}) {
     this.logger = options.logger || console;
     this.orchestrator = null;
+    this.registry = null;
   }
 
   /**
@@ -28,10 +30,17 @@ export class HooksCLI {
       context: context,
       logger: this.logger,
     });
+
+    this.registry = new KnowledgeHookRegistry({
+      hooksDir: "./hooks",
+      logger: this.logger,
+    });
+
+    await this.registry.initialize();
   }
 
   /**
-   * List all available hooks
+   * List all available hooks using registry
    * @returns {Promise<void>}
    */
   async list() {
@@ -39,7 +48,7 @@ export class HooksCLI {
       this.logger.info("🧠 Available Knowledge Hooks:");
       this.logger.info("─".repeat(60));
 
-      const hooks = await this.orchestrator.listHooks();
+      const hooks = this.registry.getAllHooks();
 
       if (hooks.length === 0) {
         this.logger.info("No hooks found in ./hooks directory");
@@ -48,13 +57,128 @@ export class HooksCLI {
 
       for (const hook of hooks) {
         this.logger.info(`🔧 ${hook.id}`);
-        this.logger.info(`   Title: ${hook.title}`);
-        this.logger.info(`   Predicate Type: ${hook.predicateType}`);
-        this.logger.info(`   Workflows: ${hook.workflowCount}`);
+        this.logger.info(`   Title: ${hook.metadata.title || 'N/A'}`);
+        this.logger.info(`   Predicate Type: ${hook.metadata.predicateType || 'N/A'}`);
+        this.logger.info(`   Category: ${hook.category}`);
+        this.logger.info(`   Domain: ${hook.domain}`);
+        this.logger.info(`   File: ${hook.relativePath}`);
         this.logger.info("");
       }
     } catch (error) {
       this.logger.error(`❌ Failed to list hooks: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * List hooks by category
+   * @param {string} category - Hook category
+   * @returns {Promise<void>}
+   */
+  async listByCategory(category) {
+    try {
+      this.logger.info(`🧠 Knowledge Hooks in category '${category}':`);
+      this.logger.info("─".repeat(60));
+
+      const hooks = this.registry.getHooksByCategory(category);
+
+      if (hooks.length === 0) {
+        this.logger.info(`No hooks found in category '${category}'`);
+        this.logger.info(`Available categories: ${this.registry.getCategories().join(', ')}`);
+        return;
+      }
+
+      for (const hook of hooks) {
+        this.logger.info(`🔧 ${hook.id}`);
+        this.logger.info(`   Title: ${hook.metadata.title || 'N/A'}`);
+        this.logger.info(`   Domain: ${hook.domain}`);
+        this.logger.info(`   File: ${hook.relativePath}`);
+        this.logger.info("");
+      }
+    } catch (error) {
+      this.logger.error(`❌ Failed to list hooks by category: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * List hooks by domain
+   * @param {string} domain - Hook domain
+   * @returns {Promise<void>}
+   */
+  async listByDomain(domain) {
+    try {
+      this.logger.info(`🧠 Knowledge Hooks in domain '${domain}':`);
+      this.logger.info("─".repeat(60));
+
+      const hooks = this.registry.getHooksByDomain(domain);
+
+      if (hooks.length === 0) {
+        this.logger.info(`No hooks found in domain '${domain}'`);
+        this.logger.info(`Available domains: ${this.registry.getDomains().join(', ')}`);
+        return;
+      }
+
+      for (const hook of hooks) {
+        this.logger.info(`🔧 ${hook.id}`);
+        this.logger.info(`   Title: ${hook.metadata.title || 'N/A'}`);
+        this.logger.info(`   Category: ${hook.category}`);
+        this.logger.info(`   File: ${hook.relativePath}`);
+        this.logger.info("");
+      }
+    } catch (error) {
+      this.logger.error(`❌ Failed to list hooks by domain: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Show registry statistics
+   * @returns {Promise<void>}
+   */
+  async stats() {
+    try {
+      this.logger.info("📊 Knowledge Hook Registry Statistics:");
+      this.logger.info("─".repeat(60));
+
+      const stats = this.registry.getStats();
+
+      this.logger.info(`Total Hooks: ${stats.totalHooks}`);
+      this.logger.info("");
+
+      this.logger.info("Categories:");
+      for (const [category, count] of Object.entries(stats.categories)) {
+        this.logger.info(`  ${category}: ${count} hooks`);
+      }
+      this.logger.info("");
+
+      this.logger.info("Domains:");
+      for (const [domain, count] of Object.entries(stats.domains)) {
+        this.logger.info(`  ${domain}: ${count} hooks`);
+      }
+      this.logger.info("");
+
+      this.logger.info("Predicate Types:");
+      for (const [type, count] of Object.entries(stats.predicateTypes)) {
+        this.logger.info(`  ${type}: ${count} hooks`);
+      }
+    } catch (error) {
+      this.logger.error(`❌ Failed to get registry stats: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Refresh the registry
+   * @returns {Promise<void>}
+   */
+  async refresh() {
+    try {
+      this.logger.info("🔄 Refreshing Knowledge Hook Registry...");
+      await this.registry.refresh();
+      this.logger.info("✅ Registry refreshed successfully");
+    } catch (error) {
+      this.logger.error(`❌ Failed to refresh registry: ${error.message}`);
       throw error;
     }
   }
@@ -72,14 +196,13 @@ export class HooksCLI {
 
       if (options.dryRun) {
         this.logger.info("🔍 Dry run mode - no actual execution");
-        // In dry run, we would validate all hooks without executing
-        const hooks = await this.orchestrator.listHooks();
+        const hooks = this.registry.getAllHooks();
         this.logger.info(`Found ${hooks.length} hooks to evaluate`);
         return;
       }
 
       const startTime = performance.now();
-      const result = await this.orchestrator.evaluate(options);
+      const result = await this.registry.evaluateAll(options);
       const endTime = performance.now();
 
       this.logger.info("✅ Knowledge Hook evaluation completed");
@@ -155,9 +278,68 @@ export class HooksCLI {
   }
 
   /**
-   * Get hook statistics
+   * Evaluate hooks by category
+   * @param {string} category - Hook category
+   * @param {object} options - Evaluation options
    * @returns {Promise<void>}
    */
+  async evaluateByCategory(category, options = {}) {
+    try {
+      this.logger.info(`🧠 Evaluating Knowledge Hooks in category '${category}'`);
+
+      if (options.dryRun) {
+        this.logger.info("🔍 Dry run mode - no actual execution");
+        const hooks = this.registry.getHooksByCategory(category);
+        this.logger.info(`Found ${hooks.length} hooks in category '${category}'`);
+        return;
+      }
+
+      const startTime = performance.now();
+      const result = await this.registry.evaluateByCategory(category, options);
+      const endTime = performance.now();
+
+      this.logger.info(`✅ Category '${category}' evaluation completed`);
+      this.logger.info(`   Duration: ${result.duration}ms`);
+      this.logger.info(`   Hooks evaluated: ${result.hooksEvaluated}`);
+      this.logger.info(`   Hooks triggered: ${result.hooksTriggered}`);
+      this.logger.info(`   Workflows executed: ${result.workflowsExecuted}`);
+    } catch (error) {
+      this.logger.error(`❌ Failed to evaluate hooks by category: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Evaluate hooks by domain
+   * @param {string} domain - Hook domain
+   * @param {object} options - Evaluation options
+   * @returns {Promise<void>}
+   */
+  async evaluateByDomain(domain, options = {}) {
+    try {
+      this.logger.info(`🧠 Evaluating Knowledge Hooks in domain '${domain}'`);
+
+      if (options.dryRun) {
+        this.logger.info("🔍 Dry run mode - no actual execution");
+        const hooks = this.registry.getHooksByDomain(domain);
+        this.logger.info(`Found ${hooks.length} hooks in domain '${domain}'`);
+        return;
+      }
+
+      const startTime = performance.now();
+      const result = await this.registry.evaluateByDomain(domain, options);
+      const endTime = performance.now();
+
+      this.logger.info(`✅ Domain '${domain}' evaluation completed`);
+      this.logger.info(`   Duration: ${result.duration}ms`);
+      this.logger.info(`   Hooks evaluated: ${result.hooksEvaluated}`);
+      this.logger.info(`   Hooks triggered: ${result.hooksTriggered}`);
+      this.logger.info(`   Workflows executed: ${result.workflowsExecuted}`);
+    } catch (error) {
+      this.logger.error(`❌ Failed to evaluate hooks by domain: ${error.message}`);
+      throw error;
+    }
+  }
   async stats() {
     try {
       this.logger.info("📊 Knowledge Hook Engine Statistics:");
@@ -325,16 +507,18 @@ ${workflowTemplate}`;
     this.logger.info("");
     this.logger.info("📋 List hooks:");
     this.logger.info("   gitvan hooks list");
+    this.logger.info("   gitvan hooks list-category <category>");
+    this.logger.info("   gitvan hooks list-domain <domain>");
     this.logger.info("");
     this.logger.info("🧠 Evaluate hooks:");
     this.logger.info("   gitvan hooks evaluate");
     this.logger.info("   gitvan hooks evaluate --dry-run");
     this.logger.info("   gitvan hooks evaluate --verbose");
+    this.logger.info("   gitvan hooks evaluate-category <category>");
+    this.logger.info("   gitvan hooks evaluate-domain <domain>");
     this.logger.info("");
-    this.logger.info("🔍 Validate hook:");
-    this.logger.info("   gitvan hooks validate <hook-id>");
-    this.logger.info("");
-    this.logger.info("📊 Show statistics:");
+    this.logger.info("🔄 Registry management:");
+    this.logger.info("   gitvan hooks refresh");
     this.logger.info("   gitvan hooks stats");
     this.logger.info("");
     this.logger.info("📝 Create hook template:");
@@ -371,12 +555,56 @@ export async function handleHooksCommand(args, options = {}) {
         await cli.list();
         break;
 
+      case "list-category":
+        const category = args[1];
+        if (!category) {
+          throw new Error("Category required for list-category command");
+        }
+        await cli.listByCategory(category);
+        break;
+
+      case "list-domain":
+        const domain = args[1];
+        if (!domain) {
+          throw new Error("Domain required for list-domain command");
+        }
+        await cli.listByDomain(domain);
+        break;
+
       case "evaluate":
         const evalOptions = {
           dryRun: options.dryRun || false,
           verbose: options.verbose || false,
         };
         await cli.evaluate(evalOptions);
+        break;
+
+      case "evaluate-category":
+        const evalCategory = args[1];
+        if (!evalCategory) {
+          throw new Error("Category required for evaluate-category command");
+        }
+        const categoryEvalOptions = {
+          dryRun: options.dryRun || false,
+          verbose: options.verbose || false,
+        };
+        await cli.evaluateByCategory(evalCategory, categoryEvalOptions);
+        break;
+
+      case "evaluate-domain":
+        const evalDomain = args[1];
+        if (!evalDomain) {
+          throw new Error("Domain required for evaluate-domain command");
+        }
+        const domainEvalOptions = {
+          dryRun: options.dryRun || false,
+          verbose: options.verbose || false,
+        };
+        await cli.evaluateByDomain(evalDomain, domainEvalOptions);
+        break;
+
+      case "refresh":
+        await cli.refresh();
         break;
 
       case "validate":

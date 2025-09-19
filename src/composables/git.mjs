@@ -20,6 +20,7 @@
 import { execFile } from "node:child_process";
 import path from "node:path";
 import { useGitVan, tryUseGitVan } from "../core/context.mjs";
+import { useHybridGit } from "./hybrid-git.mjs";
 
 /**
  * Execute Git command with error handling
@@ -35,39 +36,49 @@ import { useGitVan, tryUseGitVan } from "../core/context.mjs";
  * @throws {Error} When Git command fails
  */
 async function runGit(args, { cwd, env, maxBuffer = 12 * 1024 * 1024 } = {}) {
-  try {
-    const { stdout } = await execFile("git", args, {
+  return new Promise((resolve, reject) => {
+    const child = execFile("git", args, {
       cwd,
       env,
       maxBuffer,
     });
-    return typeof stdout === "string" ? stdout.trim() : "";
-  } catch (error) {
-    // Handle specific cases for empty repositories
-    const command = `git ${args.join(" ")}`;
-    const errorMsg = error.message || "";
-    const stderr = error.stderr || "";
-    const fullError = `${errorMsg} ${stderr}`;
 
-    // Handle empty repository cases for rev-list commands
-    if (
-      args[0] === "rev-list" &&
-      (fullError.includes("ambiguous argument") ||
-        fullError.includes("unknown revision") ||
-        fullError.includes("not in the working tree") ||
-        fullError.includes("fatal: ambiguous argument"))
-    ) {
-      return ""; // Return empty string for empty repo
-    }
+    let stdout = "";
+    let stderr = "";
 
-    // Re-throw with more context for other errors
-    const newError = new Error(`Command failed: ${command}\n${error.message}`);
-    newError.originalError = error;
-    newError.command = command;
-    newError.args = args;
-    newError.stderr = error.stderr;
-    throw newError;
-  }
+    child.stdout?.on("data", (data) => {
+      stdout += data;
+    });
+
+    child.stderr?.on("data", (data) => {
+      stderr += data;
+    });
+
+    child.on("close", (code) => {
+      if (code === 0) {
+        resolve(stdout.trim());
+      } else {
+        const command = `git ${args.join(" ")}`;
+        const error = new Error(`Command failed: ${command}\n${stderr}`);
+        error.originalError = { code, stderr };
+        error.command = command;
+        error.args = args;
+        error.stderr = stderr;
+        reject(error);
+      }
+    });
+
+    child.on("error", (error) => {
+      const command = `git ${args.join(" ")}`;
+      const newError = new Error(
+        `Command failed: ${command}\n${error.message}`
+      );
+      newError.originalError = error;
+      newError.command = command;
+      newError.args = args;
+      reject(newError);
+    });
+  });
 }
 
 /**
@@ -94,8 +105,13 @@ function toArr(x) {
  * Provides comprehensive Git operations within the GitVan context.
  * This function returns an object with methods for all essential Git operations
  * including commits, branches, merges, worktrees, notes, and references.
+ * 
+ * Supports both native Git and hybrid MemFS backends for optimal performance.
  *
  * @function useGit
+ * @param {Object} [options] - Git backend options
+ * @param {string} [options.backend="auto"] - Backend type: "native", "memfs", or "auto"
+ * @param {boolean} [options.hybrid=false] - Enable hybrid backend support
  * @returns {Object} Git operations interface
  * @returns {string} returns.root - Repository root directory
  * @returns {Function} returns.head - Get current HEAD commit SHA
@@ -147,7 +163,7 @@ function toArr(x) {
  * git.checkout('feature/new-feature');
  * ```
  */
-export function useGit() {
+export function useGit(options = {}) {
   // Get context from unctx - this must be called synchronously
   let ctx;
   try {
@@ -169,11 +185,61 @@ export function useGit() {
   };
 
   const base = { cwd, env };
+  
+  // Initialize hybrid Git backend if requested
+  let hybridGit = null;
+  if (options.hybrid || options.backend) {
+    // Note: This is a synchronous function, but hybrid Git is async
+    // We'll initialize it lazily when needed
+    const initHybridGit = async () => {
+      if (!hybridGit) {
+        hybridGit = await useHybridGit({
+          backend: options.backend || "auto",
+          testDir: cwd,
+          ...options
+        });
+      }
+      return hybridGit;
+    };
+  }
 
   return {
     // Context properties (exposed for testing)
     cwd: base.cwd,
     env: base.env,
+    
+    // Hybrid Git backend access
+    async getHybridGit() {
+      if (options.hybrid || options.backend) {
+        if (!hybridGit) {
+          hybridGit = await useHybridGit({
+            backend: options.backend || "auto",
+            testDir: cwd,
+            ...options
+          });
+        }
+        return hybridGit;
+      }
+      return null;
+    },
+    
+    // Backend management
+    async useMemFS() {
+      const hg = await this.getHybridGit();
+      if (hg) return hg.useMemFS();
+      throw new Error("Hybrid Git not enabled");
+    },
+    
+    async useNative() {
+      const hg = await this.getHybridGit();
+      if (hg) return hg.useNative();
+      throw new Error("Hybrid Git not enabled");
+    },
+    
+    async getBackendType() {
+      const hg = await this.getHybridGit();
+      return hg ? hg.getBackendType() : "native";
+    },
     // ---------- Repo info ----------
     async branch() {
       return runGit(["rev-parse", "--abbrev-ref", "HEAD"], base);

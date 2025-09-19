@@ -25,7 +25,7 @@ import { StepRunner } from "../workflow/StepRunner.mjs";
 import { ContextManager } from "../workflow/ContextManager.mjs";
 import { useTurtle } from "../composables/turtle.mjs";
 import { useGraph } from "../composables/graph.mjs";
-import { GitNativeIO } from "../git-native/GitNativeIO.mjs";
+import { GitNativeIO } from "../git-native/git-native-io.mjs";
 
 /**
  * Main orchestrator for the Knowledge Hook Engine

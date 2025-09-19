@@ -3,7 +3,13 @@
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { execSync } from "node:child_process";
-import { writeFileSync, mkdirSync, readFileSync, existsSync } from "node:fs";
+import {
+  writeFileSync,
+  mkdirSync,
+  readFileSync,
+  existsSync,
+  rmSync,
+} from "node:fs";
 import { join } from "node:path";
 import { HookOrchestrator } from "../src/hooks/HookOrchestrator.mjs";
 import { withGitVan } from "../src/core/context.mjs";
@@ -60,8 +66,12 @@ ex:test-component rdf:type gv:Component ;
   });
 
   afterAll(() => {
-    // Cleanup
-    execSync(`rm -rf ${testDir}`);
+    // Cleanup using safe Node.js filesystem API
+    try {
+      rmSync(testDir, { recursive: true, force: true });
+    } catch (error) {
+      console.warn(`Failed to clean up test directory: ${error.message}`);
+    }
   });
 
   it("should evaluate ASK predicate hooks", async () => {

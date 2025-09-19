@@ -1,9 +1,8 @@
-// GitVan v2 — Comprehensive useTemplate() tests
-// Tests template rendering, inflection filters, config discovery, and error handling
+// GitVan v2 — Comprehensive useTemplate() tests with MemFS
+// Tests template rendering, inflection filters, config discovery, and error handling using in-memory file system
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { promises as fs } from 'node:fs';
-import { join, dirname } from 'pathe';
+import { vol } from 'memfs';
 import { useTemplate } from '../composables/template.mjs';
 import { findGitVanConfig, findTemplatesDir } from '../utils/config-finder.mjs';
 
@@ -28,33 +27,32 @@ vi.mock('../core/context.mjs', () => ({
   bindContext: vi.fn(() => mockContext) // This was missing!
 }));
 
-describe('useTemplate', () => {
-  let tempDir;
+describe('useTemplate with MemFS', () => {
+  let testDir;
   let templatesDir;
   
-  beforeEach(async () => {
-    // Create temporary directory structure
-    tempDir = join(process.cwd(), 'test-temp');
-    templatesDir = join(tempDir, 'templates');
-    
-    await fs.mkdir(templatesDir, { recursive: true });
+  beforeEach(() => {
+    // Create in-memory test directory structure
+    testDir = '/test-template-comprehensive';
+    templatesDir = `${testDir}/templates`;
+    vol.mkdirSync(templatesDir, { recursive: true });
     
     // Create test templates
-    await fs.writeFile(
-      join(templatesDir, 'test.njk'),
+    vol.writeFileSync(
+      `${templatesDir}/test.njk`,
       'Hello {{ name | capitalize }}! Today is {{ nowISO }}.'
     );
     
-    await fs.writeFile(
-      join(templatesDir, 'inflection.njk'),
+    vol.writeFileSync(
+      `${templatesDir}/inflection.njk`,
       `{{ "user" | pluralize }}: {{ count | inflect "user" "users" }}
 {{ "user_profile" | camelize }}: {{ "userProfile" | underscore }}
 {{ "hello_world" | titleize }}: {{ "HelloWorld" | humanize }}
 {{ "test_string" | dasherize }}: {{ "TestString" | classify }}`
     );
     
-    await fs.writeFile(
-      join(templatesDir, 'filters.njk'),
+    vol.writeFileSync(
+      `${templatesDir}/filters.njk`,
       `JSON: {{ data | json }}
 Slug: {{ "Hello World!" | slug }}
 Upper: {{ "hello" | upper }}
@@ -63,13 +61,9 @@ Pad: {{ "5" | pad 3 "0" }}`
     );
   });
   
-  afterEach(async () => {
-    // Clean up temporary directory
-    try {
-      await fs.rm(tempDir, { recursive: true, force: true });
-    } catch {
-      // Ignore cleanup errors
-    }
+  afterEach(() => {
+    // Clean up in-memory file system
+    vol.reset();
   });
   
   describe('basic functionality', () => {
@@ -89,14 +83,14 @@ Pad: {{ "5" | pad 3 "0" }}`
     
     it('should render to file', async () => {
       const template = await useTemplate({ paths: [templatesDir] });
-      const outputPath = join(tempDir, 'output.txt');
+      const outputPath = `${testDir}/output.txt`;
       
       const result = await template.renderToFile('test.njk', outputPath, { name: 'jane' });
       
       expect(result.path).toBe(outputPath);
       expect(result.bytes).toBeGreaterThan(0);
       
-      const content = await fs.readFile(outputPath, 'utf8');
+      const content = vol.readFileSync(outputPath, 'utf8');
       expect(content).toBe('Hello Jane! Today is 2024-01-15T10:30:00.000Z.');
     });
   });
@@ -363,42 +357,38 @@ Pad: {{ "5" | pad 3 "0" }}`
   });
 });
 
-describe('config-finder utilities', () => {
-  let tempDir: string;
+describe('config-finder utilities with MemFS', () => {
+  let testDir;
   
-  beforeEach(async () => {
-    tempDir = join(process.cwd(), 'test-config-temp');
-    await fs.mkdir(tempDir, { recursive: true });
+  beforeEach(() => {
+    testDir = '/test-config-comprehensive';
+    vol.mkdirSync(testDir, { recursive: true });
   });
   
-  afterEach(async () => {
-    try {
-      await fs.rm(tempDir, { recursive: true, force: true });
-    } catch {
-      // Ignore cleanup errors
-    }
+  afterEach(() => {
+    vol.reset();
   });
   
   it('should find config file in current directory', async () => {
-    const configPath = join(tempDir, 'gitvan.config.js');
-    await fs.writeFile(configPath, 'export default { templates: { directory: "custom-templates" } };');
+    const configPath = `${testDir}/gitvan.config.js`;
+    vol.writeFileSync(configPath, 'export default { templates: { directory: "custom-templates" } };');
     
-    const result = await findGitVanConfig(tempDir);
+    const result = await findGitVanConfig(testDir);
     
     expect(result).toBeTruthy();
     expect(result.path).toBe(configPath);
-    expect(result.root).toBe(tempDir);
+    expect(result.root).toBe(testDir);
     expect(result.config.templates.directory).toBe('custom-templates');
   });
   
   it('should find templates directory from config', async () => {
-    const configPath = join(tempDir, 'gitvan.config.js');
-    const templatesDir = join(tempDir, 'custom-templates');
+    const configPath = `${testDir}/gitvan.config.js`;
+    const templatesDir = `${testDir}/custom-templates`;
     
-    await fs.writeFile(configPath, 'export default { templates: { directory: "custom-templates" } };');
-    await fs.mkdir(templatesDir, { recursive: true });
+    vol.writeFileSync(configPath, 'export default { templates: { directory: "custom-templates" } };');
+    vol.mkdirSync(templatesDir, { recursive: true });
     
-    const result = await findTemplatesDir(tempDir);
+    const result = await findTemplatesDir(testDir);
     
     expect(result).toBeTruthy();
     expect(result.templatesDir).toBe(templatesDir);
@@ -406,10 +396,10 @@ describe('config-finder utilities', () => {
   });
   
   it('should fallback to default templates directory', async () => {
-    const templatesDir = join(tempDir, 'templates');
-    await fs.mkdir(templatesDir, { recursive: true });
+    const templatesDir = `${testDir}/templates`;
+    vol.mkdirSync(templatesDir, { recursive: true });
     
-    const result = await findTemplatesDir(tempDir);
+    const result = await findTemplatesDir(testDir);
     
     expect(result).toBeTruthy();
     expect(result.templatesDir).toBe(templatesDir);

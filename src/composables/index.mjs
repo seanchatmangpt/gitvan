@@ -6,6 +6,10 @@
 // Core composables
 export { useGit } from "./git.mjs";
 export { useFileSystem } from "./filesystem.mjs";
+export {
+  useTestEnvironment,
+  withTestEnvironment,
+} from "./test-environment.mjs";
 export { useWorktree } from "./worktree.mjs";
 export { useTemplate } from "./template.mjs";
 export { useNotes } from "./notes.mjs";

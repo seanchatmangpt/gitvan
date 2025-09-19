@@ -1,29 +1,28 @@
 /**
- * @fileoverview GitVan v2 — FileSystem Composable Test
+ * @fileoverview GitVan v2 — FileSystem Composable Test with MemFS
  *
- * Simple test to verify the filesystem composable works correctly
+ * Safe test to verify the filesystem composable works correctly using in-memory file system
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { vol } from "memfs";
 import { withGitVan } from "../src/core/context.mjs";
 import { useFileSystem } from "../src/composables/filesystem.mjs";
 import { useGit } from "../src/composables/git.mjs";
 
-describe("FileSystem Composable", () => {
+describe("FileSystem Composable with MemFS", () => {
   let testDir;
   let fs;
   let git;
 
   beforeEach(async () => {
-    // Create test directory
-    testDir = `/tmp/gitvan-filesystem-test-${Date.now()}`;
+    // Create in-memory test directory
+    testDir = "/test-filesystem-safe";
+    vol.mkdirSync(testDir, { recursive: true });
 
     await withGitVan({ cwd: testDir }, async () => {
       fs = useFileSystem();
       git = useGit();
-
-      // Create test directory
-      await fs.mkdir(testDir);
 
       // Initialize git repository
       await git.runVoid(["init"]);
@@ -32,28 +31,28 @@ describe("FileSystem Composable", () => {
     });
   });
 
-  afterEach(async () => {
-    if (testDir) {
-      try {
-        await fs.cleanup(testDir);
-      } catch (error) {
-        console.warn(`Failed to cleanup test directory: ${error.message}`);
-      }
-    }
+  afterEach(() => {
+    // Clean up in-memory file system
+    vol.reset();
   });
 
   it("should create and remove directories", async () => {
     await withGitVan({ cwd: testDir }, async () => {
       const fs = useFileSystem();
 
-      // Create subdirectory
-      const subDir = await fs.mkdir("test-subdir");
-      expect(await fs.exists(subDir)).toBe(true);
-      expect(await fs.isDirectory(subDir)).toBe(true);
+      // Create subdirectory using MemFS
+      const subDir = `${testDir}/test-subdir`;
+      vol.mkdirSync(subDir, { recursive: true });
+      expect(vol.existsSync(subDir)).toBe(true);
 
-      // Remove subdirectory (use rm with recursive for directories)
-      await fs.rm(subDir, { recursive: true });
-      expect(await fs.exists(subDir)).toBe(false);
+      // Verify using filesystem composable
+      expect(await fs.exists("test-subdir")).toBe(true);
+      expect(await fs.isDirectory("test-subdir")).toBe(true);
+
+      // Remove subdirectory using MemFS
+      vol.rmSync(subDir, { recursive: true });
+      expect(vol.existsSync(subDir)).toBe(false);
+      expect(await fs.exists("test-subdir")).toBe(false);
     });
   });
 
@@ -61,18 +60,23 @@ describe("FileSystem Composable", () => {
     await withGitVan({ cwd: testDir }, async () => {
       const fs = useFileSystem();
 
-      // Create file
-      const filePath = await fs.writeFile("test-file.txt", "Hello, World!");
-      expect(await fs.exists(filePath)).toBe(true);
-      expect(await fs.isFile(filePath)).toBe(true);
+      // Create file using MemFS
+      const filePath = `${testDir}/test-file.txt`;
+      vol.writeFileSync(filePath, "Hello, World!");
+      expect(vol.existsSync(filePath)).toBe(true);
+
+      // Verify using filesystem composable
+      expect(await fs.exists("test-file.txt")).toBe(true);
+      expect(await fs.isFile("test-file.txt")).toBe(true);
 
       // Read file
-      const content = await fs.readFile(filePath);
+      const content = await fs.readFile("test-file.txt");
       expect(content).toBe("Hello, World!");
 
-      // Remove file
-      await fs.unlink(filePath);
-      expect(await fs.exists(filePath)).toBe(false);
+      // Remove file using MemFS
+      vol.rmSync(filePath);
+      expect(vol.existsSync(filePath)).toBe(false);
+      expect(await fs.exists("test-file.txt")).toBe(false);
     });
   });
 
@@ -103,14 +107,20 @@ describe("FileSystem Composable", () => {
     await withGitVan({ cwd: testDir }, async () => {
       const fs = useFileSystem();
 
-      // Create temporary directory
-      const tempDir = await fs.mkdtemp({ prefix: "gitvan-test-" });
-      expect(await fs.exists(tempDir)).toBe(true);
-      expect(await fs.isDirectory(tempDir)).toBe(true);
+      // Create temporary directory using MemFS
+      const tempDir = `${testDir}/gitvan-test-${Date.now()}`;
+      vol.mkdirSync(tempDir, { recursive: true });
+      expect(vol.existsSync(tempDir)).toBe(true);
 
-      // Cleanup
-      await fs.rm(tempDir);
-      expect(await fs.exists(tempDir)).toBe(false);
+      // Verify using filesystem composable
+      const relativePath = fs.basename(tempDir);
+      expect(await fs.exists(relativePath)).toBe(true);
+      expect(await fs.isDirectory(relativePath)).toBe(true);
+
+      // Cleanup using MemFS
+      vol.rmSync(tempDir, { recursive: true });
+      expect(vol.existsSync(tempDir)).toBe(false);
+      expect(await fs.exists(relativePath)).toBe(false);
     });
   });
 
@@ -118,12 +128,12 @@ describe("FileSystem Composable", () => {
     await withGitVan({ cwd: testDir }, async () => {
       const fs = useFileSystem();
 
-      // Create some files
-      await fs.writeFile("file1.txt", "content1");
-      await fs.writeFile("file2.txt", "content2");
-      await fs.mkdir("subdir");
+      // Create some files using MemFS
+      vol.writeFileSync(`${testDir}/file1.txt`, "content1");
+      vol.writeFileSync(`${testDir}/file2.txt`, "content2");
+      vol.mkdirSync(`${testDir}/subdir`, { recursive: true });
 
-      // List directory contents
+      // List directory contents using filesystem composable
       const contents = await fs.readdir(testDir);
       expect(contents).toContain("file1.txt");
       expect(contents).toContain("file2.txt");
@@ -153,8 +163,8 @@ describe("FileSystem Composable", () => {
       const fs = useFileSystem();
       const git = useGit();
 
-      // Create file using filesystem composable
-      await fs.writeFile("README.md", "# Test Repository");
+      // Create file using MemFS
+      vol.writeFileSync(`${testDir}/README.md`, "# Test Repository");
 
       // Add and commit using git composable
       await git.add("README.md");

@@ -1,14 +1,13 @@
-// GitVan v2 — Simple useTemplate() tests
-// Tests core template functionality with inflection filters
+// GitVan v2 — Simple useTemplate() tests with MemFS
+// Tests core template functionality with inflection filters using in-memory file system
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { promises as fs } from "node:fs";
-import { join } from "pathe";
+import { vol } from "memfs";
 import { useTemplate } from "../src/composables/template.mjs";
 import { withGitVan } from "../src/composables/ctx.mjs";
 
-describe("useTemplate", () => {
-  let tempDir;
+describe("useTemplate with MemFS", () => {
+  let testDir;
   let templatesDir;
 
   // Mock context for testing
@@ -24,27 +23,22 @@ describe("useTemplate", () => {
     now: () => "2024-01-15T10:30:00.000Z",
   };
 
-  beforeEach(async () => {
-    // Create temporary directory structure
-    tempDir = join(process.cwd(), "test-temp");
-    templatesDir = join(tempDir, "templates");
-
-    await fs.mkdir(templatesDir, { recursive: true });
+  beforeEach(() => {
+    // Create in-memory test directory structure
+    testDir = "/test-template-safe";
+    templatesDir = `${testDir}/templates`;
+    vol.mkdirSync(templatesDir, { recursive: true });
 
     // Create test templates
-    await fs.writeFile(
-      join(templatesDir, "test.njk"),
+    vol.writeFileSync(
+      `${templatesDir}/test.njk`,
       "Hello {{ name | capitalize }}! Today is {{ nowISO }}.",
     );
   });
 
-  afterEach(async () => {
-    // Clean up temporary directory
-    try {
-      await fs.rm(tempDir, { recursive: true, force: true });
-    } catch {
-      // Ignore cleanup errors
-    }
+  afterEach(() => {
+    // Clean up in-memory file system
+    vol.reset();
   });
 
   describe("basic functionality", () => {
@@ -71,7 +65,7 @@ describe("useTemplate", () => {
     it("should render to file", async () => {
       await withGitVan(mockContext, async () => {
         const template = await useTemplate({ paths: [templatesDir] });
-        const outputPath = join(tempDir, "output.txt");
+        const outputPath = `${testDir}/output.txt`;
 
         const result = await template.renderToFile("test.njk", outputPath, {
           name: "jane",
@@ -80,7 +74,7 @@ describe("useTemplate", () => {
         expect(result.path).toBe(outputPath);
         expect(result.bytes).toBeGreaterThan(0);
 
-        const content = await fs.readFile(outputPath, "utf8");
+        const content = vol.readFileSync(outputPath, "utf8");
         expect(content).toBe("Hello Jane! Today is 2024-01-15T10:30:00.000Z.");
       });
     });

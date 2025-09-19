@@ -33,6 +33,86 @@ function toArr(input) {
 }
 
 /**
+ * Critical files that should never be deleted
+ */
+const CRITICAL_FILES = [
+  "package.json",
+  "package-production.json",
+  "pnpm-lock.yaml",
+  "package-lock.json",
+  "yarn.lock",
+  ".git",
+  ".gitignore",
+  "README.md",
+  "LICENSE",
+];
+
+/**
+ * Check if a path is critical and should not be deleted
+ * @param {string} targetPath - Path to check
+ * @param {string} cwd - Current working directory
+ * @returns {boolean} True if path is critical
+ */
+async function isCriticalFile(targetPath, cwd) {
+  const resolvedPath = path.isAbsolute(targetPath)
+    ? targetPath
+    : path.join(cwd, targetPath);
+  const relativePath = path.relative(cwd, resolvedPath);
+
+  // Check if it's a critical file
+  if (CRITICAL_FILES.includes(relativePath)) {
+    return true;
+  }
+
+  // Check if it's a critical directory
+  if (relativePath === ".git" || relativePath.startsWith(".git/")) {
+    return true;
+  }
+
+  // Check if it's in the root directory and matches critical patterns
+  if (!relativePath.includes("/") && CRITICAL_FILES.includes(relativePath)) {
+    return true;
+  }
+
+  // For directories, check if they contain critical files
+  try {
+    const stats = await fs.stat(resolvedPath);
+    if (stats.isDirectory()) {
+      // Check if any critical files exist in this directory
+      for (const criticalFile of CRITICAL_FILES) {
+        try {
+          await fs.access(path.join(resolvedPath, criticalFile));
+          return true; // Critical file exists in this directory
+        } catch {
+          // File doesn't exist, continue checking
+        }
+      }
+    }
+  } catch {
+    // Path doesn't exist or can't be accessed, not critical
+  }
+
+  return false;
+}
+
+/**
+ * Validate that a path is safe to delete
+ * @param {string} targetPath - Path to validate
+ * @param {string} cwd - Current working directory
+ * @throws {Error} If path is critical and should not be deleted
+ */
+async function validateSafeToDelete(targetPath, cwd) {
+  if (await isCriticalFile(targetPath, cwd)) {
+    throw new Error(
+      `CRITICAL: Attempted to delete critical file/directory: ${targetPath}. ` +
+        `This operation is blocked for safety. Critical files: ${CRITICAL_FILES.join(
+          ", "
+        )}`
+    );
+  }
+}
+
+/**
  * File System Operations Composable
  *
  * Provides file system operations within GitVan context with deterministic
@@ -98,9 +178,15 @@ export function useFileSystem() {
      * @param {Object} options - Options
      * @param {boolean} [options.recursive=false] - Remove recursively
      * @param {boolean} [options.force=false] - Force removal
+     * @param {boolean} [options.skipSafetyCheck=false] - Skip critical file safety check
      * @returns {Promise<void>}
      */
     async rmdir(dirPath, options = {}) {
+      // Safety check unless explicitly skipped
+      if (!options.skipSafetyCheck) {
+        await validateSafeToDelete(dirPath, base.cwd);
+      }
+
       const fullPath = path.isAbsolute(dirPath)
         ? dirPath
         : path.join(base.cwd, dirPath);
@@ -120,9 +206,15 @@ export function useFileSystem() {
      * @param {Object} options - Options
      * @param {boolean} [options.recursive=true] - Remove recursively
      * @param {boolean} [options.force=true] - Force removal
+     * @param {boolean} [options.skipSafetyCheck=false] - Skip critical file safety check
      * @returns {Promise<void>}
      */
     async rm(targetPath, options = {}) {
+      // Safety check unless explicitly skipped
+      if (!options.skipSafetyCheck) {
+        await validateSafeToDelete(targetPath, base.cwd);
+      }
+
       const fullPath = path.isAbsolute(targetPath)
         ? targetPath
         : path.join(base.cwd, targetPath);
@@ -183,9 +275,16 @@ export function useFileSystem() {
     /**
      * Remove file
      * @param {string} filePath - File path
+     * @param {Object} options - Options
+     * @param {boolean} [options.skipSafetyCheck=false] - Skip critical file safety check
      * @returns {Promise<void>}
      */
-    async unlink(filePath) {
+    async unlink(filePath, options = {}) {
+      // Safety check unless explicitly skipped
+      if (!options.skipSafetyCheck) {
+        await validateSafeToDelete(filePath, base.cwd);
+      }
+
       const fullPath = path.isAbsolute(filePath)
         ? filePath
         : path.join(base.cwd, filePath);
@@ -394,6 +493,7 @@ export function useFileSystem() {
      * @param {Object} options - Options
      * @param {boolean} [options.force=true] - Force cleanup
      * @param {boolean} [options.recursive=true] - Recursive cleanup
+     * @param {boolean} [options.skipSafetyCheck=false] - Skip critical file safety check
      * @returns {Promise<void>}
      */
     async cleanup(dirPath, options = {}) {
@@ -405,6 +505,7 @@ export function useFileSystem() {
         await this.rm(fullPath, {
           recursive: options.recursive !== false,
           force: options.force !== false,
+          skipSafetyCheck: options.skipSafetyCheck || false,
           ...options,
         });
       } catch (error) {

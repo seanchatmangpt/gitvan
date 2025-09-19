@@ -325,3 +325,4 @@ export default defineJob({
     return recommendations;
   },
 });
+

@@ -74,3 +74,4 @@ Organize your content in the `content/pages/` directory. Each markdown file beco
 ---
 
 *Ready to build something amazing? Start creating content!*
+

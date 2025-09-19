@@ -43,3 +43,4 @@ export function extractExcerpt(content: string, maxLength: number = 160): string
   
   return truncateText(plainText, maxLength)
 }
+

@@ -41,3 +41,4 @@ export function ContentRenderer({ content, frontmatter }: ContentRendererProps) 
     </article>
   )
 }
+

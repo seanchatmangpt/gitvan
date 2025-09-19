@@ -21,3 +21,4 @@ RUN pnpm install --no-frozen-lockfile
 WORKDIR /workspace
 
 # No entrypoint - allow direct command execution
+

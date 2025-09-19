@@ -317,3 +317,4 @@ export function ${name}({ children, className = '' }: ${name}Props) {
   )
 }`;
 }
+

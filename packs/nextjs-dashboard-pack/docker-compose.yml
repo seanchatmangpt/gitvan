@@ -28,3 +28,4 @@ services:
       - ./data:/usr/share/nginx/html:ro
     profiles:
       - data
+

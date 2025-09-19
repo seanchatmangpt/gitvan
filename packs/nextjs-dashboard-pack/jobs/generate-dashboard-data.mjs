@@ -285,3 +285,4 @@ function generateTimeSeriesData(days = 30) {
 
   return data;
 }
+

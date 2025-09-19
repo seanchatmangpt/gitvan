@@ -250,3 +250,4 @@ The JTBD hooks should leverage this two-layer architecture:
 3. **Workflow pipelines** for what to execute
 
 This creates a powerful, semantic-driven automation system that combines Git's event model with knowledge graph intelligence.
+

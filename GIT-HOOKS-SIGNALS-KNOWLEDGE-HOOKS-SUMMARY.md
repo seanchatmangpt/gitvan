@@ -196,3 +196,4 @@ The GitVan architecture brilliantly combines:
 - ✅ **Scalable architecture** for complex automation scenarios
 
 This two-layer approach enables sophisticated, semantic-driven automation that leverages both Git's event model and knowledge graph intelligence. The JTBD hooks can now be properly implemented using this architecture, with Git hooks providing the signals and Turtle knowledge hooks providing the SPARQL-based intelligence.
+

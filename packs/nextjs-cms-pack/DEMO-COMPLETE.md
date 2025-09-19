@@ -205,3 +205,4 @@ The Next.js CMS pack is now ready for use! You can:
 4. **Deploy to GitHub Pages** with automatic CI/CD
 
 This solution provides a complete static CMS that combines the simplicity of markdown with the power of React components, all automated through GitVan's job system and deployable to GitHub Pages.
+

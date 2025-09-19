@@ -696,3 +696,4 @@ echo "🌐 Access it at: http://localhost:9000"
 echo "📊 Dashboard page: http://localhost:9000/dashboard"
 echo ""
 echo "💡 To stop the dashboard, run: docker-compose down"
+

@@ -427,3 +427,4 @@ echo "   docker-compose --profile database up  # Include PostgreSQL"
 echo "   docker-compose --profile cache up     # Include Redis"
 echo ""
 echo "🎯 Ready to develop! Run 'docker-compose up' to start."
+

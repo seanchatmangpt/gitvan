@@ -261,3 +261,4 @@ export function DataTable({ data, columns, className = "" }: DataTableProps) {
     </motion.div>
   );
 }
+

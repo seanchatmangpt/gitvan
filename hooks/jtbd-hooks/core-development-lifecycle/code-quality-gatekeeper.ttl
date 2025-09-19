@@ -146,3 +146,4 @@ ex:update-dashboard rdf:type gv:TemplateStep ;
     """ ;
     gv:filePath "./dashboards/code-quality.md" ;
     gv:dependsOn ex:notify-team .
+

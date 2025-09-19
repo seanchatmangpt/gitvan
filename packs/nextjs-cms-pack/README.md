@@ -240,3 +240,4 @@ MIT License - see LICENSE file for details.
 ---
 
 *Built with ❤️ using Next.js and GitVan*
+

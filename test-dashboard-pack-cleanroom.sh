@@ -563,3 +563,4 @@ docker rm gitvan-cleanroom-dashboard 2>/dev/null || true
 rm -rf "$TEST_DIR"
 
 echo "✨ Cleanroom test complete!"
+

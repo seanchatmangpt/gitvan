@@ -266,3 +266,4 @@ class LocalDatabase {
 
 // Export singleton instance
 export const db = new LocalDatabase();
+

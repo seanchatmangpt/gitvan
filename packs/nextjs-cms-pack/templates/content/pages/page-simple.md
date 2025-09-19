@@ -49,3 +49,4 @@ function greet(name) {
 ---
 
 *Simple and clean content management.*
+

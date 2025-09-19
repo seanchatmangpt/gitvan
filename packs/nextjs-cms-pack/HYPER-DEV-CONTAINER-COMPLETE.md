@@ -188,3 +188,4 @@ The **hyper-advanced dev container** is now fully functional and provides:
 **🚀 Start developing: `docker-compose up`**
 
 The Next.js CMS development environment is **production-ready** and provides an exceptional developer experience!
+

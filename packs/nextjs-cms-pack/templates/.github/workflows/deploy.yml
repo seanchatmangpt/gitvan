@@ -38,3 +38,4 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./out
         cname: # Optional: add your custom domain here
+

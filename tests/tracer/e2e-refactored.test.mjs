@@ -218,8 +218,9 @@ export const job = {
         for (let i = 0; i < 30; i++) {
           expect(env.files.exists(`src/module${i}.js`)).toBe(true);
         }
-        // Note: Feature files might not exist in main branch after branch switching
-        // This is expected Git behavior for branch isolation
+        for (let i = 0; i < 8; i++) {
+          expect(env.files.exists(`src/feature${i}.js`)).toBe(true);
+        }
       }
     );
   });

@@ -76,8 +76,8 @@ describe("useGit Comprehensive Tests with Hybrid Test Environment", () => {
           expect(log[0].message).toContain("Add authentication module");
           expect(log[1].message).toContain("Initial commit");
 
-          // Note: Files might not exist in main branch after merge due to Git behavior
-          // This is expected for branch isolation in MemFS
+          // Verify file exists
+          expect(env.files.exists("src/auth.js")).toBe(true);
         }
       );
     });
@@ -118,8 +118,9 @@ describe("useGit Comprehensive Tests with Hybrid Test Environment", () => {
           expect(log[1].message).toContain("Add database module");
           expect(log[2].message).toContain("Initial commit");
 
-          // Note: Files might not exist in main branch after merge due to Git behavior
-          // This is expected for branch isolation in MemFS
+          // Verify files exist
+          expect(env.files.exists("src/database.js")).toBe(true);
+          expect(env.files.exists("src/api.js")).toBe(true);
         }
       );
     });
@@ -234,8 +235,8 @@ describe("useGit Comprehensive Tests with Hybrid Test Environment", () => {
           expect(log[0].message).toContain("Add authentication module");
           expect(log[1].message).toContain("Initial commit");
 
-          // Note: Files might not exist in main branch after merge due to Git behavior
-          // This is expected for branch isolation in MemFS
+          // Verify file exists
+          expect(env.files.exists("src/auth.js")).toBe(true);
         }
       );
     });
@@ -276,8 +277,9 @@ describe("useGit Comprehensive Tests with Hybrid Test Environment", () => {
           expect(log[1].message).toContain("Add database module");
           expect(log[2].message).toContain("Initial commit");
 
-          // Note: Files might not exist in main branch after merge due to Git behavior
-          // This is expected for branch isolation in MemFS
+          // Verify files exist
+          expect(env.files.exists("src/database.js")).toBe(true);
+          expect(env.files.exists("src/api.js")).toBe(true);
         }
       );
     });

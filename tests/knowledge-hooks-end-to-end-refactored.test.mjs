@@ -88,7 +88,7 @@ export const hook = {
         });
 
         expect(askResult).toBeDefined();
-        // Note: hooksEvaluated might be 0 if no hooks match the criteria
+        expect(askResult.hooksEvaluated).toBeGreaterThan(0);
         console.log(
           `✅ ASK predicate evaluation: ${askResult.hooksEvaluated} hooks evaluated`
         );
@@ -105,22 +105,19 @@ export const hook = {
         });
 
         expect(selectResult).toBeDefined();
-        // Note: hooksEvaluated might be 0 if no hooks match the criteria
+        expect(selectResult.hooksEvaluated).toBeGreaterThan(0);
         console.log(
           `✅ SELECTThreshold predicate evaluation: ${selectResult.hooksEvaluated} hooks evaluated`
         );
 
-        // Test Git integration - only commit if there are changes
-        const status = await env.gitStatus();
-        if (status && status !== "*added") {
-          await env.gitAdd(".");
-          await env.gitCommit("Add knowledge hooks test data");
+        // Test Git integration
+        await env.gitAdd(".");
+        await env.gitCommit("Add knowledge hooks test data");
 
-          // Verify commit
-          const log = await env.gitLog();
-          expect(log[0].message).toContain("Add knowledge hooks test data");
-          expect(log[1].message).toContain("Initial commit");
-        }
+        // Verify commit
+        const log = await env.gitLog();
+        expect(log[0].message).toContain("Add knowledge hooks test data");
+        expect(log[1].message).toContain("Initial commit");
       }
     );
   });
@@ -202,17 +199,14 @@ export const hook = {
         });
 
         expect(result).toBeDefined();
-        // Note: hooksEvaluated might be 0 if no hooks match the criteria
+        expect(result.hooksEvaluated).toBeGreaterThan(0);
         console.log(
           `✅ Complex scenario evaluation: ${result.hooksEvaluated} hooks evaluated`
         );
 
-        // Test Git workflow - only commit if there are changes
-        const status = await env.gitStatus();
-        if (status && status !== "*added") {
-          await env.gitAdd(".");
-          await env.gitCommit("Add complex knowledge hooks scenario");
-        }
+        // Test Git workflow
+        await env.gitAdd(".");
+        await env.gitCommit("Add complex knowledge hooks scenario");
 
         // Create feature branch
         await env.gitCheckoutBranch("feature/complex-hooks");
@@ -253,7 +247,10 @@ export const hook = {
         // Verify merge
         const log = await env.gitLog();
         expect(log[0].message).toContain("Add additional hook");
-        expect(log[1].message).toContain("Initial commit");
+        expect(log[1].message).toContain(
+          "Add complex knowledge hooks scenario"
+        );
+        expect(log[2].message).toContain("Initial commit");
       }
     );
   });
@@ -324,7 +321,7 @@ export const hook = {
         });
 
         expect(result).toBeDefined();
-        // Note: hooksEvaluated might be 0 if no hooks match the criteria
+        expect(result.hooksEvaluated).toBeGreaterThan(0);
 
         const duration = performance.now() - start;
         expect(duration).toBeLessThan(5000); // Should complete within 5 seconds
@@ -335,16 +332,13 @@ export const hook = {
           } hooks evaluated in ${duration.toFixed(2)}ms`
         );
 
-        // Test Git operations with many files - only commit if there are changes
-        const status = await env.gitStatus();
-        if (status && status !== "*added") {
-          await env.gitAdd(".");
-          await env.gitCommit("Add performance test hooks");
+        // Test Git operations with many files
+        await env.gitAdd(".");
+        await env.gitCommit("Add performance test hooks");
 
-          // Verify commit
-          const log = await env.gitLog();
-          expect(log[0].message).toContain("Add performance test hooks");
-        }
+        // Verify commit
+        const log = await env.gitLog();
+        expect(log[0].message).toContain("Add performance test hooks");
       }
     );
   });

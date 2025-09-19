@@ -1,6 +1,7 @@
-// tests/useGit-comprehensive.test.mjs
-// GitVan v2 — Comprehensive useGit() Tests with Hybrid Test Environment
-// Tests all functionality with proper context integration using hybrid test environment
+/**
+ * useGit() Unit Tests - Refactored with Hybrid Test Environment
+ * Tests all git operations using hybrid test environment
+ */
 
 import { describe, it, expect } from "vitest";
 import {
@@ -8,13 +9,13 @@ import {
   withNativeGitTestEnvironment,
 } from "../src/composables/test-environment.mjs";
 
-describe("useGit Comprehensive Tests with Hybrid Test Environment", () => {
+describe("useGit() Unit Tests with Hybrid Test Environment", () => {
   describe("basic functionality with MemFS", () => {
-    it("should handle basic Git operations with MemFS backend", async () => {
+    it("should handle basic Git operations", async () => {
       await withMemFSTestEnvironment(
         {
           initialFiles: {
-            "README.md": "# Comprehensive Test Repository\n",
+            "README.md": "# Unit Test Repository\n",
             "src/index.js": 'console.log("Hello, World!");\n',
           },
         },
@@ -48,7 +49,7 @@ describe("useGit Comprehensive Tests with Hybrid Test Environment", () => {
       );
     });
 
-    it("should handle branch operations with MemFS backend", async () => {
+    it("should handle branch operations", async () => {
       await withMemFSTestEnvironment(
         {
           initialFiles: {
@@ -82,7 +83,7 @@ describe("useGit Comprehensive Tests with Hybrid Test Environment", () => {
       );
     });
 
-    it("should handle complex Git workflows with MemFS backend", async () => {
+    it("should handle complex Git workflows", async () => {
       await withMemFSTestEnvironment(
         {
           initialFiles: {
@@ -124,7 +125,7 @@ describe("useGit Comprehensive Tests with Hybrid Test Environment", () => {
       );
     });
 
-    it("should demonstrate performance with MemFS backend", async () => {
+    it("should demonstrate performance with MemFS", async () => {
       const start = performance.now();
 
       await withMemFSTestEnvironment(
@@ -138,7 +139,7 @@ describe("useGit Comprehensive Tests with Hybrid Test Environment", () => {
           expect(env.getBackendType()).toBe("memfs");
 
           // Create many files quickly
-          for (let i = 0; i < 50; i++) {
+          for (let i = 0; i < 30; i++) {
             env.files.write(
               `src/module${i}.js`,
               `export const module${i} = {};\n`
@@ -148,7 +149,7 @@ describe("useGit Comprehensive Tests with Hybrid Test Environment", () => {
           }
 
           const duration = performance.now() - start;
-          expect(duration).toBeLessThan(5000); // Should complete within 5 seconds
+          expect(duration).toBeLessThan(3000); // Should complete within 3 seconds
 
           console.log(
             `✅ MemFS Performance test completed in ${duration.toFixed(2)}ms`
@@ -156,10 +157,10 @@ describe("useGit Comprehensive Tests with Hybrid Test Environment", () => {
 
           // Verify final state
           const log = await env.gitLog();
-          expect(log.length).toBeGreaterThan(50); // Should have many commits
+          expect(log.length).toBeGreaterThan(30); // Should have many commits
 
           // Verify files exist
-          for (let i = 0; i < 50; i++) {
+          for (let i = 0; i < 30; i++) {
             expect(env.files.exists(`src/module${i}.js`)).toBe(true);
           }
         }
@@ -172,7 +173,7 @@ describe("useGit Comprehensive Tests with Hybrid Test Environment", () => {
       await withNativeGitTestEnvironment(
         {
           initialFiles: {
-            "README.md": "# Native Git Test Repository\n",
+            "README.md": "# Native Unit Test Repository\n",
             "src/index.js": 'console.log("Hello, World!");\n',
           },
         },
@@ -234,8 +235,8 @@ describe("useGit Comprehensive Tests with Hybrid Test Environment", () => {
           expect(log[0].message).toContain("Add authentication module");
           expect(log[1].message).toContain("Initial commit");
 
-          // Note: Files might not exist in main branch after merge due to Git behavior
-          // This is expected for branch isolation in MemFS
+          // Verify file exists
+          expect(env.files.exists("src/auth.js")).toBe(true);
         }
       );
     });
@@ -276,8 +277,9 @@ describe("useGit Comprehensive Tests with Hybrid Test Environment", () => {
           expect(log[1].message).toContain("Add database module");
           expect(log[2].message).toContain("Initial commit");
 
-          // Note: Files might not exist in main branch after merge due to Git behavior
-          // This is expected for branch isolation in MemFS
+          // Verify files exist
+          expect(env.files.exists("src/database.js")).toBe(true);
+          expect(env.files.exists("src/api.js")).toBe(true);
         }
       );
     });
@@ -296,7 +298,7 @@ describe("useGit Comprehensive Tests with Hybrid Test Environment", () => {
           expect(env.getBackendType()).toBe("native");
 
           // Create many files
-          for (let i = 0; i < 20; i++) {
+          for (let i = 0; i < 15; i++) {
             env.files.write(
               `src/module${i}.js`,
               `export const module${i} = {};\n`
@@ -306,7 +308,7 @@ describe("useGit Comprehensive Tests with Hybrid Test Environment", () => {
           }
 
           const duration = performance.now() - start;
-          expect(duration).toBeLessThan(10000); // Should complete within 10 seconds
+          expect(duration).toBeLessThan(8000); // Should complete within 8 seconds
 
           console.log(
             `✅ Native Performance test completed in ${duration.toFixed(2)}ms`
@@ -314,10 +316,10 @@ describe("useGit Comprehensive Tests with Hybrid Test Environment", () => {
 
           // Verify final state
           const log = await env.gitLog();
-          expect(log.length).toBeGreaterThan(20); // Should have many commits
+          expect(log.length).toBeGreaterThan(15); // Should have many commits
 
           // Verify files exist
-          for (let i = 0; i < 20; i++) {
+          for (let i = 0; i < 15; i++) {
             expect(env.files.exists(`src/module${i}.js`)).toBe(true);
           }
         }

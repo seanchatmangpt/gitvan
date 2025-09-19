@@ -6,7 +6,10 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { withMemFSTestEnvironment, withNativeGitTestEnvironment } from "../src/composables/test-environment.mjs";
+import {
+  withMemFSTestEnvironment,
+  withNativeGitTestEnvironment,
+} from "../src/composables/test-environment.mjs";
 
 describe("Mock Strategies with Hybrid Test Environment", () => {
   describe("clean repository scenarios with MemFS", () => {
@@ -34,7 +37,7 @@ describe("Mock Strategies with Hybrid Test Environment", () => {
           expect(branch).toBe("master");
 
           // Verify no uncommitted changes
-          env.files.write("src/utils.js", 'export const utils = {};\n');
+          env.files.write("src/utils.js", "export const utils = {};\n");
           await env.gitAdd("src/utils.js");
           await env.gitCommit("Add utils module");
 
@@ -58,12 +61,15 @@ describe("Mock Strategies with Hybrid Test Environment", () => {
 
           // Create feature branch
           await env.gitCheckoutBranch("feature/new-feature");
-          env.files.write("src/feature.js", 'export const feature = {};\n');
+          env.files.write("src/feature.js", "export const feature = {};\n");
           await env.gitAdd("src/feature.js");
           await env.gitCommit("Add feature implementation");
 
           // Add uncommitted changes
-          env.files.write("src/additional.js", 'export const additional = {};\n');
+          env.files.write(
+            "src/additional.js",
+            "export const additional = {};\n"
+          );
 
           // Test dirty state
           const status = await env.gitStatus();
@@ -84,7 +90,7 @@ describe("Mock Strategies with Hybrid Test Environment", () => {
         {
           initialFiles: {
             "README.md": "# Merge Conflict Test\n",
-            "src/common.js": 'export const common = {};\n',
+            "src/common.js": "export const common = {};\n",
           },
         },
         async (env) => {
@@ -93,13 +99,19 @@ describe("Mock Strategies with Hybrid Test Environment", () => {
 
           // Create feature branch
           await env.gitCheckoutBranch("feature/conflict");
-          env.files.write("src/common.js", 'export const common = { modified: true };\n');
+          env.files.write(
+            "src/common.js",
+            "export const common = { modified: true };\n"
+          );
           await env.gitAdd("src/common.js");
           await env.gitCommit("Modify common in feature branch");
 
           // Switch back to main
           await env.gitCheckout("master");
-          env.files.write("src/common.js", 'export const common = { updated: true };\n');
+          env.files.write(
+            "src/common.js",
+            "export const common = { updated: true };\n"
+          );
           await env.gitAdd("src/common.js");
           await env.gitCommit("Modify common in main branch");
 
@@ -126,7 +138,8 @@ describe("Mock Strategies with Hybrid Test Environment", () => {
         {
           initialFiles: {
             "README.md": "# Multi-Branch Repository\n",
-            "package.json": '{"name": "multi-branch-project", "version": "1.0.0"}\n',
+            "package.json":
+              '{"name": "multi-branch-project", "version": "1.0.0"}\n',
           },
         },
         async (env) => {
@@ -135,17 +148,17 @@ describe("Mock Strategies with Hybrid Test Environment", () => {
 
           // Create multiple branches
           await env.gitCheckoutBranch("develop");
-          env.files.write("src/core.js", 'export const core = {};\n');
+          env.files.write("src/core.js", "export const core = {};\n");
           await env.gitAdd("src/core.js");
           await env.gitCommit("Add core module");
 
           await env.gitCheckoutBranch("feature/auth");
-          env.files.write("src/auth.js", 'export const auth = {};\n');
+          env.files.write("src/auth.js", "export const auth = {};\n");
           await env.gitAdd("src/auth.js");
           await env.gitCommit("Add authentication");
 
           await env.gitCheckoutBranch("feature/database");
-          env.files.write("src/database.js", 'export const db = {};\n');
+          env.files.write("src/database.js", "export const db = {};\n");
           await env.gitAdd("src/database.js");
           await env.gitCommit("Add database");
 
@@ -187,13 +200,16 @@ describe("Mock Strategies with Hybrid Test Environment", () => {
 
           // Create development branch
           await env.gitCheckoutBranch("develop");
-          env.files.write("src/feature.js", 'export const feature = {};\n');
+          env.files.write("src/feature.js", "export const feature = {};\n");
           await env.gitAdd("src/feature.js");
           await env.gitCommit("Add feature");
 
           // Create release branch
           await env.gitCheckoutBranch("release/v1.1.0");
-          env.files.write("CHANGELOG.md", "# Changelog\n\n## v1.1.0\n- Added feature\n");
+          env.files.write(
+            "CHANGELOG.md",
+            "# Changelog\n\n## v1.1.0\n- Added feature\n"
+          );
           await env.gitAdd("CHANGELOG.md");
           await env.gitCommit("Prepare release v1.1.0");
 
@@ -219,7 +235,7 @@ describe("Mock Strategies with Hybrid Test Environment", () => {
         {
           initialFiles: {
             "README.md": "# Hotfix Workflow Test\n",
-            "src/bug.js": 'export const bug = {};\n',
+            "src/bug.js": "export const bug = {};\n",
           },
         },
         async (env) => {
@@ -228,7 +244,10 @@ describe("Mock Strategies with Hybrid Test Environment", () => {
 
           // Create hotfix branch
           await env.gitCheckoutBranch("hotfix/critical-bug");
-          env.files.write("src/bug.js", 'export const bug = { fixed: true };\n');
+          env.files.write(
+            "src/bug.js",
+            "export const bug = { fixed: true };\n"
+          );
           await env.gitAdd("src/bug.js");
           await env.gitCommit("Fix critical bug");
 
@@ -265,7 +284,10 @@ describe("Mock Strategies with Hybrid Test Environment", () => {
 
           // Create many commits quickly
           for (let i = 0; i < 100; i++) {
-            env.files.write(`src/module${i}.js`, `export const module${i} = {};\n`);
+            env.files.write(
+              `src/module${i}.js`,
+              `export const module${i} = {};\n`
+            );
             await env.gitAdd(`src/module${i}.js`);
             await env.gitCommit(`Add module ${i}`);
           }
@@ -273,7 +295,9 @@ describe("Mock Strategies with Hybrid Test Environment", () => {
           const duration = performance.now() - start;
           expect(duration).toBeLessThan(5000); // Should complete within 5 seconds
 
-          console.log(`✅ MemFS Performance test completed in ${duration.toFixed(2)}ms`);
+          console.log(
+            `✅ MemFS Performance test completed in ${duration.toFixed(2)}ms`
+          );
 
           // Verify final state
           const log = await env.gitLog();
@@ -302,7 +326,10 @@ describe("Mock Strategies with Hybrid Test Environment", () => {
 
           // Create many commits
           for (let i = 0; i < 25; i++) {
-            env.files.write(`src/module${i}.js`, `export const module${i} = {};\n`);
+            env.files.write(
+              `src/module${i}.js`,
+              `export const module${i} = {};\n`
+            );
             await env.gitAdd(`src/module${i}.js`);
             await env.gitCommit(`Add module ${i}`);
           }
@@ -310,7 +337,9 @@ describe("Mock Strategies with Hybrid Test Environment", () => {
           const duration = performance.now() - start;
           expect(duration).toBeLessThan(10000); // Should complete within 10 seconds
 
-          console.log(`✅ Native Performance test completed in ${duration.toFixed(2)}ms`);
+          console.log(
+            `✅ Native Performance test completed in ${duration.toFixed(2)}ms`
+          );
 
           // Verify final state
           const log = await env.gitLog();

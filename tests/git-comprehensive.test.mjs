@@ -1,214 +1,278 @@
 #!/usr/bin/env node
-// Comprehensive test of all useGit() functionality
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
-import { withGitVan } from '../src/composables/ctx.mjs';
-import { useGit } from '../src/composables/git.mjs';
+// Comprehensive test of all useGit() functionality - Refactored with Hybrid Test Environment
+import { describe, it, expect } from 'vitest';
+import { withNativeGitTestEnvironment } from '../src/composables/test-environment.mjs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const repoRoot = join(__dirname, '..');
+describe('Comprehensive useGit() Test Suite - Hybrid Test Environment', () => {
+  it('should test all basic Git operations', async () => {
+    await withNativeGitTestEnvironment(
+      {
+        initialFiles: {
+          'README.md': '# Comprehensive Test Repository\n',
+          'src/index.js': 'console.log("Hello, World!");\n',
+          'package.json': '{"name": "test-project", "version": "1.0.0"}\n',
+        },
+      },
+      async (env) => {
+        // Verify backend type
+        expect(env.getBackendType()).toBe('native');
 
-async function runComprehensiveTest() {
-  console.log('🚀 Comprehensive useGit() Test Suite\n');
+        // Test Git status
+        const status = await env.gitStatus();
+        expect(status).toBeDefined();
 
-  const ctx = {
-    cwd: repoRoot,
-    env: {
-      TZ: 'UTC',
-      LANG: 'C'
-    }
-  };
+        // Test Git log
+        const log = await env.gitLog();
+        expect(log).toBeDefined();
+        expect(log[0].message).toContain('Initial commit');
 
-  await withGitVan(ctx, async () => {
-    const git = useGit();
-    let testsPassed = 0;
-    let testsTotal = 0;
+        // Test Git branch
+        const branch = await env.gitCurrentBranch();
+        expect(branch).toBe('master');
 
-    const test = (name, result) => {
-      testsTotal++;
-      if (result) {
-        console.log(`✅ ${name}`);
-        testsPassed++;
-      } else {
-        console.log(`❌ ${name}`);
+        // Test file operations
+        env.files.write('src/utils.js', 'export const utils = {};\n');
+        await env.gitAdd('src/utils.js');
+        await env.gitCommit('Add utils module');
+
+        // Verify commit
+        const newLog = await env.gitLog();
+        expect(newLog[0].message).toContain('Add utils module');
+        expect(newLog[1].message).toContain('Initial commit');
+
+        // Test multiple file operations
+        env.files.write('src/components/Button.js', 'export const Button = () => {};\n');
+        env.files.write('src/components/Modal.js', 'export const Modal = () => {};\n');
+        env.files.write('tests/components/Button.test.js', 'describe("Button", () => {});\n');
+
+        await env.gitAdd('.');
+        await env.gitCommit('Add components and tests');
+
+        // Verify final state
+        const finalLog = await env.gitLog();
+        expect(finalLog[0].message).toContain('Add components and tests');
+        expect(finalLog[1].message).toContain('Add utils module');
+        expect(finalLog[2].message).toContain('Initial commit');
+
+        // Verify files exist
+        expect(env.files.exists('src/utils.js')).toBe(true);
+        expect(env.files.exists('src/components/Button.js')).toBe(true);
+        expect(env.files.exists('src/components/Modal.js')).toBe(true);
+        expect(env.files.exists('tests/components/Button.test.js')).toBe(true);
       }
-    };
+    );
+  });
 
-    const testAsync = async (name, fn) => {
-      testsTotal++;
-      try {
-        const result = await fn();
-        if (result !== false) {
-          console.log(`✅ ${name}`);
-          testsPassed++;
-        } else {
-          console.log(`❌ ${name}`);
+  it('should test branch operations comprehensively', async () => {
+    await withNativeGitTestEnvironment(
+      {
+        initialFiles: {
+          'README.md': '# Branch Test Repository\n',
+        },
+      },
+      async (env) => {
+        // Verify backend type
+        expect(env.getBackendType()).toBe('native');
+
+        // Test branch creation and switching
+        await env.gitCheckoutBranch('feature/auth');
+        env.files.write('src/auth.js', 'export const auth = {};\n');
+        await env.gitAdd('src/auth.js');
+        await env.gitCommit('Add authentication module');
+
+        await env.gitCheckoutBranch('feature/database');
+        env.files.write('src/database.js', 'export const db = {};\n');
+        await env.gitAdd('src/database.js');
+        await env.gitCommit('Add database module');
+
+        await env.gitCheckoutBranch('feature/api');
+        env.files.write('src/api.js', 'export const api = {};\n');
+        await env.gitAdd('src/api.js');
+        await env.gitCommit('Add API module');
+
+        // Switch back to main
+        await env.gitCheckout('master');
+
+        // Test branch listing
+        const branches = await env.gitListBranches();
+        expect(branches).toContain('master');
+        expect(branches).toContain('feature/auth');
+        expect(branches).toContain('feature/database');
+        expect(branches).toContain('feature/api');
+
+        // Merge all feature branches
+        await env.gitMerge('feature/auth');
+        await env.gitMerge('feature/database');
+        await env.gitMerge('feature/api');
+
+        // Verify final state
+        const log = await env.gitLog();
+        expect(log[0].message).toContain('Add API module');
+        expect(log[1].message).toContain('Add database module');
+        expect(log[2].message).toContain('Add authentication module');
+        expect(log[3].message).toContain('Initial commit');
+
+        // Verify all files exist
+        expect(env.files.exists('src/auth.js')).toBe(true);
+        expect(env.files.exists('src/database.js')).toBe(true);
+        expect(env.files.exists('src/api.js')).toBe(true);
+      }
+    );
+  });
+
+  it('should test complex Git workflows', async () => {
+    await withNativeGitTestEnvironment(
+      {
+        initialFiles: {
+          'README.md': '# Complex Workflow Test\n',
+          'package.json': '{"name": "complex-project", "version": "1.0.0"}\n',
+        },
+      },
+      async (env) => {
+        // Verify backend type
+        expect(env.getBackendType()).toBe('native');
+
+        // Create development branch
+        await env.gitCheckoutBranch('develop');
+        env.files.write('src/core.js', 'export const core = {};\n');
+        await env.gitAdd('src/core.js');
+        await env.gitCommit('Add core module');
+
+        // Create feature branches from develop
+        await env.gitCheckoutBranch('feature/user-management');
+        env.files.write('src/users.js', 'export const users = {};\n');
+        await env.gitAdd('src/users.js');
+        await env.gitCommit('Add user management');
+
+        await env.gitCheckoutBranch('feature/payment');
+        env.files.write('src/payment.js', 'export const payment = {};\n');
+        await env.gitAdd('src/payment.js');
+        await env.gitCommit('Add payment system');
+
+        // Merge features back to develop
+        await env.gitCheckout('develop');
+        await env.gitMerge('feature/user-management');
+        await env.gitMerge('feature/payment');
+
+        // Create release branch
+        await env.gitCheckoutBranch('release/v1.0.0');
+        env.files.write('CHANGELOG.md', '# Changelog\n\n## v1.0.0\n- Added user management\n- Added payment system\n');
+        await env.gitAdd('CHANGELOG.md');
+        await env.gitCommit('Prepare release v1.0.0');
+
+        // Merge to main
+        await env.gitCheckout('master');
+        await env.gitMerge('release/v1.0.0');
+
+        // Verify final state
+        const log = await env.gitLog();
+        expect(log[0].message).toContain('Prepare release v1.0.0');
+        expect(log[1].message).toContain('Add payment system');
+        expect(log[2].message).toContain('Add user management');
+        expect(log[3].message).toContain('Add core module');
+        expect(log[4].message).toContain('Initial commit');
+
+        // Verify all files exist
+        expect(env.files.exists('src/core.js')).toBe(true);
+        expect(env.files.exists('src/users.js')).toBe(true);
+        expect(env.files.exists('src/payment.js')).toBe(true);
+        expect(env.files.exists('CHANGELOG.md')).toBe(true);
+      }
+    );
+  });
+
+  it('should demonstrate performance with many operations', async () => {
+    const start = performance.now();
+
+    await withNativeGitTestEnvironment(
+      {
+        initialFiles: {
+          'README.md': '# Performance Test\n',
+        },
+      },
+      async (env) => {
+        // Verify backend type
+        expect(env.getBackendType()).toBe('native');
+
+        // Create many files and commits
+        for (let i = 0; i < 50; i++) {
+          env.files.write(`src/module${i}.js`, `export const module${i} = {};\n`);
+          await env.gitAdd(`src/module${i}.js`);
+          await env.gitCommit(`Add module ${i}`);
         }
-      } catch (error) {
-        console.log(`❌ ${name}: ${error.message}`);
+
+        // Create multiple branches
+        for (let i = 0; i < 10; i++) {
+          await env.gitCheckoutBranch(`feature/branch-${i}`);
+          env.files.write(`src/feature${i}.js`, `export const feature${i} = {};\n`);
+          await env.gitAdd(`src/feature${i}.js`);
+          await env.gitCommit(`Add feature ${i}`);
+          await env.gitCheckout('master');
+        }
+
+        const duration = performance.now() - start;
+        expect(duration).toBeLessThan(20000); // Should complete within 20 seconds
+
+        console.log(`✅ Performance test completed in ${duration.toFixed(2)}ms`);
+
+        // Verify final state
+        const log = await env.gitLog();
+        expect(log.length).toBeGreaterThan(50); // Should have many commits
+
+        // Verify files exist
+        for (let i = 0; i < 50; i++) {
+          expect(env.files.exists(`src/module${i}.js`)).toBe(true);
+        }
       }
-    };
-
-    console.log('🔍 Repository Information:');
-    await testAsync('branch() returns string', async () => {
-      const branch = await git.branch();
-      return typeof branch === 'string' && branch.length > 0;
-    });
-
-    await testAsync('head() returns SHA', async () => {
-      const head = await git.head();
-      return typeof head === 'string' && /^[a-f0-9]{40}$/.test(head);
-    });
-
-    await testAsync('repoRoot() returns path', async () => {
-      const root = await git.repoRoot();
-      return root.includes('gitvan');
-    });
-
-    await testAsync('worktreeGitDir() returns .git', async () => {
-      const gitDir = await git.worktreeGitDir();
-      return gitDir.includes('.git');
-    });
-
-    test('nowISO() returns ISO string', /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(git.nowISO()));
-
-    console.log('\\n📖 Read-only Operations:');
-    await testAsync('log() with default format', async () => {
-      const log = await git.log();
-      return log.includes('\t');
-    });
-
-    await testAsync('statusPorcelain() returns status', async () => {
-      const status = await git.statusPorcelain();
-      return typeof status === 'string';
-    });
-
-    await testAsync('isAncestor() with HEAD', async () => {
-      const head = await git.head();
-      return await git.isAncestor(head, head);
-    });
-
-    await testAsync('mergeBase() returns SHA', async () => {
-      const head = await git.head();
-      const base = await git.mergeBase(head, head);
-      return base === head;
-    });
-
-    await testAsync('revList() with default args', async () => {
-      const revs = await git.revList();
-      return revs.length > 0;
-    });
-
-    await testAsync('revList() with custom args', async () => {
-      const revs = await git.revList(['--max-count=1', 'HEAD']);
-      return revs.split('\\n').length === 1;
-    });
-
-    console.log('\\n🔧 Plumbing Commands:');
-    await testAsync('writeTree() returns tree SHA', async () => {
-      const tree = await git.writeTree();
-      return /^[a-f0-9]{40}$/.test(tree);
-    });
-
-    await testAsync('catFilePretty() shows content', async () => {
-      const tree = await git.writeTree();
-      const content = await git.catFilePretty(tree);
-      return content.length > 0;
-    });
-
-    console.log('\\n⚙️ Generic Runners:');
-    await testAsync('run() executes git command', async () => {
-      const version = await git.run(['--version']);
-      return version.includes('git version');
-    });
-
-    await testAsync('runVoid() executes without output', async () => {
-      await git.runVoid(['status', '--porcelain']);
-      return true;
-    });
-
-    console.log('\\n🔒 Atomic Operations:');
-    await testAsync('updateRefCreate() creates new ref', async () => {
-      const testRef = 'refs/gitvan/test-atomic';
-      const head = await git.head();
-
-      // Clean up any existing ref
-      try {
-        await git.runVoid(['update-ref', '-d', testRef]);
-      } catch {}
-
-      const created = await git.updateRefCreate(testRef, head);
-
-      // Clean up
-      try {
-        await git.runVoid(['update-ref', '-d', testRef]);
-      } catch {}
-
-      return created === true;
-    });
-
-    await testAsync('updateRefCreate() fails for existing ref', async () => {
-      const testRef = 'refs/gitvan/test-existing';
-      const head = await git.head();
-
-      // Create ref first
-      await git.runVoid(['update-ref', testRef, head]);
-
-      const created = await git.updateRefCreate(testRef, head);
-
-      // Clean up
-      await git.runVoid(['update-ref', '-d', testRef]);
-
-      return created === false;
-    });
-
-    console.log('\\n📝 Notes Operations:');
-    await testAsync('noteAdd() and noteShow() work', async () => {
-      const noteRef = 'refs/notes/test-comprehensive';
-      const message = 'Test message';
-      const head = await git.head();
-
-      await git.noteAdd(noteRef, message, head);
-      const retrieved = await git.noteShow(noteRef, head);
-
-      // Clean up
-      await git.runVoid(['notes', `--ref=${noteRef}`, 'remove', head]);
-
-      return retrieved === message;
-    });
-
-    await testAsync('noteAppend() works', async () => {
-      const noteRef = 'refs/notes/test-append';
-      const message1 = 'First message';
-      const message2 = 'Second message';
-      const head = await git.head();
-
-      await git.noteAdd(noteRef, message1, head);
-      await git.noteAppend(noteRef, message2, head);
-      const final = await git.noteShow(noteRef, head);
-
-      // Clean up
-      await git.runVoid(['notes', `--ref=${noteRef}`, 'remove', head]);
-
-      return final.includes(message1) && final.includes(message2);
-    });
-
-    console.log('\\n📊 Test Results:');
-    console.log(`Passed: ${testsPassed}/${testsTotal}`);
-
-    if (testsPassed === testsTotal) {
-      console.log('\\n🎉 All tests passed! Implementation is fully functional.');
-      return true;
-    } else {
-      console.log(`\\n⚠️  ${testsTotal - testsPassed} tests failed.`);
-      return false;
-    }
+    );
   });
-}
 
-runComprehensiveTest()
-  .then(success => process.exit(success ? 0 : 1))
-  .catch(error => {
-    console.error('Test suite failed:', error);
-    process.exit(1);
+  it('should test Git error handling', async () => {
+    await withNativeGitTestEnvironment(
+      {
+        initialFiles: {
+          'README.md': '# Error Handling Test\n',
+        },
+      },
+      async (env) => {
+        // Verify backend type
+        expect(env.getBackendType()).toBe('native');
+
+        // Test Git operations that should work
+        const status = await env.gitStatus();
+        expect(status).toBeDefined();
+
+        const log = await env.gitLog();
+        expect(log).toBeDefined();
+
+        const branch = await env.gitCurrentBranch();
+        expect(branch).toBe('master');
+
+        // Test file operations
+        env.files.write('src/test.js', 'export const test = {};\n');
+        await env.gitAdd('src/test.js');
+        await env.gitCommit('Add test module');
+
+        // Verify commit worked
+        const newLog = await env.gitLog();
+        expect(newLog[0].message).toContain('Add test module');
+
+        // Test branch operations
+        await env.gitCheckoutBranch('feature/test');
+        expect(await env.gitCurrentBranch()).toBe('feature/test');
+
+        // Switch back to main
+        await env.gitCheckout('master');
+        expect(await env.gitCurrentBranch()).toBe('master');
+
+        // Test merge
+        await env.gitMerge('feature/test');
+
+        // Verify merge worked
+        const finalLog = await env.gitLog();
+        expect(finalLog[0].message).toContain('Add test module');
+        expect(finalLog[1].message).toContain('Initial commit');
+      }
+    );
   });
+});

@@ -177,8 +177,7 @@ describe("FileSystem Composable with Hybrid Test Environment", () => {
         // Verify all files exist
         expect(env.files.exists("src/index.js")).toBe(true);
         expect(env.files.exists("src/utils.js")).toBe(true);
-        // Note: cleanup.js might not exist in main branch after merge due to Git behavior
-        // This is expected for branch isolation
+        expect(env.files.exists("src/cleanup.js")).toBe(true);
       }
     );
   });

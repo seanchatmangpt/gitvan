@@ -99,6 +99,12 @@ GitVan is a Git-native development automation platform that uses Git as a runtim
 3. **Admit when things are untested**
 4. **Verify before claiming success**
 
+## Test Implementation Standards
+- **NEVER create simplified or mock versions of tests** - Always implement full functionality
+- **ALWAYS fix dependency issues properly** - Install missing packages, resolve conflicts
+- **NEVER skip complex functionality** - Implement complete features as specified
+- **ALWAYS resolve import/module issues** - Fix the root cause, don't work around it
+
 ## CRITICAL: Error Checking Protocol
 - **ALWAYS CHECK CONSOLE OUTPUT FOR ERRORS** before declaring success
 - **NEVER declare success if there are ANY error messages** (❌, ⚠️, Error:, Failed:, etc.)

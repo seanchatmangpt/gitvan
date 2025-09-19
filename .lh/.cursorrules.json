@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 3,
+            "activePatchIndex": 4,
             "patches": [
                 {
                     "date": 1758045807388,
@@ -20,6 +20,10 @@
                 {
                     "date": 1758231104748,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -64,8 +64,9 @@\n \n ## Package Management\n - **ALWAYS USE pnpm NOT npm** for package management\n - Install dependencies with `pnpm install`\n+- **NEVER manually edit package.json** - use `pnpm install <package-name>` to add dependencies\n - Run tests with `pnpm test`\n - Build with `pnpm run build`\n \n ## Import/Export Patterns\n"
+                },
+                {
+                    "date": 1758248327627,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -98,8 +98,14 @@\n 2. **Show actual test output**\n 3. **Admit when things are untested**\n 4. **Verify before claiming success**\n \n+## Test Implementation Standards\n+- **NEVER create simplified or mock versions of tests** - Always implement full functionality\n+- **ALWAYS fix dependency issues properly** - Install missing packages, resolve conflicts\n+- **NEVER skip complex functionality** - Implement complete features as specified\n+- **ALWAYS resolve import/module issues** - Fix the root cause, don't work around it\n+\n ## CRITICAL: Error Checking Protocol\n - **ALWAYS CHECK CONSOLE OUTPUT FOR ERRORS** before declaring success\n - **NEVER declare success if there are ANY error messages** (❌, ⚠️, Error:, Failed:, etc.)\n - **READ THE FULL OUTPUT** - don't just look for ✅ symbols\n"
                 }
             ],
             "date": 1758045807388,

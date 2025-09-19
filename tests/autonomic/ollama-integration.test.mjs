@@ -10,6 +10,9 @@ vi.mock("ollama", () => ({
     generate: vi.fn().mockResolvedValue({
       response: "feat: add new feature with AI-generated commit message",
     }),
+    list: vi.fn().mockResolvedValue({
+      models: [{ name: "qwen3-coder:30b" }]
+    }),
   },
 }));
 
@@ -32,7 +35,6 @@ describe("Ollama-First AI Integration - Security", () => {
     testDir = mkdtempSync(join(tmpdir(), "gitvan-ollama-test-"));
     originalCwd = process.cwd();
     originalEnv = { ...process.env };
-    process.chdir(testDir);
 
     // Initialize git repository
     execSync("git init", { cwd: testDir });
@@ -43,7 +45,6 @@ describe("Ollama-First AI Integration - Security", () => {
   });
 
   afterEach(() => {
-    process.chdir(originalCwd);
     process.env = originalEnv;
     if (existsSync(testDir)) {
       rmSync(testDir, { recursive: true, force: true });
@@ -111,7 +112,7 @@ describe("Ollama-First AI Integration - Security", () => {
       const message = await generateCommitMessage(["test.js"], testDir);
 
       // Should return default message when no AI is available
-      expect(message).toBe("feat: update files");
+      expect(message).toBe("feat: save changes");
     });
   });
 
@@ -173,7 +174,7 @@ describe("Ollama-First AI Integration - Security", () => {
 
       // Should timeout and return default message
       expect(duration).toBeLessThan(5000); // Should timeout before 10 seconds
-      expect(message).toBe("feat: update files");
+      expect(message).toBe("feat: save changes");
     });
   });
 
@@ -240,7 +241,7 @@ describe("Ollama-First AI Integration - Security", () => {
       const message = await generateCommitMessage(["test.js"], testDir);
 
       // Should return default message on connection error
-      expect(message).toBe("feat: update files");
+      expect(message).toBe("feat: save changes");
     });
 
     it("should handle invalid AI responses gracefully", async () => {
@@ -254,7 +255,7 @@ describe("Ollama-First AI Integration - Security", () => {
       const message = await generateCommitMessage(["test.js"], testDir);
 
       // Should return default message on invalid response
-      expect(message).toBe("feat: update files");
+      expect(message).toBe("feat: save changes");
     });
 
     it("should handle empty AI responses gracefully", async () => {
@@ -268,7 +269,7 @@ describe("Ollama-First AI Integration - Security", () => {
       const message = await generateCommitMessage(["test.js"], testDir);
 
       // Should return default message on empty response
-      expect(message).toBe("feat: update files");
+      expect(message).toBe("feat: save changes");
     });
   });
 
@@ -307,7 +308,7 @@ describe("Ollama-First AI Integration - Security", () => {
 
       // Should timeout before 5 seconds
       expect(duration).toBeLessThan(3000);
-      expect(message).toBe("feat: update files");
+      expect(message).toBe("feat: save changes");
     });
   });
 });

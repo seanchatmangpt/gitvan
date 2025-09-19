@@ -64,7 +64,7 @@ export const saveCommand = defineCommand({
 
       if (!commitMessage && !args["no-ai"]) {
         consola.start("Generating AI commit message...");
-        commitMessage = await generateCommitMessage(worktreePath);
+        commitMessage = await generateCommitMessage([], worktreePath);
         consola.success(`AI generated: "${commitMessage}"`);
       } else if (!commitMessage) {
         commitMessage = "feat: save changes";
@@ -90,7 +90,7 @@ export const saveCommand = defineCommand({
 /**
  * Generate AI commit message using Vercel AI or Ollama
  */
-async function generateCommitMessage(worktreePath) {
+export async function generateCommitMessage(filePaths, worktreePath) {
   try {
     // Get git diff for context
     const diffOutput = execSync("git diff --cached", {
@@ -159,6 +159,8 @@ Examples: feat: add user authentication, fix: resolve login bug, docs: update RE
  * Generate commit message using Ollama
  */
 async function generateWithOllama(diffOutput, statusOutput) {
+  const { default: ollama } = await import("ollama");
+  
   const prompt = `Generate a concise, conventional commit message for these changes:
 
 Files changed:
@@ -175,21 +177,19 @@ Response:`;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-  const response = await fetch("http://localhost:11434/api/generate", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
+  try {
+    const response = await ollama.generate({
       model: "qwen3-coder:30b",
       prompt,
       stream: false,
-    }),
-    signal: controller.signal,
-  });
-
-  clearTimeout(timeoutId);
-
-  const data = await response.json();
-  return data.response.trim();
+    });
+    
+    clearTimeout(timeoutId);
+    return response.response.trim();
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
+  }
 }
 
 /**
@@ -197,11 +197,9 @@ Response:`;
  */
 async function isOllamaAvailable() {
   try {
-    const response = await fetch("http://localhost:11434/api/tags", {
-      method: "GET",
-      signal: AbortSignal.timeout(1000),
-    });
-    return response.ok;
+    const { default: ollama } = await import("ollama");
+    await ollama.list();
+    return true;
   } catch {
     return false;
   }

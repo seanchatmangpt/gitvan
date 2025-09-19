@@ -9,8 +9,14 @@ import { join } from "node:path";
 export default defineJob({
   meta: {
     name: "infrastructure-devops-jtbd-hooks",
-    desc: "Infrastructure & DevOps JTBD Hooks - Comprehensive automation for infrastructure management",
-    tags: ["jtbd", "infrastructure", "devops", "comprehensive"],
+    desc: "Master orchestrator for Infrastructure & DevOps JTBD Hooks - Comprehensive automation for infrastructure management",
+    tags: [
+      "jtbd",
+      "infrastructure",
+      "devops",
+      "comprehensive",
+      "master-orchestrator",
+    ],
     version: "1.0.0",
   },
 

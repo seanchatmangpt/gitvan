@@ -1,4 +1,4 @@
-import { defineJob } from "../../../src/core/job.js";
+import { defineJob } from "../../../src/core/job-registry.mjs";
 import { execSync } from "node:child_process";
 import { writeFileSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -7,27 +7,34 @@ export default defineJob({
   meta: {
     name: "system-health-monitor",
     desc: "Monitors system health and detects system issues (JTBD #17)",
-    tags: ["git-hook", "timer-hourly", "post-merge", "health", "monitoring", "jtbd"],
+    tags: [
+      "git-hook",
+      "timer-hourly",
+      "post-merge",
+      "health",
+      "monitoring",
+      "jtbd",
+    ],
     version: "1.0.0",
   },
   hooks: ["timer-hourly", "post-merge"],
   async run(context) {
     const { hookName } = context;
     const timestamp = new Date().toISOString();
-    
+
     try {
       // Capture Git state
       const gitState = await this.captureGitState();
-      
+
       // System health monitoring
       const systemHealth = await this.monitorSystemHealth(gitState);
-      
+
       // Health metrics analysis
       const healthMetrics = await this.analyzeHealthMetrics(gitState);
-      
+
       // Health trend analysis
       const healthTrends = await this.analyzeHealthTrends(gitState);
-      
+
       // Generate health report
       const healthReport = {
         timestamp,
@@ -36,24 +43,37 @@ export default defineJob({
         systemHealth,
         healthMetrics,
         healthTrends,
-        recommendations: this.generateHealthRecommendations(systemHealth, healthMetrics, healthTrends),
-        summary: this.generateHealthSummary(systemHealth, healthMetrics, healthTrends),
+        recommendations: this.generateHealthRecommendations(
+          systemHealth,
+          healthMetrics,
+          healthTrends
+        ),
+        summary: this.generateHealthSummary(
+          systemHealth,
+          healthMetrics,
+          healthTrends
+        ),
       };
-      
+
       // Write report to disk
       await this.writeHealthReport(healthReport);
-      
+
       // Log results
-      console.log(`🏥 System Health Monitor (${hookName}): ${systemHealth.overallStatus}`);
+      console.log(
+        `🏥 System Health Monitor (${hookName}): ${systemHealth.overallStatus}`
+      );
       console.log(`💚 Health Score: ${healthMetrics.overallScore}/100`);
-      
+
       return {
         success: systemHealth.overallStatus === "HEALTHY",
         report: healthReport,
         message: `System health monitoring ${systemHealth.overallStatus.toLowerCase()}`,
       };
     } catch (error) {
-      console.error(`❌ System Health Monitor Error (${hookName}):`, error.message);
+      console.error(
+        `❌ System Health Monitor Error (${hookName}):`,
+        error.message
+      );
       return {
         success: false,
         error: error.message,
@@ -61,13 +81,17 @@ export default defineJob({
       };
     }
   },
-  
+
   async captureGitState() {
     const { execSync } = await import("node:child_process");
-    
+
     return {
-      branch: execSync("git branch --show-current", { encoding: "utf8" }).trim(),
-      stagedFiles: execSync("git diff --cached --name-only", { encoding: "utf8" })
+      branch: execSync("git branch --show-current", {
+        encoding: "utf8",
+      }).trim(),
+      stagedFiles: execSync("git diff --cached --name-only", {
+        encoding: "utf8",
+      })
         .trim()
         .split("\n")
         .filter(Boolean),
@@ -75,12 +99,16 @@ export default defineJob({
         .trim()
         .split("\n")
         .filter(Boolean),
-      lastCommit: execSync("git log -1 --pretty=format:%H", { encoding: "utf8" }).trim(),
-      commitMessage: execSync("git log -1 --pretty=format:%s", { encoding: "utf8" }).trim(),
+      lastCommit: execSync("git log -1 --pretty=format:%H", {
+        encoding: "utf8",
+      }).trim(),
+      commitMessage: execSync("git log -1 --pretty=format:%s", {
+        encoding: "utf8",
+      }).trim(),
       repositoryHealth: await this.checkRepositoryHealth(),
     };
   },
-  
+
   async monitorSystemHealth(gitState) {
     const health = {
       cpuHealth: await this.monitorCpuHealth(gitState),
@@ -89,16 +117,20 @@ export default defineJob({
       networkHealth: await this.monitorNetworkHealth(gitState),
       serviceHealth: await this.monitorServiceHealth(gitState),
     };
-    
-    const overallStatus = Object.values(health).every(h => h.status === "HEALTHY") ? "HEALTHY" : "DEGRADED";
-    
+
+    const overallStatus = Object.values(health).every(
+      (h) => h.status === "HEALTHY"
+    )
+      ? "HEALTHY"
+      : "DEGRADED";
+
     return {
       ...health,
       overallStatus,
       timestamp: new Date().toISOString(),
     };
   },
-  
+
   async analyzeHealthMetrics(gitState) {
     const metrics = {
       systemMetrics: await this.analyzeSystemMetrics(gitState),
@@ -107,17 +139,19 @@ export default defineJob({
       alertMetrics: await this.analyzeAlertMetrics(gitState),
       uptimeMetrics: await this.analyzeUptimeMetrics(gitState),
     };
-    
-    const scores = Object.values(metrics).map(m => m.score);
-    const overallScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
-    
+
+    const scores = Object.values(metrics).map((m) => m.score);
+    const overallScore = Math.round(
+      scores.reduce((a, b) => a + b, 0) / scores.length
+    );
+
     return {
       ...metrics,
       overallScore,
       timestamp: new Date().toISOString(),
     };
   },
-  
+
   async analyzeHealthTrends(gitState) {
     const trends = {
       cpuTrend: await this.analyzeCpuTrend(gitState),
@@ -126,22 +160,25 @@ export default defineJob({
       networkTrend: await this.analyzeNetworkTrend(gitState),
       serviceTrend: await this.analyzeServiceTrend(gitState),
     };
-    
+
     return {
       ...trends,
       timestamp: new Date().toISOString(),
     };
   },
-  
+
   async monitorCpuHealth(gitState) {
     const { execSync } = await import("node:child_process");
-    
+
     try {
       // Check for CPU-related files
-      const cpuFiles = gitState.stagedFiles.filter(f => 
-        f.includes("cpu") || f.includes("processor") || f.includes("performance")
+      const cpuFiles = gitState.stagedFiles.filter(
+        (f) =>
+          f.includes("cpu") ||
+          f.includes("processor") ||
+          f.includes("performance")
       );
-      
+
       if (cpuFiles.length === 0) {
         return {
           status: "HEALTHY",
@@ -151,14 +188,17 @@ export default defineJob({
           temperature: 65,
         };
       }
-      
+
       // Simulate CPU health monitoring
       const cpuUtilization = 75;
       const loadAverage = 2.5;
       const temperature = 80;
-      
-      const status = cpuUtilization < 80 && loadAverage < 3.0 && temperature < 85 ? "HEALTHY" : "DEGRADED";
-      
+
+      const status =
+        cpuUtilization < 80 && loadAverage < 3.0 && temperature < 85
+          ? "HEALTHY"
+          : "DEGRADED";
+
       return {
         status,
         message: `CPU health monitoring: ${status}`,
@@ -174,16 +214,16 @@ export default defineJob({
       };
     }
   },
-  
+
   async monitorMemoryHealth(gitState) {
     const { execSync } = await import("node:child_process");
-    
+
     try {
       // Check for memory-related files
-      const memoryFiles = gitState.stagedFiles.filter(f => 
-        f.includes("memory") || f.includes("ram") || f.includes("heap")
+      const memoryFiles = gitState.stagedFiles.filter(
+        (f) => f.includes("memory") || f.includes("ram") || f.includes("heap")
       );
-      
+
       if (memoryFiles.length === 0) {
         return {
           status: "HEALTHY",
@@ -193,14 +233,17 @@ export default defineJob({
           memoryLeaks: 0,
         };
       }
-      
+
       // Simulate memory health monitoring
       const memoryUtilization = 85;
       const swapUsage = 25;
       const memoryLeaks = 2;
-      
-      const status = memoryUtilization < 90 && swapUsage < 30 && memoryLeaks === 0 ? "HEALTHY" : "DEGRADED";
-      
+
+      const status =
+        memoryUtilization < 90 && swapUsage < 30 && memoryLeaks === 0
+          ? "HEALTHY"
+          : "DEGRADED";
+
       return {
         status,
         message: `Memory health monitoring: ${status}`,
@@ -216,16 +259,19 @@ export default defineJob({
       };
     }
   },
-  
+
   async monitorDiskHealth(gitState) {
     const { execSync } = await import("node:child_process");
-    
+
     try {
       // Check for disk-related files
-      const diskFiles = gitState.stagedFiles.filter(f => 
-        f.includes("disk") || f.includes("storage") || f.includes("filesystem")
+      const diskFiles = gitState.stagedFiles.filter(
+        (f) =>
+          f.includes("disk") ||
+          f.includes("storage") ||
+          f.includes("filesystem")
       );
-      
+
       if (diskFiles.length === 0) {
         return {
           status: "HEALTHY",
@@ -235,14 +281,15 @@ export default defineJob({
           freeSpace: 60,
         };
       }
-      
+
       // Simulate disk health monitoring
       const diskUtilization = 85;
       const diskHealth = "WARNING";
       const freeSpace = 15;
-      
-      const status = diskUtilization < 90 && freeSpace > 10 ? "HEALTHY" : "DEGRADED";
-      
+
+      const status =
+        diskUtilization < 90 && freeSpace > 10 ? "HEALTHY" : "DEGRADED";
+
       return {
         status,
         message: `Disk health monitoring: ${status}`,
@@ -258,16 +305,19 @@ export default defineJob({
       };
     }
   },
-  
+
   async monitorNetworkHealth(gitState) {
     const { execSync } = await import("node:child_process");
-    
+
     try {
       // Check for network-related files
-      const networkFiles = gitState.stagedFiles.filter(f => 
-        f.includes("network") || f.includes("connection") || f.includes("bandwidth")
+      const networkFiles = gitState.stagedFiles.filter(
+        (f) =>
+          f.includes("network") ||
+          f.includes("connection") ||
+          f.includes("bandwidth")
       );
-      
+
       if (networkFiles.length === 0) {
         return {
           status: "HEALTHY",
@@ -277,14 +327,17 @@ export default defineJob({
           bandwidthUtilization: 30,
         };
       }
-      
+
       // Simulate network health monitoring
       const networkLatency = 150;
       const packetLoss = 2;
       const bandwidthUtilization = 80;
-      
-      const status = networkLatency < 200 && packetLoss < 5 && bandwidthUtilization < 90 ? "HEALTHY" : "DEGRADED";
-      
+
+      const status =
+        networkLatency < 200 && packetLoss < 5 && bandwidthUtilization < 90
+          ? "HEALTHY"
+          : "DEGRADED";
+
       return {
         status,
         message: `Network health monitoring: ${status}`,
@@ -300,16 +353,17 @@ export default defineJob({
       };
     }
   },
-  
+
   async monitorServiceHealth(gitState) {
     const { execSync } = await import("node:child_process");
-    
+
     try {
       // Check for service-related files
-      const serviceFiles = gitState.stagedFiles.filter(f => 
-        f.includes("service") || f.includes("api") || f.includes("endpoint")
+      const serviceFiles = gitState.stagedFiles.filter(
+        (f) =>
+          f.includes("service") || f.includes("api") || f.includes("endpoint")
       );
-      
+
       if (serviceFiles.length === 0) {
         return {
           status: "HEALTHY",
@@ -319,14 +373,17 @@ export default defineJob({
           errorRate: 0.1,
         };
       }
-      
+
       // Simulate service health monitoring
       const serviceStatus = "RUNNING";
       const responseTime = 200;
       const errorRate = 0.5;
-      
-      const status = serviceStatus === "RUNNING" && responseTime < 300 && errorRate < 1.0 ? "HEALTHY" : "DEGRADED";
-      
+
+      const status =
+        serviceStatus === "RUNNING" && responseTime < 300 && errorRate < 1.0
+          ? "HEALTHY"
+          : "DEGRADED";
+
       return {
         status,
         message: `Service health monitoring: ${status}`,
@@ -342,7 +399,7 @@ export default defineJob({
       };
     }
   },
-  
+
   async analyzeSystemMetrics(gitState) {
     // Analyze system metrics
     const systemMetrics = {
@@ -351,9 +408,12 @@ export default defineJob({
       threadCount: 300,
       systemUptime: 99.9,
     };
-    
-    const score = systemMetrics.systemLoad < 3.0 && systemMetrics.systemUptime > 99.0 ? 90 : 70;
-    
+
+    const score =
+      systemMetrics.systemLoad < 3.0 && systemMetrics.systemUptime > 99.0
+        ? 90
+        : 70;
+
     return {
       score,
       status: score >= 80 ? "GOOD" : "NEEDS_ATTENTION",
@@ -361,7 +421,7 @@ export default defineJob({
       metrics: systemMetrics,
     };
   },
-  
+
   async analyzeResourceMetrics(gitState) {
     // Analyze resource metrics
     const resourceMetrics = {
@@ -370,9 +430,13 @@ export default defineJob({
       diskUtilization: 85,
       networkUtilization: 80,
     };
-    
-    const score = resourceMetrics.cpuUtilization < 80 && resourceMetrics.memoryUtilization < 90 ? 85 : 65;
-    
+
+    const score =
+      resourceMetrics.cpuUtilization < 80 &&
+      resourceMetrics.memoryUtilization < 90
+        ? 85
+        : 65;
+
     return {
       score,
       status: score >= 80 ? "GOOD" : "NEEDS_ATTENTION",
@@ -380,7 +444,7 @@ export default defineJob({
       metrics: resourceMetrics,
     };
   },
-  
+
   async analyzeServiceMetrics(gitState) {
     // Analyze service metrics
     const serviceMetrics = {
@@ -389,9 +453,12 @@ export default defineJob({
       errorRate: 0.5,
       throughput: 1200,
     };
-    
-    const score = serviceMetrics.serviceUptime > 99.0 && serviceMetrics.errorRate < 1.0 ? 88 : 68;
-    
+
+    const score =
+      serviceMetrics.serviceUptime > 99.0 && serviceMetrics.errorRate < 1.0
+        ? 88
+        : 68;
+
     return {
       score,
       status: score >= 80 ? "GOOD" : "NEEDS_ATTENTION",
@@ -399,7 +466,7 @@ export default defineJob({
       metrics: serviceMetrics,
     };
   },
-  
+
   async analyzeAlertMetrics(gitState) {
     // Analyze alert metrics
     const alertMetrics = {
@@ -408,9 +475,12 @@ export default defineJob({
       infoAlerts: 10,
       alertResponseTime: 5,
     };
-    
-    const score = alertMetrics.criticalAlerts === 0 && alertMetrics.alertResponseTime < 10 ? 92 : 72;
-    
+
+    const score =
+      alertMetrics.criticalAlerts === 0 && alertMetrics.alertResponseTime < 10
+        ? 92
+        : 72;
+
     return {
       score,
       status: score >= 80 ? "GOOD" : "NEEDS_ATTENTION",
@@ -418,7 +488,7 @@ export default defineJob({
       metrics: alertMetrics,
     };
   },
-  
+
   async analyzeUptimeMetrics(gitState) {
     // Analyze uptime metrics
     const uptimeMetrics = {
@@ -427,17 +497,24 @@ export default defineJob({
       databaseUptime: 99.8,
       networkUptime: 99.7,
     };
-    
-    const score = Math.round((uptimeMetrics.systemUptime + uptimeMetrics.serviceUptime + uptimeMetrics.databaseUptime + uptimeMetrics.networkUptime) / 4);
-    
+
+    const score = Math.round(
+      (uptimeMetrics.systemUptime +
+        uptimeMetrics.serviceUptime +
+        uptimeMetrics.databaseUptime +
+        uptimeMetrics.networkUptime) /
+        4
+    );
+
     return {
       score,
-      status: score >= 99 ? "EXCELLENT" : score >= 95 ? "GOOD" : "NEEDS_ATTENTION",
+      status:
+        score >= 99 ? "EXCELLENT" : score >= 95 ? "GOOD" : "NEEDS_ATTENTION",
       message: `Uptime metrics score: ${score}/100`,
       metrics: uptimeMetrics,
     };
   },
-  
+
   async analyzeCpuTrend(gitState) {
     // Analyze CPU trend
     const cpuTrend = {
@@ -446,7 +523,7 @@ export default defineJob({
       period: "24h",
       forecast: "stable",
     };
-    
+
     return {
       trend: cpuTrend.trend,
       change: cpuTrend.change,
@@ -455,7 +532,7 @@ export default defineJob({
       message: `CPU trend: ${cpuTrend.trend} by ${cpuTrend.change}% over ${cpuTrend.period}`,
     };
   },
-  
+
   async analyzeMemoryTrend(gitState) {
     // Analyze memory trend
     const memoryTrend = {
@@ -464,7 +541,7 @@ export default defineJob({
       period: "24h",
       forecast: "increasing",
     };
-    
+
     return {
       trend: memoryTrend.trend,
       change: memoryTrend.change,
@@ -473,7 +550,7 @@ export default defineJob({
       message: `Memory trend: ${memoryTrend.trend} by ${memoryTrend.change}% over ${memoryTrend.period}`,
     };
   },
-  
+
   async analyzeDiskTrend(gitState) {
     // Analyze disk trend
     const diskTrend = {
@@ -482,7 +559,7 @@ export default defineJob({
       period: "24h",
       forecast: "increasing",
     };
-    
+
     return {
       trend: diskTrend.trend,
       change: diskTrend.change,
@@ -491,7 +568,7 @@ export default defineJob({
       message: `Disk trend: ${diskTrend.trend} by ${diskTrend.change}% over ${diskTrend.period}`,
     };
   },
-  
+
   async analyzeNetworkTrend(gitState) {
     // Analyze network trend
     const networkTrend = {
@@ -500,7 +577,7 @@ export default defineJob({
       period: "24h",
       forecast: "stable",
     };
-    
+
     return {
       trend: networkTrend.trend,
       change: networkTrend.change,
@@ -509,7 +586,7 @@ export default defineJob({
       message: `Network trend: ${networkTrend.trend} by ${networkTrend.change}% over ${networkTrend.period}`,
     };
   },
-  
+
   async analyzeServiceTrend(gitState) {
     // Analyze service trend
     const serviceTrend = {
@@ -518,24 +595,30 @@ export default defineJob({
       period: "24h",
       forecast: "improving",
     };
-    
+
     return {
       trend: serviceTrend.trend,
       change: serviceTrend.change,
       period: serviceTrend.period,
       forecast: serviceTrend.forecast,
-      message: `Service trend: ${serviceTrend.trend} by ${Math.abs(serviceTrend.change)}% over ${serviceTrend.period}`,
+      message: `Service trend: ${serviceTrend.trend} by ${Math.abs(
+        serviceTrend.change
+      )}% over ${serviceTrend.period}`,
     };
   },
-  
+
   async checkRepositoryHealth() {
     const { execSync } = await import("node:child_process");
-    
+
     try {
       const status = execSync("git status --porcelain", { encoding: "utf8" });
-      const branch = execSync("git branch --show-current", { encoding: "utf8" }).trim();
-      const lastCommit = execSync("git log -1 --pretty=format:%H", { encoding: "utf8" }).trim();
-      
+      const branch = execSync("git branch --show-current", {
+        encoding: "utf8",
+      }).trim();
+      const lastCommit = execSync("git log -1 --pretty=format:%H", {
+        encoding: "utf8",
+      }).trim();
+
       return {
         status: "HEALTHY",
         branch,
@@ -551,64 +634,75 @@ export default defineJob({
       };
     }
   },
-  
+
   generateHealthRecommendations(systemHealth, healthMetrics, healthTrends) {
     const recommendations = [];
-    
+
     if (systemHealth.overallStatus === "DEGRADED") {
       recommendations.push("🏥 Address system health issues");
     }
-    
+
     if (healthMetrics.overallScore < 80) {
       recommendations.push("📊 Improve health metrics");
     }
-    
+
     if (systemHealth.cpuHealth.status === "DEGRADED") {
       recommendations.push("🖥️ Optimize CPU usage");
     }
-    
+
     if (systemHealth.memoryHealth.status === "DEGRADED") {
       recommendations.push("🧠 Optimize memory usage");
     }
-    
+
     if (systemHealth.diskHealth.status === "DEGRADED") {
       recommendations.push("💾 Free up disk space");
     }
-    
+
     if (systemHealth.networkHealth.status === "DEGRADED") {
       recommendations.push("🌐 Optimize network performance");
     }
-    
+
     if (systemHealth.serviceHealth.status === "DEGRADED") {
       recommendations.push("🔧 Fix service issues");
     }
-    
+
     return recommendations;
   },
-  
+
   generateHealthSummary(systemHealth, healthMetrics, healthTrends) {
     return {
       overallStatus: systemHealth.overallStatus,
       healthScore: healthMetrics.overallScore,
-      healthChecks: Object.keys(systemHealth).filter(k => k !== "overallStatus" && k !== "timestamp"),
-      metricsChecks: Object.keys(healthMetrics).filter(k => k !== "overallScore" && k !== "timestamp"),
-      trendChecks: Object.keys(healthTrends).filter(k => k !== "timestamp"),
+      healthChecks: Object.keys(systemHealth).filter(
+        (k) => k !== "overallStatus" && k !== "timestamp"
+      ),
+      metricsChecks: Object.keys(healthMetrics).filter(
+        (k) => k !== "overallScore" && k !== "timestamp"
+      ),
+      trendChecks: Object.keys(healthTrends).filter((k) => k !== "timestamp"),
       timestamp: new Date().toISOString(),
     };
   },
-  
+
   async writeHealthReport(report) {
     const { writeFileSync, mkdirSync } = await import("node:fs");
     const { join } = await import("node:path");
-    
-    const reportsDir = join(process.cwd(), "reports", "jtbd", "monitoring-observability");
+
+    const reportsDir = join(
+      process.cwd(),
+      "reports",
+      "jtbd",
+      "monitoring-observability"
+    );
     mkdirSync(reportsDir, { recursive: true });
-    
-    const filename = `system-health-monitor-${report.hookName}-${Date.now()}.json`;
+
+    const filename = `system-health-monitor-${
+      report.hookName
+    }-${Date.now()}.json`;
     const filepath = join(reportsDir, filename);
-    
+
     writeFileSync(filepath, JSON.stringify(report, null, 2));
-    
+
     console.log(`📄 Health report written to: ${filepath}`);
   },
 });

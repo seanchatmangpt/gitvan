@@ -6,6 +6,7 @@ import { promises as fs } from "node:fs";
 import { join } from "node:path";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
+import { useTemplate } from "../composables/template.mjs";
 
 const execAsync = promisify(exec);
 
@@ -218,53 +219,41 @@ export class StepRunner {
       throw new Error("Template step missing template configuration");
     }
 
+    // Use the proper template composable
+    const template = await useTemplate();
+
     // Get template content
     let templateContent = step.config.template;
 
     // If template is a file path, read it
     if (
       templateContent.startsWith("file://") ||
-      templateContent.includes("/")
+      (templateContent.includes("/") && !templateContent.includes("{{"))
     ) {
       const templatePath = templateContent.replace("file://", "");
       templateContent = await fs.readFile(templatePath, "utf8");
     }
 
-    // Simple template processing (replace variables)
-    let rendered = templateContent;
-
-    // Process filters first
-    for (const [key, value] of Object.entries(inputs)) {
-      // Handle length filter
-      if (rendered.includes(`{{ ${key} | length }}`)) {
-        const length = Array.isArray(value)
-          ? value.length
-          : typeof value === "object"
-          ? Object.keys(value).length
-          : String(value).length;
-        rendered = rendered.replace(`{{ ${key} | length }}`, String(length));
-      }
-
-      // Handle tojson filter
-      if (rendered.includes(`{{ ${key} | tojson }}`)) {
-        rendered = rendered.replace(
-          `{{ ${key} | tojson }}`,
-          JSON.stringify(value)
-        );
-      }
-
-      // Regular variable replacement (only if no filters were applied)
-      if (
-        rendered.includes(`{{ ${key} }}`) &&
-        !rendered.includes(`{{ ${key} |`)
-      ) {
-        rendered = rendered.replace(`{{ ${key} }}`, String(value));
-      }
-    }
+    // Render using proper template engine with all filters and control structures
+    const rendered = template.renderString(templateContent, inputs);
 
     // Write output if file path specified
     if (step.config.filePath) {
-      await fs.writeFile(step.config.filePath, rendered, "utf8");
+      // Resolve file path with template variables
+      let resolvedPath = step.config.filePath;
+      for (const [key, value] of Object.entries(inputs)) {
+        const placeholder = `{{${key}}}`;
+        if (resolvedPath.includes(placeholder)) {
+          resolvedPath = resolvedPath.replace(
+            new RegExp(placeholder, "g"),
+            String(value)
+          );
+        }
+      }
+
+      // Ensure directory exists
+      await fs.mkdir(join(resolvedPath, ".."), { recursive: true });
+      await fs.writeFile(resolvedPath, rendered, "utf8");
     }
 
     return {
@@ -313,7 +302,14 @@ export class StepRunner {
         };
 
       case "write":
-        const writeContent = step.config.content || "";
+        let writeContent = step.config.content || "";
+        // If content contains template variables, render it
+        if (writeContent.includes("{{")) {
+          const template = await useTemplate();
+          writeContent = template.renderString(writeContent, inputs);
+        }
+        // Ensure directory exists before writing
+        await fs.mkdir(join(resolvedPath, ".."), { recursive: true });
         await fs.writeFile(resolvedPath, writeContent, "utf8");
         return {
           operation: "write",
@@ -326,6 +322,8 @@ export class StepRunner {
         if (!sourcePath) {
           throw new Error("Copy operation missing sourcePath");
         }
+        // Ensure directory exists before copying
+        await fs.mkdir(join(resolvedPath, ".."), { recursive: true });
         await fs.copyFile(sourcePath, resolvedPath);
         return {
           operation: "copy",

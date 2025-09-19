@@ -15,6 +15,9 @@ describe("Knowledge Hooks End-to-End", () => {
 @prefix ex: <http://example.org/> .
 @prefix gv: <https://gitvan.dev/ontology#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix gh: <https://gitvan.dev/graph-hook#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix op: <https://gitvan.dev/ontology#> .
 
 ex:test-project rdf:type gv:Project ;
     gv:name "Test Project" ;
@@ -25,43 +28,43 @@ ex:test-component rdf:type gv:Component ;
     gv:name "Test Component" ;
     gv:complexity 7 ;
     gv:belongsTo ex:test-project .
-`,
-          "hooks/ask-predicate.mjs": `
-export const hook = {
-  name: "ask-predicate-test",
-  predicate: {
-    type: "ASK",
-    query: \`
-      ASK WHERE {
+
+ex:ask-predicate-hook rdf:type gh:Hook ;
+    dct:title "ASK Predicate Test Hook" ;
+    gh:hasPredicate ex:ask-predicate ;
+    gh:orderedPipelines ex:ask-pipeline .
+
+ex:ask-predicate rdf:type gh:ASKPredicate ;
+    gh:queryText """ASK WHERE {
         ?project rdf:type gv:Project .
         ?project gv:status "active" .
-      }
-    \`
-  },
-  action: {
-    type: "log",
-    message: "ASK predicate evaluated successfully"
-  }
-};
-`,
-          "hooks/select-threshold.mjs": `
-export const hook = {
-  name: "select-threshold-test",
-  predicate: {
-    type: "SELECTThreshold",
-    query: \`
-      SELECT ?component ?complexity WHERE {
+      }""" .
+
+ex:ask-pipeline rdf:type gh:Pipeline ;
+    op:steps ex:ask-step .
+
+ex:ask-step rdf:type gh:Step ;
+    gh:actionType "log" ;
+    gh:actionMessage "ASK predicate evaluated successfully" .
+
+ex:select-threshold-hook rdf:type gh:Hook ;
+    dct:title "SELECT Threshold Test Hook" ;
+    gh:hasPredicate ex:select-threshold ;
+    gh:orderedPipelines ex:select-pipeline .
+
+ex:select-threshold rdf:type gh:SELECTThresholdPredicate ;
+    gh:queryText """SELECT ?component ?complexity WHERE {
         ?component rdf:type gv:Component .
         ?component gv:complexity ?complexity .
-      }
-    \`,
-    threshold: 5
-  },
-  action: {
-    type: "log",
-    message: "SELECTThreshold predicate evaluated successfully"
-  }
-};
+      }""" ;
+    gh:threshold 5 .
+
+ex:select-pipeline rdf:type gh:Pipeline ;
+    op:steps ex:select-step .
+
+ex:select-step rdf:type gh:Step ;
+    gh:actionType "log" ;
+    gh:actionMessage "SELECTThreshold predicate evaluated successfully" .
 `,
         },
       },
@@ -71,7 +74,7 @@ export const hook = {
 
         // Initialize orchestrator
         const orchestrator = new HookOrchestrator({
-          graphDir: `${env.testDir}/hooks`,
+          graphDir: `${env.testDir}/graph`,
           context: { cwd: env.testDir },
           logger: console,
         });
@@ -133,6 +136,9 @@ export const hook = {
 @prefix ex: <http://example.org/> .
 @prefix gv: <https://gitvan.dev/ontology#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix gh: <https://gitvan.dev/graph-hook#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix op: <https://gitvan.dev/ontology#> .
 
 ex:project1 rdf:type gv:Project ;
     gv:name "Project 1" ;
@@ -153,29 +159,29 @@ ex:component2 rdf:type gv:Component ;
     gv:name "Component 2" ;
     gv:complexity 8 ;
     gv:belongsTo ex:project2 .
-`,
-          "hooks/complex-scenario.mjs": `
-export const hook = {
-  name: "complex-scenario-test",
-  predicate: {
-    type: "SELECTThreshold",
-    query: \`
-      SELECT ?project ?component ?complexity WHERE {
+
+ex:complex-scenario-hook rdf:type gh:Hook ;
+    dct:title "Complex Scenario Test Hook" ;
+    gh:hasPredicate ex:complex-scenario-predicate ;
+    gh:orderedPipelines ex:complex-scenario-pipeline .
+
+ex:complex-scenario-predicate rdf:type gh:SELECTThresholdPredicate ;
+    gh:queryText """SELECT ?project ?component ?complexity WHERE {
         ?project rdf:type gv:Project .
         ?project gv:status "active" .
         ?component rdf:type gv:Component .
         ?component gv:belongsTo ?project .
         ?component gv:complexity ?complexity .
         FILTER(?complexity > 5)
-      }
-    \`,
-    threshold: 1
-  },
-  action: {
-    type: "log",
-    message: "Complex scenario evaluated successfully"
-  }
-};
+      }""" ;
+    gh:threshold 1 .
+
+ex:complex-scenario-pipeline rdf:type gh:Pipeline ;
+    op:steps ex:complex-scenario-step .
+
+ex:complex-scenario-step rdf:type gh:Step ;
+    gh:actionType "log" ;
+    gh:actionMessage "Complex scenario evaluated successfully" .
 `,
         },
       },
@@ -185,7 +191,7 @@ export const hook = {
 
         // Initialize orchestrator
         const orchestrator = new HookOrchestrator({
-          graphDir: `${env.testDir}/hooks`,
+          graphDir: `${env.testDir}/graph`,
           context: { cwd: env.testDir },
           logger: console,
         });
@@ -217,32 +223,45 @@ export const hook = {
         // Create feature branch
         await env.gitCheckoutBranch("feature/complex-hooks");
 
-        // Add more files
+        // Add more RDF data instead of JavaScript hooks
         env.files.write(
-          "hooks/additional.mjs",
+          "graph/additional.ttl",
           `
-export const hook = {
-  name: "additional-test",
-  predicate: {
-    type: "ASK",
-    query: \`
-      ASK WHERE {
+@prefix ex: <http://example.org/> .
+@prefix gv: <https://gitvan.dev/ontology#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix gh: <https://gitvan.dev/graph-hook#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix op: <https://gitvan.dev/ontology#> .
+
+ex:project3 rdf:type gv:Project ;
+    gv:name "Project 3" ;
+    gv:version "3.0.0" ;
+    gv:status "active" .
+
+ex:additional-hook rdf:type gh:Hook ;
+    dct:title "Additional Test Hook" ;
+    gh:hasPredicate ex:additional-predicate ;
+    gh:orderedPipelines ex:additional-pipeline .
+
+ex:additional-predicate rdf:type gh:ASKPredicate ;
+    gh:queryText """ASK WHERE {
         ?project rdf:type gv:Project .
         ?project gv:version ?version .
         FILTER(?version > "1.0.0")
-      }
-    \`
-  },
-  action: {
-    type: "log",
-    message: "Additional hook evaluated successfully"
-  }
-};
+      }""" .
+
+ex:additional-pipeline rdf:type gh:Pipeline ;
+    op:steps ex:additional-step .
+
+ex:additional-step rdf:type gh:Step ;
+    gh:actionType "log" ;
+    gh:actionMessage "Additional hook evaluated successfully" .
 `
         );
 
-        await env.gitAdd("hooks/additional.mjs");
-        await env.gitCommit("Add additional hook");
+        await env.gitAdd("graph/additional.ttl");
+        await env.gitCommit("Add additional RDF data and hook");
 
         // Switch back to main
         await env.gitCheckout("master");
@@ -252,7 +271,7 @@ export const hook = {
 
         // Verify merge
         const log = await env.gitLog();
-        expect(log[0].message).toContain("Add additional hook");
+        expect(log[0].message).toContain("Add additional RDF data and hook");
         expect(log[1].message).toContain("Initial commit");
       }
     );
@@ -283,31 +302,44 @@ ex:perf-project rdf:type gv:Project ;
         // Create many hooks for performance testing
         for (let i = 0; i < 50; i++) {
           env.files.write(
-            `hooks/perf-hook-${i}.mjs`,
+            `graph/perf-hook-${i}.ttl`,
             `
-export const hook = {
-  name: "perf-hook-${i}",
-  predicate: {
-    type: "ASK",
-    query: \`
-      ASK WHERE {
+@prefix ex: <http://example.org/> .
+@prefix gv: <https://gitvan.dev/ontology#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix gh: <https://gitvan.dev/graph-hook#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix op: <https://gitvan.dev/ontology#> .
+
+ex:perf-project-${i} rdf:type gv:Project ;
+    gv:name "Performance Test Project ${i}" ;
+    gv:version "1.0.0" ;
+    gv:status "active" .
+
+ex:perf-hook-${i} rdf:type gh:Hook ;
+    dct:title "Performance Hook ${i}" ;
+    gh:hasPredicate ex:perf-predicate-${i} ;
+    gh:orderedPipelines ex:perf-pipeline-${i} .
+
+ex:perf-predicate-${i} rdf:type gh:ASKPredicate ;
+    gh:queryText """ASK WHERE {
         ?project rdf:type gv:Project .
-        ?project gv:name "Performance Test Project" .
-      }
-    \`
-  },
-  action: {
-    type: "log",
-    message: "Performance hook ${i} evaluated successfully"
-  }
-};
+        ?project gv:name "Performance Test Project ${i}" .
+      }""" .
+
+ex:perf-pipeline-${i} rdf:type gh:Pipeline ;
+    op:steps ex:perf-step-${i} .
+
+ex:perf-step-${i} rdf:type gh:Step ;
+    gh:actionType "log" ;
+    gh:actionMessage "Performance hook ${i} evaluated successfully" .
 `
           );
         }
 
         // Initialize orchestrator
         const orchestrator = new HookOrchestrator({
-          graphDir: `${env.testDir}/hooks`,
+          graphDir: `${env.testDir}/graph`,
           context: { cwd: env.testDir },
           logger: console,
         });

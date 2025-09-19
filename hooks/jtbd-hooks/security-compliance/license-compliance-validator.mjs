@@ -1,4 +1,4 @@
-import { defineJob } from "../../../src/core/job.js";
+import { defineJob } from "../../../src/core/job-registry.mjs";
 import { execSync } from "node:child_process";
 import { writeFileSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -7,24 +7,31 @@ export default defineJob({
   meta: {
     name: "license-compliance-validator",
     desc: "Validates license compliance and tracks open source dependencies (JTBD #12)",
-    tags: ["git-hook", "pre-commit", "post-merge", "license", "compliance", "jtbd"],
+    tags: [
+      "git-hook",
+      "pre-commit",
+      "post-merge",
+      "license",
+      "compliance",
+      "jtbd",
+    ],
     version: "1.0.0",
   },
   hooks: ["pre-commit", "post-merge"],
   async run(context) {
     const { hookName } = context;
     const timestamp = new Date().toISOString();
-    
+
     try {
       // Capture Git state
       const gitState = await this.captureGitState();
-      
+
       // License compliance validation
       const licenseValidation = await this.validateLicenseCompliance(gitState);
-      
+
       // Dependency license analysis
       const dependencyAnalysis = await this.analyzeDependencyLicenses(gitState);
-      
+
       // Generate license report
       const licenseReport = {
         timestamp,
@@ -32,24 +39,35 @@ export default defineJob({
         gitState,
         licenseValidation,
         dependencyAnalysis,
-        recommendations: this.generateLicenseRecommendations(licenseValidation, dependencyAnalysis),
-        summary: this.generateLicenseSummary(licenseValidation, dependencyAnalysis),
+        recommendations: this.generateLicenseRecommendations(
+          licenseValidation,
+          dependencyAnalysis
+        ),
+        summary: this.generateLicenseSummary(
+          licenseValidation,
+          dependencyAnalysis
+        ),
       };
-      
+
       // Write report to disk
       await this.writeLicenseReport(licenseReport);
-      
+
       // Log results
-      console.log(`📄 License Compliance Validator (${hookName}): ${licenseValidation.overallStatus}`);
+      console.log(
+        `📄 License Compliance Validator (${hookName}): ${licenseValidation.overallStatus}`
+      );
       console.log(`📊 License Score: ${licenseValidation.overallScore}/100`);
-      
+
       return {
         success: licenseValidation.overallStatus === "PASS",
         report: licenseReport,
         message: `License validation ${licenseValidation.overallStatus.toLowerCase()}`,
       };
     } catch (error) {
-      console.error(`❌ License Compliance Validator Error (${hookName}):`, error.message);
+      console.error(
+        `❌ License Compliance Validator Error (${hookName}):`,
+        error.message
+      );
       return {
         success: false,
         error: error.message,
@@ -57,13 +75,17 @@ export default defineJob({
       };
     }
   },
-  
+
   async captureGitState() {
     const { execSync } = await import("node:child_process");
-    
+
     return {
-      branch: execSync("git branch --show-current", { encoding: "utf8" }).trim(),
-      stagedFiles: execSync("git diff --cached --name-only", { encoding: "utf8" })
+      branch: execSync("git branch --show-current", {
+        encoding: "utf8",
+      }).trim(),
+      stagedFiles: execSync("git diff --cached --name-only", {
+        encoding: "utf8",
+      })
         .trim()
         .split("\n")
         .filter(Boolean),
@@ -71,25 +93,33 @@ export default defineJob({
         .trim()
         .split("\n")
         .filter(Boolean),
-      lastCommit: execSync("git log -1 --pretty=format:%H", { encoding: "utf8" }).trim(),
-      commitMessage: execSync("git log -1 --pretty=format:%s", { encoding: "utf8" }).trim(),
+      lastCommit: execSync("git log -1 --pretty=format:%H", {
+        encoding: "utf8",
+      }).trim(),
+      commitMessage: execSync("git log -1 --pretty=format:%s", {
+        encoding: "utf8",
+      }).trim(),
       repositoryHealth: await this.checkRepositoryHealth(),
     };
   },
-  
+
   async validateLicenseCompliance(gitState) {
     const validations = {
       projectLicense: await this.checkProjectLicense(gitState),
       dependencyLicenses: await this.checkDependencyLicenses(gitState),
       licenseCompatibility: await this.checkLicenseCompatibility(gitState),
       copyrightCompliance: await this.checkCopyrightCompliance(gitState),
-      attributionRequirements: await this.checkAttributionRequirements(gitState),
+      attributionRequirements: await this.checkAttributionRequirements(
+        gitState
+      ),
     };
-    
-    const scores = Object.values(validations).map(v => v.score);
-    const overallScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+
+    const scores = Object.values(validations).map((v) => v.score);
+    const overallScore = Math.round(
+      scores.reduce((a, b) => a + b, 0) / scores.length
+    );
     const overallStatus = overallScore >= 80 ? "PASS" : "FAIL";
-    
+
     return {
       ...validations,
       overallScore,
@@ -97,7 +127,7 @@ export default defineJob({
       timestamp: new Date().toISOString(),
     };
   },
-  
+
   async analyzeDependencyLicenses(gitState) {
     const analysis = {
       licenseDistribution: await this.getLicenseDistribution(gitState),
@@ -105,24 +135,26 @@ export default defineJob({
       complianceMatrix: await this.buildComplianceMatrix(gitState),
       recommendations: await this.generateDependencyRecommendations(gitState),
     };
-    
+
     return {
       ...analysis,
       timestamp: new Date().toISOString(),
     };
   },
-  
+
   async checkProjectLicense(gitState) {
     const { execSync } = await import("node:child_process");
-    
+
     try {
       // Check for LICENSE file
       const licenseFiles = ["LICENSE", "LICENSE.txt", "LICENSE.md", "COPYING"];
       let foundLicense = null;
-      
+
       for (const licenseFile of licenseFiles) {
         try {
-          const content = execSync(`git show HEAD:${licenseFile}`, { encoding: "utf8" });
+          const content = execSync(`git show HEAD:${licenseFile}`, {
+            encoding: "utf8",
+          });
           if (content.trim().length > 0) {
             foundLicense = licenseFile;
             break;
@@ -131,19 +163,21 @@ export default defineJob({
           // File doesn't exist
         }
       }
-      
+
       // Check package.json for license field
       let packageLicense = null;
       try {
-        const packageContent = execSync("git show HEAD:package.json", { encoding: "utf8" });
+        const packageContent = execSync("git show HEAD:package.json", {
+          encoding: "utf8",
+        });
         const packageJson = JSON.parse(packageContent);
         packageLicense = packageJson.license;
       } catch (error) {
         // package.json doesn't exist or is invalid
       }
-      
-      const score = foundLicense ? 90 : (packageLicense ? 70 : 30);
-      
+
+      const score = foundLicense ? 90 : packageLicense ? 70 : 30;
+
       return {
         score,
         status: score >= 80 ? "COMPLIANT" : "NEEDS_ATTENTION",
@@ -159,14 +193,16 @@ export default defineJob({
       };
     }
   },
-  
+
   async checkDependencyLicenses(gitState) {
     const { execSync } = await import("node:child_process");
-    
+
     try {
       // Check if package.json is modified
-      const packageFiles = gitState.stagedFiles.filter(f => f.includes("package.json"));
-      
+      const packageFiles = gitState.stagedFiles.filter((f) =>
+        f.includes("package.json")
+      );
+
       if (packageFiles.length === 0) {
         return {
           score: 85,
@@ -174,7 +210,7 @@ export default defineJob({
           message: "No dependency files modified",
         };
       }
-      
+
       // Analyze dependencies (simplified)
       const dependencyLicenses = {
         MIT: 0,
@@ -184,10 +220,10 @@ export default defineJob({
         Proprietary: 0,
         Unknown: 0,
       };
-      
+
       // This is a simplified check - in reality, you'd parse package.json and check each dependency
       const score = 80; // Assume good compliance for now
-      
+
       return {
         score,
         status: score >= 80 ? "COMPLIANT" : "NEEDS_ATTENTION",
@@ -202,16 +238,16 @@ export default defineJob({
       };
     }
   },
-  
+
   async checkLicenseCompatibility(gitState) {
     // Check for license compatibility issues
     const compatibilityIssues = [];
-    
+
     // This would check for incompatible license combinations
     // For example: GPL with proprietary licenses
-    
+
     const score = compatibilityIssues.length === 0 ? 95 : 60;
-    
+
     return {
       score,
       status: score >= 80 ? "COMPLIANT" : "NEEDS_ATTENTION",
@@ -219,15 +255,19 @@ export default defineJob({
       issues: compatibilityIssues,
     };
   },
-  
+
   async checkCopyrightCompliance(gitState) {
     // Check for proper copyright notices
-    const copyrightFiles = gitState.stagedFiles.filter(f => 
-      f.endsWith(".js") || f.endsWith(".ts") || f.endsWith(".py") || f.endsWith(".java")
+    const copyrightFiles = gitState.stagedFiles.filter(
+      (f) =>
+        f.endsWith(".js") ||
+        f.endsWith(".ts") ||
+        f.endsWith(".py") ||
+        f.endsWith(".java")
     );
-    
+
     let copyrightCompliant = 0;
-    
+
     for (const file of copyrightFiles) {
       try {
         const { execSync } = await import("node:child_process");
@@ -239,10 +279,12 @@ export default defineJob({
         // File might not be staged yet
       }
     }
-    
-    const score = copyrightFiles.length > 0 ? 
-      Math.round((copyrightCompliant / copyrightFiles.length) * 100) : 85;
-    
+
+    const score =
+      copyrightFiles.length > 0
+        ? Math.round((copyrightCompliant / copyrightFiles.length) * 100)
+        : 85;
+
     return {
       score,
       status: score >= 80 ? "COMPLIANT" : "NEEDS_ATTENTION",
@@ -251,15 +293,18 @@ export default defineJob({
       totalFiles: copyrightFiles.length,
     };
   },
-  
+
   async checkAttributionRequirements(gitState) {
     // Check for proper attribution requirements
-    const attributionFiles = gitState.stagedFiles.filter(f => 
-      f.includes("README") || f.includes("NOTICE") || f.includes("ATTRIBUTION")
+    const attributionFiles = gitState.stagedFiles.filter(
+      (f) =>
+        f.includes("README") ||
+        f.includes("NOTICE") ||
+        f.includes("ATTRIBUTION")
     );
-    
+
     const score = attributionFiles.length > 0 ? 90 : 70;
-    
+
     return {
       score,
       status: score >= 80 ? "COMPLIANT" : "NEEDS_ATTENTION",
@@ -267,7 +312,7 @@ export default defineJob({
       attributionFiles,
     };
   },
-  
+
   async getLicenseDistribution(gitState) {
     // Analyze license distribution across dependencies
     return {
@@ -278,7 +323,7 @@ export default defineJob({
       Other: 5,
     };
   },
-  
+
   async assessLicenseRisk(gitState) {
     // Assess risk level of licenses
     return {
@@ -288,7 +333,7 @@ export default defineJob({
       criticalRisk: 0,
     };
   },
-  
+
   async buildComplianceMatrix(gitState) {
     // Build compliance matrix for different license types
     return {
@@ -298,30 +343,36 @@ export default defineJob({
       patentUse: { allowed: 75, restricted: 25 },
     };
   },
-  
+
   async generateDependencyRecommendations(gitState) {
     const recommendations = [];
-    
+
     // Check for high-risk dependencies
-    const highRiskDeps = gitState.stagedFiles.filter(f => 
-      f.includes("package.json") && f.includes("gpl")
+    const highRiskDeps = gitState.stagedFiles.filter(
+      (f) => f.includes("package.json") && f.includes("gpl")
     );
-    
+
     if (highRiskDeps.length > 0) {
-      recommendations.push("⚠️ Review GPL dependencies for commercial use restrictions");
+      recommendations.push(
+        "⚠️ Review GPL dependencies for commercial use restrictions"
+      );
     }
-    
+
     return recommendations;
   },
-  
+
   async checkRepositoryHealth() {
     const { execSync } = await import("node:child_process");
-    
+
     try {
       const status = execSync("git status --porcelain", { encoding: "utf8" });
-      const branch = execSync("git branch --show-current", { encoding: "utf8" }).trim();
-      const lastCommit = execSync("git log -1 --pretty=format:%H", { encoding: "utf8" }).trim();
-      
+      const branch = execSync("git branch --show-current", {
+        encoding: "utf8",
+      }).trim();
+      const lastCommit = execSync("git log -1 --pretty=format:%H", {
+        encoding: "utf8",
+      }).trim();
+
       return {
         status: "HEALTHY",
         branch,
@@ -337,55 +388,69 @@ export default defineJob({
       };
     }
   },
-  
+
   generateLicenseRecommendations(licenseValidation, dependencyAnalysis) {
     const recommendations = [];
-    
+
     if (licenseValidation.overallStatus === "FAIL") {
-      recommendations.push("📄 Address license compliance issues before proceeding");
+      recommendations.push(
+        "📄 Address license compliance issues before proceeding"
+      );
     }
-    
+
     if (licenseValidation.projectLicense.score < 80) {
       recommendations.push("📋 Add proper LICENSE file to project");
     }
-    
+
     if (licenseValidation.dependencyLicenses.score < 80) {
       recommendations.push("📦 Review dependency licenses for compliance");
     }
-    
+
     if (licenseValidation.copyrightCompliance.score < 80) {
       recommendations.push("© Add copyright notices to source files");
     }
-    
+
     if (licenseValidation.attributionRequirements.score < 80) {
       recommendations.push("📝 Add proper attribution requirements");
     }
-    
+
     return recommendations;
   },
-  
+
   generateLicenseSummary(licenseValidation, dependencyAnalysis) {
     return {
       overallStatus: licenseValidation.overallStatus,
       overallScore: licenseValidation.overallScore,
-      licenseChecks: Object.keys(licenseValidation).filter(k => k !== "overallStatus" && k !== "overallScore" && k !== "timestamp"),
-      dependencyAnalysis: Object.keys(dependencyAnalysis).filter(k => k !== "timestamp"),
+      licenseChecks: Object.keys(licenseValidation).filter(
+        (k) =>
+          k !== "overallStatus" && k !== "overallScore" && k !== "timestamp"
+      ),
+      dependencyAnalysis: Object.keys(dependencyAnalysis).filter(
+        (k) => k !== "timestamp"
+      ),
       timestamp: new Date().toISOString(),
     };
   },
-  
+
   async writeLicenseReport(report) {
     const { writeFileSync, mkdirSync } = await import("node:fs");
     const { join } = await import("node:path");
-    
-    const reportsDir = join(process.cwd(), "reports", "jtbd", "security-compliance");
+
+    const reportsDir = join(
+      process.cwd(),
+      "reports",
+      "jtbd",
+      "security-compliance"
+    );
     mkdirSync(reportsDir, { recursive: true });
-    
-    const filename = `license-compliance-validator-${report.hookName}-${Date.now()}.json`;
+
+    const filename = `license-compliance-validator-${
+      report.hookName
+    }-${Date.now()}.json`;
     const filepath = join(reportsDir, filename);
-    
+
     writeFileSync(filepath, JSON.stringify(report, null, 2));
-    
+
     console.log(`📄 License report written to: ${filepath}`);
   },
 });

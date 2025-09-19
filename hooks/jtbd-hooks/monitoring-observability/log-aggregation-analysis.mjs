@@ -1,4 +1,4 @@
-import { defineJob } from "../../../src/core/job.js";
+import { defineJob } from "../../../src/core/job-registry.mjs";
 import { execSync } from "node:child_process";
 import { writeFileSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -7,27 +7,34 @@ export default defineJob({
   meta: {
     name: "log-aggregation-analysis",
     desc: "Aggregates and analyzes logs for insights and troubleshooting (JTBD #19)",
-    tags: ["git-hook", "post-merge", "timer-daily", "logging", "analysis", "jtbd"],
+    tags: [
+      "git-hook",
+      "post-merge",
+      "timer-daily",
+      "logging",
+      "analysis",
+      "jtbd",
+    ],
     version: "1.0.0",
   },
   hooks: ["post-merge", "timer-daily"],
   async run(context) {
     const { hookName } = context;
     const timestamp = new Date().toISOString();
-    
+
     try {
       // Capture Git state
       const gitState = await this.captureGitState();
-      
+
       // Log aggregation
       const logAggregation = await this.aggregateLogs(gitState);
-      
+
       // Log analysis
       const logAnalysis = await this.analyzeLogs(gitState);
-      
+
       // Log insights
       const logInsights = await this.generateLogInsights(gitState);
-      
+
       // Generate log report
       const logReport = {
         timestamp,
@@ -36,24 +43,37 @@ export default defineJob({
         logAggregation,
         logAnalysis,
         logInsights,
-        recommendations: this.generateLogRecommendations(logAggregation, logAnalysis, logInsights),
-        summary: this.generateLogSummary(logAggregation, logAnalysis, logInsights),
+        recommendations: this.generateLogRecommendations(
+          logAggregation,
+          logAnalysis,
+          logInsights
+        ),
+        summary: this.generateLogSummary(
+          logAggregation,
+          logAnalysis,
+          logInsights
+        ),
       };
-      
+
       // Write report to disk
       await this.writeLogReport(logReport);
-      
+
       // Log results
-      console.log(`📝 Log Aggregation & Analysis (${hookName}): ${logAggregation.overallStatus}`);
+      console.log(
+        `📝 Log Aggregation & Analysis (${hookName}): ${logAggregation.overallStatus}`
+      );
       console.log(`📊 Log Score: ${logAnalysis.overallScore}/100`);
-      
+
       return {
         success: logAggregation.overallStatus === "HEALTHY",
         report: logReport,
         message: `Log aggregation ${logAggregation.overallStatus.toLowerCase()}`,
       };
     } catch (error) {
-      console.error(`❌ Log Aggregation & Analysis Error (${hookName}):`, error.message);
+      console.error(
+        `❌ Log Aggregation & Analysis Error (${hookName}):`,
+        error.message
+      );
       return {
         success: false,
         error: error.message,
@@ -61,13 +81,17 @@ export default defineJob({
       };
     }
   },
-  
+
   async captureGitState() {
     const { execSync } = await import("node:child_process");
-    
+
     return {
-      branch: execSync("git branch --show-current", { encoding: "utf8" }).trim(),
-      stagedFiles: execSync("git diff --cached --name-only", { encoding: "utf8" })
+      branch: execSync("git branch --show-current", {
+        encoding: "utf8",
+      }).trim(),
+      stagedFiles: execSync("git diff --cached --name-only", {
+        encoding: "utf8",
+      })
         .trim()
         .split("\n")
         .filter(Boolean),
@@ -75,12 +99,16 @@ export default defineJob({
         .trim()
         .split("\n")
         .filter(Boolean),
-      lastCommit: execSync("git log -1 --pretty=format:%H", { encoding: "utf8" }).trim(),
-      commitMessage: execSync("git log -1 --pretty=format:%s", { encoding: "utf8" }).trim(),
+      lastCommit: execSync("git log -1 --pretty=format:%H", {
+        encoding: "utf8",
+      }).trim(),
+      commitMessage: execSync("git log -1 --pretty=format:%s", {
+        encoding: "utf8",
+      }).trim(),
       repositoryHealth: await this.checkRepositoryHealth(),
     };
   },
-  
+
   async aggregateLogs(gitState) {
     const aggregation = {
       logCollection: await this.collectLogs(gitState),
@@ -89,16 +117,20 @@ export default defineJob({
       logStorage: await this.storeLogs(gitState),
       logRetention: await this.manageLogRetention(gitState),
     };
-    
-    const overallStatus = Object.values(aggregation).every(a => a.status === "HEALTHY") ? "HEALTHY" : "DEGRADED";
-    
+
+    const overallStatus = Object.values(aggregation).every(
+      (a) => a.status === "HEALTHY"
+    )
+      ? "HEALTHY"
+      : "DEGRADED";
+
     return {
       ...aggregation,
       overallStatus,
       timestamp: new Date().toISOString(),
     };
   },
-  
+
   async analyzeLogs(gitState) {
     const analysis = {
       logPatterns: await this.analyzeLogPatterns(gitState),
@@ -107,17 +139,19 @@ export default defineJob({
       logMetrics: await this.analyzeLogMetrics(gitState),
       logTrends: await this.analyzeLogTrends(gitState),
     };
-    
-    const scores = Object.values(analysis).map(a => a.score);
-    const overallScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
-    
+
+    const scores = Object.values(analysis).map((a) => a.score);
+    const overallScore = Math.round(
+      scores.reduce((a, b) => a + b, 0) / scores.length
+    );
+
     return {
       ...analysis,
       overallScore,
       timestamp: new Date().toISOString(),
     };
   },
-  
+
   async generateLogInsights(gitState) {
     const insights = {
       performanceInsights: await this.generatePerformanceInsights(gitState),
@@ -126,22 +160,23 @@ export default defineJob({
       businessInsights: await this.generateBusinessInsights(gitState),
       predictiveInsights: await this.generatePredictiveInsights(gitState),
     };
-    
+
     return {
       ...insights,
       timestamp: new Date().toISOString(),
     };
   },
-  
+
   async collectLogs(gitState) {
     const { execSync } = await import("node:child_process");
-    
+
     try {
       // Check for log-related files
-      const logFiles = gitState.stagedFiles.filter(f => 
-        f.includes("log") || f.includes("logging") || f.includes("logger")
+      const logFiles = gitState.stagedFiles.filter(
+        (f) =>
+          f.includes("log") || f.includes("logging") || f.includes("logger")
       );
-      
+
       if (logFiles.length === 0) {
         return {
           status: "HEALTHY",
@@ -151,14 +186,14 @@ export default defineJob({
           collectionRate: 95,
         };
       }
-      
+
       // Simulate log collection
       const logVolume = 1500;
       const logSources = 8;
       const collectionRate = 98;
-      
+
       const status = collectionRate > 95 ? "HEALTHY" : "DEGRADED";
-      
+
       return {
         status,
         message: `Log collection: ${status}`,
@@ -174,16 +209,17 @@ export default defineJob({
       };
     }
   },
-  
+
   async parseLogs(gitState) {
     const { execSync } = await import("node:child_process");
-    
+
     try {
       // Check for log parsing files
-      const parseFiles = gitState.stagedFiles.filter(f => 
-        f.includes("parse") || f.includes("parser") || f.includes("format")
+      const parseFiles = gitState.stagedFiles.filter(
+        (f) =>
+          f.includes("parse") || f.includes("parser") || f.includes("format")
       );
-      
+
       if (parseFiles.length === 0) {
         return {
           status: "HEALTHY",
@@ -193,14 +229,14 @@ export default defineJob({
           parseTime: 50,
         };
       }
-      
+
       // Simulate log parsing
       const parseSuccess = 99;
       const parseErrors = 1;
       const parseTime = 45;
-      
+
       const status = parseSuccess > 95 ? "HEALTHY" : "DEGRADED";
-      
+
       return {
         status,
         message: `Log parsing: ${status}`,
@@ -216,16 +252,17 @@ export default defineJob({
       };
     }
   },
-  
+
   async indexLogs(gitState) {
     const { execSync } = await import("node:child_process");
-    
+
     try {
       // Check for log indexing files
-      const indexFiles = gitState.stagedFiles.filter(f => 
-        f.includes("index") || f.includes("search") || f.includes("elastic")
+      const indexFiles = gitState.stagedFiles.filter(
+        (f) =>
+          f.includes("index") || f.includes("search") || f.includes("elastic")
       );
-      
+
       if (indexFiles.length === 0) {
         return {
           status: "HEALTHY",
@@ -235,14 +272,14 @@ export default defineJob({
           searchLatency: 100,
         };
       }
-      
+
       // Simulate log indexing
       const indexSize = 750;
       const indexTime = 35;
       const searchLatency = 80;
-      
+
       const status = searchLatency < 150 ? "HEALTHY" : "DEGRADED";
-      
+
       return {
         status,
         message: `Log indexing: ${status}`,
@@ -258,16 +295,19 @@ export default defineJob({
       };
     }
   },
-  
+
   async storeLogs(gitState) {
     const { execSync } = await import("node:child_process");
-    
+
     try {
       // Check for log storage files
-      const storageFiles = gitState.stagedFiles.filter(f => 
-        f.includes("storage") || f.includes("database") || f.includes("archive")
+      const storageFiles = gitState.stagedFiles.filter(
+        (f) =>
+          f.includes("storage") ||
+          f.includes("database") ||
+          f.includes("archive")
       );
-      
+
       if (storageFiles.length === 0) {
         return {
           status: "HEALTHY",
@@ -277,14 +317,14 @@ export default defineJob({
           compressionRatio: 3.5,
         };
       }
-      
+
       // Simulate log storage
       const storageSize = 1200;
       const storageUtilization = 75;
       const compressionRatio = 4.0;
-      
+
       const status = storageUtilization < 80 ? "HEALTHY" : "DEGRADED";
-      
+
       return {
         status,
         message: `Log storage: ${status}`,
@@ -300,16 +340,19 @@ export default defineJob({
       };
     }
   },
-  
+
   async manageLogRetention(gitState) {
     const { execSync } = await import("node:child_process");
-    
+
     try {
       // Check for log retention files
-      const retentionFiles = gitState.stagedFiles.filter(f => 
-        f.includes("retention") || f.includes("expire") || f.includes("cleanup")
+      const retentionFiles = gitState.stagedFiles.filter(
+        (f) =>
+          f.includes("retention") ||
+          f.includes("expire") ||
+          f.includes("cleanup")
       );
-      
+
       if (retentionFiles.length === 0) {
         return {
           status: "HEALTHY",
@@ -319,14 +362,14 @@ export default defineJob({
           archivedLogs: 500,
         };
       }
-      
+
       // Simulate log retention management
       const retentionPeriod = 45;
       const cleanupSuccess = 98;
       const archivedLogs = 750;
-      
+
       const status = cleanupSuccess > 90 ? "HEALTHY" : "DEGRADED";
-      
+
       return {
         status,
         message: `Log retention: ${status}`,
@@ -342,7 +385,7 @@ export default defineJob({
       };
     }
   },
-  
+
   async analyzeLogPatterns(gitState) {
     // Analyze log patterns
     const logPatterns = {
@@ -351,9 +394,9 @@ export default defineJob({
       patternFrequency: 85,
       patternTrend: "stable",
     };
-    
+
     const score = logPatterns.patternFrequency > 80 ? 88 : 68;
-    
+
     return {
       score,
       status: score >= 80 ? "GOOD" : "NEEDS_ATTENTION",
@@ -361,7 +404,7 @@ export default defineJob({
       patterns: logPatterns,
     };
   },
-  
+
   async detectLogAnomalies(gitState) {
     // Detect log anomalies
     const logAnomalies = {
@@ -370,9 +413,9 @@ export default defineJob({
       anomalyAccuracy: 90,
       anomalyTrend: "decreasing",
     };
-    
+
     const score = logAnomalies.anomalyAccuracy > 85 ? 92 : 72;
-    
+
     return {
       score,
       status: score >= 80 ? "GOOD" : "NEEDS_ATTENTION",
@@ -380,7 +423,7 @@ export default defineJob({
       anomalies: logAnomalies,
     };
   },
-  
+
   async correlateLogs(gitState) {
     // Correlate logs
     const logCorrelations = {
@@ -389,9 +432,9 @@ export default defineJob({
       correlationAccuracy: 88,
       correlationTrend: "improving",
     };
-    
+
     const score = logCorrelations.correlationAccuracy > 80 ? 90 : 70;
-    
+
     return {
       score,
       status: score >= 80 ? "GOOD" : "NEEDS_ATTENTION",
@@ -399,7 +442,7 @@ export default defineJob({
       correlations: logCorrelations,
     };
   },
-  
+
   async analyzeLogMetrics(gitState) {
     // Analyze log metrics
     const logMetrics = {
@@ -408,9 +451,9 @@ export default defineJob({
       logVariety: 8,
       logVeracity: 95,
     };
-    
+
     const score = logMetrics.logVeracity > 90 ? 87 : 67;
-    
+
     return {
       score,
       status: score >= 80 ? "GOOD" : "NEEDS_ATTENTION",
@@ -418,7 +461,7 @@ export default defineJob({
       metrics: logMetrics,
     };
   },
-  
+
   async analyzeLogTrends(gitState) {
     // Analyze log trends
     const logTrends = {
@@ -427,9 +470,9 @@ export default defineJob({
       performanceTrend: "stable",
       securityTrend: "improving",
     };
-    
+
     const score = 85; // Assume good trend analysis
-    
+
     return {
       score,
       status: score >= 80 ? "GOOD" : "NEEDS_ATTENTION",
@@ -437,7 +480,7 @@ export default defineJob({
       trends: logTrends,
     };
   },
-  
+
   async generatePerformanceInsights(gitState) {
     // Generate performance insights
     const performanceInsights = {
@@ -446,13 +489,13 @@ export default defineJob({
       optimizationOpportunities: 8,
       performanceTrend: "improving",
     };
-    
+
     return {
       insights: performanceInsights,
       message: "Performance insights generated successfully",
     };
   },
-  
+
   async generateSecurityInsights(gitState) {
     // Generate security insights
     const securityInsights = {
@@ -461,13 +504,13 @@ export default defineJob({
       securityTrends: 3,
       securityTrend: "stable",
     };
-    
+
     return {
       insights: securityInsights,
       message: "Security insights generated successfully",
     };
   },
-  
+
   async generateOperationalInsights(gitState) {
     // Generate operational insights
     const operationalInsights = {
@@ -476,13 +519,13 @@ export default defineJob({
       operationalTrends: 6,
       operationalTrend: "stable",
     };
-    
+
     return {
       insights: operationalInsights,
       message: "Operational insights generated successfully",
     };
   },
-  
+
   async generateBusinessInsights(gitState) {
     // Generate business insights
     const businessInsights = {
@@ -491,13 +534,13 @@ export default defineJob({
       businessTrends: 5,
       businessTrend: "increasing",
     };
-    
+
     return {
       insights: businessInsights,
       message: "Business insights generated successfully",
     };
   },
-  
+
   async generatePredictiveInsights(gitState) {
     // Generate predictive insights
     const predictiveInsights = {
@@ -506,21 +549,25 @@ export default defineJob({
       forecastHorizon: 7,
       predictionTrend: "improving",
     };
-    
+
     return {
       insights: predictiveInsights,
       message: "Predictive insights generated successfully",
     };
   },
-  
+
   async checkRepositoryHealth() {
     const { execSync } = await import("node:child_process");
-    
+
     try {
       const status = execSync("git status --porcelain", { encoding: "utf8" });
-      const branch = execSync("git branch --show-current", { encoding: "utf8" }).trim();
-      const lastCommit = execSync("git log -1 --pretty=format:%H", { encoding: "utf8" }).trim();
-      
+      const branch = execSync("git branch --show-current", {
+        encoding: "utf8",
+      }).trim();
+      const lastCommit = execSync("git log -1 --pretty=format:%H", {
+        encoding: "utf8",
+      }).trim();
+
       return {
         status: "HEALTHY",
         branch,
@@ -536,60 +583,71 @@ export default defineJob({
       };
     }
   },
-  
+
   generateLogRecommendations(logAggregation, logAnalysis, logInsights) {
     const recommendations = [];
-    
+
     if (logAggregation.overallStatus === "DEGRADED") {
       recommendations.push("📝 Address log aggregation issues");
     }
-    
+
     if (logAnalysis.overallScore < 80) {
       recommendations.push("📊 Improve log analysis");
     }
-    
+
     if (logAggregation.logCollection.collectionRate < 95) {
       recommendations.push("📥 Improve log collection rate");
     }
-    
+
     if (logAggregation.logParsing.parseSuccess < 95) {
       recommendations.push("🔍 Fix log parsing issues");
     }
-    
+
     if (logAggregation.logStorage.storageUtilization > 80) {
       recommendations.push("💾 Optimize log storage utilization");
     }
-    
+
     if (logAnalysis.logAnomalies.anomaliesDetected > 5) {
       recommendations.push("🚨 Investigate log anomalies");
     }
-    
+
     return recommendations;
   },
-  
+
   generateLogSummary(logAggregation, logAnalysis, logInsights) {
     return {
       overallStatus: logAggregation.overallStatus,
       logScore: logAnalysis.overallScore,
-      aggregationChecks: Object.keys(logAggregation).filter(k => k !== "overallStatus" && k !== "timestamp"),
-      analysisChecks: Object.keys(logAnalysis).filter(k => k !== "overallScore" && k !== "timestamp"),
-      insightChecks: Object.keys(logInsights).filter(k => k !== "timestamp"),
+      aggregationChecks: Object.keys(logAggregation).filter(
+        (k) => k !== "overallStatus" && k !== "timestamp"
+      ),
+      analysisChecks: Object.keys(logAnalysis).filter(
+        (k) => k !== "overallScore" && k !== "timestamp"
+      ),
+      insightChecks: Object.keys(logInsights).filter((k) => k !== "timestamp"),
       timestamp: new Date().toISOString(),
     };
   },
-  
+
   async writeLogReport(report) {
     const { writeFileSync, mkdirSync } = await import("node:fs");
     const { join } = await import("node:path");
-    
-    const reportsDir = join(process.cwd(), "reports", "jtbd", "monitoring-observability");
+
+    const reportsDir = join(
+      process.cwd(),
+      "reports",
+      "jtbd",
+      "monitoring-observability"
+    );
     mkdirSync(reportsDir, { recursive: true });
-    
-    const filename = `log-aggregation-analysis-${report.hookName}-${Date.now()}.json`;
+
+    const filename = `log-aggregation-analysis-${
+      report.hookName
+    }-${Date.now()}.json`;
     const filepath = join(reportsDir, filename);
-    
+
     writeFileSync(filepath, JSON.stringify(report, null, 2));
-    
+
     console.log(`📄 Log report written to: ${filepath}`);
   },
 });

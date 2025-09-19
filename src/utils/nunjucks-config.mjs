@@ -46,6 +46,7 @@ function addDeterminismGuards(env) {
 function addBuiltInFilters(env) {
   // JSON serialization with configurable spacing
   env.addFilter("json", (v, space = 0) => JSON.stringify(v, null, space));
+  env.addFilter("tojson", (v) => JSON.stringify(v)); // Alias for workflow compatibility
 
   // URL-safe slug generation
   env.addFilter("slug", (s) =>
@@ -61,6 +62,73 @@ function addBuiltInFilters(env) {
 
   // String padding utility
   env.addFilter("pad", (s, n = 2, ch = "0") => String(s).padStart(n, ch));
+
+  // String manipulation filters for workflow templates
+  env.addFilter("split", (s, delimiter = " ") => String(s).split(delimiter));
+  env.addFilter("join", (arr, delimiter = ", ") => Array.isArray(arr) ? arr.join(delimiter) : String(arr));
+  env.addFilter("length", (v) => {
+    if (Array.isArray(v)) return v.length;
+    if (typeof v === "object" && v !== null) return Object.keys(v).length;
+    return String(v).length;
+  });
+
+  // Date formatting filter
+  env.addFilter("date", (date, format = "YYYY-MM-DD") => {
+    const d = new Date(date === "now" ? new Date() : date);
+    if (isNaN(d.getTime())) return String(date);
+    
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const hours = String(d.getHours()).padStart(2, "0");
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+    const seconds = String(d.getSeconds()).padStart(2, "0");
+    
+    return format
+      .replace("YYYY", year)
+      .replace("MM", month)
+      .replace("DD", day)
+      .replace("HH", hours)
+      .replace("mm", minutes)
+      .replace("ss", seconds);
+  });
+
+  // Array manipulation filters
+  env.addFilter("sum", (arr, attribute = null) => {
+    if (!Array.isArray(arr)) return 0;
+    return arr.reduce((sum, item) => {
+      const value = attribute ? item[attribute] : item;
+      return sum + (Number(value) || 0);
+    }, 0);
+  });
+
+  env.addFilter("max", (arr, attribute = null) => {
+    if (!Array.isArray(arr) || arr.length === 0) return null;
+    return arr.reduce((max, item) => {
+      const value = attribute ? item[attribute] : item;
+      const numValue = Number(value);
+      return numValue > max ? numValue : max;
+    }, Number.MIN_SAFE_INTEGER);
+  });
+
+  env.addFilter("min", (arr, attribute = null) => {
+    if (!Array.isArray(arr) || arr.length === 0) return null;
+    return arr.reduce((min, item) => {
+      const value = attribute ? item[attribute] : item;
+      const numValue = Number(value);
+      return numValue < min ? numValue : min;
+    }, Number.MAX_SAFE_INTEGER);
+  });
+
+  // Type conversion filters
+  env.addFilter("int", (v) => parseInt(String(v), 10) || 0);
+  env.addFilter("float", (v) => parseFloat(String(v)) || 0);
+  env.addFilter("string", (v) => String(v));
+  env.addFilter("bool", (v) => Boolean(v));
+
+  // Utility filters
+  env.addFilter("default", (v, defaultValue) => v != null ? v : defaultValue);
+  env.addFilter("round", (v, precision = 0) => Number(Number(v).toFixed(precision)));
 }
 
 /**

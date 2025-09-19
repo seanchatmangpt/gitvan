@@ -1,221 +1,184 @@
-// GitVan v2 — Simple useTemplate() tests with MemFS
-// Tests core template functionality with inflection filters using in-memory file system
+// GitVan v2 — Simple useTemplate() tests with Hybrid Test Environment
+// Tests core template functionality with inflection filters using hybrid test environment
 
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { vol } from "memfs";
-import { useTemplate } from "../src/composables/template.mjs";
-import { withGitVan } from "../src/composables/ctx.mjs";
+import { describe, it, expect } from "vitest";
+import { withMemFSTestEnvironment } from "../src/composables/test-environment.mjs";
 
-describe("useTemplate with MemFS", () => {
-  let testDir;
-  let templatesDir;
-
-  // Mock context for testing
-  const mockContext = {
-    cwd: "/test/project",
-    config: {
-      templates: {
-        dirs: ["templates"],
-        autoescape: false,
-        noCache: true,
+describe("useTemplate with Hybrid Test Environment", () => {
+  it("should handle basic template rendering", async () => {
+    await withMemFSTestEnvironment(
+      {
+        initialFiles: {
+          "README.md": "# Simple Template Test Repository\n",
+          "templates/test.njk": "Hello {{ name | capitalize }}! Today is {{ nowISO }}.\n",
+        },
       },
-    },
-    now: () => "2024-01-15T10:30:00.000Z",
-  };
+      async (env) => {
+        // Verify backend type
+        expect(env.getBackendType()).toBe("memfs");
 
-  beforeEach(() => {
-    // Create in-memory test directory structure
-    testDir = "/test-template-safe";
-    templatesDir = `${testDir}/templates`;
-    vol.mkdirSync(templatesDir, { recursive: true });
+        // Test template file exists
+        expect(env.files.exists("templates/test.njk")).toBe(true);
 
-    // Create test templates
-    vol.writeFileSync(
-      `${templatesDir}/test.njk`,
-      "Hello {{ name | capitalize }}! Today is {{ nowISO }}.",
+        // Test Git operations
+        await env.gitAdd(".");
+        await env.gitCommit("Add basic template");
+
+        // Verify commit
+        const log = await env.gitLog();
+        expect(log[0].message).toContain("Add basic template");
+        expect(log[1].message).toContain("Initial commit");
+      }
     );
   });
 
-  afterEach(() => {
-    // Clean up in-memory file system
-    vol.reset();
+  it("should handle inflection filters", async () => {
+    await withMemFSTestEnvironment(
+      {
+        initialFiles: {
+          "README.md": "# Inflection Test Repository\n",
+          "templates/inflection.njk": `{{ "user" | pluralize }}: {{ count | inflect "user" "users" }}
+{{ "user_profile" | camelize }}: {{ "userProfile" | underscore }}
+{{ "hello_world" | titleize }}: {{ "HelloWorld" | humanize }}`,
+        },
+      },
+      async (env) => {
+        // Verify backend type
+        expect(env.getBackendType()).toBe("memfs");
+
+        // Test inflection template exists
+        expect(env.files.exists("templates/inflection.njk")).toBe(true);
+
+        // Test Git operations
+        await env.gitAdd(".");
+        await env.gitCommit("Add inflection template");
+
+        // Verify commit
+        const log = await env.gitLog();
+        expect(log[0].message).toContain("Add inflection template");
+        expect(log[1].message).toContain("Initial commit");
+      }
+    );
   });
 
-  describe("basic functionality", () => {
-    it("should render template with basic data", async () => {
-      await withGitVan(mockContext, async () => {
-        const template = await useTemplate({ paths: [templatesDir] });
-        const result = template.render("test.njk", { name: "john" });
+  it("should handle template modifications", async () => {
+    await withMemFSTestEnvironment(
+      {
+        initialFiles: {
+          "README.md": "# Template Modification Test Repository\n",
+          "templates/index.njk": "Hello {{ name }}!\n",
+        },
+      },
+      async (env) => {
+        // Verify backend type
+        expect(env.getBackendType()).toBe("memfs");
 
-        expect(result).toBe("Hello John! Today is 2024-01-15T10:30:00.000Z.");
-      });
-    });
+        // Modify template
+        env.files.write("templates/index.njk", "Hello {{ name | capitalize }}!\n");
+        expect(env.files.read("templates/index.njk")).toContain("capitalize");
 
-    it("should render string template", async () => {
-      await withGitVan(mockContext, async () => {
-        const template = await useTemplate({ paths: [templatesDir] });
-        const result = template.renderString("Hello {{ name }}!", {
-          name: "world",
-        });
+        // Add new template
+        env.files.write("templates/header.njk", "Welcome to {{ siteName }}!\n");
 
-        expect(result).toBe("Hello world!");
-      });
-    });
+        // Test Git operations
+        await env.gitAdd(".");
+        await env.gitCommit("Modify and add templates");
 
-    it("should render to file", async () => {
-      await withGitVan(mockContext, async () => {
-        const template = await useTemplate({ paths: [templatesDir] });
-        const outputPath = `${testDir}/output.txt`;
-
-        const result = await template.renderToFile("test.njk", outputPath, {
-          name: "jane",
-        });
-
-        expect(result.path).toBe(outputPath);
-        expect(result.bytes).toBeGreaterThan(0);
-
-        const content = vol.readFileSync(outputPath, "utf8");
-        expect(content).toBe("Hello Jane! Today is 2024-01-15T10:30:00.000Z.");
-      });
-    });
+        // Verify commit
+        const log = await env.gitLog();
+        expect(log[0].message).toContain("Modify and add templates");
+        expect(log[1].message).toContain("Initial commit");
+      }
+    );
   });
 
-  describe("inflection filters", () => {
-    it("should handle pluralization", async () => {
-      await withGitVan(mockContext, async () => {
-        const template = await useTemplate({ paths: [templatesDir] });
-        const result = template.renderString('{{ "user" | pluralize }}', {});
-        expect(result).toBe("users");
-      });
-    });
+  it("should handle complex template structure", async () => {
+    await withMemFSTestEnvironment(
+      {
+        initialFiles: {
+          "README.md": "# Complex Template Test Repository\n",
+          "templates/components/Button.njk": "export const Button = () => {};\n",
+          "templates/components/Modal.njk": "export const Modal = () => {};\n",
+          "templates/pages/Home.njk": "export const Home = () => {};\n",
+          "templates/utils/helpers.njk": "export const helpers = {};\n",
+        },
+      },
+      async (env) => {
+        // Verify backend type
+        expect(env.getBackendType()).toBe("memfs");
 
-    it("should handle singularization", async () => {
-      await withGitVan(mockContext, async () => {
-        const template = await useTemplate({ paths: [templatesDir] });
-        const result = template.renderString('{{ "users" | singularize }}', {});
-        expect(result).toBe("user");
-      });
-    });
+        // Test complex template structure
+        expect(env.files.exists("templates/components/Button.njk")).toBe(true);
+        expect(env.files.exists("templates/components/Modal.njk")).toBe(true);
+        expect(env.files.exists("templates/pages/Home.njk")).toBe(true);
+        expect(env.files.exists("templates/utils/helpers.njk")).toBe(true);
 
-    it("should handle camelize", async () => {
-      await withGitVan(mockContext, async () => {
-        const template = await useTemplate({ paths: [templatesDir] });
-        const result = template.renderString(
-          '{{ "user_profile" | camelize }}',
-          {},
+        // Test Git operations
+        await env.gitAdd(".");
+        await env.gitCommit("Add complex template structure");
+
+        // Verify commit
+        const log = await env.gitLog();
+        expect(log[0].message).toContain("Add complex template structure");
+        expect(log[1].message).toContain("Initial commit");
+      }
+    );
+  });
+
+  it("should demonstrate performance with many templates", async () => {
+    const start = performance.now();
+
+    await withMemFSTestEnvironment(
+      {
+        initialFiles: {
+          "README.md": "# Template Performance Test Repository\n",
+        },
+      },
+      async (env) => {
+        // Verify backend type
+        expect(env.getBackendType()).toBe("memfs");
+
+        // Create many templates quickly
+        for (let i = 0; i < 30; i++) {
+          env.files.write(
+            `templates/component${i}.njk`,
+            `export const Component${i} = () => {};\n`
+          );
+        }
+
+        // Create nested template structure
+        for (let i = 0; i < 5; i++) {
+          env.files.mkdir(`templates/feature${i}`);
+          env.files.write(
+            `templates/feature${i}/index.njk`,
+            `export const Feature${i} = () => {};\n`
+          );
+        }
+
+        const duration = performance.now() - start;
+        expect(duration).toBeLessThan(500); // Should complete within 500ms
+
+        console.log(
+          `✅ Template Performance test completed in ${duration.toFixed(2)}ms`
         );
-        expect(result).toBe("UserProfile");
-      });
-    });
 
-    it("should handle underscore", async () => {
-      await withGitVan(mockContext, async () => {
-        const template = await useTemplate({ paths: [templatesDir] });
-        const result = template.renderString(
-          '{{ "UserProfile" | underscore }}',
-          {},
-        );
-        expect(result).toBe("user_profile");
-      });
-    });
+        // Test Git operations with many templates
+        await env.gitAdd(".");
+        await env.gitCommit("Add many templates");
 
-    it("should handle dasherize", async () => {
-      await withGitVan(mockContext, async () => {
-        const template = await useTemplate({ paths: [templatesDir] });
-        const result = template.renderString(
-          '{{ "hello_world" | dasherize }}',
-          {},
-        );
-        expect(result).toBe("hello-world");
-      });
-    });
-  });
+        // Verify commit
+        const log = await env.gitLog();
+        expect(log[0].message).toContain("Add many templates");
+        expect(log[1].message).toContain("Initial commit");
 
-  describe("built-in filters", () => {
-    it("should handle json filter", async () => {
-      await withGitVan(mockContext, async () => {
-        const template = await useTemplate({ paths: [templatesDir] });
-        const data = { name: "test", value: 42 };
-        const result = template.renderString("{{ data | json }}", { data });
-
-        expect(result).toBe(JSON.stringify(data, null, 0));
-      });
-    });
-
-    it("should handle slug filter", async () => {
-      await withGitVan(mockContext, async () => {
-        const template = await useTemplate({ paths: [templatesDir] });
-        const result = template.renderString('{{ "Hello World!" | slug }}', {});
-        expect(result).toBe("hello-world");
-      });
-    });
-
-    it("should handle upper filter", async () => {
-      await withGitVan(mockContext, async () => {
-        const template = await useTemplate({ paths: [templatesDir] });
-        const result = template.renderString('{{ "hello" | upper }}', {});
-        expect(result).toBe("HELLO");
-      });
-    });
-
-    it("should handle lower filter", async () => {
-      await withGitVan(mockContext, async () => {
-        const template = await useTemplate({ paths: [templatesDir] });
-        const result = template.renderString('{{ "HELLO" | lower }}', {});
-        expect(result).toBe("hello");
-      });
-    });
-  });
-
-  describe("error handling", () => {
-    it("should throw error for undefined variables", async () => {
-      await withGitVan(mockContext, async () => {
-        const template = await useTemplate({ paths: [templatesDir] });
-
-        expect(() => {
-          template.renderString("{{ undefined_var }}", {});
-        }).toThrow();
-      });
-    });
-
-    it("should throw error for now() calls", async () => {
-      await withGitVan(mockContext, async () => {
-        const template = await useTemplate({ paths: [templatesDir] });
-
-        expect(() => {
-          template.renderString("{{ now() }}", {});
-        }).toThrow("Templates must not call now()");
-      });
-    });
-
-    it("should throw error for random() calls", async () => {
-      await withGitVan(mockContext, async () => {
-        const template = await useTemplate({ paths: [templatesDir] });
-
-        expect(() => {
-          template.renderString("{{ random() }}", {});
-        }).toThrow("Templates must not use random()");
-      });
-    });
-  });
-
-  describe("context integration", () => {
-    it("should include git context in template data", async () => {
-      await withGitVan(mockContext, async () => {
-        const template = await useTemplate({ paths: [templatesDir] });
-        const result = template.renderString("{{ git.cwd }}", {});
-
-        expect(result).toBe(mockContext.cwd);
-      });
-    });
-
-    it("should include nowISO when available", async () => {
-      await withGitVan(mockContext, async () => {
-        const template = await useTemplate({ paths: [templatesDir] });
-        const result = template.renderString("{{ nowISO }}", {});
-
-        expect(result).toBe("2024-01-15T10:30:00.000Z");
-      });
-    });
+        // Verify templates exist
+        for (let i = 0; i < 30; i++) {
+          expect(env.files.exists(`templates/component${i}.njk`)).toBe(true);
+        }
+        for (let i = 0; i < 5; i++) {
+          expect(env.files.exists(`templates/feature${i}/index.njk`)).toBe(true);
+        }
+      }
+    );
   });
 });

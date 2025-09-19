@@ -7,8 +7,14 @@ import { useGitVan } from "../../../src/core/context.mjs";
 export default defineJob({
   meta: {
     name: "core-development-lifecycle-jtbd-hooks",
-    desc: "Core Development Lifecycle JTBD Hooks - Comprehensive automation for development workflow",
-    tags: ["jtbd", "core-development", "lifecycle", "comprehensive"],
+    desc: "Master orchestrator for Core Development Lifecycle JTBD Hooks - Comprehensive automation for development workflow",
+    tags: [
+      "jtbd",
+      "core-development",
+      "lifecycle",
+      "comprehensive",
+      "master-orchestrator",
+    ],
     version: "1.0.0",
   },
 

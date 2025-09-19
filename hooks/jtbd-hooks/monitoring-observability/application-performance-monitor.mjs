@@ -1,4 +1,4 @@
-import { defineJob } from "../../../src/core/job.js";
+import { defineJob } from "../../../src/core/job-registry.mjs";
 import { execSync } from "node:child_process";
 import { writeFileSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -7,27 +7,36 @@ export default defineJob({
   meta: {
     name: "application-performance-monitor",
     desc: "Monitors application performance and detects performance issues (JTBD #16)",
-    tags: ["git-hook", "post-merge", "timer-hourly", "performance", "monitoring", "jtbd"],
+    tags: [
+      "git-hook",
+      "post-merge",
+      "timer-hourly",
+      "performance",
+      "monitoring",
+      "jtbd",
+    ],
     version: "1.0.0",
   },
   hooks: ["post-merge", "timer-hourly"],
   async run(context) {
     const { hookName } = context;
     const timestamp = new Date().toISOString();
-    
+
     try {
       // Capture Git state
       const gitState = await this.captureGitState();
-      
+
       // Performance monitoring
       const performanceMonitoring = await this.monitorPerformance(gitState);
-      
+
       // Performance metrics analysis
       const performanceMetrics = await this.analyzePerformanceMetrics(gitState);
-      
+
       // Performance regression detection
-      const regressionDetection = await this.detectPerformanceRegressions(gitState);
-      
+      const regressionDetection = await this.detectPerformanceRegressions(
+        gitState
+      );
+
       // Generate performance report
       const performanceReport = {
         timestamp,
@@ -36,24 +45,39 @@ export default defineJob({
         performanceMonitoring,
         performanceMetrics,
         regressionDetection,
-        recommendations: this.generatePerformanceRecommendations(performanceMonitoring, performanceMetrics, regressionDetection),
-        summary: this.generatePerformanceSummary(performanceMonitoring, performanceMetrics, regressionDetection),
+        recommendations: this.generatePerformanceRecommendations(
+          performanceMonitoring,
+          performanceMetrics,
+          regressionDetection
+        ),
+        summary: this.generatePerformanceSummary(
+          performanceMonitoring,
+          performanceMetrics,
+          regressionDetection
+        ),
       };
-      
+
       // Write report to disk
       await this.writePerformanceReport(performanceReport);
-      
+
       // Log results
-      console.log(`📊 Application Performance Monitor (${hookName}): ${performanceMonitoring.overallStatus}`);
-      console.log(`⚡ Performance Score: ${performanceMetrics.overallScore}/100`);
-      
+      console.log(
+        `📊 Application Performance Monitor (${hookName}): ${performanceMonitoring.overallStatus}`
+      );
+      console.log(
+        `⚡ Performance Score: ${performanceMetrics.overallScore}/100`
+      );
+
       return {
         success: performanceMonitoring.overallStatus === "PASS",
         report: performanceReport,
         message: `Performance monitoring ${performanceMonitoring.overallStatus.toLowerCase()}`,
       };
     } catch (error) {
-      console.error(`❌ Application Performance Monitor Error (${hookName}):`, error.message);
+      console.error(
+        `❌ Application Performance Monitor Error (${hookName}):`,
+        error.message
+      );
       return {
         success: false,
         error: error.message,
@@ -61,13 +85,17 @@ export default defineJob({
       };
     }
   },
-  
+
   async captureGitState() {
     const { execSync } = await import("node:child_process");
-    
+
     return {
-      branch: execSync("git branch --show-current", { encoding: "utf8" }).trim(),
-      stagedFiles: execSync("git diff --cached --name-only", { encoding: "utf8" })
+      branch: execSync("git branch --show-current", {
+        encoding: "utf8",
+      }).trim(),
+      stagedFiles: execSync("git diff --cached --name-only", {
+        encoding: "utf8",
+      })
         .trim()
         .split("\n")
         .filter(Boolean),
@@ -75,12 +103,16 @@ export default defineJob({
         .trim()
         .split("\n")
         .filter(Boolean),
-      lastCommit: execSync("git log -1 --pretty=format:%H", { encoding: "utf8" }).trim(),
-      commitMessage: execSync("git log -1 --pretty=format:%s", { encoding: "utf8" }).trim(),
+      lastCommit: execSync("git log -1 --pretty=format:%H", {
+        encoding: "utf8",
+      }).trim(),
+      commitMessage: execSync("git log -1 --pretty=format:%s", {
+        encoding: "utf8",
+      }).trim(),
       repositoryHealth: await this.checkRepositoryHealth(),
     };
   },
-  
+
   async monitorPerformance(gitState) {
     const monitoring = {
       responseTime: await this.monitorResponseTime(gitState),
@@ -89,16 +121,20 @@ export default defineJob({
       resourceUtilization: await this.monitorResourceUtilization(gitState),
       databasePerformance: await this.monitorDatabasePerformance(gitState),
     };
-    
-    const overallStatus = Object.values(monitoring).every(m => m.status === "HEALTHY") ? "PASS" : "FAIL";
-    
+
+    const overallStatus = Object.values(monitoring).every(
+      (m) => m.status === "HEALTHY"
+    )
+      ? "PASS"
+      : "FAIL";
+
     return {
       ...monitoring,
       overallStatus,
       timestamp: new Date().toISOString(),
     };
   },
-  
+
   async analyzePerformanceMetrics(gitState) {
     const metrics = {
       latencyMetrics: await this.analyzeLatencyMetrics(gitState),
@@ -107,17 +143,19 @@ export default defineJob({
       resourceMetrics: await this.analyzeResourceMetrics(gitState),
       customMetrics: await this.analyzeCustomMetrics(gitState),
     };
-    
-    const scores = Object.values(metrics).map(m => m.score);
-    const overallScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
-    
+
+    const scores = Object.values(metrics).map((m) => m.score);
+    const overallScore = Math.round(
+      scores.reduce((a, b) => a + b, 0) / scores.length
+    );
+
     return {
       ...metrics,
       overallScore,
       timestamp: new Date().toISOString(),
     };
   },
-  
+
   async detectPerformanceRegressions(gitState) {
     const regressions = {
       responseTimeRegression: await this.detectResponseTimeRegression(gitState),
@@ -126,25 +164,31 @@ export default defineJob({
       resourceRegression: await this.detectResourceRegression(gitState),
       databaseRegression: await this.detectDatabaseRegression(gitState),
     };
-    
-    const totalRegressions = Object.values(regressions).reduce((sum, r) => sum + r.count, 0);
-    
+
+    const totalRegressions = Object.values(regressions).reduce(
+      (sum, r) => sum + r.count,
+      0
+    );
+
     return {
       ...regressions,
       totalRegressions,
       timestamp: new Date().toISOString(),
     };
   },
-  
+
   async monitorResponseTime(gitState) {
     const { execSync } = await import("node:child_process");
-    
+
     try {
       // Check for performance-related files
-      const perfFiles = gitState.stagedFiles.filter(f => 
-        f.includes("performance") || f.includes("latency") || f.includes("response")
+      const perfFiles = gitState.stagedFiles.filter(
+        (f) =>
+          f.includes("performance") ||
+          f.includes("latency") ||
+          f.includes("response")
       );
-      
+
       if (perfFiles.length === 0) {
         return {
           status: "HEALTHY",
@@ -154,14 +198,14 @@ export default defineJob({
           p99ResponseTime: 500,
         };
       }
-      
+
       // Simulate response time monitoring
       const averageResponseTime = 120;
       const p95ResponseTime = 250;
       const p99ResponseTime = 600;
-      
+
       const status = averageResponseTime < 200 ? "HEALTHY" : "DEGRADED";
-      
+
       return {
         status,
         message: `Response time monitoring: ${status}`,
@@ -177,16 +221,19 @@ export default defineJob({
       };
     }
   },
-  
+
   async monitorThroughput(gitState) {
     const { execSync } = await import("node:child_process");
-    
+
     try {
       // Check for throughput-related files
-      const throughputFiles = gitState.stagedFiles.filter(f => 
-        f.includes("throughput") || f.includes("requests") || f.includes("rps")
+      const throughputFiles = gitState.stagedFiles.filter(
+        (f) =>
+          f.includes("throughput") ||
+          f.includes("requests") ||
+          f.includes("rps")
       );
-      
+
       if (throughputFiles.length === 0) {
         return {
           status: "HEALTHY",
@@ -195,13 +242,13 @@ export default defineJob({
           peakThroughput: 1500,
         };
       }
-      
+
       // Simulate throughput monitoring
       const requestsPerSecond = 1200;
       const peakThroughput = 1800;
-      
+
       const status = requestsPerSecond > 800 ? "HEALTHY" : "DEGRADED";
-      
+
       return {
         status,
         message: `Throughput monitoring: ${status}`,
@@ -216,16 +263,19 @@ export default defineJob({
       };
     }
   },
-  
+
   async monitorErrorRate(gitState) {
     const { execSync } = await import("node:child_process");
-    
+
     try {
       // Check for error-related files
-      const errorFiles = gitState.stagedFiles.filter(f => 
-        f.includes("error") || f.includes("exception") || f.includes("failure")
+      const errorFiles = gitState.stagedFiles.filter(
+        (f) =>
+          f.includes("error") ||
+          f.includes("exception") ||
+          f.includes("failure")
       );
-      
+
       if (errorFiles.length === 0) {
         return {
           status: "HEALTHY",
@@ -234,13 +284,13 @@ export default defineJob({
           criticalErrors: 0,
         };
       }
-      
+
       // Simulate error rate monitoring
       const errorRate = 0.5;
       const criticalErrors = 2;
-      
+
       const status = errorRate < 1.0 ? "HEALTHY" : "DEGRADED";
-      
+
       return {
         status,
         message: `Error rate monitoring: ${status}`,
@@ -255,16 +305,17 @@ export default defineJob({
       };
     }
   },
-  
+
   async monitorResourceUtilization(gitState) {
     const { execSync } = await import("node:child_process");
-    
+
     try {
       // Check for resource-related files
-      const resourceFiles = gitState.stagedFiles.filter(f => 
-        f.includes("resource") || f.includes("memory") || f.includes("cpu")
+      const resourceFiles = gitState.stagedFiles.filter(
+        (f) =>
+          f.includes("resource") || f.includes("memory") || f.includes("cpu")
       );
-      
+
       if (resourceFiles.length === 0) {
         return {
           status: "HEALTHY",
@@ -274,14 +325,15 @@ export default defineJob({
           diskUtilization: 30,
         };
       }
-      
+
       // Simulate resource utilization monitoring
       const cpuUtilization = 65;
       const memoryUtilization = 75;
       const diskUtilization = 40;
-      
-      const status = cpuUtilization < 80 && memoryUtilization < 85 ? "HEALTHY" : "DEGRADED";
-      
+
+      const status =
+        cpuUtilization < 80 && memoryUtilization < 85 ? "HEALTHY" : "DEGRADED";
+
       return {
         status,
         message: `Resource utilization monitoring: ${status}`,
@@ -297,16 +349,17 @@ export default defineJob({
       };
     }
   },
-  
+
   async monitorDatabasePerformance(gitState) {
     const { execSync } = await import("node:child_process");
-    
+
     try {
       // Check for database-related files
-      const dbFiles = gitState.stagedFiles.filter(f => 
-        f.includes("database") || f.includes("sql") || f.includes("query")
+      const dbFiles = gitState.stagedFiles.filter(
+        (f) =>
+          f.includes("database") || f.includes("sql") || f.includes("query")
       );
-      
+
       if (dbFiles.length === 0) {
         return {
           status: "HEALTHY",
@@ -315,13 +368,14 @@ export default defineJob({
           connectionPool: 80,
         };
       }
-      
+
       // Simulate database performance monitoring
       const queryTime = 120;
       const connectionPool = 90;
-      
-      const status = queryTime < 200 && connectionPool < 95 ? "HEALTHY" : "DEGRADED";
-      
+
+      const status =
+        queryTime < 200 && connectionPool < 95 ? "HEALTHY" : "DEGRADED";
+
       return {
         status,
         message: `Database performance monitoring: ${status}`,
@@ -336,7 +390,7 @@ export default defineJob({
       };
     }
   },
-  
+
   async analyzeLatencyMetrics(gitState) {
     // Analyze latency metrics
     const latencyMetrics = {
@@ -345,9 +399,9 @@ export default defineJob({
       p99Latency: 600,
       maxLatency: 1200,
     };
-    
+
     const score = latencyMetrics.averageLatency < 200 ? 90 : 70;
-    
+
     return {
       score,
       status: score >= 80 ? "GOOD" : "NEEDS_ATTENTION",
@@ -355,7 +409,7 @@ export default defineJob({
       metrics: latencyMetrics,
     };
   },
-  
+
   async analyzeThroughputMetrics(gitState) {
     // Analyze throughput metrics
     const throughputMetrics = {
@@ -364,9 +418,9 @@ export default defineJob({
       averageThroughput: 1000,
       throughputTrend: "increasing",
     };
-    
+
     const score = throughputMetrics.requestsPerSecond > 800 ? 85 : 65;
-    
+
     return {
       score,
       status: score >= 80 ? "GOOD" : "NEEDS_ATTENTION",
@@ -374,7 +428,7 @@ export default defineJob({
       metrics: throughputMetrics,
     };
   },
-  
+
   async analyzeErrorMetrics(gitState) {
     // Analyze error metrics
     const errorMetrics = {
@@ -383,9 +437,9 @@ export default defineJob({
       warningErrors: 15,
       errorTrend: "stable",
     };
-    
+
     const score = errorMetrics.errorRate < 1.0 ? 88 : 68;
-    
+
     return {
       score,
       status: score >= 80 ? "GOOD" : "NEEDS_ATTENTION",
@@ -393,7 +447,7 @@ export default defineJob({
       metrics: errorMetrics,
     };
   },
-  
+
   async analyzeResourceMetrics(gitState) {
     // Analyze resource metrics
     const resourceMetrics = {
@@ -402,9 +456,13 @@ export default defineJob({
       diskUtilization: 40,
       networkUtilization: 30,
     };
-    
-    const score = resourceMetrics.cpuUtilization < 80 && resourceMetrics.memoryUtilization < 85 ? 87 : 67;
-    
+
+    const score =
+      resourceMetrics.cpuUtilization < 80 &&
+      resourceMetrics.memoryUtilization < 85
+        ? 87
+        : 67;
+
     return {
       score,
       status: score >= 80 ? "GOOD" : "NEEDS_ATTENTION",
@@ -412,7 +470,7 @@ export default defineJob({
       metrics: resourceMetrics,
     };
   },
-  
+
   async analyzeCustomMetrics(gitState) {
     // Analyze custom metrics
     const customMetrics = {
@@ -420,9 +478,14 @@ export default defineJob({
       userExperience: 90,
       systemHealth: 88,
     };
-    
-    const score = Math.round((customMetrics.businessMetrics + customMetrics.userExperience + customMetrics.systemHealth) / 3);
-    
+
+    const score = Math.round(
+      (customMetrics.businessMetrics +
+        customMetrics.userExperience +
+        customMetrics.systemHealth) /
+        3
+    );
+
     return {
       score,
       status: score >= 80 ? "GOOD" : "NEEDS_ATTENTION",
@@ -430,105 +493,124 @@ export default defineJob({
       metrics: customMetrics,
     };
   },
-  
+
   async detectResponseTimeRegression(gitState) {
     // Detect response time regressions
     const currentResponseTime = 120;
     const previousResponseTime = 100;
     const regressionThreshold = 20;
-    
-    const regression = currentResponseTime - previousResponseTime > regressionThreshold;
-    
+
+    const regression =
+      currentResponseTime - previousResponseTime > regressionThreshold;
+
     return {
       count: regression ? 1 : 0,
       regression,
       currentResponseTime,
       previousResponseTime,
       threshold: regressionThreshold,
-      message: regression ? "Response time regression detected" : "No response time regression",
+      message: regression
+        ? "Response time regression detected"
+        : "No response time regression",
     };
   },
-  
+
   async detectThroughputRegression(gitState) {
     // Detect throughput regressions
     const currentThroughput = 1200;
     const previousThroughput = 1400;
     const regressionThreshold = 100;
-    
-    const regression = previousThroughput - currentThroughput > regressionThreshold;
-    
+
+    const regression =
+      previousThroughput - currentThroughput > regressionThreshold;
+
     return {
       count: regression ? 1 : 0,
       regression,
       currentThroughput,
       previousThroughput,
       threshold: regressionThreshold,
-      message: regression ? "Throughput regression detected" : "No throughput regression",
+      message: regression
+        ? "Throughput regression detected"
+        : "No throughput regression",
     };
   },
-  
+
   async detectErrorRateRegression(gitState) {
     // Detect error rate regressions
     const currentErrorRate = 0.5;
     const previousErrorRate = 0.3;
     const regressionThreshold = 0.1;
-    
-    const regression = currentErrorRate - previousErrorRate > regressionThreshold;
-    
+
+    const regression =
+      currentErrorRate - previousErrorRate > regressionThreshold;
+
     return {
       count: regression ? 1 : 0,
       regression,
       currentErrorRate,
       previousErrorRate,
       threshold: regressionThreshold,
-      message: regression ? "Error rate regression detected" : "No error rate regression",
+      message: regression
+        ? "Error rate regression detected"
+        : "No error rate regression",
     };
   },
-  
+
   async detectResourceRegression(gitState) {
     // Detect resource regressions
     const currentCpuUtilization = 65;
     const previousCpuUtilization = 50;
     const regressionThreshold = 10;
-    
-    const regression = currentCpuUtilization - previousCpuUtilization > regressionThreshold;
-    
+
+    const regression =
+      currentCpuUtilization - previousCpuUtilization > regressionThreshold;
+
     return {
       count: regression ? 1 : 0,
       regression,
       currentCpuUtilization,
       previousCpuUtilization,
       threshold: regressionThreshold,
-      message: regression ? "Resource regression detected" : "No resource regression",
+      message: regression
+        ? "Resource regression detected"
+        : "No resource regression",
     };
   },
-  
+
   async detectDatabaseRegression(gitState) {
     // Detect database regressions
     const currentQueryTime = 120;
     const previousQueryTime = 80;
     const regressionThreshold = 30;
-    
-    const regression = currentQueryTime - previousQueryTime > regressionThreshold;
-    
+
+    const regression =
+      currentQueryTime - previousQueryTime > regressionThreshold;
+
     return {
       count: regression ? 1 : 0,
       regression,
       currentQueryTime,
       previousQueryTime,
       threshold: regressionThreshold,
-      message: regression ? "Database regression detected" : "No database regression",
+      message: regression
+        ? "Database regression detected"
+        : "No database regression",
     };
   },
-  
+
   async checkRepositoryHealth() {
     const { execSync } = await import("node:child_process");
-    
+
     try {
       const status = execSync("git status --porcelain", { encoding: "utf8" });
-      const branch = execSync("git branch --show-current", { encoding: "utf8" }).trim();
-      const lastCommit = execSync("git log -1 --pretty=format:%H", { encoding: "utf8" }).trim();
-      
+      const branch = execSync("git branch --show-current", {
+        encoding: "utf8",
+      }).trim();
+      const lastCommit = execSync("git log -1 --pretty=format:%H", {
+        encoding: "utf8",
+      }).trim();
+
       return {
         status: "HEALTHY",
         branch,
@@ -544,61 +626,82 @@ export default defineJob({
       };
     }
   },
-  
-  generatePerformanceRecommendations(performanceMonitoring, performanceMetrics, regressionDetection) {
+
+  generatePerformanceRecommendations(
+    performanceMonitoring,
+    performanceMetrics,
+    regressionDetection
+  ) {
     const recommendations = [];
-    
+
     if (performanceMonitoring.overallStatus === "FAIL") {
       recommendations.push("⚡ Address performance issues before proceeding");
     }
-    
+
     if (performanceMetrics.overallScore < 80) {
       recommendations.push("📊 Improve performance metrics");
     }
-    
+
     if (regressionDetection.totalRegressions > 0) {
       recommendations.push("🔍 Investigate performance regressions");
     }
-    
+
     if (performanceMonitoring.responseTime.status === "DEGRADED") {
       recommendations.push("⏱️ Optimize response time");
     }
-    
+
     if (performanceMonitoring.throughput.status === "DEGRADED") {
       recommendations.push("🚀 Improve throughput");
     }
-    
+
     if (performanceMonitoring.errorRate.status === "DEGRADED") {
       recommendations.push("🚨 Reduce error rate");
     }
-    
+
     return recommendations;
   },
-  
-  generatePerformanceSummary(performanceMonitoring, performanceMetrics, regressionDetection) {
+
+  generatePerformanceSummary(
+    performanceMonitoring,
+    performanceMetrics,
+    regressionDetection
+  ) {
     return {
       overallStatus: performanceMonitoring.overallStatus,
       performanceScore: performanceMetrics.overallScore,
       totalRegressions: regressionDetection.totalRegressions,
-      monitoringChecks: Object.keys(performanceMonitoring).filter(k => k !== "overallStatus" && k !== "timestamp"),
-      metricsChecks: Object.keys(performanceMetrics).filter(k => k !== "overallScore" && k !== "timestamp"),
-      regressionChecks: Object.keys(regressionDetection).filter(k => k !== "totalRegressions" && k !== "timestamp"),
+      monitoringChecks: Object.keys(performanceMonitoring).filter(
+        (k) => k !== "overallStatus" && k !== "timestamp"
+      ),
+      metricsChecks: Object.keys(performanceMetrics).filter(
+        (k) => k !== "overallScore" && k !== "timestamp"
+      ),
+      regressionChecks: Object.keys(regressionDetection).filter(
+        (k) => k !== "totalRegressions" && k !== "timestamp"
+      ),
       timestamp: new Date().toISOString(),
     };
   },
-  
+
   async writePerformanceReport(report) {
     const { writeFileSync, mkdirSync } = await import("node:fs");
     const { join } = await import("node:path");
-    
-    const reportsDir = join(process.cwd(), "reports", "jtbd", "monitoring-observability");
+
+    const reportsDir = join(
+      process.cwd(),
+      "reports",
+      "jtbd",
+      "monitoring-observability"
+    );
     mkdirSync(reportsDir, { recursive: true });
-    
-    const filename = `application-performance-monitor-${report.hookName}-${Date.now()}.json`;
+
+    const filename = `application-performance-monitor-${
+      report.hookName
+    }-${Date.now()}.json`;
     const filepath = join(reportsDir, filename);
-    
+
     writeFileSync(filepath, JSON.stringify(report, null, 2));
-    
+
     console.log(`📄 Performance report written to: ${filepath}`);
   },
 });

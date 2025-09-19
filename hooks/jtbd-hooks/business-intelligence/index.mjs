@@ -3,7 +3,7 @@ import { defineJob } from "../../../src/core/job-registry.mjs";
 export default defineJob({
   meta: {
     name: "business-intelligence-jtbd-hooks",
-    desc: "Master orchestrator for Business Intelligence JTBD Hooks",
+    desc: "Master orchestrator for Business Intelligence JTBD Hooks - Comprehensive automation for business intelligence and analytics",
     tags: ["jtbd", "master-orchestrator", "business-intelligence"],
     version: "1.0.0",
   },

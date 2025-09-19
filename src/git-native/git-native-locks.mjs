@@ -4,10 +4,11 @@
  * Leverages Git's atomic operations and ref system
  */
 
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import { randomUUID } from 'crypto';
-import { hostname } from 'os';
+import { exec } from "child_process";
+import { promisify } from "util";
+import { randomUUID } from "crypto";
+import { hostname } from "os";
+import { useLog } from "../composables/log.mjs";
 
 const execAsync = promisify(exec);
 
@@ -18,12 +19,12 @@ const execAsync = promisify(exec);
 export class GitNativeLockManager {
   constructor(options = {}) {
     this.cwd = options.cwd || process.cwd();
-    this.logger = options.logger || console;
+    this.logger = options.logger || useLog("GitNativeLockManager");
     this.defaultTimeout = options.defaultTimeout || 30000;
-    this.lockPrefix = options.lockPrefix || 'refs/gitvan/locks';
+    this.lockPrefix = options.lockPrefix || "refs/gitvan/locks";
     this.retryDelay = options.retryDelay || 100;
     this.maxRetries = options.maxRetries || 10;
-    
+
     this._initialized = false;
   }
 
@@ -33,18 +34,18 @@ export class GitNativeLockManager {
    */
   async initialize() {
     if (this._initialized) return;
-    
-    this.logger.info('Initializing GitNativeLockManager...');
-    
+
+    this.logger.info("Initializing GitNativeLockManager...");
+
     // Verify we're in a git repository
     try {
-      await execAsync('git rev-parse --git-dir', { cwd: this.cwd });
+      await execAsync("git rev-parse --git-dir", { cwd: this.cwd });
     } catch (error) {
       throw new Error(`Not a git repository: ${this.cwd}`);
     }
-    
+
     this._initialized = true;
-    this.logger.info('GitNativeLockManager initialized successfully');
+    this.logger.info("GitNativeLockManager initialized successfully");
   }
 
   /**
@@ -55,11 +56,11 @@ export class GitNativeLockManager {
    */
   async acquireLock(lockName, options = {}) {
     await this._ensureInitialized();
-    
+
     const timeout = options.timeout || this.defaultTimeout;
     const fingerprint = options.fingerprint || randomUUID();
     const lockRef = `${this.lockPrefix}/${lockName}`;
-    
+
     // Create lock metadata
     const lockData = {
       id: randomUUID(),
@@ -68,14 +69,16 @@ export class GitNativeLockManager {
       fingerprint,
       pid: process.pid,
       exclusive: options.exclusive !== false,
-      hostname: hostname()
+      hostname: hostname(),
     };
-    
+
     // Use Git's atomic ref creation (fails if ref exists)
     try {
       const lockBlob = await this._createBlob(JSON.stringify(lockData));
-      await execAsync(`git update-ref ${lockRef} ${lockBlob}`, { cwd: this.cwd });
-      
+      await execAsync(`git update-ref ${lockRef} ${lockBlob}`, {
+        cwd: this.cwd,
+      });
+
       this.logger.debug(`Acquired lock: ${lockName} (${lockData.id})`);
       return true;
     } catch (error) {
@@ -86,7 +89,9 @@ export class GitNativeLockManager {
         await this._removeExpiredLock(lockRef);
         try {
           const lockBlob = await this._createBlob(JSON.stringify(lockData));
-          await execAsync(`git update-ref ${lockRef} ${lockBlob}`, { cwd: this.cwd });
+          await execAsync(`git update-ref ${lockRef} ${lockBlob}`, {
+            cwd: this.cwd,
+          });
           return true;
         } catch (retryError) {
           return false;
@@ -102,28 +107,30 @@ export class GitNativeLockManager {
    * @param {string} fingerprint
    * @returns {Promise<boolean>}
    */
-  async releaseLock(lockName, fingerprint) {
+  async releaseLock(lockName, fingerprint = null) {
     await this._ensureInitialized();
-    
+
     const lockRef = `${this.lockPrefix}/${lockName}`;
-    
+
     try {
       // Get current lock data for validation
       const currentOid = await this._getRefOid(lockRef);
       if (!currentOid) return false;
-      
+
       const lockData = await this._getBlobContent(currentOid);
       const parsed = JSON.parse(lockData);
-      
-      // Validate fingerprint
-      if (parsed.fingerprint !== fingerprint) {
+
+      // Validate fingerprint (if provided)
+      if (fingerprint !== null && parsed.fingerprint !== fingerprint) {
         this.logger.warn(`Fingerprint mismatch for lock ${lockName}`);
         return false;
       }
-      
+
       // Atomic ref deletion
-      await execAsync(`git update-ref -d ${lockRef} ${currentOid}`, { cwd: this.cwd });
-      
+      await execAsync(`git update-ref -d ${lockRef} ${currentOid}`, {
+        cwd: this.cwd,
+      });
+
       this.logger.debug(`Released lock: ${lockName}`);
       return true;
     } catch (error) {
@@ -141,29 +148,31 @@ export class GitNativeLockManager {
    */
   async extendLock(lockName, fingerprint, additionalTime) {
     await this._ensureInitialized();
-    
+
     const lockRef = `${this.lockPrefix}/${lockName}`;
-    
+
     try {
       const currentOid = await this._getRefOid(lockRef);
       if (!currentOid) return false;
-      
+
       const lockData = await this._getBlobContent(currentOid);
       const parsed = JSON.parse(lockData);
-      
+
       // Validate fingerprint
       if (parsed.fingerprint !== fingerprint) {
         return false;
       }
-      
+
       // Update timeout
       parsed.timeout += additionalTime;
       parsed.extendedAt = Date.now();
-      
+
       // Create new blob and update ref atomically
       const newBlob = await this._createBlob(JSON.stringify(parsed));
-      await execAsync(`git update-ref ${lockRef} ${newBlob} ${currentOid}`, { cwd: this.cwd });
-      
+      await execAsync(`git update-ref ${lockRef} ${newBlob} ${currentOid}`, {
+        cwd: this.cwd,
+      });
+
       return true;
     } catch (error) {
       this.logger.warn(`Failed to extend lock ${lockName}: ${error.message}`);
@@ -178,7 +187,7 @@ export class GitNativeLockManager {
    */
   async isLocked(lockName) {
     await this._ensureInitialized();
-    
+
     const lockRef = `${this.lockPrefix}/${lockName}`;
     const isExpired = await this._isLockExpired(lockRef);
     return !isExpired;
@@ -191,26 +200,26 @@ export class GitNativeLockManager {
    */
   async getLockInfo(lockName) {
     await this._ensureInitialized();
-    
+
     const lockRef = `${this.lockPrefix}/${lockName}`;
-    
+
     try {
       const oid = await this._getRefOid(lockRef);
       if (!oid) return null;
-      
+
       const lockData = await this._getBlobContent(oid);
       const parsed = JSON.parse(lockData);
-      
+
       // Check if expired
       if (Date.now() - parsed.acquiredAt > parsed.timeout) {
         await this._removeExpiredLock(lockRef);
         return null;
       }
-      
+
       return {
         name: lockName,
         ref: lockRef,
-        ...parsed
+        ...parsed,
       };
     } catch (error) {
       return null;
@@ -223,18 +232,21 @@ export class GitNativeLockManager {
    */
   async listLocks() {
     await this._ensureInitialized();
-    
+
     const locks = [];
-    
+
     try {
       // Get all refs under the lock prefix
-      const { stdout } = await execAsync(`git for-each-ref --format="%(refname)" ${this.lockPrefix}`, { cwd: this.cwd });
-      const refs = stdout.trim().split('\n').filter(Boolean);
-      
+      const { stdout } = await execAsync(
+        `git for-each-ref --format="%(refname)" ${this.lockPrefix}`,
+        { cwd: this.cwd }
+      );
+      const refs = stdout.trim().split("\n").filter(Boolean);
+
       for (const ref of refs) {
-        const lockName = ref.replace(`${this.lockPrefix}/`, '');
+        const lockName = ref.replace(`${this.lockPrefix}/`, "");
         const lockInfo = await this.getLockInfo(lockName);
-        
+
         if (lockInfo) {
           locks.push(lockInfo);
         }
@@ -243,7 +255,7 @@ export class GitNativeLockManager {
       // No locks found
       this.logger.debug(`No locks found: ${error.message}`);
     }
-    
+
     return locks;
   }
 
@@ -253,13 +265,16 @@ export class GitNativeLockManager {
    */
   async cleanupExpiredLocks() {
     await this._ensureInitialized();
-    
+
     let cleanedCount = 0;
-    
+
     try {
-      const { stdout } = await execAsync(`git for-each-ref --format="%(refname)" ${this.lockPrefix}`, { cwd: this.cwd });
-      const refs = stdout.trim().split('\n').filter(Boolean);
-      
+      const { stdout } = await execAsync(
+        `git for-each-ref --format="%(refname)" ${this.lockPrefix}`,
+        { cwd: this.cwd }
+      );
+      const refs = stdout.trim().split("\n").filter(Boolean);
+
       for (const ref of refs) {
         const isExpired = await this._isLockExpired(ref);
         if (isExpired) {
@@ -270,11 +285,11 @@ export class GitNativeLockManager {
     } catch (error) {
       this.logger.debug(`No locks to clean up: ${error.message}`);
     }
-    
+
     if (cleanedCount > 0) {
       this.logger.info(`Cleaned up ${cleanedCount} expired locks`);
     }
-    
+
     return cleanedCount;
   }
 
@@ -284,13 +299,16 @@ export class GitNativeLockManager {
    */
   async clearAllLocks() {
     await this._ensureInitialized();
-    
+
     let clearedCount = 0;
-    
+
     try {
-      const { stdout } = await execAsync(`git for-each-ref --format="%(refname)" ${this.lockPrefix}`, { cwd: this.cwd });
-      const refs = stdout.trim().split('\n').filter(Boolean);
-      
+      const { stdout } = await execAsync(
+        `git for-each-ref --format="%(refname)" ${this.lockPrefix}`,
+        { cwd: this.cwd }
+      );
+      const refs = stdout.trim().split("\n").filter(Boolean);
+
       for (const ref of refs) {
         await execAsync(`git update-ref -d ${ref}`, { cwd: this.cwd });
         clearedCount++;
@@ -298,7 +316,7 @@ export class GitNativeLockManager {
     } catch (error) {
       this.logger.debug(`No locks to clear: ${error.message}`);
     }
-    
+
     this.logger.warn(`Cleared ${clearedCount} locks`);
     return clearedCount;
   }
@@ -323,21 +341,25 @@ export class GitNativeLockManager {
   }
 
   async _createBlob(content) {
-    const { stdout } = await execAsync(`git hash-object -w --stdin`, { 
+    const { stdout } = await execAsync(`git hash-object -w --stdin`, {
       cwd: this.cwd,
-      input: content 
+      input: content,
     });
     return stdout.trim();
   }
 
   async _getBlobContent(oid) {
-    const { stdout } = await execAsync(`git cat-file -p ${oid}`, { cwd: this.cwd });
+    const { stdout } = await execAsync(`git cat-file -p ${oid}`, {
+      cwd: this.cwd,
+    });
     return stdout;
   }
 
   async _getRefOid(ref) {
     try {
-      const { stdout } = await execAsync(`git rev-parse ${ref}`, { cwd: this.cwd });
+      const { stdout } = await execAsync(`git rev-parse ${ref}`, {
+        cwd: this.cwd,
+      });
       return stdout.trim();
     } catch (error) {
       return null;
@@ -348,10 +370,10 @@ export class GitNativeLockManager {
     try {
       const oid = await this._getRefOid(lockRef);
       if (!oid) return true;
-      
+
       const lockData = await this._getBlobContent(oid);
       const parsed = JSON.parse(lockData);
-      
+
       return Date.now() - parsed.acquiredAt > parsed.timeout;
     } catch (error) {
       return true;
@@ -362,7 +384,9 @@ export class GitNativeLockManager {
     try {
       const oid = await this._getRefOid(lockRef);
       if (oid) {
-        await execAsync(`git update-ref -d ${lockRef} ${oid}`, { cwd: this.cwd });
+        await execAsync(`git update-ref -d ${lockRef} ${oid}`, {
+          cwd: this.cwd,
+        });
       }
     } catch (error) {
       // Ignore errors when removing expired locks
@@ -377,14 +401,14 @@ export class GitNativeLockManager {
 export class GitDistributedLockManager extends GitNativeLockManager {
   constructor(options = {}) {
     super(options);
-    this.remote = options.remote || 'origin';
+    this.remote = options.remote || "origin";
     this.syncInterval = options.syncInterval || 5000; // 5 seconds
     this._syncTimer = null;
   }
 
   async initialize() {
     await super.initialize();
-    
+
     // Start periodic sync with remote
     this._startSyncTimer();
   }
@@ -405,15 +429,15 @@ export class GitDistributedLockManager extends GitNativeLockManager {
   async acquireLock(lockName, options = {}) {
     // Sync with remote first
     await this._syncWithRemote();
-    
+
     // Try to acquire lock locally
     const acquired = await super.acquireLock(lockName, options);
-    
+
     if (acquired) {
       // Push lock to remote
       await this._pushLockToRemote(lockName);
     }
-    
+
     return acquired;
   }
 
@@ -425,12 +449,12 @@ export class GitDistributedLockManager extends GitNativeLockManager {
    */
   async releaseLock(lockName, fingerprint) {
     const released = await super.releaseLock(lockName, fingerprint);
-    
+
     if (released) {
       // Push release to remote
       await this._pushLockToRemote(lockName);
     }
-    
+
     return released;
   }
 
@@ -447,7 +471,10 @@ export class GitDistributedLockManager extends GitNativeLockManager {
   async _syncWithRemote() {
     try {
       // Fetch latest refs from remote
-      await execAsync(`git fetch ${this.remote} ${this.lockPrefix}/*:${this.lockPrefix}/*`, { cwd: this.cwd });
+      await execAsync(
+        `git fetch ${this.remote} ${this.lockPrefix}/*:${this.lockPrefix}/*`,
+        { cwd: this.cwd }
+      );
     } catch (error) {
       // Ignore fetch errors - remote might not have locks yet
     }
@@ -458,7 +485,9 @@ export class GitDistributedLockManager extends GitNativeLockManager {
       const lockRef = `${this.lockPrefix}/${lockName}`;
       await execAsync(`git push ${this.remote} ${lockRef}`, { cwd: this.cwd });
     } catch (error) {
-      this.logger.warn(`Failed to push lock ${lockName} to remote: ${error.message}`);
+      this.logger.warn(
+        `Failed to push lock ${lockName} to remote: ${error.message}`
+      );
     }
   }
 }

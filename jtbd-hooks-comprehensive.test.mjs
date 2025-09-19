@@ -510,8 +510,10 @@ describe("JTBD Hooks Comprehensive Test Suite", () => {
     });
   });
 
-  describe("JTBD Hooks Error Handling", () => {
-    it("should handle missing files gracefully", async () => {
+  // DISABLED: These tests delete package.json and .git directory from the main project
+  // This is dangerous and causes repository corruption
+  describe.skip("JTBD Hooks Error Handling", () => {
+    it.skip("should handle missing files gracefully", async () => {
       // Remove package.json to test error handling
       rmSync("package.json", { force: true });
 
@@ -531,7 +533,7 @@ describe("JTBD Hooks Comprehensive Test Suite", () => {
       expect(report.summary.totalDependencies).toBe(0);
     });
 
-    it("should handle git repository errors gracefully", async () => {
+    it.skip("should handle git repository errors gracefully", async () => {
       // Remove .git directory to test error handling
       rmSync(".git", { recursive: true, force: true });
 

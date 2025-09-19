@@ -5,6 +5,7 @@
 
 import { createHash } from "crypto";
 import { randomUUID } from "crypto";
+import { useLog } from '../composables/log.mjs';
 
 // Option 1: Redis-based distributed locks (recommended)
 import Redis from "ioredis";
@@ -23,6 +24,7 @@ import { Database } from "sqlite3";
 export class RedisLockManager {
   constructor(options = {}) {
     this.redis = new Redis(options.redis || { host: "localhost", port: 6379 });
+    this.logger = options.logger || useLog('RedisLockManager');
     this.defaultTimeout = options.defaultTimeout || 30000;
     this.retryDelay = options.retryDelay || 100;
     this.maxRetries = options.maxRetries || 10;
@@ -141,6 +143,7 @@ export class RedisLockManager {
 export class FileLockManager {
   constructor(options = {}) {
     this.lockDir = options.lockDir || ".gitvan/locks";
+    this.logger = options.logger || useLog('FileLockManager');
     this.defaultTimeout = options.defaultTimeout || 30000;
   }
 
@@ -243,6 +246,7 @@ export class FileLockManager {
 export class DatabaseLockManager {
   constructor(options = {}) {
     this.dbPath = options.dbPath || ".gitvan/locks.db";
+    this.logger = options.logger || useLog('DatabaseLockManager');
     this.defaultTimeout = options.defaultTimeout || 30000;
     this.db = null;
   }
@@ -406,6 +410,7 @@ export class DatabaseLockManager {
 export class HybridLockManager {
   constructor(options = {}) {
     this.strategies = [];
+    this.logger = options.logger || useLog('HybridLockManager');
 
     // Add Redis if available
     if (options.redis) {

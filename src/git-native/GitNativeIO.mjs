@@ -11,20 +11,20 @@
  */
 export class GitNativeIO {
   /**
-   * @param {import("../types.js").GitNativeIOOptions} [options]
+   * @param {Object} [options]
    */
   constructor(options = {}) {
     this.cwd = options.cwd || process.cwd();
     this.logger = options.logger || console;
     this.config = this._mergeConfig(options.config);
-    
+
     // Initialize components
     this._queueManager = null;
     this._lockManager = null;
     this._receiptWriter = null;
     this._snapshotStore = null;
     this._workerPool = null;
-    
+
     this._initialized = false;
   }
 
@@ -34,61 +34,61 @@ export class GitNativeIO {
    */
   async initialize() {
     if (this._initialized) return;
-    
-    this.logger.info('Initializing GitNativeIO...');
-    
+
+    this.logger.info("Initializing GitNativeIO...");
+
     // Import components dynamically to avoid circular dependencies
-    const { QueueManager } = await import('./QueueManager.mjs');
-    const { LockManager } = await import('./LockManager.mjs');
-    const { ReceiptWriter } = await import('./ReceiptWriter.mjs');
-    const { SnapshotStore } = await import('./SnapshotStore.mjs');
-    const { WorkerPool } = await import('./WorkerPool.mjs');
-    
+    const { QueueManager } = await import("./QueueManager.mjs");
+    const { LockManager } = await import("./LockManager.mjs");
+    const { ReceiptWriter } = await import("./ReceiptWriter.mjs");
+    const { SnapshotStore } = await import("./SnapshotStore.mjs");
+    const { WorkerPool } = await import("./WorkerPool.mjs");
+
     this._queueManager = new QueueManager({
       cwd: this.cwd,
       logger: this.logger,
       queue: this.config.queue,
-      paths: this.config.paths
+      paths: this.config.paths,
     });
-    
+
     this._lockManager = new LockManager({
       cwd: this.cwd,
       logger: this.logger,
-      lock: { defaultTimeout: 30000 }
+      lock: { defaultTimeout: 30000 },
     });
-    
+
     this._receiptWriter = new ReceiptWriter({
       cwd: this.cwd,
       logger: this.logger,
-      receipt: this.config.git
+      receipt: this.config.git,
     });
-    
+
     this._snapshotStore = new SnapshotStore({
       cwd: this.cwd,
       logger: this.logger,
-      snapshot: this.config.paths
+      snapshot: this.config.paths,
     });
-    
+
     this._workerPool = new WorkerPool({
       cwd: this.cwd,
       logger: this.logger,
-      workers: this.config.workers
+      workers: this.config.workers,
     });
-    
+
     // Initialize all components
     await Promise.all([
       this._queueManager.initialize(),
       this._lockManager.initialize(),
       this._receiptWriter.initialize(),
       this._snapshotStore.initialize(),
-      this._workerPool.initialize()
+      this._workerPool.initialize(),
     ]);
-    
+
     // Reconcile state on startup
     await this.reconcile();
-    
+
     this._initialized = true;
-    this.logger.info('GitNativeIO initialized successfully');
+    this.logger.info("GitNativeIO initialized successfully");
   }
 
   /**
@@ -100,42 +100,41 @@ export class GitNativeIO {
    */
   async executeJob(jobFunction, options = {}) {
     await this._ensureInitialized();
-    
+
     const startTime = Date.now();
     try {
       const result = await jobFunction();
       const duration = Date.now() - startTime;
-      
+
       // Record execution metrics
       await this.writeMetrics({
         executionTime: duration,
         success: true,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
-      
+
       return result;
     } catch (error) {
       const duration = Date.now() - startTime;
-      
+
       // Record error metrics
       await this.writeMetrics({
         executionTime: duration,
         success: false,
         error: error.message,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
-      
+
       throw error;
     }
   }
 
   /**
    * Enqueue a job with durability and priority.
-   * @template T
-   * @param {import("../types.js").JobPriority} priority
-   * @param {() => Promise<T>} job
-   * @param {import("../types.js").JobMetadata} [metadata]
-   * @returns {Promise<T>}
+   * @param {string} priority
+   * @param {Function} job
+   * @param {Object} [metadata]
+   * @returns {Promise}
    */
   async addJob(priority, job, metadata = {}) {
     await this._ensureInitialized();
@@ -145,7 +144,7 @@ export class GitNativeIO {
   /**
    * Acquire a CAS lock stored under refs/gitvan/locks/*.
    * @param {string} lockName
-   * @param {import("../types.js").LockOptions} [options]
+   * @param {Object} [options]
    * @returns {Promise<boolean>}
    */
   async acquireLock(lockName, options = {}) {
@@ -248,7 +247,7 @@ export class GitNativeIO {
 
   /**
    * List all snapshot headers.
-   * @returns {Promise<Array<import("../types.js").SnapshotHeader>>}
+   * @returns {Promise<Array>}
    */
   async listSnapshots() {
     await this._ensureInitialized();
@@ -257,7 +256,7 @@ export class GitNativeIO {
 
   /**
    * Receipt/metrics/executions counters (including in-memory buffers).
-   * @returns {Promise<import("../types.js").ReceiptStats>}
+   * @returns {Promise<Object>}
    */
   async getStatistics() {
     await this._ensureInitialized();
@@ -266,73 +265,74 @@ export class GitNativeIO {
 
   /**
    * Composite system health snapshot.
-   * @returns {Promise<import("../types.js").SystemStatus>}
+   * @returns {Promise<Object>}
    */
   async getStatus() {
     await this._ensureInitialized();
-    
-    const [queueStatus, locks, receipts, snapshots, workers] = await Promise.all([
-      this._queueManager.getStatus(),
-      this._lockManager.listLocks(),
-      this._receiptWriter.getStatistics(),
-      this._snapshotStore.getStatistics(),
-      this._workerPool.getStatus()
-    ]);
-    
+
+    const [queueStatus, locks, receipts, snapshots, workers] =
+      await Promise.all([
+        this._queueManager.getStatus(),
+        this._lockManager.listLocks(),
+        this._receiptWriter.getStatistics(),
+        this._snapshotStore.getStatistics(),
+        this._workerPool.getStatus(),
+      ]);
+
     return {
       queue: queueStatus,
       locks,
       receipts,
       snapshots,
-      workers
+      workers,
     };
   }
 
   /** Recover queues, clean locks, flush buffers, trim cache. */
   async reconcile() {
     await this._ensureInitialized();
-    
-    this.logger.info('Reconciling GitNativeIO state...');
-    
+
+    this.logger.info("Reconciling GitNativeIO state...");
+
     await Promise.all([
       this._queueManager.reconcile(),
       this._lockManager.cleanupExpiredLocks(),
       this._receiptWriter.flushAll(),
-      this._snapshotStore.cleanupCache()
+      this._snapshotStore.cleanupCache(),
     ]);
-    
-    this.logger.info('GitNativeIO reconciliation complete');
+
+    this.logger.info("GitNativeIO reconciliation complete");
   }
 
   /** Clear completed jobs, trim caches & old notes. */
   async cleanup() {
     await this._ensureInitialized();
-    
-    this.logger.info('Cleaning up GitNativeIO...');
-    
+
+    this.logger.info("Cleaning up GitNativeIO...");
+
     await Promise.all([
       this._queueManager.clearCompleted(),
       this._receiptWriter.cleanupOldReceipts(),
-      this._snapshotStore.cleanupCache()
+      this._snapshotStore.cleanupCache(),
     ]);
-    
-    this.logger.info('GitNativeIO cleanup complete');
+
+    this.logger.info("GitNativeIO cleanup complete");
   }
 
   /** Flush and terminate workers. */
   async shutdown() {
     if (!this._initialized) return;
-    
-    this.logger.info('Shutting down GitNativeIO...');
-    
+
+    this.logger.info("Shutting down GitNativeIO...");
+
     await Promise.all([
       this._receiptWriter.flushAll(),
       this._workerPool.shutdown(),
-      this._queueManager.shutdown?.()
+      this._queueManager.shutdown?.(),
     ]);
-    
+
     this._initialized = false;
-    this.logger.info('GitNativeIO shutdown complete');
+    this.logger.info("GitNativeIO shutdown complete");
   }
 
   /**
@@ -357,31 +357,31 @@ export class GitNativeIO {
       queue: {
         concurrency: 3,
         interval: 100,
-        intervalCap: 5
+        intervalCap: 5,
       },
       workers: {
         threads: 2,
         maxJobs: 10,
-        timeout: 30000
+        timeout: 30000,
       },
       fs: {
         retryDelay: 100,
-        maxOpenFDsGuard: true
+        maxOpenFDsGuard: true,
       },
       paths: {
-        tmp: '.gitvan/tmp',
-        queue: '.gitvan/queue',
-        cache: '.gitvan/cache',
-        artifacts: '.gitvan/artifacts',
-        notesRef: 'refs/gitvan/notes',
-        locksRef: 'refs/gitvan/locks',
-        execRef: 'refs/gitvan/executions'
+        tmp: ".gitvan/tmp",
+        queue: ".gitvan/queue",
+        cache: ".gitvan/cache",
+        artifacts: ".gitvan/artifacts",
+        notesRef: "refs/gitvan/notes",
+        locksRef: "refs/gitvan/locks",
+        execRef: "refs/gitvan/executions",
       },
       git: {
         notesBatchSize: 100,
         gcAuto: false,
-        shardQueues: true
-      }
+        shardQueues: true,
+      },
     };
 
     return this._deepMerge(defaults, userConfig);
@@ -396,15 +396,19 @@ export class GitNativeIO {
    */
   _deepMerge(target, source) {
     const result = { ...target };
-    
+
     for (const key in source) {
-      if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+      if (
+        source[key] &&
+        typeof source[key] === "object" &&
+        !Array.isArray(source[key])
+      ) {
         result[key] = this._deepMerge(target[key] || {}, source[key]);
       } else {
         result[key] = source[key];
       }
     }
-    
+
     return result;
   }
 }

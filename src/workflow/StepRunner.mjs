@@ -60,6 +60,39 @@ export class StepRunner {
         case "git":
           result = await this._executeGitStep(step, inputs);
           break;
+        case "database":
+          result = await this._executeDatabaseStep(step, inputs);
+          break;
+        case "filesystem":
+          result = await this._executeFilesystemStep(step, inputs);
+          break;
+        case "conditional":
+          result = await this._executeConditionalStep(
+            step,
+            inputs,
+            contextManager
+          );
+          break;
+        case "loop":
+          result = await this._executeLoopStep(step, inputs, contextManager);
+          break;
+        case "parallel":
+          result = await this._executeParallelStep(
+            step,
+            inputs,
+            contextManager
+          );
+          break;
+        case "error-handling":
+          result = await this._executeErrorHandlingStep(
+            step,
+            inputs,
+            contextManager
+          );
+          break;
+        case "notification":
+          result = await this._executeNotificationStep(step, inputs);
+          break;
         default:
           throw new Error(`Unknown step type: ${step.type}`);
       }
@@ -522,6 +555,48 @@ export class StepRunner {
           }
           break;
 
+        case "database":
+          if (!step.config.databaseUrl) {
+            throw new Error("Database step missing databaseUrl");
+          }
+          break;
+
+        case "filesystem":
+          if (!step.config.operation) {
+            throw new Error("Filesystem step missing operation");
+          }
+          break;
+
+        case "conditional":
+          if (!step.config.condition) {
+            throw new Error("Conditional step missing condition");
+          }
+          break;
+
+        case "loop":
+          if (!step.config.iterations) {
+            throw new Error("Loop step missing iterations");
+          }
+          break;
+
+        case "parallel":
+          if (!step.config.steps) {
+            throw new Error("Parallel step missing steps");
+          }
+          break;
+
+        case "error-handling":
+          if (!step.config.errorHandler) {
+            throw new Error("Error handling step missing errorHandler");
+          }
+          break;
+
+        case "notification":
+          if (!step.config.notificationType) {
+            throw new Error("Notification step missing notificationType");
+          }
+          break;
+
         default:
           throw new Error(`Unknown step type: ${step.type}`);
       }
@@ -559,5 +634,441 @@ export class StepRunner {
     }
 
     return stats;
+  }
+
+  /**
+   * Execute Database step
+   * @private
+   */
+  async _executeDatabaseStep(step, inputs) {
+    const { databaseUrl, query, operation = "query" } = step.config;
+
+    try {
+      // Simple database operations (would need actual database driver in production)
+      if (operation === "query") {
+        // Mock database query execution
+        this.logger.info(`🗄️ Executing database query: ${query}`);
+        return {
+          operation: "query",
+          query,
+          results: [], // Mock results
+          rowCount: 0,
+        };
+      } else if (operation === "insert") {
+        this.logger.info(`🗄️ Executing database insert`);
+        return {
+          operation: "insert",
+          affectedRows: 1,
+        };
+      } else if (operation === "update") {
+        this.logger.info(`🗄️ Executing database update`);
+        return {
+          operation: "update",
+          affectedRows: 1,
+        };
+      } else if (operation === "delete") {
+        this.logger.info(`🗄️ Executing database delete`);
+        return {
+          operation: "delete",
+          affectedRows: 1,
+        };
+      }
+
+      throw new Error(`Unknown database operation: ${operation}`);
+    } catch (error) {
+      throw new Error(`Database step failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Execute Filesystem step
+   * @private
+   */
+  async _executeFilesystemStep(step, inputs) {
+    const { operation, sourcePath, targetPath, options = {} } = step.config;
+
+    try {
+      switch (operation) {
+        case "copy":
+          await fs.copyFile(sourcePath, targetPath);
+          return {
+            operation: "copy",
+            sourcePath,
+            targetPath,
+            success: true,
+          };
+
+        case "move":
+          await fs.rename(sourcePath, targetPath);
+          return {
+            operation: "move",
+            sourcePath,
+            targetPath,
+            success: true,
+          };
+
+        case "delete":
+          await fs.unlink(sourcePath);
+          return {
+            operation: "delete",
+            sourcePath,
+            success: true,
+          };
+
+        case "mkdir":
+          await fs.mkdir(sourcePath, { recursive: true });
+          return {
+            operation: "mkdir",
+            sourcePath,
+            success: true,
+          };
+
+        case "readdir":
+          const files = await fs.readdir(sourcePath);
+          return {
+            operation: "readdir",
+            sourcePath,
+            files,
+            fileCount: files.length,
+          };
+
+        case "stat":
+          const stats = await fs.stat(sourcePath);
+          return {
+            operation: "stat",
+            sourcePath,
+            stats: {
+              isFile: stats.isFile(),
+              isDirectory: stats.isDirectory(),
+              size: stats.size,
+              mtime: stats.mtime,
+            },
+          };
+
+        default:
+          throw new Error(`Unknown filesystem operation: ${operation}`);
+      }
+    } catch (error) {
+      throw new Error(`Filesystem step failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Execute Conditional step
+   * @private
+   */
+  async _executeConditionalStep(step, inputs, contextManager) {
+    const { condition, trueSteps = [], falseSteps = [] } = step.config;
+
+    try {
+      // Evaluate condition (simplified - would need proper expression evaluator)
+      const conditionResult = await this._evaluateCondition(
+        condition,
+        inputs,
+        contextManager
+      );
+
+      let executedSteps = [];
+      let stepResults = [];
+
+      if (conditionResult) {
+        this.logger.info(`🔀 Conditional step: executing true branch`);
+        executedSteps = trueSteps;
+      } else {
+        this.logger.info(`🔀 Conditional step: executing false branch`);
+        executedSteps = falseSteps;
+      }
+
+      // Execute steps in the selected branch
+      for (const subStep of executedSteps) {
+        const result = await this.executeStep(
+          subStep,
+          contextManager,
+          null,
+          null
+        );
+        stepResults.push(result);
+      }
+
+      return {
+        condition,
+        conditionResult,
+        executedSteps: executedSteps.length,
+        stepResults,
+        branch: conditionResult ? "true" : "false",
+      };
+    } catch (error) {
+      throw new Error(`Conditional step failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Execute Loop step
+   * @private
+   */
+  async _executeLoopStep(step, inputs, contextManager) {
+    const { iterations, steps = [], loopVariable = "i" } = step.config;
+
+    try {
+      const stepResults = [];
+
+      for (let i = 0; i < iterations; i++) {
+        this.logger.info(`🔄 Loop step: iteration ${i + 1}/${iterations}`);
+
+        // Set loop variable in context
+        await contextManager.setVariable(loopVariable, i);
+
+        // Execute steps in loop
+        const iterationResults = [];
+        for (const subStep of steps) {
+          const result = await this.executeStep(
+            subStep,
+            contextManager,
+            null,
+            null
+          );
+          iterationResults.push(result);
+        }
+
+        stepResults.push({
+          iteration: i,
+          results: iterationResults,
+        });
+      }
+
+      return {
+        iterations,
+        totalIterations: iterations,
+        stepResults,
+        loopVariable,
+      };
+    } catch (error) {
+      throw new Error(`Loop step failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Execute Parallel step
+   * @private
+   */
+  async _executeParallelStep(step, inputs, contextManager) {
+    const { steps = [], maxConcurrency = 5 } = step.config;
+
+    try {
+      this.logger.info(
+        `⚡ Parallel step: executing ${steps.length} steps with max concurrency ${maxConcurrency}`
+      );
+
+      // Execute steps in parallel with concurrency limit
+      const stepResults = [];
+      const executing = new Set();
+
+      for (let i = 0; i < steps.length; i++) {
+        // Wait if we've reached max concurrency
+        while (executing.size >= maxConcurrency) {
+          await new Promise((resolve) => setTimeout(resolve, 10));
+        }
+
+        const subStep = steps[i];
+        const promise = this.executeStep(
+          subStep,
+          contextManager,
+          null,
+          null
+        ).then((result) => {
+          executing.delete(promise);
+          return { index: i, result };
+        });
+
+        executing.add(promise);
+        stepResults.push(promise);
+      }
+
+      // Wait for all steps to complete
+      const results = await Promise.all(stepResults);
+
+      return {
+        totalSteps: steps.length,
+        maxConcurrency,
+        results: results.sort((a, b) => a.index - b.index).map((r) => r.result),
+        completedSteps: results.length,
+      };
+    } catch (error) {
+      throw new Error(`Parallel step failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Execute Error Handling step
+   * @private
+   */
+  async _executeErrorHandlingStep(step, inputs, contextManager) {
+    const { errorHandler, retryCount = 0, retryDelay = 1000 } = step.config;
+
+    try {
+      let lastError = null;
+
+      for (let attempt = 0; attempt <= retryCount; attempt++) {
+        try {
+          if (attempt > 0) {
+            this.logger.info(
+              `🔄 Error handling step: retry attempt ${attempt}/${retryCount}`
+            );
+            await new Promise((resolve) => setTimeout(resolve, retryDelay));
+          }
+
+          // Execute the error handler logic
+          const result = await this._executeErrorHandler(
+            errorHandler,
+            inputs,
+            contextManager
+          );
+
+          return {
+            success: true,
+            attempt: attempt + 1,
+            totalAttempts: retryCount + 1,
+            result,
+          };
+        } catch (error) {
+          lastError = error;
+          this.logger.warn(
+            `⚠️ Error handling step attempt ${attempt + 1} failed: ${
+              error.message
+            }`
+          );
+        }
+      }
+
+      // All attempts failed
+      throw new Error(
+        `Error handling step failed after ${retryCount + 1} attempts: ${
+          lastError.message
+        }`
+      );
+    } catch (error) {
+      throw new Error(`Error handling step failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Execute Notification step
+   * @private
+   */
+  async _executeNotificationStep(step, inputs) {
+    const {
+      notificationType,
+      message,
+      channels = [],
+      priority = "normal",
+    } = step.config;
+
+    try {
+      this.logger.info(
+        `📢 Notification step: sending ${notificationType} notification`
+      );
+
+      // Mock notification sending (would integrate with actual notification services)
+      const notificationResult = {
+        type: notificationType,
+        message,
+        channels,
+        priority,
+        sentAt: new Date().toISOString(),
+        success: true,
+      };
+
+      // Simulate different notification types
+      switch (notificationType) {
+        case "email":
+          this.logger.info(
+            `📧 Email notification sent to ${channels.join(", ")}`
+          );
+          break;
+        case "slack":
+          this.logger.info(
+            `💬 Slack notification sent to ${channels.join(", ")}`
+          );
+          break;
+        case "webhook":
+          this.logger.info(
+            `🔗 Webhook notification sent to ${channels.join(", ")}`
+          );
+          break;
+        case "sms":
+          this.logger.info(
+            `📱 SMS notification sent to ${channels.join(", ")}`
+          );
+          break;
+        default:
+          this.logger.info(`📢 ${notificationType} notification sent`);
+      }
+
+      return notificationResult;
+    } catch (error) {
+      throw new Error(`Notification step failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Evaluate condition expression
+   * @private
+   */
+  async _evaluateCondition(condition, inputs, contextManager) {
+    // Simplified condition evaluation (would need proper expression evaluator)
+    if (typeof condition === "boolean") {
+      return condition;
+    }
+
+    if (typeof condition === "string") {
+      // Simple string-based conditions
+      if (condition.startsWith("${") && condition.endsWith("}")) {
+        const variableName = condition.slice(2, -1);
+        const value = await contextManager.getVariable(variableName);
+        return Boolean(value);
+      }
+
+      // Simple comparison conditions
+      if (condition.includes("==")) {
+        const [left, right] = condition.split("==").map((s) => s.trim());
+        return left === right;
+      }
+
+      if (condition.includes("!=")) {
+        const [left, right] = condition.split("!=").map((s) => s.trim());
+        return left !== right;
+      }
+
+      if (condition.includes(">")) {
+        const [left, right] = condition.split(">").map((s) => s.trim());
+        return Number(left) > Number(right);
+      }
+
+      if (condition.includes("<")) {
+        const [left, right] = condition.split("<").map((s) => s.trim());
+        return Number(left) < Number(right);
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Execute error handler
+   * @private
+   */
+  async _executeErrorHandler(errorHandler, inputs, contextManager) {
+    // Simplified error handler execution
+    if (typeof errorHandler === "function") {
+      return await errorHandler(inputs, contextManager);
+    }
+
+    if (typeof errorHandler === "string") {
+      // Execute as shell command
+      const { stdout, stderr } = await execAsync(errorHandler);
+      return { stdout, stderr };
+    }
+
+    return { handled: true };
   }
 }

@@ -71,6 +71,42 @@ export class PredicateEvaluator {
           context = shaclResult.context;
           break;
 
+        case "construct":
+          const constructResult = await this._evaluateCONSTRUCT(
+            predicate,
+            currentGraph
+          );
+          result = constructResult.hasResults;
+          context = constructResult.context;
+          break;
+
+        case "describe":
+          const describeResult = await this._evaluateDESCRIBE(
+            predicate,
+            currentGraph
+          );
+          result = describeResult.hasResults;
+          context = describeResult.context;
+          break;
+
+        case "federated":
+          const federatedResult = await this._evaluateFederated(
+            predicate,
+            currentGraph
+          );
+          result = federatedResult.hasResults;
+          context = federatedResult.context;
+          break;
+
+        case "temporal":
+          const temporalResult = await this._evaluateTemporal(
+            predicate,
+            currentGraph
+          );
+          result = temporalResult.triggered;
+          context = temporalResult.context;
+          break;
+
         default:
           throw new Error(`Unknown predicate type: ${predicate.type}`);
       }
@@ -430,5 +466,205 @@ export class PredicateEvaluator {
       estimatedTime: estimatedTime,
       details: complexity,
     };
+  }
+
+  /**
+   * Evaluate CONSTRUCT predicate - builds knowledge graphs dynamically
+   * @private
+   */
+  async _evaluateCONSTRUCT(predicate, currentGraph) {
+    this.logger.info("🔨 Evaluating CONSTRUCT predicate");
+
+    try {
+      const query = predicate.definition.query;
+
+      // Execute CONSTRUCT query
+      const results = await currentGraph.query(query, {
+        queryType: "construct",
+      });
+
+      // Check if results were generated
+      const hasResults = results && results.length > 0;
+
+      // Store constructed triples for potential use in workflows
+      const constructedTriples = results || [];
+
+      return {
+        hasResults,
+        context: {
+          query,
+          constructedTriples,
+          tripleCount: constructedTriples.length,
+        },
+      };
+    } catch (error) {
+      this.logger.error(`❌ CONSTRUCT evaluation failed: ${error.message}`);
+      return {
+        hasResults: false,
+        context: {
+          query: predicate.definition.query,
+          error: error.message,
+        },
+      };
+    }
+  }
+
+  /**
+   * Evaluate DESCRIBE predicate - describes resources in detail
+   * @private
+   */
+  async _evaluateDESCRIBE(predicate, currentGraph) {
+    this.logger.info("📝 Evaluating DESCRIBE predicate");
+
+    try {
+      const query = predicate.definition.query;
+
+      // Execute DESCRIBE query
+      const results = await currentGraph.query(query, {
+        queryType: "describe",
+      });
+
+      // Check if results were generated
+      const hasResults = results && results.length > 0;
+
+      // Extract resource descriptions
+      const resourceDescriptions = results || [];
+
+      return {
+        hasResults,
+        context: {
+          query,
+          resourceDescriptions,
+          descriptionCount: resourceDescriptions.length,
+        },
+      };
+    } catch (error) {
+      this.logger.error(`❌ DESCRIBE evaluation failed: ${error.message}`);
+      return {
+        hasResults: false,
+        context: {
+          query: predicate.definition.query,
+          error: error.message,
+        },
+      };
+    }
+  }
+
+  /**
+   * Evaluate Federated predicate - queries multiple data sources
+   * @private
+   */
+  async _evaluateFederated(predicate, currentGraph) {
+    this.logger.info("🌐 Evaluating Federated predicate");
+
+    try {
+      const query = predicate.definition.query;
+      const endpoints = predicate.definition.endpoints || [];
+
+      // Execute federated query across multiple endpoints
+      const federatedResults = [];
+
+      for (const endpoint of endpoints) {
+        try {
+          const endpointResults = await currentGraph.query(query, {
+            queryType: "federated",
+            endpoint: endpoint.url,
+            timeout: endpoint.timeout || 5000,
+          });
+
+          federatedResults.push({
+            endpoint: endpoint.url,
+            results: endpointResults,
+            success: true,
+          });
+        } catch (error) {
+          this.logger.warn(
+            `⚠️ Federated query failed for ${endpoint.url}: ${error.message}`
+          );
+          federatedResults.push({
+            endpoint: endpoint.url,
+            results: [],
+            success: false,
+            error: error.message,
+          });
+        }
+      }
+
+      // Check if any results were generated
+      const hasResults = federatedResults.some(
+        (result) => result.success && result.results.length > 0
+      );
+
+      return {
+        hasResults,
+        context: {
+          query,
+          federatedResults,
+          endpointCount: endpoints.length,
+          successfulEndpoints: federatedResults.filter((r) => r.success).length,
+        },
+      };
+    } catch (error) {
+      this.logger.error(`❌ Federated evaluation failed: ${error.message}`);
+      return {
+        hasResults: false,
+        context: {
+          query: predicate.definition.query,
+          error: error.message,
+        },
+      };
+    }
+  }
+
+  /**
+   * Evaluate Temporal predicate - time-based condition evaluation
+   * @private
+   */
+  async _evaluateTemporal(predicate, currentGraph) {
+    this.logger.info("⏰ Evaluating Temporal predicate");
+
+    try {
+      const query = predicate.definition.query;
+      const timeCondition = predicate.definition.timeCondition;
+      const timeWindow = predicate.definition.timeWindow || 3600000; // 1 hour default
+
+      // Get current time
+      const now = new Date();
+      const timeWindowStart = new Date(now.getTime() - timeWindow);
+
+      // Execute temporal query with time constraints
+      const results = await currentGraph.query(query, {
+        queryType: "temporal",
+        timeCondition,
+        timeWindow: {
+          start: timeWindowStart,
+          end: now,
+        },
+      });
+
+      // Check if temporal condition is met
+      const triggered = results && results.length > 0;
+
+      return {
+        triggered,
+        context: {
+          query,
+          timeCondition,
+          timeWindow,
+          results,
+          resultCount: results ? results.length : 0,
+          evaluationTime: now.toISOString(),
+        },
+      };
+    } catch (error) {
+      this.logger.error(`❌ Temporal evaluation failed: ${error.message}`);
+      return {
+        triggered: false,
+        context: {
+          query: predicate.definition.query,
+          error: error.message,
+        },
+      };
+    }
   }
 }

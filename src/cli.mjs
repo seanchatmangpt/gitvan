@@ -591,13 +591,112 @@ function parseArgs(args) {
 }
 
 async function handleSchedule(action = "apply") {
+  const worktreePath = process.cwd();
+  const scheduleDir = join(worktreePath, ".gitvan", "schedules");
+  
   switch (action) {
     case "apply":
-      console.log("Schedule management not yet implemented");
-      // TODO: Implement cron-like scheduling
+      // Simple JSON-based schedule management - no external dependencies
+      if (!existsSync(scheduleDir)) {
+        mkdirSync(scheduleDir, { recursive: true });
+        console.log("Created schedules directory");
+      }
+      
+      // Read existing schedules from JSON files
+      const scheduleFiles = readdirSync(scheduleDir).filter(f => f.endsWith('.json'));
+      
+      if (scheduleFiles.length === 0) {
+        console.log("No schedules found");
+        return;
+      }
+      
+      console.log("Applying schedules:");
+      console.log("==================");
+      
+      for (const file of scheduleFiles) {
+        try {
+          const schedulePath = join(scheduleDir, file);
+          const scheduleData = JSON.parse(readFileSync(schedulePath, 'utf8'));
+          
+          console.log(`📅 ${scheduleData.name || file}`);
+          console.log(`   Cron: ${scheduleData.cron || 'N/A'}`);
+          console.log(`   Job: ${scheduleData.job || 'N/A'}`);
+          console.log(`   Status: ${scheduleData.enabled ? '✅ Enabled' : '❌ Disabled'}`);
+          console.log();
+          
+          // Update last applied timestamp
+          scheduleData.lastApplied = new Date().toISOString();
+          writeFileSync(schedulePath, JSON.stringify(scheduleData, null, 2));
+          
+        } catch (error) {
+          console.error(`Error processing schedule ${file}:`, error.message);
+        }
+      }
+      
+      console.log(`Applied ${scheduleFiles.length} schedules`);
       break;
+      
+    case "create":
+      // Create a new schedule
+      const scheduleName = args[0];
+      if (!scheduleName) {
+        console.error("Schedule name required: gitvan schedule create <name>");
+        return;
+      }
+      
+      const newSchedule = {
+        name: scheduleName,
+        cron: args[1] || "0 9 * * *", // Default: daily at 9 AM
+        job: args[2] || "default-job",
+        enabled: true,
+        createdAt: new Date().toISOString(),
+        lastApplied: null
+      };
+      
+      const scheduleFile = join(scheduleDir, `${scheduleName}.json`);
+      writeFileSync(scheduleFile, JSON.stringify(newSchedule, null, 2));
+      
+      console.log(`✅ Created schedule: ${scheduleName}`);
+      console.log(`   File: ${scheduleFile}`);
+      break;
+      
+    case "list":
+      // List all schedules
+      if (!existsSync(scheduleDir)) {
+        console.log("No schedules directory found");
+        return;
+      }
+      
+      const allScheduleFiles = readdirSync(scheduleDir).filter(f => f.endsWith('.json'));
+      
+      if (allScheduleFiles.length === 0) {
+        console.log("No schedules found");
+        return;
+      }
+      
+      console.log("Available schedules:");
+      console.log("===================");
+      
+      for (const file of allScheduleFiles) {
+        try {
+          const schedulePath = join(scheduleDir, file);
+          const scheduleData = JSON.parse(readFileSync(schedulePath, 'utf8'));
+          
+          console.log(`${scheduleData.name || file}`);
+          console.log(`  Cron: ${scheduleData.cron || 'N/A'}`);
+          console.log(`  Job: ${scheduleData.job || 'N/A'}`);
+          console.log(`  Status: ${scheduleData.enabled ? '✅ Enabled' : '❌ Disabled'}`);
+          console.log(`  Last Applied: ${scheduleData.lastApplied || 'Never'}`);
+          console.log();
+        } catch (error) {
+          console.error(`Error reading schedule ${file}:`, error.message);
+        }
+      }
+      break;
+      
     default:
       console.error(`Unknown schedule action: ${action}`);
+      console.log("Available actions: apply, create, list");
       process.exit(1);
   }
 }

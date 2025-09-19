@@ -15,7 +15,27 @@ export default defineJob({
   },
 
   // Run on all Git lifecycle events
-  hooks: ["post-commit", "post-merge", "post-checkout"],
+  hooks: [
+    "post-commit",
+    "post-merge",
+    "post-checkout",
+    "pre-commit",
+    "pre-push",
+    "pre-receive",
+    "post-receive",
+    "update",
+    "prepare-commit-msg",
+    "commit-msg",
+    "pre-checkout",
+    "pre-rebase",
+    "post-rewrite",
+    "pre-auto-gc",
+    "applypatch-msg",
+    "pre-applypatch",
+    "post-applypatch",
+    "post-update",
+    "push-to-checkout",
+  ],
 
   async run(context) {
     console.log("🧠 Starting Knowledge Hooks Git Integration");

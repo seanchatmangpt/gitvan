@@ -7,6 +7,7 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { randomUUID } from 'crypto';
+import { hostname } from 'os';
 
 const execAsync = promisify(exec);
 
@@ -67,7 +68,7 @@ export class GitNativeLockManager {
       fingerprint,
       pid: process.pid,
       exclusive: options.exclusive !== false,
-      hostname: require('os').hostname()
+      hostname: hostname()
     };
     
     // Use Git's atomic ref creation (fails if ref exists)

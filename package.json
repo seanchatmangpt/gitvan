@@ -76,6 +76,7 @@
     "consola": "3.2.3",
     "defu": "6.1.4",
     "eyereasoner": "18.19.18",
+    "fuse.js": "^7.1.0",
     "giget": "1.2.1",
     "graceful-fs": "^4.2.11",
     "gray-matter": "4.0.3",
@@ -106,7 +107,6 @@
   "devDependencies": {
     "@types/node": "^20.19.15",
     "@types/nunjucks": "^3.2.6",
-    "docdash": "^2.0.2",
     "eslint": "^9.35.0",
     "eslint-config-unjs": "^0.5.0",
     "vitest": "^1.0.0"
@@ -121,9 +121,6 @@
     "test:coverage": "vitest --coverage",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "types": "node scripts/generate-types.mjs",
-    "build": "node scripts/generate-types.mjs",
-    "docs": "npx jsdoc -c jsdoc.json",
     "format": "prettier --write src/ tests/",
     "format:check": "prettier --check src/ tests/",
     "clean": "rm -rf docs/api/ dist/ .nyc_output/ coverage/",

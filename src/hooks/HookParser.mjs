@@ -110,6 +110,30 @@ export class HookParser {
     } else if (turtle.isA(hookDef.pred, GH + "SHACLAllConform")) {
       predicate.type = "shaclAllConform";
       predicate.definition = await this._parseSHACLPredicate(turtle, hookDef);
+    } else if (turtle.isA(hookDef.pred, GH + "CONSTRUCTPredicate")) {
+      predicate.type = "construct";
+      predicate.definition = await this._parseCONSTRUCTPredicate(
+        turtle,
+        hookDef
+      );
+    } else if (turtle.isA(hookDef.pred, GH + "DESCRIBEPredicate")) {
+      predicate.type = "describe";
+      predicate.definition = await this._parseDESCRIBEPredicate(
+        turtle,
+        hookDef
+      );
+    } else if (turtle.isA(hookDef.pred, GH + "FederatedPredicate")) {
+      predicate.type = "federated";
+      predicate.definition = await this._parseFederatedPredicate(
+        turtle,
+        hookDef
+      );
+    } else if (turtle.isA(hookDef.pred, GH + "TemporalPredicate")) {
+      predicate.type = "temporal";
+      predicate.definition = await this._parseTemporalPredicate(
+        turtle,
+        hookDef
+      );
     }
 
     return predicate;
@@ -526,6 +550,89 @@ export class HookParser {
       title: hookDef.title,
       predicate: hookDef.pred,
       workflowCount: hookDef.pipelines.length,
+    };
+  }
+
+  /**
+   * Parse CONSTRUCT predicate
+   * @private
+   */
+  async _parseCONSTRUCTPredicate(turtle, hookDef) {
+    const GH = "https://gitvan.dev/graph-hook#";
+
+    const queryText = turtle.getOne(hookDef.pred, GH + "queryText");
+    const outputFormat = turtle.getOne(hookDef.pred, GH + "outputFormat");
+
+    return {
+      query: queryText ? queryText.value : null,
+      outputFormat: outputFormat ? outputFormat.value : "turtle",
+      description:
+        "Builds knowledge graphs dynamically using CONSTRUCT queries",
+    };
+  }
+
+  /**
+   * Parse DESCRIBE predicate
+   * @private
+   */
+  async _parseDESCRIBEPredicate(turtle, hookDef) {
+    const GH = "https://gitvan.dev/graph-hook#";
+
+    const queryText = turtle.getOne(hookDef.pred, GH + "queryText");
+    const resourcePattern = turtle.getOne(hookDef.pred, GH + "resourcePattern");
+
+    return {
+      query: queryText ? queryText.value : null,
+      resourcePattern: resourcePattern ? resourcePattern.value : null,
+      description: "Describes resources in detail using DESCRIBE queries",
+    };
+  }
+
+  /**
+   * Parse Federated predicate
+   * @private
+   */
+  async _parseFederatedPredicate(turtle, hookDef) {
+    const GH = "https://gitvan.dev/graph-hook#";
+
+    const queryText = turtle.getOne(hookDef.pred, GH + "queryText");
+    const endpoints = turtle.getAll(hookDef.pred, GH + "endpoint");
+
+    const parsedEndpoints = endpoints.map((endpoint) => {
+      const url = turtle.getOne(endpoint, GH + "url");
+      const timeout = turtle.getOne(endpoint, GH + "timeout");
+      const auth = turtle.getOne(endpoint, GH + "authentication");
+
+      return {
+        url: url ? url.value : null,
+        timeout: timeout ? parseInt(timeout.value) : 5000,
+        authentication: auth ? auth.value : null,
+      };
+    });
+
+    return {
+      query: queryText ? queryText.value : null,
+      endpoints: parsedEndpoints,
+      description: "Queries multiple data sources using federated queries",
+    };
+  }
+
+  /**
+   * Parse Temporal predicate
+   * @private
+   */
+  async _parseTemporalPredicate(turtle, hookDef) {
+    const GH = "https://gitvan.dev/graph-hook#";
+
+    const queryText = turtle.getOne(hookDef.pred, GH + "queryText");
+    const timeCondition = turtle.getOne(hookDef.pred, GH + "timeCondition");
+    const timeWindow = turtle.getOne(hookDef.pred, GH + "timeWindow");
+
+    return {
+      query: queryText ? queryText.value : null,
+      timeCondition: timeCondition ? timeCondition.value : "within",
+      timeWindow: timeWindow ? parseInt(timeWindow.value) : 3600000, // 1 hour default
+      description: "Evaluates time-based conditions using temporal queries",
     };
   }
 }

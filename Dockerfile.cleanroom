@@ -1,17 +1,25 @@
-# GitVan Cleanroom Test Dockerfile
+# GitVan v3.0.0 Cleanroom Test Dockerfile
+# Comprehensive Docker-based testing environment
+
 FROM node:20-alpine
 
-# Install Git, pnpm, and other dependencies
-RUN apk add --no-cache git bash && \
-    npm install -g pnpm
+# Install system dependencies
+RUN apk add --no-cache \
+    git \
+    bash \
+    curl \
+    jq \
+    && npm install -g pnpm
 
 # Set working directory
 WORKDIR /workspace
 
-# Copy only necessary files for GitVan
+# Copy GitVan source files
 COPY package.json pnpm-lock.yaml /gitvan/
 COPY src/ /gitvan/src/
 COPY packs/ /gitvan/packs/
+COPY templates/ /gitvan/templates/
+COPY bin/ /gitvan/bin/
 
 # Install GitVan dependencies
 WORKDIR /gitvan
@@ -20,5 +28,5 @@ RUN pnpm install --no-frozen-lockfile
 # Set working directory back to workspace
 WORKDIR /workspace
 
-# Set entrypoint to run gitvan init by default
-ENTRYPOINT ["node", "/gitvan/src/cli.mjs", "init", "--name", "docker-cleanroom-project", "--description", "A GitVan project initialized in Docker cleanroom"]
+# Set default command to show help
+CMD ["node", "/gitvan/src/cli.mjs", "--help"]

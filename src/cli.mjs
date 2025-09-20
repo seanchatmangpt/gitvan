@@ -99,6 +99,11 @@ export const cli = defineCommand({
 // Export for programmatic usage
 export default cli;
 
+// Export main function for bin/gitvan.mjs compatibility
+export async function main() {
+  return runMain(cli);
+}
+
 // Run CLI if this is the main module
 if (import.meta.url === `file://${process.argv[1]}`) {
   runMain(cli);

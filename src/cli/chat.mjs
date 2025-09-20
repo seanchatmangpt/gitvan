@@ -1,8 +1,9 @@
 /**
- * GitVan v2 Chat CLI - Modular AI Integration
- * Uses separate subcommand files with context-aware prompts
+ * GitVan Chat Command - Citty Implementation
+ * Proper Citty-based implementation of the chat CLI
  */
 
+import { defineCommand } from "citty";
 import { loadOptions } from "../config/loader.mjs";
 import { createLogger } from "../utils/logger.mjs";
 
@@ -28,63 +29,201 @@ import { clearHistoryCommand } from "./ai-template-loop.mjs";
 const logger = createLogger("chat-cli");
 
 /**
- * Chat CLI command handler with modular subcommands
- * @param {string} subcommand - Subcommand (draft, generate, preview, apply, explain, design, help)
- * @param {object} args - Command arguments
- * @returns {Promise<void>}
+ * Chat command with subcommands
  */
-export async function chatCommand(subcommand = "help", args = {}) {
-  const config = await loadOptions();
-
-  switch (subcommand) {
-    case "draft":
-      return await draftCommand(config, args);
-
-    case "generate":
-      return await generateCommand(config, args);
-
-    case "preview":
-      return await previewCommand(config, args);
-
-    case "apply":
-      return await applyCommand(config, args);
-
-    case "explain":
-      return await explainCommand(config, args);
-
-    case "design":
-      return await designCommand(config, args);
-
-    // AI Template Loop commands
-    case "template":
-      return await generateTemplateCommand(args);
-
-    case "optimize":
-      return await optimizeTemplateCommand(args);
-
-    case "feedback":
-      return await collectFeedbackCommand(args);
-
-    case "insights":
-      return await getInsightsCommand(args);
-
-    case "metrics":
-      return await getSystemMetricsCommand(args);
-
-    case "persist":
-      return await persistLearningDataCommand(args);
-
-    case "history":
-      return await showHistoryCommand(args);
-
-    case "clear":
-      return await clearHistoryCommand(args);
-
-    case "help":
-      return await helpCommand();
-
-    default:
-      throw new Error(`Unknown chat subcommand: ${subcommand}. Use 'gitvan chat help' for available commands.`);
-  }
-}
-
+export const chatCommand = defineCommand({
+  meta: {
+    name: "chat",
+    description: "AI-powered chat interface for job generation",
+  },
+  args: {
+    prompt: {
+      type: "string",
+      description: "Natural language prompt for job generation",
+    },
+    temp: {
+      type: "number",
+      description: "Temperature (0.0-1.0, default: 0.7)",
+      default: 0.7,
+    },
+    model: {
+      type: "string",
+      description: "AI model name (from gitvan.config.js)",
+    },
+    name: {
+      type: "string",
+      description: "Custom job name (for apply command)",
+    },
+    kind: {
+      type: "string",
+      description: "Job type (job, event, default: job)",
+      default: "job",
+    },
+    path: {
+      type: "string",
+      description: "Custom output path (for generate command)",
+    },
+  },
+  subCommands: {
+    draft: defineCommand({
+      meta: {
+        name: "draft",
+        description: "Generate job specification (no files)",
+      },
+      args: {
+        prompt: {
+          type: "string",
+          description: "Natural language prompt",
+          required: true,
+        },
+        temp: {
+          type: "number",
+          description: "Temperature (0.0-1.0)",
+          default: 0.7,
+        },
+        model: {
+          type: "string",
+          description: "AI model name",
+        },
+      },
+      async run({ args }) {
+        const config = await loadOptions();
+        return await draftCommand(config, args);
+      },
+    }),
+    generate: defineCommand({
+      meta: {
+        name: "generate",
+        description: "Generate WORKING job file",
+      },
+      args: {
+        prompt: {
+          type: "string",
+          description: "Natural language prompt",
+          required: true,
+        },
+        temp: {
+          type: "number",
+          description: "Temperature (0.0-1.0)",
+          default: 0.7,
+        },
+        model: {
+          type: "string",
+          description: "AI model name",
+        },
+        path: {
+          type: "string",
+          description: "Custom output path",
+        },
+      },
+      async run({ args }) {
+        const config = await loadOptions();
+        return await generateCommand(config, args);
+      },
+    }),
+    preview: defineCommand({
+      meta: {
+        name: "preview",
+        description: "Preview WORKING job code",
+      },
+      args: {
+        prompt: {
+          type: "string",
+          description: "Natural language prompt",
+          required: true,
+        },
+        temp: {
+          type: "number",
+          description: "Temperature (0.0-1.0)",
+          default: 0.7,
+        },
+        model: {
+          type: "string",
+          description: "AI model name",
+        },
+      },
+      async run({ args }) {
+        const config = await loadOptions();
+        return await previewCommand(config, args);
+      },
+    }),
+    apply: defineCommand({
+      meta: {
+        name: "apply",
+        description: "Apply with custom name",
+      },
+      args: {
+        prompt: {
+          type: "string",
+          description: "Natural language prompt",
+          required: true,
+        },
+        name: {
+          type: "string",
+          description: "Custom job name",
+          required: true,
+        },
+        temp: {
+          type: "number",
+          description: "Temperature (0.0-1.0)",
+          default: 0.7,
+        },
+        model: {
+          type: "string",
+          description: "AI model name",
+        },
+      },
+      async run({ args }) {
+        const config = await loadOptions();
+        return await applyCommand(config, args);
+      },
+    }),
+    explain: defineCommand({
+      meta: {
+        name: "explain",
+        description: "Explain existing job in plain English",
+      },
+      args: {
+        job: {
+          type: "string",
+          description: "Job file path or name",
+          required: true,
+        },
+      },
+      async run({ args }) {
+        const config = await loadOptions();
+        return await explainCommand(config, args);
+      },
+    }),
+    design: defineCommand({
+      meta: {
+        name: "design",
+        description: "Interactive design wizard",
+      },
+      args: {
+        prompt: {
+          type: "string",
+          description: "Natural language prompt",
+          required: true,
+        },
+      },
+      async run({ args }) {
+        const config = await loadOptions();
+        return await designCommand(config, args);
+      },
+    }),
+    help: defineCommand({
+      meta: {
+        name: "help",
+        description: "Show chat help",
+      },
+      async run() {
+        return await helpCommand();
+      },
+    }),
+  },
+  async run({ args }) {
+    // If no subcommand provided, show help
+    return await helpCommand();
+  },
+});

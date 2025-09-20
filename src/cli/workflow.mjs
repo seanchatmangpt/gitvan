@@ -2,8 +2,8 @@
 // CLI commands for the Turtle as Workflow engine
 // Provides command-line interface for workflow management
 
-import { WorkflowExecutor } from "../workflow/WorkflowExecutor.mjs";
-import { useGitVan } from "../core/context.mjs";
+import { WorkflowEngine } from "../workflow/workflow-engine.mjs";
+import { tryUseGitVan } from "../core/context.mjs";
 
 /**
  * Workflow CLI commands
@@ -15,7 +15,7 @@ export class WorkflowCLI {
    */
   constructor(options = {}) {
     this.logger = options.logger || console;
-    this.executor = null;
+    this.engine = null;
   }
 
   /**
@@ -23,11 +23,11 @@ export class WorkflowCLI {
    * @param {object} context - GitVan context
    */
   async initialize(context) {
-    this.executor = new WorkflowExecutor({
+    this.engine = new WorkflowEngine({
       graphDir: "./workflows",
-      context: context,
       logger: this.logger,
     });
+    await this.engine.initialize();
   }
 
   /**
@@ -39,7 +39,7 @@ export class WorkflowCLI {
       this.logger.info("📋 Available Workflows:");
       this.logger.info("─".repeat(50));
 
-      const workflows = await this.executor.listWorkflows();
+      const workflows = await this.engine.listWorkflows();
 
       if (workflows.length === 0) {
         this.logger.info("No workflows found in ./workflows directory");
@@ -73,51 +73,66 @@ export class WorkflowCLI {
 
       if (options.dryRun) {
         this.logger.info("🔍 Dry run mode - no actual execution");
-        const validation = await this.executor.validateWorkflow(workflowId);
 
-        if (validation.valid) {
-          this.logger.info("✅ Workflow validation passed");
-          this.logger.info(`   Steps: ${validation.stepCount}`);
-          this.logger.info(
-            `   Dependencies: ${validation.dependencies.length}`
-          );
-          this.logger.info(
-            `   Estimated duration: ${validation.estimatedDuration}ms`
-          );
+        // For now, just check if workflow exists
+        const workflows = await this.engine.listWorkflows();
+        const workflow = workflows.find((w) => w.id === workflowId);
+
+        if (workflow) {
+          this.logger.info("✅ Workflow found");
+          this.logger.info(`   Title: ${workflow.title}`);
+          this.logger.info(`   Pipelines: ${workflow.pipelineCount}`);
         } else {
-          this.logger.error(
-            `❌ Workflow validation failed: ${validation.error}`
-          );
-          throw new Error(`Workflow validation failed: ${validation.error}`);
+          this.logger.error(`❌ Workflow not found: ${workflowId}`);
+          throw new Error(`Workflow not found: ${workflowId}`);
         }
         return;
       }
 
       const startTime = performance.now();
-      const result = await this.executor.execute(workflowId, options.inputs);
+      const result = await this.engine.executeWorkflow(workflowId);
       const endTime = performance.now();
 
       this.logger.info("✅ Workflow execution completed");
-      this.logger.info(`   Duration: ${result.duration}ms`);
-      this.logger.info(`   Steps executed: ${result.stepCount}`);
-      this.logger.info(`   Success: ${result.success}`);
+      this.logger.info(`   Duration: ${(endTime - startTime).toFixed(2)}ms`);
+      this.logger.info(`   Status: ${result.status}`);
+      this.logger.info(`   Steps executed: ${result.steps.length}`);
+
+      if (result.steps.length > 0) {
+        this.logger.info("   Step results:");
+        result.steps.forEach((step, index) => {
+          const status = step.success ? "✅" : "❌";
+          this.logger.info(
+            `     ${status} Step ${index + 1}: ${step.stepId || "Unknown"}`
+          );
+          if (step.error) {
+            this.logger.info(`       Error: ${step.error}`);
+          }
+        });
+      }
 
       if (options.verbose) {
         this.logger.info("\n📊 Execution Details:");
         this.logger.info("─".repeat(30));
 
-        for (const step of result.metadata.steps) {
+        for (const step of result.steps) {
           const status = step.success ? "✅" : "❌";
-          this.logger.info(`${status} ${step.id} (${step.duration}ms)`);
+          this.logger.info(
+            `${status} ${step.stepId || step.id || "Unknown"} (${
+              step.type || "unknown"
+            })`
+          );
+          if (step.error) {
+            this.logger.info(`   Error: ${step.error}`);
+          }
         }
 
-        this.logger.info("\n📤 Outputs:");
+        this.logger.info("\n📤 Workflow Summary:");
         this.logger.info("─".repeat(20));
-        for (const [key, value] of Object.entries(result.outputs)) {
-          this.logger.info(
-            `${key}: ${JSON.stringify(value).substring(0, 100)}...`
-          );
-        }
+        this.logger.info(`Workflow ID: ${result.workflowId}`);
+        this.logger.info(`Title: ${result.title}`);
+        this.logger.info(`Status: ${result.status}`);
+        this.logger.info(`Executed At: ${result.executedAt}`);
       }
     } catch (error) {
       this.logger.error(`❌ Workflow execution failed: ${error.message}`);
@@ -284,8 +299,8 @@ export async function handleWorkflowCommand(args, options = {}) {
   const cli = new WorkflowCLI({ logger: options.logger });
 
   try {
-    // Initialize GitVan context
-    const context = useGitVan();
+    // Initialize GitVan context - use tryUseGitVan for CLI context
+    const context = tryUseGitVan() || { cwd: process.cwd(), env: process.env };
     await cli.initialize(context);
 
     const command = args[0];
@@ -301,10 +316,14 @@ export async function handleWorkflowCommand(args, options = {}) {
           throw new Error("Workflow ID required for run command");
         }
 
+        // Parse command line options
+        const dryRun = args.includes("--dry-run");
+        const verbose = args.includes("--verbose") || args.includes("-v");
+
         const runOptions = {
           inputs: options.inputs || {},
-          dryRun: options.dryRun || false,
-          verbose: options.verbose || false,
+          dryRun: dryRun,
+          verbose: verbose,
         };
 
         await cli.run(workflowId, runOptions);

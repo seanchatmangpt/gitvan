@@ -112,7 +112,7 @@ describe("Ollama-First AI Integration - Security", () => {
       const message = await generateCommitMessage(["test.js"], testDir);
 
       // Should return default message when no AI is available
-      expect(message).toBe("feat: save changes");
+      expect(message).toBe("chore: save changes");
     });
   });
 
@@ -174,7 +174,7 @@ describe("Ollama-First AI Integration - Security", () => {
 
       // Should timeout and return default message
       expect(duration).toBeLessThan(5000); // Should timeout before 10 seconds
-      expect(message).toBe("feat: save changes");
+      expect(message).toBe("chore: save changes");
     });
   });
 
@@ -241,7 +241,7 @@ describe("Ollama-First AI Integration - Security", () => {
       const message = await generateCommitMessage(["test.js"], testDir);
 
       // Should return default message on connection error
-      expect(message).toBe("feat: save changes");
+      expect(message).toBe("chore: save changes");
     });
 
     it("should handle invalid AI responses gracefully", async () => {
@@ -255,7 +255,7 @@ describe("Ollama-First AI Integration - Security", () => {
       const message = await generateCommitMessage(["test.js"], testDir);
 
       // Should return default message on invalid response
-      expect(message).toBe("feat: save changes");
+      expect(message).toBe("chore: save changes");
     });
 
     it("should handle empty AI responses gracefully", async () => {
@@ -269,7 +269,7 @@ describe("Ollama-First AI Integration - Security", () => {
       const message = await generateCommitMessage(["test.js"], testDir);
 
       // Should return default message on empty response
-      expect(message).toBe("feat: save changes");
+      expect(message).toBe("chore: save changes");
     });
   });
 
@@ -308,7 +308,7 @@ describe("Ollama-First AI Integration - Security", () => {
 
       // Should timeout before 5 seconds
       expect(duration).toBeLessThan(3000);
-      expect(message).toBe("feat: save changes");
+      expect(message).toBe("chore: save changes");
     });
   });
 });

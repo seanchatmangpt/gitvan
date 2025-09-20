@@ -67,7 +67,7 @@ export const saveCommand = defineCommand({
         commitMessage = await generateCommitMessage([], worktreePath);
         consola.success(`AI generated: "${commitMessage}"`);
       } else if (!commitMessage) {
-        commitMessage = "feat: save changes";
+        commitMessage = generateContextualMessage(statusOutput);
       }
 
       // Commit changes
@@ -91,6 +91,8 @@ export const saveCommand = defineCommand({
  * Generate AI commit message using Vercel AI or Ollama
  */
 export async function generateCommitMessage(filePaths, worktreePath) {
+  let statusOutput = "";
+  
   try {
     // Get git diff for context
     const diffOutput = execSync("git diff --cached", {
@@ -99,7 +101,7 @@ export async function generateCommitMessage(filePaths, worktreePath) {
     });
 
     // Get git status for file changes
-    const statusOutput = execSync("git status --porcelain", {
+    statusOutput = execSync("git status --porcelain", {
       cwd: worktreePath,
       encoding: "utf8",
     });
@@ -116,11 +118,11 @@ export async function generateCommitMessage(filePaths, worktreePath) {
     }
 
     // No AI available, use heuristic fallback
-    consola.info("No AI available, using heuristic commit message");
-    return generateHeuristicMessage(statusOutput);
+    consola.info("No AI available, using contextual commit message");
+    return generateContextualMessage(statusOutput);
   } catch (error) {
     consola.warn("AI generation failed, using fallback:", error.message);
-    return "feat: save changes";
+    return generateContextualMessage(statusOutput);
   }
 }
 
@@ -206,21 +208,70 @@ async function isOllamaAvailable() {
 }
 
 /**
- * Generate heuristic commit message
+ * Generate contextual commit message based on file changes
  */
-function generateHeuristicMessage(statusOutput) {
-  const lines = statusOutput.trim().split("\n");
+function generateContextualMessage(statusOutput) {
+  const lines = statusOutput.trim().split("\n").filter(line => line.trim());
+  
+  // Handle empty status
+  if (lines.length === 0) {
+    return "chore: save changes";
+  }
+  
   const addedFiles = lines.filter((line) => line.startsWith("A")).length;
   const modifiedFiles = lines.filter((line) => line.startsWith("M")).length;
   const deletedFiles = lines.filter((line) => line.startsWith("D")).length;
+  const renamedFiles = lines.filter((line) => line.startsWith("R")).length;
 
+  // Analyze file types for more specific messages
+  const fileTypes = new Set();
+  const importantFiles = [];
+  
+  lines.forEach(line => {
+    const filePath = line.substring(3); // Remove status prefix
+    const extension = filePath.split('.').pop()?.toLowerCase();
+    
+    if (extension) {
+      fileTypes.add(extension);
+    }
+    
+    // Track important files for context
+    if (filePath.includes('package.json') || filePath.includes('README') || 
+        filePath.includes('config') || filePath.includes('test')) {
+      importantFiles.push(filePath);
+    }
+  });
+
+  // Generate contextual messages based on changes
   if (addedFiles > 0 && modifiedFiles === 0 && deletedFiles === 0) {
-    return "feat: add new files";
+    if (fileTypes.has('test') || fileTypes.has('spec')) {
+      return "test: add test files";
+    } else if (fileTypes.has('md') || fileTypes.has('txt')) {
+      return "docs: add documentation";
+    } else if (fileTypes.has('json') && importantFiles.some(f => f.includes('package'))) {
+      return "deps: add new dependencies";
+    } else {
+      return `feat: add ${addedFiles} new file${addedFiles > 1 ? 's' : ''}`;
+    }
   } else if (modifiedFiles > 0 && addedFiles === 0 && deletedFiles === 0) {
-    return "fix: update existing files";
+    if (fileTypes.has('test') || fileTypes.has('spec')) {
+      return "test: update test files";
+    } else if (fileTypes.has('md') || fileTypes.has('txt')) {
+      return "docs: update documentation";
+    } else if (fileTypes.has('json') && importantFiles.some(f => f.includes('package'))) {
+      return "deps: update dependencies";
+    } else if (fileTypes.has('js') || fileTypes.has('ts') || fileTypes.has('mjs')) {
+      return "refactor: update source code";
+    } else {
+      return `fix: update ${modifiedFiles} file${modifiedFiles > 1 ? 's' : ''}`;
+    }
   } else if (deletedFiles > 0) {
-    return "refactor: remove files";
+    return `refactor: remove ${deletedFiles} file${deletedFiles > 1 ? 's' : ''}`;
+  } else if (renamedFiles > 0) {
+    return `refactor: rename ${renamedFiles} file${renamedFiles > 1 ? 's' : ''}`;
   } else {
-    return "feat: save changes";
+    // Mixed changes - provide a more descriptive message
+    const totalChanges = addedFiles + modifiedFiles + deletedFiles + renamedFiles;
+    return `chore: update ${totalChanges} file${totalChanges > 1 ? 's' : ''} (${addedFiles}A ${modifiedFiles}M ${deletedFiles}D)`;
   }
 }

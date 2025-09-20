@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 4,
+            "activePatchIndex": 5,
             "patches": [
                 {
                     "date": 1758045807388,
@@ -24,6 +24,10 @@
                 {
                     "date": 1758248327627,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -98,8 +98,14 @@\n 2. **Show actual test output**\n 3. **Admit when things are untested**\n 4. **Verify before claiming success**\n \n+## Test Implementation Standards\n+- **NEVER create simplified or mock versions of tests** - Always implement full functionality\n+- **ALWAYS fix dependency issues properly** - Install missing packages, resolve conflicts\n+- **NEVER skip complex functionality** - Implement complete features as specified\n+- **ALWAYS resolve import/module issues** - Fix the root cause, don't work around it\n+\n ## CRITICAL: Error Checking Protocol\n - **ALWAYS CHECK CONSOLE OUTPUT FOR ERRORS** before declaring success\n - **NEVER declare success if there are ANY error messages** (❌, ⚠️, Error:, Failed:, etc.)\n - **READ THE FULL OUTPUT** - don't just look for ✅ symbols\n"
+                },
+                {
+                    "date": 1758331427318,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -98,8 +98,25 @@\n 2. **Show actual test output**\n 3. **Admit when things are untested**\n 4. **Verify before claiming success**\n \n+## Capability Discovery Protocol\n+- **ALWAYS CHECK FOR EXISTING GITVAN CAPABILITIES FIRST** before using external tools\n+- **SEARCH THE CODEBASE** for existing composables, commands, or functionality\n+- **USE BUILT-IN FEATURES** when available (e.g., `gitvan chat generate` instead of external AI tools)\n+- **LEVERAGE GITVAN'S AI INTEGRATION** (Ollama, chat commands) before external AI services\n+- **CHECK FOR EXISTING CLI COMMANDS** before creating new functionality\n+- **USE GITVAN COMPOSABLES** (`useGit`, `useTemplate`, `useGraph`, etc.) instead of external libraries\n+- **PREFER GITVAN WORKFLOWS** over external automation tools\n+\n+### Capability Check Examples\n+- **AI Generation**: Use `gitvan chat generate` instead of external Ollama commands\n+- **Changelog Creation**: Use `gitvan chat generate \"Create changelog\"` instead of external tools\n+- **Git Operations**: Use `useGit()` composable instead of external git libraries\n+- **Template Rendering**: Use `useTemplate()` instead of external template engines\n+- **RDF Processing**: Use `useGraph()` and `useOllamaRDF()` instead of external RDF tools\n+- **Workflow Execution**: Use `WorkflowEngine` instead of external workflow tools\n+\n ## Test Implementation Standards\n - **NEVER create simplified or mock versions of tests** - Always implement full functionality\n - **ALWAYS fix dependency issues properly** - Install missing packages, resolve conflicts\n - **NEVER skip complex functionality** - Implement complete features as specified\n"
                 }
             ],
             "date": 1758045807388,

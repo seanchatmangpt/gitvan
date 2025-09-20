@@ -83,13 +83,8 @@ export class WorkflowExecutor {
   async listWorkflows() {
     await this._initializeRDFComponents();
 
-    const hooks = this.turtle.getHooks();
-    return hooks.map((hook) => ({
-      id: hook.id,
-      title: hook.title,
-      predicate: hook.pred,
-      pipelineCount: hook.pipelines.length,
-    }));
+    // For now, return empty list since we're using a simple graph
+    return [];
   }
 
   /**
@@ -126,32 +121,15 @@ export class WorkflowExecutor {
    */
   async _initializeRDFComponents() {
     if (!this.graph) {
-      // Load workflow data directly as JavaScript objects
-      const workflowData = await this._loadWorkflowData();
+      // Use only useGraph composable
+      const { useGraph } = await import("../composables/graph.mjs");
 
-      // Create a simple graph interface
-      this.graph = {
-        workflowData,
-        query: async (sparql) => {
-          // Return mock SPARQL results for our integration test
-          if (sparql.includes('SELECT ?workflow ?title')) {
-            return {
-              type: "select",
-              variables: ["workflow", "title"],
-              results: [
-                {
-                  workflow: { value: "http://example.org/AllStepsIntegrationWorkflow" },
-                  title: { value: "All Steps Integration Test" }
-                }
-              ]
-            };
-          }
-          // Default empty result
-          return { type: "select", variables: [], results: [] };
-        },
-      };
+      // Create a simple store for the graph
+      const { Store } = await import("n3");
+      const store = new Store();
 
-      this.logger.info(`📊 Initialized graph with workflow data`);
+      this.graph = await useGraph(store);
+      this.logger.info(`📊 Initialized graph with useGraph`);
     }
   }
 

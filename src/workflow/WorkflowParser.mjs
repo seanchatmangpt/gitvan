@@ -22,35 +22,44 @@ export class WorkflowParser {
    * @param {string} workflowId - The ID of the workflow to parse
    * @returns {Promise<object|null>} Parsed workflow or null if not found
    */
-  async parseWorkflow(graph, workflowId) {
+  async parseWorkflow(turtle, workflowId) {
+    // Store turtle and graph for use in step parsing
+    this.turtle = turtle;
+    this.graph = await import("../composables/graph.mjs").then(m => m.useGraph(turtle.store));
     this.logger.info(`🔍 Looking for workflow: ${workflowId}`);
 
     try {
-      // Find the workflow hook in the JavaScript data
-      const workflowHook = graph.workflowData.hooks.find(
-        (hook) => hook.id === workflowId
-      );
+      // Find the workflow hook using SPARQL query
+      const query = `
+        PREFIX gh: <http://example.org/git-hooks#>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        SELECT ?workflow ?title WHERE {
+          ?workflow a gh:Hook ;
+            rdfs:label ?title .
+          FILTER(?workflow = <${workflowId}>)
+        }
+      `;
 
-      if (!workflowHook) {
+      const results = await this.graph.query(query);
+      
+      if (!results.results || results.results.length === 0) {
         this.logger.warn(`⚠️ Workflow not found: ${workflowId}`);
         return null;
       }
 
-      this.logger.info(`🔍 Found workflow hook: ${workflowHook.title}`);
+      const workflowTitle = results.results[0].title.value;
+      this.logger.info(`🔍 Found workflow hook: ${workflowTitle}`);
 
-      // Parse workflow steps from the JavaScript data
-      const steps = await this._parseWorkflowStepsFromJS(
-        graph.workflowData,
-        workflowHook
-      );
+      // Parse workflow steps from Turtle data
+      const steps = await this._parseWorkflowStepsFromTurtle(turtle, workflowId);
 
       // Validate workflow structure
       await this._validateWorkflow(steps);
 
       const workflow = {
         id: workflowId,
-        title: workflowHook.title,
-        predicate: workflowHook.pred,
+        title: workflowTitle,
+        predicate: null, // Will be set if found
         steps: steps,
         metadata: {
           parsedAt: new Date().toISOString(),
@@ -66,6 +75,65 @@ export class WorkflowParser {
       this.logger.error(`❌ Failed to parse workflow: ${workflowId}`, error);
       throw new Error(`Workflow parsing failed: ${error.message}`);
     }
+  }
+
+  /**
+   * Parse workflow steps from Turtle data
+   * @private
+   */
+  async _parseWorkflowStepsFromTurtle(turtle, workflowId) {
+    // Query for all steps in the workflow pipeline
+    const query = `
+      PREFIX op: <http://example.org/operations#>
+      PREFIX gv: <http://example.org/gitvan#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?pipeline ?step ?stepType ?config WHERE {
+        <${workflowId}> op:hasPipeline ?pipeline .
+        ?pipeline op:hasStep ?step .
+        ?step a ?stepType .
+        OPTIONAL {
+          ?step ?configProp ?configValue .
+          FILTER(?configProp != rdf:type)
+        }
+      }
+    `;
+
+    const results = await turtle.query(query);
+    const steps = [];
+
+    for (const result of results.results) {
+      const stepId = result.step.value;
+      const stepType = result.stepType.value;
+      
+      // Extract step type (e.g., gv:FileStep -> file)
+      const type = stepType.split(':')[1].replace('Step', '').toLowerCase();
+      
+      // Query for all properties of this step
+      const stepQuery = `
+        PREFIX gv: <http://example.org/gitvan#>
+        SELECT ?prop ?value WHERE {
+          <${stepId}> ?prop ?value .
+          FILTER(?prop != rdf:type)
+        }
+      `;
+      
+      const stepResults = await turtle.query(stepQuery);
+      const config = {};
+      
+      for (const stepResult of stepResults.results) {
+        const prop = stepResult.prop.value.split(':')[1]; // Remove namespace
+        const value = stepResult.value.value;
+        config[prop] = value;
+      }
+      
+      steps.push({
+        id: stepId,
+        type: type,
+        config: config
+      });
+    }
+
+    return steps;
   }
 
   /**

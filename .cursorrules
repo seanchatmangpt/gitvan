@@ -99,6 +99,23 @@ GitVan is a Git-native development automation platform that uses Git as a runtim
 3. **Admit when things are untested**
 4. **Verify before claiming success**
 
+## Capability Discovery Protocol
+- **ALWAYS CHECK FOR EXISTING GITVAN CAPABILITIES FIRST** before using external tools
+- **SEARCH THE CODEBASE** for existing composables, commands, or functionality
+- **USE BUILT-IN FEATURES** when available (e.g., `gitvan chat generate` instead of external AI tools)
+- **LEVERAGE GITVAN'S AI INTEGRATION** (Ollama, chat commands) before external AI services
+- **CHECK FOR EXISTING CLI COMMANDS** before creating new functionality
+- **USE GITVAN COMPOSABLES** (`useGit`, `useTemplate`, `useGraph`, etc.) instead of external libraries
+- **PREFER GITVAN WORKFLOWS** over external automation tools
+
+### Capability Check Examples
+- **AI Generation**: Use `gitvan chat generate` instead of external Ollama commands
+- **Changelog Creation**: Use `gitvan chat generate "Create changelog"` instead of external tools
+- **Git Operations**: Use `useGit()` composable instead of external git libraries
+- **Template Rendering**: Use `useTemplate()` instead of external template engines
+- **RDF Processing**: Use `useGraph()` and `useOllamaRDF()` instead of external RDF tools
+- **Workflow Execution**: Use `WorkflowEngine` instead of external workflow tools
+
 ## Test Implementation Standards
 - **NEVER create simplified or mock versions of tests** - Always implement full functionality
 - **ALWAYS fix dependency issues properly** - Install missing packages, resolve conflicts

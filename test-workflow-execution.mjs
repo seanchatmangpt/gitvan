@@ -2,7 +2,7 @@
 // Test GitVan Workflow Execution Script
 // Execute and optimize the test-cursor-workflow
 
-import { WorkflowExecutor } from "./src/workflow/WorkflowExecutor.mjs";
+import { WorkflowExecutor } from "./src/workflow/workflow-executor.mjs";
 import { withGitVan } from "./src/core/context.mjs";
 import { useLog } from "./src/composables/log.mjs";
 

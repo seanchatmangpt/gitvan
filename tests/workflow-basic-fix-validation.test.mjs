@@ -1,8 +1,8 @@
 // Simple test to validate basic workflow system fixes
 import { describe, it, expect } from "vitest";
 import { withMemFSTestEnvironment } from "../src/composables/test-environment.mjs";
-import { StepRunner } from "../src/workflow/StepRunner.mjs";
-import { ContextManager } from "../src/workflow/ContextManager.mjs";
+import { StepRunner } from "../src/workflow/step-runner.mjs";
+import { ContextManager } from "../src/workflow/context-manager.mjs";
 import { useTemplate } from "../src/composables/template.mjs";
 import { readFile } from "node:fs/promises";
 

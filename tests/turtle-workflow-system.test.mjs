@@ -3,7 +3,7 @@
 
 import { describe, it, expect } from "vitest";
 import { withNativeGitTestEnvironment } from "../src/composables/test-environment.mjs";
-import { WorkflowExecutor } from "../src/workflow/WorkflowExecutor.mjs";
+import { WorkflowExecutor } from "../src/workflow/workflow-executor.mjs";
 import { readFile } from "node:fs/promises";
 
 describe("Turtle Workflow System", () => {

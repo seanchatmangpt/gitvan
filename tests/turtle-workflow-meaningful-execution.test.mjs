@@ -3,9 +3,9 @@
 import { describe, it, expect } from "vitest";
 import { withMemFSTestEnvironment } from "../../src/composables/test-environment.mjs";
 import { useTurtle } from "../../src/composables/turtle.mjs";
-import { WorkflowExecutor } from "../../src/workflow/WorkflowExecutor.mjs";
-import { StepRunner } from "../../src/workflow/StepRunner.mjs";
-import { ContextManager } from "../../src/workflow/ContextManager.mjs";
+import { WorkflowExecutor } from "../../src/workflow/workflow-executor.mjs";
+import { StepRunner } from "../../src/workflow/step-runner.mjs";
+import { ContextManager } from "../../src/workflow/context-manager.mjs";
 import { useGraph } from "../../src/composables/graph.mjs";
 import { useTemplate } from "../../src/composables/template.mjs";
 import { readFile, writeFile } from "node:fs/promises";

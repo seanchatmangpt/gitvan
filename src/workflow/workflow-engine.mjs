@@ -1,8 +1,8 @@
 import { useGraph } from "../composables/graph.mjs";
 import { useTurtle } from "../composables/turtle.mjs";
 import { useLog } from "../composables/log.mjs";
-import { StepRunner } from "./StepRunner.mjs";
-import { ContextManager } from "./ContextManager.mjs";
+import { StepRunner } from "./step-runner.mjs";
+import { ContextManager } from "./context-manager.mjs";
 
 /**
  * WorkflowEngine - Simple engine that loads Turtle files using useGraph

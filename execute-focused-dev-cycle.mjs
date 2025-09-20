@@ -250,7 +250,7 @@ async function executeWorkflowEngineOptimization(knowledgeHooks) {
     const codeChanges = {
       files: [
         "src/workflow/workflow-engine.mjs",
-        "src/workflow/StepRunner.mjs",
+        "src/workflow/step-runner.mjs",
       ],
       linesAdded: 45,
       linesModified: 23,

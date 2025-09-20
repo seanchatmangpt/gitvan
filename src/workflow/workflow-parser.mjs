@@ -1,4 +1,4 @@
-// src/workflow/WorkflowParser.mjs
+// src/workflow/workflow-parser.mjs
 // Parser and validator for workflow definitions in Turtle format
 // Loads workflow definitions and validates their structure
 

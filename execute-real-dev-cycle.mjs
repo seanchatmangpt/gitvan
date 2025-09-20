@@ -160,7 +160,7 @@ const realDevelopmentTasks = [
     description:
       "Optimize the WorkflowEngine for better performance and memory usage",
     type: "feature",
-    files: ["src/workflow/workflow-engine.mjs", "src/workflow/StepRunner.mjs"],
+    files: ["src/workflow/workflow-engine.mjs", "src/workflow/step-runner.mjs"],
     cursorPrompts: [
       "Analyze the WorkflowEngine class and identify performance bottlenecks. Focus on memory usage, execution speed, and scalability.",
       "Implement performance optimizations including caching, lazy loading, and concurrent execution where appropriate.",

@@ -1,4 +1,4 @@
-// src/workflow/StepRunner.mjs
+// src/workflow/step-runner.mjs
 // Refactored step execution engine using modular step handlers
 
 import { StepHandlerRegistry } from "./step-handlers/step-handler-registry.mjs";

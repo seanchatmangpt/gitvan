@@ -2,7 +2,7 @@
 // Test the refactored modular StepRunner
 
 import { describe, it, expect, beforeEach } from "vitest";
-import { StepRunner } from "../src/workflow/StepRunner.mjs";
+import { StepRunner } from "../src/workflow/step-runner.mjs";
 import { withMemFSTestEnvironment } from "../src/composables/test-environment.mjs";
 import { useTurtle } from "../src/composables/turtle.mjs";
 

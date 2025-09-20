@@ -12,7 +12,7 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { execSync } from "node:child_process";
-import { WorkflowExecutor } from "../src/workflow/WorkflowExecutor.mjs";
+import { WorkflowExecutor } from "../src/workflow/workflow-executor.mjs";
 
 describe("JTBD Data Processing - ETL Pipeline", () => {
   let testDir;

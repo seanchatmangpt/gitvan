@@ -1,4 +1,4 @@
-// src/workflow/DAGPlanner.mjs
+// src/workflow/dag-planner.mjs
 // Execution planner that creates valid execution orders from workflow steps
 // Performs topological sorting and dependency resolution
 

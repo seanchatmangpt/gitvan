@@ -5,7 +5,7 @@
 
 import { describe, it, expect } from "vitest";
 import { withNativeGitTestEnvironment } from "../../src/composables/test-environment.mjs";
-import { WorkflowExecutor } from "../../src/workflow/WorkflowExecutor.mjs";
+import { WorkflowExecutor } from "../../src/workflow/workflow-executor.mjs";
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
 

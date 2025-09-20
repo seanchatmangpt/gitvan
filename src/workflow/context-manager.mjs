@@ -1,4 +1,4 @@
-// src/workflow/ContextManager.mjs
+// src/workflow/context-manager.mjs
 // State manager that holds the in-memory state of workflow execution
 // Manages inputs, outputs, and intermediate results
 

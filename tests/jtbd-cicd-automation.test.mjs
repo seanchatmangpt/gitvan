@@ -6,7 +6,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdirSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { execSync } from "node:child_process";
-import { WorkflowExecutor } from "../src/workflow/WorkflowExecutor.mjs";
+import { WorkflowExecutor } from "../src/workflow/workflow-executor.mjs";
 
 describe("JTBD CI/CD Automation - Deployment Pipeline", () => {
   let testDir;

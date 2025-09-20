@@ -7,8 +7,8 @@ import { mkdirSync, rmSync, writeFileSync, readFileSync, existsSync } from "node
 import { join } from "node:path";
 import { execSync } from "node:child_process";
 import { withMemFSTestEnvironment } from "../src/composables/test-environment.mjs";
-import { StepRunner } from "../src/workflow/StepRunner.mjs";
-import { ContextManager } from "../src/workflow/ContextManager.mjs";
+import { StepRunner } from "../src/workflow/step-runner.mjs";
+import { ContextManager } from "../src/workflow/context-manager.mjs";
 import { useTemplate } from "../src/composables/template.mjs";
 import { readFile } from "node:fs/promises";
 

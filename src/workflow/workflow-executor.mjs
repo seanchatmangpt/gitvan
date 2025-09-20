@@ -1,11 +1,11 @@
-// src/workflow/WorkflowExecutor.mjs
+// src/workflow/workflow-executor.mjs
 // Main orchestrator for the Turtle as Workflow engine
 // Coordinates parsing, planning, and execution of workflow graphs
 
-import { WorkflowParser } from "./WorkflowParser.mjs";
-import { DAGPlanner } from "./DAGPlanner.mjs";
-import { StepRunner } from "./StepRunner.mjs";
-import { ContextManager } from "./ContextManager.mjs";
+import { WorkflowParser } from "./workflow-parser.mjs";
+import { DAGPlanner } from "./dag-planner.mjs";
+import { StepRunner } from "./step-runner.mjs";
+import { ContextManager } from "./context-manager.mjs";
 import { useGraph } from "../composables/graph.mjs";
 import { promises as fs } from "node:fs";
 import { join } from "node:path";

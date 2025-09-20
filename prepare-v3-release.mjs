@@ -177,3 +177,4 @@ prepareGitVanV3()
     console.error("💥 Error:", error.message);
     process.exit(1);
   });
+

@@ -253,3 +253,4 @@ GitVan's CLI system is well-architected and mostly functional. The core commands
 5. Update documentation
 
 **Estimated Fix Time:** 2-4 hours for critical issues
+

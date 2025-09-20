@@ -137,3 +137,4 @@ Natural Language Description
 - **Integration**: "Create a workflow that processes webhooks and sends notifications"
 
 This is the **intended** architecture - a complete AI-powered workflow generation system that bridges natural language, semantic modeling, type safety, and execution.
+

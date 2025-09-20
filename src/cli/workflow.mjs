@@ -260,6 +260,252 @@ ex:${workflowId}-step1 rdf:type gv:SparqlStep ;
   }
 
   /**
+   * Connect workflow with Cursor CLI
+   * @param {string} workflowId - Workflow ID to connect
+   * @param {object} options - Connection options
+   * @param {string} [options.prompt] - Initial prompt for Cursor
+   * @param {string} [options.model] - Cursor model to use
+   * @param {boolean} [options.interactive] - Use interactive mode
+   * @param {boolean} [options.nonInteractive] - Use non-interactive mode
+   * @returns {Promise<void>}
+   */
+  async cursor(workflowId, options = {}) {
+    try {
+      this.logger.info(`🔗 Connecting workflow ${workflowId} with Cursor CLI`);
+
+      // Check if Cursor CLI is available
+      const { spawn, exec } = await import("node:child_process");
+      const { promisify } = await import("node:util");
+      const execAsync = promisify(exec);
+
+      // Test if cursor-agent is available
+      try {
+        await execAsync("cursor-agent --version", {
+          timeout: 5000,
+        });
+        this.logger.info("✅ Cursor CLI detected");
+      } catch (error) {
+        this.logger.warn("⚠️ Cursor CLI not found. Please install it first:");
+        this.logger.info("   curl https://cursor.com/install -fsS | bash");
+        throw new Error("Cursor CLI not available");
+      }
+
+      // Get workflow details
+      const workflows = await this.engine.listWorkflows();
+      const workflow = workflows.find((w) => w.id === workflowId);
+
+      if (!workflow) {
+        throw new Error(`Workflow not found: ${workflowId}`);
+      }
+
+      this.logger.info(`📋 Found workflow: ${workflow.title}`);
+
+      // Generate Cursor CLI command based on options
+      const cursorArgs = [];
+
+      if (options.interactive) {
+        // Interactive mode
+        cursorArgs.push("cursor-agent");
+        if (options.prompt) {
+          cursorArgs.push(`"${options.prompt}"`);
+        } else {
+          cursorArgs.push(
+            `"Help me execute and optimize the GitVan workflow: ${workflowId} (${workflow.title})"`
+          );
+        }
+      } else if (options.nonInteractive) {
+        // Non-interactive mode
+        cursorArgs.push("cursor-agent", "-p");
+        cursorArgs.push(
+          `"Execute GitVan workflow: ${workflowId} - ${workflow.title}"`
+        );
+
+        if (options.model) {
+          cursorArgs.push("--model", options.model);
+        }
+
+        cursorArgs.push("--output-format", "text");
+      } else {
+        // Default: interactive mode with workflow context
+        cursorArgs.push("cursor-agent");
+        cursorArgs.push(
+          `"Help me execute and optimize the GitVan workflow: ${workflowId} (${workflow.title})"`
+        );
+      }
+
+      this.logger.info("🚀 Starting Cursor CLI session...");
+      this.logger.info(`Command: ${cursorArgs.join(" ")}`);
+
+      // Execute Cursor CLI
+      const cursorProcess = spawn(cursorArgs[0], cursorArgs.slice(1), {
+        stdio: "inherit",
+        shell: true,
+      });
+
+      // Handle process events
+      cursorProcess.on("error", (error) => {
+        this.logger.error(`❌ Failed to start Cursor CLI: ${error.message}`);
+        throw error;
+      });
+
+      cursorProcess.on("exit", (code) => {
+        if (code === 0) {
+          this.logger.info("✅ Cursor CLI session completed");
+        } else {
+          this.logger.warn(`⚠️ Cursor CLI exited with code: ${code}`);
+        }
+      });
+
+      // Wait for process to complete
+      await new Promise((resolve, reject) => {
+        cursorProcess.on("exit", (code) => {
+          if (code === 0) {
+            resolve();
+          } else {
+            reject(new Error(`Cursor CLI exited with code: ${code}`));
+          }
+        });
+
+        cursorProcess.on("error", reject);
+      });
+    } catch (error) {
+      this.logger.error(
+        `❌ Failed to connect with Cursor CLI: ${error.message}`
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Generate Cursor CLI integration script
+   * @param {string} workflowId - Workflow ID
+   * @param {object} options - Generation options
+   * @returns {Promise<void>}
+   */
+  async generateCursorScript(workflowId, options = {}) {
+    try {
+      this.logger.info(
+        `📝 Generating Cursor CLI integration script for: ${workflowId}`
+      );
+
+      const workflows = await this.engine.listWorkflows();
+      const workflow = workflows.find((w) => w.id === workflowId);
+
+      if (!workflow) {
+        throw new Error(`Workflow not found: ${workflowId}`);
+      }
+
+      const script = `#!/bin/bash
+# GitVan Workflow - Cursor CLI Integration Script
+# Generated for workflow: ${workflowId} (${workflow.title})
+# Generated on: ${new Date().toISOString()}
+
+set -e
+
+echo "🔗 GitVan Workflow - Cursor CLI Integration"
+echo "Workflow: ${workflowId} (${workflow.title})"
+echo ""
+
+# Check if Cursor CLI is installed
+if ! command -v cursor-agent &> /dev/null; then
+    echo "❌ Cursor CLI not found. Installing..."
+    curl https://cursor.com/install -fsS | bash
+    echo "✅ Cursor CLI installed"
+fi
+
+# Function to run workflow with Cursor
+run_workflow_with_cursor() {
+    local mode=\${1:-"interactive"}
+    local prompt=\${2:-""}
+    
+    case \$mode in
+        "interactive")
+            if [ -n "\$prompt" ]; then
+                cursor-agent "\$prompt"
+            else
+                cursor-agent "Help me execute and optimize the GitVan workflow: ${workflowId} (${
+        workflow.title
+      })"
+            fi
+            ;;
+        "non-interactive")
+            cursor-agent -p "Execute GitVan workflow: ${workflowId} - ${
+        workflow.title
+      }" --output-format text
+            ;;
+        "review")
+            cursor-agent -p "Review the GitVan workflow: ${workflowId} for security and performance issues" --output-format text
+            ;;
+        *)
+            echo "❌ Unknown mode: \$mode"
+            echo "Available modes: interactive, non-interactive, review"
+            exit 1
+            ;;
+    esac
+}
+
+# Main execution
+case "\${1:-interactive}" in
+    "interactive")
+        run_workflow_with_cursor "interactive" "\$2"
+        ;;
+    "non-interactive")
+        run_workflow_with_cursor "non-interactive"
+        ;;
+    "review")
+        run_workflow_with_cursor "review"
+        ;;
+    "help")
+        echo "Usage: $0 [mode] [prompt]"
+        echo ""
+        echo "Modes:"
+        echo "  interactive     - Start interactive Cursor session (default)"
+        echo "  non-interactive - Run in non-interactive mode"
+        echo "  review         - Review workflow for issues"
+        echo "  help           - Show this help"
+        echo ""
+        echo "Examples:"
+        echo "  $0 interactive"
+        echo "  $0 interactive \"optimize this workflow for performance\""
+        echo "  $0 non-interactive"
+        echo "  $0 review"
+        ;;
+    *)
+        echo "❌ Unknown command: \$1"
+        echo "Run '$0 help' for usage information"
+        exit 1
+        ;;
+esac
+`;
+
+      const fs = await import("node:fs/promises");
+      const path = await import("node:path");
+
+      // Sanitize workflow ID for filename
+      const sanitizedId = workflowId
+        .replace(/[^a-zA-Z0-9-_]/g, "-")
+        .replace(/-+/g, "-");
+      const scriptPath = path.join(process.cwd(), `${sanitizedId}-cursor.sh`);
+      await fs.writeFile(scriptPath, script, "utf8");
+
+      // Make script executable
+      const { chmod } = await import("node:fs/promises");
+      await chmod(scriptPath, "755");
+
+      this.logger.info(`✅ Cursor integration script created: ${scriptPath}`);
+      this.logger.info("🚀 Usage examples:");
+      this.logger.info(`   ./${sanitizedId}-cursor.sh interactive`);
+      this.logger.info(`   ./${sanitizedId}-cursor.sh non-interactive`);
+      this.logger.info(`   ./${sanitizedId}-cursor.sh review`);
+    } catch (error) {
+      this.logger.error(
+        `❌ Failed to generate Cursor script: ${error.message}`
+      );
+      throw error;
+    }
+  }
+
+  /**
    * Show workflow help
    * @returns {void}
    */
@@ -274,6 +520,16 @@ ex:${workflowId}-step1 rdf:type gv:SparqlStep ;
     this.logger.info("   gitvan workflow run <workflow-id>");
     this.logger.info("   gitvan workflow run <workflow-id> --input key=value");
     this.logger.info("   gitvan workflow run <workflow-id> --dry-run");
+    this.logger.info("");
+    this.logger.info("🔗 Connect with Cursor CLI:");
+    this.logger.info("   gitvan workflow cursor <workflow-id> --interactive");
+    this.logger.info(
+      "   gitvan workflow cursor <workflow-id> --non-interactive"
+    );
+    this.logger.info("   gitvan workflow cursor <workflow-id> --model gpt-4");
+    this.logger.info("");
+    this.logger.info("📝 Generate Cursor integration script:");
+    this.logger.info("   gitvan workflow cursor-script <workflow-id>");
     this.logger.info("");
     this.logger.info("🔍 Validate workflow:");
     this.logger.info("   gitvan workflow validate <workflow-id>");
@@ -350,6 +606,43 @@ export async function handleWorkflowCommand(args, options = {}) {
 
         const title = args[2];
         await cli.create(createWorkflowId, title);
+        break;
+
+      case "cursor":
+        const cursorWorkflowId = args[1];
+        if (!cursorWorkflowId) {
+          throw new Error("Workflow ID required for cursor command");
+        }
+
+        // Parse cursor command options
+        const interactive = args.includes("--interactive");
+        const nonInteractive = args.includes("--non-interactive");
+        const modelIndex = args.indexOf("--model");
+        const promptIndex = args.indexOf("--prompt");
+
+        const cursorOptions = {
+          interactive: interactive,
+          nonInteractive: nonInteractive,
+          model:
+            modelIndex !== -1 && args[modelIndex + 1]
+              ? args[modelIndex + 1]
+              : undefined,
+          prompt:
+            promptIndex !== -1 && args[promptIndex + 1]
+              ? args[promptIndex + 1]
+              : undefined,
+        };
+
+        await cli.cursor(cursorWorkflowId, cursorOptions);
+        break;
+
+      case "cursor-script":
+        const scriptWorkflowId = args[1];
+        if (!scriptWorkflowId) {
+          throw new Error("Workflow ID required for cursor-script command");
+        }
+
+        await cli.generateCursorScript(scriptWorkflowId);
         break;
 
       case "help":

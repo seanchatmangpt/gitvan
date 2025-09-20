@@ -151,3 +151,4 @@ Ollama HTTP API
 ```
 
 This is why the direct Ollama calls work perfectly but the complex pipeline methods hang!
+

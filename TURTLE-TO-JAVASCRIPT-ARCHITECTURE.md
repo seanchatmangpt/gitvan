@@ -164,3 +164,4 @@ _mapPropertyName(turtleProp, stepType) {
 6. **Execution**: Run steps using JavaScript objects
 
 This is exactly the **Turtle → JavaScript Object** conversion pattern you described! The WorkflowEngine correctly loads Turtle files, queries them with SPARQL, and converts the results to JavaScript objects for execution.
+

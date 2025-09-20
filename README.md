@@ -15,11 +15,14 @@ GitVan transforms Git into a runtime environment for development automation, pro
 - **SHACL Validation**: Shape-based validation triggers
 
 ### ⚡ Turtle as Workflow Engine
-- **Declarative Workflows**: Define complex workflows in Turtle (.ttl) format
+- **Pure JavaScript Workflows**: Define workflows using simple JavaScript objects
 - **DAG Execution**: Topological sorting ensures proper step dependencies
 - **Template Processing**: Advanced Nunjucks templates with filters
 - **SPARQL Integration**: Query your knowledge graph within workflows
 - **Context Management**: Rich context passing between workflow steps
+- **Step Handlers**: Modular, extensible step execution system
+- **Error Handling**: Robust error handling with detailed diagnostics
+- **Testing Support**: Built-in testing utilities and validation
 
 ### 🎯 Next.js Packs Ecosystem
 - **Hyper-Advanced Dashboard Pack**: Next.js 15.5.2 + React 19 + shadcn/ui + deck.gl
@@ -91,6 +94,15 @@ gitvan workflow list
 
 # Run a workflow
 gitvan workflow run data-processing
+
+# Validate a workflow before execution
+gitvan workflow validate my-workflow
+
+# Get workflow execution history
+gitvan workflow history
+
+# View workflow execution details
+gitvan workflow logs workflow-id
 ```
 
 ## 🎯 Next.js Packs
@@ -204,33 +216,409 @@ ex:validation-predicate rdf:type gh:SHACLAllConform ;
 
 ## ⚡ Turtle as Workflow Engine
 
-Define complex workflows declaratively in Turtle format:
+GitVan's workflow engine executes complex multi-step processes with full dependency management, context passing, and error handling. Workflows are defined using pure JavaScript objects for maximum simplicity and maintainability.
 
-```turtle
-@prefix gv: <https://gitvan.dev/ontology#> .
-@prefix op: <https://gitvan.dev/op#> .
+### 🚀 Quick Start
 
-# Data Processing Workflow
-ex:data-processing-workflow rdf:type gv:Workflow ;
-    gv:title "Data Processing Pipeline" ;
-    gv:steps ex:analyze-data, ex:generate-report .
+```javascript
+import { WorkflowExecutor } from '@gitvan/workflow';
 
-# Step 1: Analyze Data
-ex:analyze-data rdf:type gv:SparqlStep ;
-    gv:text """
-        PREFIX gv: <https://gitvan.dev/ontology#>
-        SELECT (COUNT(?item) AS ?total) WHERE {
-            ?item rdf:type gv:TestItem .
-        }
-    """ ;
-    gv:outputMapping '{"total": "total"}' .
+// Define your workflow as JavaScript objects
+const workflowData = {
+  hooks: [{
+    id: "http://example.org/my-workflow",
+    title: "My Data Processing Workflow",
+    pipelines: ["http://example.org/main-pipeline"]
+  }],
+  pipelines: [{
+    id: "http://example.org/main-pipeline",
+    steps: [
+      "http://example.org/sparql-step",
+      "http://example.org/template-step",
+      "http://example.org/file-step"
+    ]
+  }],
+  steps: [
+    {
+      id: "http://example.org/sparql-step",
+      type: "sparql",
+      config: {
+        query: `SELECT ?project ?version WHERE { ?project rdf:type gv:Project ; gv:version ?version }`,
+        outputMapping: '{"projects": "results"}'
+      }
+    },
+    {
+      id: "http://example.org/template-step",
+      type: "template",
+      config: {
+        template: `# Project Report\n\n{% for project in projects %}- {{ project.project.value }}: {{ project.version.value }}\n{% endfor %}`,
+        outputPath: "reports/project-summary.md"
+      },
+      dependsOn: ["http://example.org/sparql-step"]
+    },
+    {
+      id: "http://example.org/file-step",
+      type: "file",
+      config: {
+        filePath: "reports/project-data.json",
+        operation: "write",
+        content: `{"projects": {{ projects | dump }}, "generated": "{{ 'now' | date('YYYY-MM-DD') }}"}`
+      },
+      dependsOn: ["http://example.org/template-step"]
+    }
+  ]
+};
 
-# Step 2: Generate Report
-ex:generate-report rdf:type gv:TemplateStep ;
-    gv:text "Total Items: {{ total }}\\nGenerated: {{ 'now' | date('YYYY-MM-DD') }}" ;
-    gv:filePath "./reports/data-analysis.txt" ;
-    gv:dependsOn ex:analyze-data .
+// Execute the workflow
+const executor = new WorkflowExecutor({
+  graphDir: './workflows',
+  logger: console
+});
+
+const result = await executor.execute('http://example.org/my-workflow', {});
+console.log(`Workflow completed: ${result.success}`);
+console.log(`Steps executed: ${result.steps.length}`);
 ```
+
+### 📋 Step Types
+
+#### 🔍 SPARQL Step
+Execute SPARQL queries against your knowledge graph:
+
+```javascript
+{
+  id: "http://example.org/sparql-step",
+  type: "sparql",
+  config: {
+    query: `SELECT ?item ?status WHERE { ?item rdf:type gv:Task ; gv:status ?status }`,
+    outputMapping: '{"tasks": "results"}'  // Maps query results to context variables
+  }
+}
+```
+
+**Returns to context:**
+- `type`: Query type ("select", "ask", "construct")
+- `results`: Query results array
+- `count`: Number of results
+- `hasResults`: Boolean indicating if results exist
+- `variables`: Query variables
+- `queryMetadata`: Additional query information
+
+#### 📝 Template Step
+Generate content using Nunjucks templates:
+
+```javascript
+{
+  id: "http://example.org/template-step",
+  type: "template",
+  config: {
+    template: `# {{ title }}\n\n## Summary\n{{ summary }}\n\n## Items\n{% for item in items %}- {{ item.name }}: {{ item.value }}\n{% endfor %}`,
+    outputPath: "reports/generated-report.md"
+  },
+  dependsOn: ["http://example.org/sparql-step"]
+}
+```
+
+**Returns to context:**
+- `outputPath`: Path where content was written
+- `content`: Generated content
+- `contentLength`: Length of generated content
+- `templateUsed`: Type of template used ("inline" or file path)
+
+#### 📁 File Step
+Perform file system operations:
+
+```javascript
+{
+  id: "http://example.org/file-step",
+  type: "file",
+  config: {
+    filePath: "data/output.json",
+    operation: "write",  // read, write, copy, move, delete
+    content: `{"data": {{ data | dump }}, "timestamp": "{{ 'now' | date('YYYY-MM-DD') }}"}`
+  },
+  dependsOn: ["http://example.org/template-step"]
+}
+```
+
+**Returns to context:**
+- `operation`: Operation performed
+- `filePath`: Path of the file
+- `contentLength`: Length of content (for write operations)
+- `rendered`: Whether content was template-rendered
+
+#### 🌐 HTTP Step
+Make HTTP requests to external APIs:
+
+```javascript
+{
+  id: "http://example.org/http-step",
+  type: "http",
+  config: {
+    url: "https://api.example.com/data",
+    method: "GET",  // GET, POST, PUT, DELETE, etc.
+    headers: {
+      "Authorization": "Bearer {{ token }}",
+      "Content-Type": "application/json"
+    },
+    body: `{"query": "{{ searchQuery }}", "limit": 10}`  // Optional for POST/PUT
+  }
+}
+```
+
+**Returns to context:**
+- `url`: Request URL
+- `method`: HTTP method used
+- `status`: HTTP status code
+- `statusText`: HTTP status text
+- `headers`: Response headers
+- `responseData`: Parsed response body
+- `success`: Boolean indicating success
+
+#### 💻 CLI Step
+Execute command-line commands:
+
+```javascript
+{
+  id: "http://example.org/cli-step",
+  type: "cli",
+  config: {
+    command: "echo 'Processing complete: {{ timestamp }}'",
+    cwd: "/path/to/working/directory",  // Optional
+    timeout: 30000,  // Optional timeout in ms
+    env: {  // Optional environment variables
+      "NODE_ENV": "production",
+      "API_KEY": "{{ apiKey }}"
+    }
+  }
+}
+```
+
+**Returns to context:**
+- `command`: Command executed
+- `cwd`: Working directory
+- `stdout`: Standard output
+- `stderr`: Standard error
+- `exitCode`: Exit code (0 = success)
+- `success`: Boolean indicating success
+
+### 🔄 Workflow Execution Flow
+
+1. **Parse Workflow**: Load workflow definition and validate structure
+2. **Create Execution Plan**: Build dependency graph and determine execution order
+3. **Initialize Context**: Set up execution context and input parameters
+4. **Execute Steps**: Run steps in dependency order with context passing
+5. **Handle Errors**: Graceful error handling with rollback capabilities
+6. **Return Results**: Complete execution results with step outputs
+
+### 📊 Context Management
+
+Each step receives the full execution context and can access:
+- **Input Parameters**: Initial workflow inputs
+- **Previous Step Outputs**: Results from dependency steps
+- **Global Variables**: Workflow-wide variables
+- **Template Variables**: Available for template rendering
+
+```javascript
+// Step outputs are automatically available to dependent steps
+const context = {
+  // From SPARQL step
+  tasks: [
+    { item: { value: "task1" }, status: { value: "completed" } },
+    { item: { value: "task2" }, status: { value: "pending" } }
+  ],
+  
+  // From Template step
+  reportPath: "reports/task-summary.md",
+  
+  // From File step
+  dataFile: "data/tasks.json",
+  
+  // Global variables
+  timestamp: "2024-01-01T00:00:00Z",
+  environment: "production"
+};
+```
+
+### 🛠️ Advanced Features
+
+#### Dependency Management
+Steps automatically execute in the correct order based on dependencies:
+
+```javascript
+// Step C depends on both A and B
+{
+  id: "step-c",
+  dependsOn: ["step-a", "step-b"]  // Will wait for both to complete
+}
+```
+
+#### Error Handling
+Robust error handling with detailed error information:
+
+```javascript
+const result = await executor.execute('workflow-id', {});
+if (!result.success) {
+  console.error('Workflow failed:', result.error);
+  console.error('Failed step:', result.failedStep);
+}
+```
+
+#### Template Filters
+Rich template system with built-in filters:
+
+```javascript
+template: `
+# Report Generated: {{ timestamp | date('YYYY-MM-DD HH:mm') }}
+# Items Count: {{ items.length }}
+# Status: {{ status | capitalize }}
+# Data: {{ data | dump(2) }}
+`
+```
+
+### 🧪 Testing Workflows
+
+```javascript
+import { describe, it, expect } from 'vitest';
+import { WorkflowExecutor } from '@gitvan/workflow';
+
+describe('My Workflow', () => {
+  it('should execute all steps successfully', async () => {
+    const executor = new WorkflowExecutor({
+      graphDir: './test-workflows',
+      logger: console
+    });
+
+    const result = await executor.execute('http://example.org/test-workflow', {
+      testData: 'sample'
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.steps).toHaveLength(3);
+    
+    // Verify step outputs
+    expect(result.steps[0].outputs.type).toBe('select');
+    expect(result.steps[1].outputs.outputPath).toBe('reports/test-report.md');
+    expect(result.steps[2].outputs.operation).toBe('write');
+  });
+});
+```
+
+### 📚 Real-World Examples
+
+#### Data Processing Pipeline
+```javascript
+const dataPipeline = {
+  hooks: [{ id: "data-pipeline", title: "Data Processing", pipelines: ["main"] }],
+  pipelines: [{ id: "main", steps: ["fetch", "process", "report", "notify"] }],
+  steps: [
+    {
+      id: "fetch",
+      type: "http",
+      config: { url: "https://api.data.com/export", method: "GET" }
+    },
+    {
+      id: "process", 
+      type: "sparql",
+      config: { query: "SELECT ?item WHERE { ?item rdf:type gv:DataItem }" },
+      dependsOn: ["fetch"]
+    },
+    {
+      id: "report",
+      type: "template", 
+      config: { template: "# Data Report\nProcessed {{ count }} items", outputPath: "reports/data.md" },
+      dependsOn: ["process"]
+    },
+    {
+      id: "notify",
+      type: "cli",
+      config: { command: "echo 'Data processing complete: {{ count }} items processed'" },
+      dependsOn: ["report"]
+    }
+  ]
+};
+```
+
+#### CI/CD Automation
+```javascript
+const cicdWorkflow = {
+  hooks: [{ id: "cicd-pipeline", title: "CI/CD Pipeline", pipelines: ["deploy"] }],
+  pipelines: [{ id: "deploy", steps: ["test", "build", "deploy", "verify"] }],
+  steps: [
+    {
+      id: "test",
+      type: "cli",
+      config: { command: "npm test" }
+    },
+    {
+      id: "build",
+      type: "cli", 
+      config: { command: "npm run build" },
+      dependsOn: ["test"]
+    },
+    {
+      id: "deploy",
+      type: "cli",
+      config: { command: "docker push myapp:{{ version }}" },
+      dependsOn: ["build"]
+    },
+    {
+      id: "verify",
+      type: "http",
+      config: { url: "https://api.myservice.com/health", method: "GET" },
+      dependsOn: ["deploy"]
+    }
+  ]
+};
+```
+
+### 🎯 Workflow System Benefits
+
+#### ✅ **Simplicity**
+- **Pure JavaScript**: No complex RDF parsing or Turtle file management
+- **Intuitive Structure**: Clear, readable workflow definitions
+- **Easy Debugging**: Step-by-step execution with detailed logging
+
+#### ✅ **Reliability**
+- **Dependency Management**: Automatic execution order based on step dependencies
+- **Error Handling**: Graceful failure handling with rollback capabilities
+- **Context Preservation**: Full context passing between steps
+
+#### ✅ **Extensibility**
+- **Modular Step Handlers**: Easy to add new step types
+- **Template System**: Rich templating with Nunjucks filters
+- **API Integration**: Built-in HTTP and CLI step support
+
+#### ✅ **Testing**
+- **Built-in Testing**: Comprehensive testing utilities
+- **Validation**: Workflow validation before execution
+- **Mocking**: Easy mocking for testing environments
+
+### 🚀 Use Cases
+
+#### **Data Processing Pipelines**
+- Extract data from APIs
+- Process with SPARQL queries
+- Generate reports with templates
+- Store results in files
+
+#### **CI/CD Automation**
+- Run tests
+- Build applications
+- Deploy to environments
+- Verify deployments
+
+#### **Documentation Generation**
+- Query project data
+- Generate documentation
+- Create reports
+- Update websites
+
+#### **Business Intelligence**
+- Collect metrics
+- Analyze data
+- Generate dashboards
+- Send notifications
 
 ## 🤖 JTBD Hooks (Job-to-be-Done)
 

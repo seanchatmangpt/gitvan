@@ -72,9 +72,16 @@ export class TemplateStepHandler extends BaseStepHandler {
         // Test environment files API
         const dir = dirname(outputPath);
         if (dir !== "." && dir !== outputPath) {
-          await fs.mkdir(dir);
+          try {
+            await fs.mkdir(dir);
+          } catch (error) {
+            // Directory might already exist, ignore EEXIST error
+            if (error.code !== 'EEXIST') {
+              throw error;
+            }
+          }
         }
-        await fs.write(outputPath, renderedContent);
+        await fs.writeFile(outputPath, renderedContent);
       } else {
         // Node.js fs.promises API
         await fs.mkdir(dirname(outputPath), { recursive: true });

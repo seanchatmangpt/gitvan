@@ -17,18 +17,19 @@ export class WorkflowParser {
   }
 
   /**
-   * Parse a workflow definition from Turtle data
-   * @param {object} turtle - useTurtle instance
+   * Parse a workflow definition from graph data
+   * @param {object} graph - Graph object with workflowData
    * @param {string} workflowId - The ID of the workflow to parse
    * @returns {Promise<object|null>} Parsed workflow or null if not found
    */
-  async parseWorkflow(turtle, workflowId) {
+  async parseWorkflow(graph, workflowId) {
     this.logger.info(`🔍 Looking for workflow: ${workflowId}`);
 
     try {
-      // Find the workflow hook
-      const hooks = turtle.getHooks();
-      const workflowHook = hooks.find((hook) => hook.id === workflowId);
+      // Find the workflow hook in the JavaScript data
+      const workflowHook = graph.workflowData.hooks.find(
+        (hook) => hook.id === workflowId
+      );
 
       if (!workflowHook) {
         this.logger.warn(`⚠️ Workflow not found: ${workflowId}`);
@@ -37,8 +38,11 @@ export class WorkflowParser {
 
       this.logger.info(`🔍 Found workflow hook: ${workflowHook.title}`);
 
-      // Parse workflow steps
-      const steps = await this._parseWorkflowSteps(turtle, workflowHook);
+      // Parse workflow steps from the JavaScript data
+      const steps = await this._parseWorkflowStepsFromJS(
+        graph.workflowData,
+        workflowHook
+      );
 
       // Validate workflow structure
       await this._validateWorkflow(steps);
@@ -62,6 +66,41 @@ export class WorkflowParser {
       this.logger.error(`❌ Failed to parse workflow: ${workflowId}`, error);
       throw new Error(`Workflow parsing failed: ${error.message}`);
     }
+  }
+
+  /**
+   * Parse workflow steps from JavaScript data
+   * @private
+   */
+  async _parseWorkflowStepsFromJS(workflowData, workflowHook) {
+    const steps = [];
+    const stepIds = new Set();
+
+    // Get the pipeline for this workflow
+    const pipeline = workflowData.pipelines.find(
+      (p) => p.id === workflowHook.pipelines[0]
+    );
+    if (!pipeline) {
+      this.logger.warn(`⚠️ Pipeline not found: ${workflowHook.pipelines[0]}`);
+      return steps;
+    }
+
+    // Get all steps for this pipeline
+    for (const stepId of pipeline.steps) {
+      const stepData = workflowData.steps.find((s) => s.id === stepId);
+      if (stepData && !stepIds.has(stepData.id)) {
+        const step = {
+          id: stepData.id,
+          type: stepData.type,
+          config: stepData.config,
+          dependencies: stepData.dependsOn || [],
+        };
+        stepIds.add(step.id);
+        steps.push(step);
+      }
+    }
+
+    return steps;
   }
 
   /**
@@ -141,6 +180,8 @@ export class WorkflowParser {
       return "file";
     } else if (turtle.isA(stepNode, GV + "HttpStep")) {
       return "http";
+    } else if (turtle.isA(stepNode, GV + "CliStep")) {
+      return "cli";
     } else if (turtle.isA(stepNode, GV + "GitStep")) {
       return "git";
     }
@@ -177,12 +218,18 @@ export class WorkflowParser {
     // Extract HTTP configuration
     const httpUrl = turtle.getOne(stepNode, GV + "httpUrl");
     if (httpUrl) {
-      config.httpUrl = httpUrl.value;
+      config.url = httpUrl.value; // Map to 'url' for HttpStepHandler
     }
 
     const httpMethod = turtle.getOne(stepNode, GV + "httpMethod");
     if (httpMethod) {
-      config.httpMethod = httpMethod.value;
+      config.method = httpMethod.value; // Map to 'method' for HttpStepHandler
+    }
+
+    // Extract CLI configuration
+    const cliCommand = turtle.getOne(stepNode, GV + "cliCommand");
+    if (cliCommand) {
+      config.command = cliCommand.value; // Map to 'command' for CliStepHandler
     }
 
     // Extract Git configuration
@@ -335,16 +382,17 @@ export class WorkflowParser {
         break;
 
       case "http":
-        if (!step.config.httpUrl) {
-          throw new Error(`HTTP step ${step.id} missing httpUrl configuration`);
+        if (!step.config.url) {
+          throw new Error(`HTTP step ${step.id} missing url configuration`);
+        }
+        if (!step.config.method) {
+          throw new Error(`HTTP step ${step.id} missing method configuration`);
         }
         break;
 
-      case "git":
-        if (!step.config.gitCommand) {
-          throw new Error(
-            `Git step ${step.id} missing gitCommand configuration`
-          );
+      case "cli":
+        if (!step.config.command) {
+          throw new Error(`CLI step ${step.id} missing command configuration`);
         }
         break;
     }

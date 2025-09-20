@@ -249,7 +249,7 @@ All endpoints return appropriate HTTP status codes:
   it("should generate README documentation for project setup", async () => {
     // Create package.json
     const packageJson = {
-      name: "my-awesome-project",
+      name: "gitvan-project",
       version: "1.0.0",
       description: "An awesome project",
       main: "index.js",

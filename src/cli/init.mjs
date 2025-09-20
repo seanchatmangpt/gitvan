@@ -18,7 +18,7 @@ export const initCommand = defineCommand({
     name: {
       type: "string",
       description: "Project name",
-      default: "my-gitvan-project",
+      default: "gitvan-project",
     },
     description: {
       type: "string",
@@ -28,7 +28,7 @@ export const initCommand = defineCommand({
   },
   async run({ args }) {
     const cwd = args.cwd || process.cwd();
-    const projectName = args.name || "my-gitvan-project";
+    const projectName = args.name || "gitvan-project";
     const projectDescription =
       args.description || "A GitVan-powered project with Knowledge Hook Engine";
 

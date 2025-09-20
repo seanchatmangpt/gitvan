@@ -92,7 +92,7 @@ export const saveCommand = defineCommand({
  */
 export async function generateCommitMessage(filePaths, worktreePath) {
   let statusOutput = "";
-  
+
   try {
     // Get git diff for context
     const diffOutput = execSync("git diff --cached", {
@@ -162,7 +162,7 @@ Examples: feat: add user authentication, fix: resolve login bug, docs: update RE
  */
 async function generateWithOllama(diffOutput, statusOutput) {
   const { default: ollama } = await import("ollama");
-  
+
   const prompt = `Generate a concise, conventional commit message for these changes:
 
 Files changed:
@@ -185,9 +185,13 @@ Response:`;
       prompt,
       stream: false,
     });
-    
+
     clearTimeout(timeoutId);
-    return response.response.trim();
+    const trimmedResponse = response.response.trim();
+    if (!trimmedResponse) {
+      throw new Error("Empty response from Ollama");
+    }
+    return trimmedResponse;
   } catch (error) {
     clearTimeout(timeoutId);
     throw error;
@@ -211,13 +215,16 @@ async function isOllamaAvailable() {
  * Generate contextual commit message based on file changes
  */
 function generateContextualMessage(statusOutput) {
-  const lines = statusOutput.trim().split("\n").filter(line => line.trim());
-  
+  const lines = statusOutput
+    .trim()
+    .split("\n")
+    .filter((line) => line.trim());
+
   // Handle empty status
   if (lines.length === 0) {
     return "chore: save changes";
   }
-  
+
   const addedFiles = lines.filter((line) => line.startsWith("A")).length;
   const modifiedFiles = lines.filter((line) => line.startsWith("M")).length;
   const deletedFiles = lines.filter((line) => line.startsWith("D")).length;
@@ -226,52 +233,73 @@ function generateContextualMessage(statusOutput) {
   // Analyze file types for more specific messages
   const fileTypes = new Set();
   const importantFiles = [];
-  
-  lines.forEach(line => {
+
+  lines.forEach((line) => {
     const filePath = line.substring(3); // Remove status prefix
-    const extension = filePath.split('.').pop()?.toLowerCase();
-    
+    const extension = filePath.split(".").pop()?.toLowerCase();
+
     if (extension) {
       fileTypes.add(extension);
     }
-    
+
     // Track important files for context
-    if (filePath.includes('package.json') || filePath.includes('README') || 
-        filePath.includes('config') || filePath.includes('test')) {
+    if (
+      filePath.includes("package.json") ||
+      filePath.includes("README") ||
+      filePath.includes("config") ||
+      filePath.includes("test")
+    ) {
       importantFiles.push(filePath);
     }
   });
 
   // Generate contextual messages based on changes
   if (addedFiles > 0 && modifiedFiles === 0 && deletedFiles === 0) {
-    if (fileTypes.has('test') || fileTypes.has('spec')) {
+    if (fileTypes.has("test") || fileTypes.has("spec")) {
       return "test: add test files";
-    } else if (fileTypes.has('md') || fileTypes.has('txt')) {
+    } else if (fileTypes.has("md") || fileTypes.has("txt")) {
       return "docs: add documentation";
-    } else if (fileTypes.has('json') && importantFiles.some(f => f.includes('package'))) {
+    } else if (
+      fileTypes.has("json") &&
+      importantFiles.some((f) => f.includes("package"))
+    ) {
       return "deps: add new dependencies";
     } else {
-      return `feat: add ${addedFiles} new file${addedFiles > 1 ? 's' : ''}`;
+      return `feat: add ${addedFiles} new file${addedFiles > 1 ? "s" : ""}`;
     }
   } else if (modifiedFiles > 0 && addedFiles === 0 && deletedFiles === 0) {
-    if (fileTypes.has('test') || fileTypes.has('spec')) {
+    if (fileTypes.has("test") || fileTypes.has("spec")) {
       return "test: update test files";
-    } else if (fileTypes.has('md') || fileTypes.has('txt')) {
+    } else if (fileTypes.has("md") || fileTypes.has("txt")) {
       return "docs: update documentation";
-    } else if (fileTypes.has('json') && importantFiles.some(f => f.includes('package'))) {
+    } else if (
+      fileTypes.has("json") &&
+      importantFiles.some((f) => f.includes("package"))
+    ) {
       return "deps: update dependencies";
-    } else if (fileTypes.has('js') || fileTypes.has('ts') || fileTypes.has('mjs')) {
+    } else if (
+      fileTypes.has("js") ||
+      fileTypes.has("ts") ||
+      fileTypes.has("mjs")
+    ) {
       return "refactor: update source code";
     } else {
-      return `fix: update ${modifiedFiles} file${modifiedFiles > 1 ? 's' : ''}`;
+      return `fix: update ${modifiedFiles} file${modifiedFiles > 1 ? "s" : ""}`;
     }
   } else if (deletedFiles > 0) {
-    return `refactor: remove ${deletedFiles} file${deletedFiles > 1 ? 's' : ''}`;
+    return `refactor: remove ${deletedFiles} file${
+      deletedFiles > 1 ? "s" : ""
+    }`;
   } else if (renamedFiles > 0) {
-    return `refactor: rename ${renamedFiles} file${renamedFiles > 1 ? 's' : ''}`;
+    return `refactor: rename ${renamedFiles} file${
+      renamedFiles > 1 ? "s" : ""
+    }`;
   } else {
     // Mixed changes - provide a more descriptive message
-    const totalChanges = addedFiles + modifiedFiles + deletedFiles + renamedFiles;
-    return `chore: update ${totalChanges} file${totalChanges > 1 ? 's' : ''} (${addedFiles}A ${modifiedFiles}M ${deletedFiles}D)`;
+    const totalChanges =
+      addedFiles + modifiedFiles + deletedFiles + renamedFiles;
+    return `chore: update ${totalChanges} file${
+      totalChanges > 1 ? "s" : ""
+    } (${addedFiles}A ${modifiedFiles}M ${deletedFiles}D)`;
   }
 }

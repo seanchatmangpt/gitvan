@@ -1,0 +1,154 @@
+{
+  "kind": "receipt-collection",
+  "timestamp": "2025-09-20T02:13:52.141Z",
+  "count": 15,
+  "receipts": [
+    {
+      "kind": "workflow-receipt",
+      "id": "force-skip.njk",
+      "status": "SKIP",
+      "ts": "2025-09-19T17:45:37.081Z",
+      "commit": "0749c33cc7215600df513bd7cae39e81878c687a",
+      "action": "unknown",
+      "artifacts": []
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "force-append.njk",
+      "status": "SKIP",
+      "ts": "2025-09-19T17:45:37.201Z",
+      "commit": "0749c33cc7215600df513bd7cae39e81878c687a",
+      "action": "unknown",
+      "artifacts": []
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "copy.njk",
+      "status": "SKIP",
+      "ts": "2025-09-19T17:45:37.398Z",
+      "commit": "0749c33cc7215600df513bd7cae39e81878c687a",
+      "action": "unknown",
+      "artifacts": []
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "escape.njk",
+      "status": "SKIP",
+      "ts": "2025-09-19T17:45:37.459Z",
+      "commit": "0749c33cc7215600df513bd7cae39e81878c687a",
+      "action": "unknown",
+      "artifacts": []
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "idempotent.njk",
+      "status": "SKIP",
+      "ts": "2025-09-19T17:45:37.595Z",
+      "commit": "0749c33cc7215600df513bd7cae39e81878c687a",
+      "action": "unknown",
+      "artifacts": []
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "force-skip.njk",
+      "status": "SKIP",
+      "ts": "2025-09-19T23:10:16.695Z",
+      "commit": "2665cfc0a51f2785865781159e5614d0fba416c8",
+      "action": "unknown",
+      "artifacts": []
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "force-append.njk",
+      "status": "SKIP",
+      "ts": "2025-09-19T23:10:16.786Z",
+      "commit": "2665cfc0a51f2785865781159e5614d0fba416c8",
+      "action": "unknown",
+      "artifacts": []
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "copy.njk",
+      "status": "SKIP",
+      "ts": "2025-09-19T23:10:16.992Z",
+      "commit": "2665cfc0a51f2785865781159e5614d0fba416c8",
+      "action": "unknown",
+      "artifacts": []
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "escape.njk",
+      "status": "SKIP",
+      "ts": "2025-09-19T23:10:17.027Z",
+      "commit": "2665cfc0a51f2785865781159e5614d0fba416c8",
+      "action": "unknown",
+      "artifacts": []
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "idempotent.njk",
+      "status": "SKIP",
+      "ts": "2025-09-19T23:10:17.101Z",
+      "commit": "2665cfc0a51f2785865781159e5614d0fba416c8",
+      "action": "unknown",
+      "artifacts": []
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "force-skip.njk",
+      "status": "SKIP",
+      "ts": "2025-09-20T01:57:21.960Z",
+      "commit": "aac3e6bb18bf0800e3927ba6afbac1fb76ae9171",
+      "action": "unknown",
+      "artifacts": []
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "force-append.njk",
+      "status": "SKIP",
+      "ts": "2025-09-20T01:57:22.407Z",
+      "commit": "aac3e6bb18bf0800e3927ba6afbac1fb76ae9171",
+      "action": "unknown",
+      "artifacts": []
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "copy.njk",
+      "status": "SKIP",
+      "ts": "2025-09-20T01:57:23.246Z",
+      "commit": "aac3e6bb18bf0800e3927ba6afbac1fb76ae9171",
+      "action": "unknown",
+      "artifacts": []
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "escape.njk",
+      "status": "SKIP",
+      "ts": "2025-09-20T01:57:23.679Z",
+      "commit": "aac3e6bb18bf0800e3927ba6afbac1fb76ae9171",
+      "action": "unknown",
+      "artifacts": []
+    },
+    {
+      "kind": "workflow-receipt",
+      "id": "idempotent.njk",
+      "status": "SKIP",
+      "ts": "2025-09-20T01:57:23.915Z",
+      "commit": "aac3e6bb18bf0800e3927ba6afbac1fb76ae9171",
+      "action": "unknown",
+      "artifacts": []
+    }
+  ],
+  "summary": {
+    "ok": 0,
+    "error": 0,
+    "skip": 15
+  },
+  "metadata": {
+    "totalProcessed": 3,
+    "validReceipts": 15,
+    "invalidReceipts": 0,
+    "gitRef": "refs/notes/gitvan/results",
+    "generatedBy": "gitvan-audit-cli"
+  }
+}

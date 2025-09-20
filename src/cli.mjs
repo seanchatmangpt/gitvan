@@ -209,7 +209,7 @@ async function handleInit() {
   // Custom data available in templates
   data: {
     project: {
-      name: "my-project",
+      name: "gitvan-project",
       description: "A GitVan-powered project",
     },
   },

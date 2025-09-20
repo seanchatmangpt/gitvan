@@ -356,7 +356,7 @@ Generated on: {{ __system.timestamp }}
 
     it("should render templates with custom filters", async () => {
       const template = "{{ name | pascalCase }}";
-      const context = { name: "my-awesome-project" };
+      const context = { name: "gitvan-project" };
 
       const result = await templateProcessor.render(template, context);
 
@@ -535,7 +535,7 @@ describe('{{ projectName | pascalCase }}', () => {
         const packageContent = readFileSync(packagePath, "utf8");
         const packageJson = JSON.parse(packageContent);
 
-        expect(packageJson.name).toBe("my-awesome-project");
+        expect(packageJson.name).toBe("gitvan-project");
         expect(packageJson.author).toBe("Test Author");
         expect(packageJson.scripts.test).toBe("vitest");
       } finally {

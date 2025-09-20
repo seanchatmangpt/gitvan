@@ -11,7 +11,7 @@ vi.mock("ollama", () => ({
       response: "feat: add new feature with AI-generated commit message",
     }),
     list: vi.fn().mockResolvedValue({
-      models: [{ name: "qwen3-coder:30b" }]
+      models: [{ name: "qwen3-coder:30b" }],
     }),
   },
 }));

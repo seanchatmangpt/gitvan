@@ -1,0 +1,32 @@
+# Project Status Report
+
+**Project:** {{ project.name }}  
+**Description:** {{ project.description }}  
+**Generated:** {{ "now" | date("YYYY-MM-DD HH:mm:ss") }}
+
+## Summary
+
+This is a sample GitVan template demonstrating template processing with the Knowledge Hook Engine.
+
+## Data Available
+
+- Project information from gitvan.config.js
+- Knowledge graph data from SPARQL queries
+- Workflow execution results
+- Hook evaluation context
+
+## Usage
+
+Templates can be processed by:
+- Workflow steps
+- Hook actions
+- Manual processing
+
+## Filters
+
+Available filters:
+- `| date(format)` - Date formatting
+- `| length` - Array/object length
+- `| tojson` - JSON serialization
+- `| upper` - Uppercase conversion
+- `| lower` - Lowercase conversion

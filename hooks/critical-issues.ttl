@@ -5,8 +5,6 @@
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 
 # Critical Issue Alert Hook
-# Demonstrates ASK predicate - boolean condition evaluation
-
 ex:critical-issues-hook rdf:type gh:Hook ;
     gv:title "Critical Issue Alert" ;
     gh:hasPredicate ex:critical-issues-predicate ;
@@ -19,110 +17,18 @@ ex:critical-issues-predicate rdf:type gh:ASKPredicate ;
         PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
         
         ASK WHERE {
-            ?issue rdf:type gv:Issue .
-            ?issue gv:severity "critical" .
-            ?issue gv:status "open" .
+            ?item rdf:type gv:TestItem .
+            ?item gv:priority "critical" .
+            ?item gv:status "open" .
         }
     """ ;
     gh:description "Detects if there are any open critical issues in the system" .
 
 # Workflow Pipeline
 ex:critical-issues-pipeline rdf:type op:Pipeline ;
-    op:steps ex:get-critical-issues, ex:send-alert, ex:create-task, ex:update-dashboard .
+    op:steps ex:create-alert .
 
-# Step 1: Get Critical Issues Details
-ex:get-critical-issues rdf:type gv:SparqlStep ;
-    gv:text """
-        PREFIX gv: <https://gitvan.dev/ontology#>
-        PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-        
-        SELECT ?issue ?title ?assignee ?createdDate WHERE {
-            ?issue rdf:type gv:Issue .
-            ?issue gv:severity "critical" .
-            ?issue gv:status "open" .
-            ?issue gv:title ?title .
-            OPTIONAL { ?issue gv:assignee ?assignee }
-            OPTIONAL { ?issue gv:createdDate ?createdDate }
-        } ORDER BY ?createdDate
-    """ ;
-    gv:outputMapping '{"criticalIssues": "results", "issueCount": "results.length"}' .
-
-# Step 2: Send Alert
-ex:send-alert rdf:type gv:HttpStep ;
-    gv:httpUrl "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK" ;
-    gv:httpMethod "POST" ;
-    gv:headers '{"Content-Type": "application/json"}' ;
-    gv:body """
-        {
-            "text": "🚨 CRITICAL ISSUES DETECTED",
-            "attachments": [
-                {
-                    "color": "danger",
-                    "title": "Critical Issues Alert",
-                    "text": "{{ issueCount }} critical issues require immediate attention",
-                    "fields": [
-                        {% for issue in criticalIssues %}
-                        {
-                            "title": "{{ issue.title.value }}",
-                            "value": "Assignee: {{ issue.assignee.value | default('Unassigned') }}\\nCreated: {{ issue.createdDate.value | default('Unknown') }}",
-                            "short": true
-                        }{% if not loop.last %},{% endif %}
-                        {% endfor %}
-                    ],
-                    "footer": "GitVan Knowledge Hook Engine",
-                    "ts": {{ "now" | date("X") }}
-                }
-            ]
-        }
-    """ ;
-    gv:dependsOn ex:get-critical-issues ;
-    gv:timeout 15000 .
-
-# Step 3: Create Escalation Task
-ex:create-task rdf:type gv:HttpStep ;
-    gv:httpUrl "https://api.example.com/tasks" ;
-    gv:httpMethod "POST" ;
-    gv:headers '{"Content-Type": "application/json", "Authorization": "Bearer YOUR_API_TOKEN"}' ;
-    gv:body """
-        {
-            "title": "Critical Issues Escalation - {{ issueCount }} issues",
-            "description": "Automated escalation due to critical issues detected:\\n\\n{% for issue in criticalIssues %}- {{ issue.title.value }}{% if not loop.last %}\\n{% endif %}{% endfor %}",
-            "priority": "urgent",
-            "assignee": "engineering-manager",
-            "tags": ["critical", "escalation", "automated"],
-            "dueDate": "{{ 'now' | date('YYYY-MM-DD') }}"
-        }
-    """ ;
-    gv:dependsOn ex:send-alert ;
-    gv:timeout 10000 .
-
-# Step 4: Update Dashboard
-ex:update-dashboard rdf:type gv:TemplateStep ;
-    gv:text """
-        # Critical Issues Dashboard
-        
-        **Last Updated:** {{ "now" | date("YYYY-MM-DD HH:mm:ss") }}  
-        **Status:** 🚨 CRITICAL ISSUES DETECTED  
-        **Issue Count:** {{ issueCount }}
-        
-        ## Critical Issues
-        
-        {% for issue in criticalIssues %}
-        ### {{ issue.title.value }}
-        - **Assignee:** {{ issue.assignee.value | default('Unassigned') }}
-        - **Created:** {{ issue.createdDate.value | default('Unknown') }}
-        - **Status:** Open
-        - **Severity:** Critical
-        
-        {% endfor %}
-        
-        ## Actions Taken
-        - ✅ Team alert sent via Slack
-        - ✅ Escalation task created
-        - ✅ Dashboard updated
-        
-        ---
-        *This dashboard is automatically updated by the Critical Issues Alert Hook*
-    """ ;
-    gv:filePath "./dashboards/critical-issues.md" ;
-    gv:dependsOn ex:create-task .
+# Step 1: Create Alert
+ex:create-alert rdf:type gv:TemplateStep ;
+    gv:text "🚨 CRITICAL ISSUE DETECTED\n\nTime: {{ 'now' | date('YYYY-MM-DD HH:mm:ss') }}\nStatus: Action Required\n" ;
+    gv:filePath "./logs/critical-alerts.log" .

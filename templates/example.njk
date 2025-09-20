@@ -1,0 +1,16 @@
+Hello {{ name }}!
+
+This is a sample GitVan template.
+
+Project: {{ project.name }}
+Description: {{ project.description }}
+
+## Knowledge Graph Integration
+
+Templates can access data from the Knowledge Graph through workflow steps and hook evaluations.
+
+## Dynamic Content
+
+- Current time: {{ "now" | date("YYYY-MM-DD HH:mm:ss") }}
+- Project name: {{ project.name | upper }}
+- Description length: {{ project.description | length }} characters

@@ -1,0 +1,16 @@
+FROM node:20-bookworm-slim
+
+# Install git and curl
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends git curl \
+  && rm -rf /var/lib/apt/lists/*
+
+# Install pnpm via corepack
+RUN corepack enable \
+  && corepack prepare pnpm@latest --activate
+
+# Set working directory
+WORKDIR /app
+
+# Default command
+CMD ["pnpm", "--version"]

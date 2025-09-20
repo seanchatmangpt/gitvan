@@ -1,0 +1,42 @@
+# GitVan v3.0.0 Definitive Dockerfile
+# Combines best practices from all existing Dockerfiles
+# Supports both dev container and cleanroom testing modes
+
+FROM node:20-bookworm-slim
+
+# Install system dependencies
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        git \
+        curl \
+        bash \
+        jq \
+        vim \
+        nano \
+        htop \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install pnpm via corepack (more reliable than npm install -g)
+RUN corepack enable \
+    && corepack prepare pnpm@latest --activate
+
+# Set working directory
+WORKDIR /workspace
+
+# Create necessary directories
+RUN mkdir -p \
+    /workspace \
+    /gitvan \
+    /app
+
+# Set up Git configuration (needed for Git operations)
+RUN git config --global user.name "GitVan Test User" \
+    && git config --global user.email "test@gitvan.dev" \
+    && git config --global init.defaultBranch main
+
+# Health check for long-running containers
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD node --version && pnpm --version
+
+# Default command - show version info
+CMD ["bash", "-c", "echo 'GitVan v3.0.0 Docker Environment' && echo 'Node:' $(node --version) && echo 'pnpm:' $(pnpm --version) && echo 'Git:' $(git --version)"]

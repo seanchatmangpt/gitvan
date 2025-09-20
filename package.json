@@ -117,17 +117,27 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "dev": "node bin/gitvan.mjs",
-    "test": "vitest run",
+    "dev": "gitvan daemon",
+    "test": "vitest",
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "types": "echo 'TypeScript definitions only'",
-    "build": "echo 'No build step needed - pure ESM'",
+    "build": "gitvan build",
     "release": "npm publish --access public",
     "release:beta": "npm publish --tag beta --access public",
-    "prepublishOnly": "npm run test && npm run lint"
+    "prepublishOnly": "npm run test && npm run lint",
+    "test:hooks": "vitest tests/hooks/",
+    "test:workflows": "vitest tests/workflows/",
+    "hooks": "gitvan hooks",
+    "hooks:list": "gitvan hooks list",
+    "hooks:evaluate": "gitvan hooks evaluate",
+    "workflows": "gitvan workflow",
+    "workflows:list": "gitvan workflow list",
+    "workflows:run": "gitvan workflow run",
+    "setup": "gitvan setup",
+    "save": "gitvan save"
   },
   "publishConfig": {
     "access": "public"

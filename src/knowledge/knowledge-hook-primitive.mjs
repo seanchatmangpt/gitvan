@@ -456,3 +456,4 @@ export class KnowledgeHook {
     this.logger.info(`🧹 Cleared execution history for hook ${this.id}`);
   }
 }
+

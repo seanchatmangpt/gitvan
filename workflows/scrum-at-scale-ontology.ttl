@@ -114,3 +114,4 @@
   owl:onProperty <https://bytestar.org/ontology/bytestar-core#hasPQCProof> ;
   owl:minCardinality "1"^^xsd:nonNegativeInteger
 ] .
+

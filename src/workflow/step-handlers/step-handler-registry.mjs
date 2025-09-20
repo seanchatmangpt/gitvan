@@ -6,6 +6,7 @@ import { TemplateStepHandler } from "./template-step-handler.mjs";
 import { FileStepHandler } from "./file-step-handler.mjs";
 import { HttpStepHandler } from "./http-step-handler.mjs";
 import { CliStepHandler } from "./cli-step-handler.mjs";
+import { OutputStepHandler } from "./output-step-handler.mjs";
 
 /**
  * Registry for step handlers
@@ -31,6 +32,7 @@ export class StepHandlerRegistry {
     this.register("file", new FileStepHandler(handlerOptions));
     this.register("http", new HttpStepHandler(handlerOptions));
     this.register("cli", new CliStepHandler(handlerOptions));
+    this.register("output", new OutputStepHandler(handlerOptions));
 
     // TODO: Register additional handlers as they are created
     // this.register("database", new DatabaseStepHandler(handlerOptions));

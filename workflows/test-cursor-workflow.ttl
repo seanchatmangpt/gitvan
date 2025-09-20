@@ -25,3 +25,4 @@ ex:test-cursor-workflow-step1 rdf:type gv:SparqlStep ;
     """ ;
     gv:outputMapping '{"items": "results"}' .
 
+

@@ -5,6 +5,9 @@
 
 import { GitVanGraphArchitecture } from "../core/graph-architecture.mjs";
 import { graphJobs } from "../jobs/graph-based-jobs.mjs";
+import { useTurtle } from "../composables/turtle.mjs";
+import { withGitVan } from "../composables/ctx.mjs";
+import { join } from "pathe";
 
 /**
  * Graph CLI Commands
@@ -312,6 +315,15 @@ export class GitVanGraphCLI {
     console.log("  gitvan graph add <graphId> <data>      - Add data to graph");
     console.log("  gitvan graph snapshot <graphId>       - Create snapshot");
     console.log("");
+    console.log("💾 Persistence Commands:");
+    console.log("  gitvan graph save <fileName>          - Save current graph to file");
+    console.log("  gitvan graph load <fileName>          - Load graph from file");
+    console.log("  gitvan graph save-default             - Save to default.ttl");
+    console.log("  gitvan graph load-default             - Load from default.ttl");
+    console.log("  gitvan graph init-default             - Initialize default graph");
+    console.log("  gitvan graph list-files               - List available Turtle files");
+    console.log("  gitvan graph stats                    - Show store statistics");
+    console.log("");
     console.log("🎨 Templates & Analytics:");
     console.log("  gitvan graph template <graphId> <path> - Render template");
     console.log(
@@ -341,6 +353,185 @@ export class GitVanGraphCLI {
     console.log("Available Jobs:");
     Object.keys(graphJobs).forEach((jobName) => {
       console.log(`  - ${jobName}`);
+    });
+  }
+
+  // ============== Persistence Commands ==============
+
+  /**
+   * Save graph to file
+   */
+  async save(fileName, options = {}) {
+    const context = {
+      cwd: process.cwd(),
+      root: process.cwd(),
+    };
+
+    await withGitVan(context, async () => {
+      const turtle = await useTurtle({ graphDir: options.graphDir || "graph" });
+      
+      const result = await turtle.saveGraph(fileName, {
+        validate: options.validate !== false,
+        createBackup: options.backup || false,
+        prefixes: options.prefixes,
+      });
+
+      console.log(`✅ Graph saved to: ${result.path}`);
+      console.log(`📊 Size: ${result.bytes} bytes`);
+      return result;
+    });
+  }
+
+  /**
+   * Load graph from file
+   */
+  async load(fileName, options = {}) {
+    const context = {
+      cwd: process.cwd(),
+      root: process.cwd(),
+    };
+
+    await withGitVan(context, async () => {
+      const turtle = await useTurtle({ graphDir: options.graphDir || "graph" });
+      
+      const result = await turtle.loadGraph(fileName, {
+        validate: options.validate !== false,
+        merge: options.merge !== false,
+        baseIRI: options.baseIRI,
+      });
+
+      console.log(`✅ Graph loaded from: ${result.path}`);
+      console.log(`📊 Loaded quads: ${result.quads}`);
+      return result;
+    });
+  }
+
+  /**
+   * Save to default graph location
+   */
+  async saveDefault(options = {}) {
+    const context = {
+      cwd: process.cwd(),
+      root: process.cwd(),
+    };
+
+    await withGitVan(context, async () => {
+      const turtle = await useTurtle({ graphDir: options.graphDir || "graph" });
+      
+      const result = await turtle.saveDefaultGraph({
+        validate: options.validate !== false,
+        createBackup: options.backup !== false,
+        prefixes: options.prefixes,
+      });
+
+      console.log(`✅ Default graph saved to: ${result.path}`);
+      console.log(`📊 Size: ${result.bytes} bytes`);
+      return result;
+    });
+  }
+
+  /**
+   * Load from default graph location
+   */
+  async loadDefault(options = {}) {
+    const context = {
+      cwd: process.cwd(),
+      root: process.cwd(),
+    };
+
+    await withGitVan(context, async () => {
+      const turtle = await useTurtle({ graphDir: options.graphDir || "graph" });
+      
+      const result = await turtle.loadDefaultGraph({
+        validate: options.validate !== false,
+        merge: options.merge !== false,
+        baseIRI: options.baseIRI,
+      });
+
+      if (result) {
+        console.log(`✅ Default graph loaded from: ${result.path}`);
+        console.log(`📊 Loaded quads: ${result.quads}`);
+      } else {
+        console.log(`ℹ️  No default graph found`);
+      }
+      return result;
+    });
+  }
+
+  /**
+   * Initialize default graph
+   */
+  async initDefault(options = {}) {
+    const context = {
+      cwd: process.cwd(),
+      root: process.cwd(),
+    };
+
+    await withGitVan(context, async () => {
+      const turtle = await useTurtle({ graphDir: options.graphDir || "graph" });
+      
+      const result = await turtle.initializeDefaultGraph({
+        templatePath: options.templatePath,
+        validate: options.validate !== false,
+      });
+
+      if (result.created) {
+        console.log(`✅ Default graph initialized: ${result.path}`);
+        console.log(`📊 Size: ${result.bytes} bytes`);
+      } else {
+        console.log(`ℹ️  Default graph already exists: ${result.path}`);
+        console.log(`📊 Size: ${result.bytes} bytes`);
+      }
+      return result;
+    });
+  }
+
+  /**
+   * List available Turtle files
+   */
+  async listFiles(options = {}) {
+    const context = {
+      cwd: process.cwd(),
+      root: process.cwd(),
+    };
+
+    await withGitVan(context, async () => {
+      const turtle = await useTurtle({ graphDir: options.graphDir || "graph" });
+      
+      const files = await turtle.listGraphFiles();
+      
+      console.log(`📁 Found ${files.length} Turtle files:`);
+      if (files.length === 0) {
+        console.log("   (no files found)");
+      } else {
+        files.forEach(file => console.log(`   - ${file}`));
+      }
+      return files;
+    });
+  }
+
+  /**
+   * Show store statistics
+   */
+  async stats(options = {}) {
+    const context = {
+      cwd: process.cwd(),
+      root: process.cwd(),
+    };
+
+    await withGitVan(context, async () => {
+      const turtle = await useTurtle({ graphDir: options.graphDir || "graph" });
+      
+      const stats = turtle.getStoreStats();
+      
+      console.log("📊 Graph Store Statistics:");
+      console.log("=".repeat(30));
+      console.log(`   Quads: ${stats.quads}`);
+      console.log(`   Subjects: ${stats.subjects}`);
+      console.log(`   Predicates: ${stats.predicates}`);
+      console.log(`   Objects: ${stats.objects}`);
+      console.log(`   Graphs: ${stats.graphs}`);
+      return stats;
     });
   }
 }

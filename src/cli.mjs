@@ -1,101 +1,105 @@
 #!/usr/bin/env node
 
-// GitVan v3.0.0 - Main CLI Entry Point
-// Simplified and refactored for v3 preparation
+/**
+ * GitVan CLI - Unified Entry Point (Citty Implementation)
+ *
+ * This is the corrected main CLI entry point using Citty framework
+ * following the C4 model architecture. All commands are properly
+ * implemented using Citty's defineCommand pattern.
+ */
 
-import { createLogger } from "./utils/logger.mjs";
+import { defineCommand, runMain } from "citty";
 
-const logger = createLogger("cli");
+// Import all Citty-based commands
+import { graphCommand } from "./cli/commands/graph.mjs";
+import { daemonCommand } from "./cli/commands/daemon.mjs";
+import { eventCommand } from "./cli/commands/event.mjs";
+import { cronCommand } from "./cli/commands/cron.mjs";
+import { auditCommand } from "./cli/commands/audit.mjs";
 
-// Simple command routing
-const commands = {
-  init: () => import("./cli/init.mjs").then(m => m.initCommand.run()),
-  daemon: (args) => import("./cli/daemon.mjs").then(m => m.daemonCommand(args[0] || "start")),
-  run: (args) => import("./cli/run.mjs").then(m => m.handleRun(args)),
-  list: (args) => import("./cli/list.mjs").then(m => m.handleList(args)),
-  event: (args) => import("./cli/event.mjs").then(m => m.eventCommand(args)),
-  schedule: (args) => import("./cli/schedule.mjs").then(m => m.handleSchedule(args)),
-  worktree: (args) => import("./cli/worktree.mjs").then(m => m.handleWorktree(args)),
-  job: (args) => import("./cli/job.mjs").then(m => m.handleJob(args)),
-  help: () => import("./cli/help.mjs").then(m => m.handleHelp()),
-  
-  // New commands
-  cron: (args) => import("./cli/cron.mjs").then(m => m.cronCommand(args)),
-  audit: (args) => import("./cli/audit.mjs").then(m => m.auditCommand(args)),
-  chat: (args) => import("./cli/chat.mjs").then(m => m.chatCommand(args)),
-  pack: (args) => import("./cli/pack.mjs").then(m => m.packCommand(args)),
-  scaffold: (args) => import("./cli/scaffold.mjs").then(m => m.scaffoldCommand(args)),
-  marketplace: (args) => import("./cli/marketplace.mjs").then(m => m.marketplaceCommand(args)),
-  "marketplace-scan": (args) => import("./cli/marketplace-scan.mjs").then(m => m.marketplaceScanCommand(args)),
-  compose: (args) => import("./cli/compose.mjs").then(m => m.composeCommand(args)),
-  save: (args) => import("./cli/save.mjs").then(m => m.saveCommand(args)),
-  ensure: (args) => import("./cli/ensure.mjs").then(m => m.ensureCommand(args)),
-  hooks: (args) => import("./cli/hooks.mjs").then(m => m.handleHooksCommand(args)),
-  workflow: (args) => import("./cli/workflow.mjs").then(m => m.handleWorkflowCommand(args)),
-  setup: (args) => import("./cli/setup.mjs").then(m => m.setupCommand(args)),
-};
+// Import existing Citty commands that are already properly implemented
+import { setupCommand } from "./cli/setup.mjs";
+import { packCommand } from "./cli/pack.mjs";
+import { marketplaceCommand } from "./cli/marketplace.mjs";
+import { scaffoldCommand } from "./cli/scaffold.mjs";
+import { composeCommand } from "./cli/compose.mjs";
+import { saveCommand } from "./cli/save.mjs";
+import { ensureCommand } from "./cli/ensure.mjs";
+import { initCommand } from "./cli/init.mjs";
 
-async function runCLI() {
-  const args = process.argv.slice(2);
-  const [command, ...commandArgs] = args;
-  
-  if (!command || command === 'help') {
-    return showHelp();
-  }
+// Import legacy commands that need to be migrated (temporary)
+import { chatCommand } from "./cli/chat.mjs";
 
-  const handler = commands[command];
-  if (!handler) {
-    console.error(`❌ Unknown command: ${command}`);
-    console.error(`Run 'gitvan help' to see available commands`);
-    process.exit(1);
-  }
+/**
+ * Main GitVan CLI using Citty framework
+ *
+ * This follows the C4 model architecture:
+ * - Level 1: Developer → GitVan CLI → File System
+ * - Level 2: CLI Runner → Command Registry → Module System
+ * - Level 3: Commands → Composables → Engines
+ * - Level 4: Specific operations and data flow
+ */
+export const cli = defineCommand({
+  meta: {
+    name: "gitvan",
+    version: "3.0.0",
+    description: "Git-native development automation platform",
+    usage: "gitvan <command> [options]",
+    examples: [
+      "gitvan init",
+      "gitvan graph save my-data --backup true",
+      "gitvan daemon start --worktrees all",
+      'gitvan event simulate commit --files "src/**"',
+      "gitvan cron list --verbose",
+      "gitvan audit build --output audit.json",
+      "gitvan setup",
+      "gitvan pack install react-pack",
+      'gitvan marketplace search "react"',
+      "gitvan scaffold component MyComponent",
+      "gitvan compose up --detach",
+      "gitvan save",
+      "gitvan ensure",
+      'gitvan chat "help me with my workflow"',
+    ],
+  },
+  subCommands: {
+    // Core GitVan commands (properly implemented with Citty)
+    graph: graphCommand,
+    daemon: daemonCommand,
+    event: eventCommand,
+    cron: cronCommand,
+    audit: auditCommand,
 
-  try {
-    await handler(commandArgs);
-  } catch (error) {
-    logger.error(`❌ Error running command '${command}':`, error.message);
-    console.error(`❌ Error running command '${command}':`, error.message);
-    process.exit(1);
-  }
-}
+    // Project management commands
+    init: initCommand,
+    setup: setupCommand,
+    save: saveCommand,
+    ensure: ensureCommand,
 
-function showHelp() {
-  console.log(`
-🚀 GitVan v3.0.0 - Git-native development automation
+    // Package and marketplace commands
+    pack: packCommand,
+    marketplace: marketplaceCommand,
+    scaffold: scaffoldCommand,
+    compose: composeCommand,
 
-USAGE:
-  gitvan <command> [options]
+    // AI and automation commands
+    chat: chatCommand,
 
-COMMANDS:
-  init          Initialize GitVan in current directory
-  daemon        Start/stop GitVan daemon
-  run           Run a job or workflow
-  list          List available jobs, events, or schedules
-  event         Manage events
-  schedule      Manage schedules
-  worktree      Manage Git worktrees
-  job           Manage jobs
-  pack          Manage packs
-  scaffold      Scaffold new projects
-  marketplace   Browse pack marketplace
-  chat          AI-powered chat interface
-  hooks         Manage Git hooks
-  workflow      Manage workflows
-  setup         Setup GitVan environment
-  help          Show this help message
-
-EXAMPLES:
-  gitvan init
-  gitvan run my-job
-  gitvan pack install react-pack
-  gitvan chat "help me with my workflow"
-
-For more information, visit: https://github.com/seanchatmangpt/gitvan
-  `);
-}
-
-// Run the CLI
-runCLI().catch((error) => {
-  console.error("❌ Fatal error:", error.message);
-  process.exit(1);
+    // TODO: Migrate these legacy commands to Citty
+    // run: runCommand,           // Legacy handler
+    // list: listCommand,         // Legacy handler
+    // schedule: scheduleCommand, // Legacy handler
+    // worktree: worktreeCommand, // Legacy handler
+    // job: jobCommand,          // Legacy handler
+    // hooks: hooksCommand,      // Legacy handler
+    // workflow: workflowCommand, // Legacy handler
+  },
 });
+
+// Export for programmatic usage
+export default cli;
+
+// Run CLI if this is the main module
+if (import.meta.url === `file://${process.argv[1]}`) {
+  runMain(cli);
+}

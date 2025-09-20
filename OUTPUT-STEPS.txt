@@ -1,0 +1,1990 @@
+#!/usr/bin/env node
+
+/**
+ * Corrected Mini-Engine CLI with Multi-Format Output
+ */
+
+import { defineCommand, runMain } from 'citty';
+import { renderReport } from './mini-engine-correct.js';
+import { readFile, writeFile } from 'node:fs/promises';
+import { resolve, dirname, extname } from 'node:path';
+import { existsSync } from 'node:fs';
+import { markdownToLaTeX, resultsToExcel, resultsToPowerPoint, markdownToDocx } from './output-renderers.js';
+
+const main = defineCommand({
+  meta: {
+    name: 'mini-engine',
+    version: '3.0.0',
+    description: 'Universal semantic data processor with correct architecture'
+  },
+  args: {
+    template: {
+      type: 'positional',
+      description: 'Template file with frontmatter configuration',
+      required: true
+    },
+    format: {
+      type: 'string',
+      description: 'Output format: md, latex, docx, xlsx, pptx, html',
+      alias: 'f',
+      default: 'auto'
+    },
+    output: {
+      type: 'string',
+      description: 'Output file path',
+      alias: 'o'
+    },
+    debug: {
+      type: 'boolean',
+      description: 'Enable debug output',
+      alias: 'd',
+      default: false
+    }
+  },
+  async run({ args }) {
+    try {
+      // Validate template exists
+      if (!existsSync(args.template)) {
+        throw new Error(`Template file not found: ${args.template}`);
+      }
+
+      // Read template
+      const templateMd = await readFile(resolve(args.template), 'utf8');
+      const templateDir = dirname(resolve(args.template));
+
+      // Parse frontmatter to get configuration
+      const { default: matter } = await import('gray-matter');
+      const { data: frontmatter } = matter(templateMd);
+
+      // Resolve paths relative to template directory
+      const resolvePath = (path) => {
+        if (!path) return null;
+        return path.startsWith('/') ? path : resolve(templateDir, path);
+      };
+
+      // Collect data files
+      const csvPaths = [];
+      const dataFiles = [];
+
+      if (frontmatter.csvPath) {
+        const csvPath = resolvePath(frontmatter.csvPath);
+        if (existsSync(csvPath)) {
+          csvPaths.push(csvPath);
+        } else {
+          console.error(`Warning: CSV file not found: ${csvPath}`);
+        }
+      }
+
+      if (frontmatter.dataPath) {
+        const dataPath = resolvePath(frontmatter.dataPath);
+        if (existsSync(dataPath)) {
+          dataFiles.push(dataPath);
+        }
+      }
+
+      // Generate report
+      console.error('🔄 Processing data with Mini-Engine...');
+
+      const report = await renderReport({
+        templateMd,
+        csvPaths,
+        dataFiles,
+        debug: args.debug
+      });
+
+      // Get raw query results for Excel/PowerPoint
+      let queryResults = {};
+
+      // Re-run the query to get raw results for Excel
+      if (frontmatter.query) {
+        const { buildStore, runSelect, csvToRDF } = await import('./mini-engine-correct.js');
+
+        const allTtls = [];
+
+        // Load CSV data
+        for (const csvPath of csvPaths) {
+          const csvContent = await readFile(csvPath, 'utf8');
+          const ttl = csvToRDF(
+            csvContent,
+            frontmatter.baseIRI || 'http://example.org/',
+            frontmatter.entityType || 'Record'
+          );
+          allTtls.push(ttl);
+        }
+
+        const store = buildStore(allTtls, frontmatter.baseIRI || 'http://example.org/');
+        const rows = await runSelect(
+          store,
+          frontmatter.query,
+          frontmatter.baseIRI || 'http://example.org/'
+        );
+
+        queryResults[frontmatter.queryName || 'results'] = rows;
+
+        if (args.debug) {
+          console.error(`Query returned ${rows.length} results for Excel/PowerPoint`);
+        }
+      }
+
+      // Determine output format
+      let outputPath = args.output || frontmatter.outputPath;
+      let format = args.format;
+
+      if (format === 'auto' && outputPath) {
+        const ext = extname(outputPath).toLowerCase();
+        switch (ext) {
+          case '.tex':
+          case '.latex':
+            format = 'latex';
+            break;
+          case '.docx':
+            format = 'docx';
+            break;
+          case '.xlsx':
+          case '.xls':
+            format = 'xlsx';
+            break;
+          case '.pptx':
+          case '.ppt':
+            format = 'pptx';
+            break;
+          case '.html':
+          case '.htm':
+            format = 'html';
+            break;
+          default:
+            format = 'md';
+        }
+      }
+
+      // Generate output based on format
+      console.error(`📄 Generating ${format.toUpperCase()} output...`);
+
+      let fullPath;
+
+      switch (format) {
+        case 'latex':
+        case 'tex':
+          const latex = markdownToLaTeX(report);
+          if (outputPath) {
+            if (!outputPath.endsWith('.tex')) outputPath += '.tex';
+            fullPath = resolvePath(outputPath);
+            await writeFile(fullPath, latex, 'utf8');
+            console.error(`✅ LaTeX saved to: ${fullPath}`);
+          } else {
+            console.log(latex);
+          }
+          break;
+
+        case 'docx':
+          if (!outputPath) outputPath = 'output.docx';
+          if (!outputPath.endsWith('.docx')) outputPath += '.docx';
+          fullPath = resolvePath(outputPath);
+          await markdownToDocx(report, fullPath);
+          console.error(`✅ Word document saved to: ${fullPath}`);
+          break;
+
+        case 'xlsx':
+        case 'excel':
+          if (!outputPath) outputPath = 'output.xlsx';
+          if (!outputPath.endsWith('.xlsx')) outputPath += '.xlsx';
+          fullPath = resolvePath(outputPath);
+          await resultsToExcel(queryResults, frontmatter, fullPath);
+          console.error(`✅ Excel spreadsheet saved to: ${fullPath}`);
+
+          // Verify the Excel file
+          if (args.debug) {
+            const ExcelJS = await import('exceljs');
+            const workbook = new ExcelJS.Workbook();
+            await workbook.xlsx.readFile(fullPath);
+            console.error(`📊 Excel file verified: ${workbook.worksheets.length} worksheets`);
+            workbook.worksheets.forEach(ws => {
+              console.error(`  - ${ws.name}: ${ws.rowCount} rows, ${ws.columnCount} columns`);
+            });
+          }
+          break;
+
+        case 'pptx':
+        case 'powerpoint':
+          if (!outputPath) outputPath = 'output.pptx';
+          if (!outputPath.endsWith('.pptx')) outputPath += '.pptx';
+          fullPath = resolvePath(outputPath);
+          await resultsToPowerPoint(queryResults, frontmatter, fullPath);
+          console.error(`✅ PowerPoint presentation saved to: ${fullPath}`);
+          break;
+
+        case 'html':
+          const { marked } = await import('marked');
+          const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${frontmatter.title || 'Report'}</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; max-width: 900px; margin: 0 auto; padding: 2rem; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ddd; padding: 8px; }
+    th { background: #f5f5f5; }
+  </style>
+</head>
+<body>
+${marked(report)}
+</body>
+</html>`;
+
+          if (outputPath) {
+            if (!outputPath.endsWith('.html')) outputPath += '.html';
+            fullPath = resolvePath(outputPath);
+            await writeFile(fullPath, html, 'utf8');
+            console.error(`✅ HTML saved to: ${fullPath}`);
+          } else {
+            console.log(html);
+          }
+          break;
+
+        case 'md':
+        case 'markdown':
+        default:
+          if (outputPath) {
+            if (!outputPath.endsWith('.md')) outputPath += '.md';
+            fullPath = resolvePath(outputPath);
+            await writeFile(fullPath, report, 'utf8');
+            console.error(`✅ Markdown saved to: ${fullPath}`);
+          } else {
+            console.log(report);
+          }
+      }
+
+    } catch (error) {
+      console.error('❌ Error:', error.message);
+      if (args.debug && error.stack) {
+        console.error('\nStack trace:', error.stack);
+      }
+      process.exit(1);
+    }
+  }
+});
+
+runMain(main);
+
+import { marked } from 'marked';
+import ExcelJS from 'exceljs';
+import { writeFile } from 'node:fs/promises';
+
+// Convert Markdown to LaTeX
+export function markdownToLaTeX(markdown) {
+  // Basic frontmatter removal
+  let content = markdown;
+  if (content.startsWith('---')) {
+    const endIndex = content.indexOf('---', 3);
+    if (endIndex !== -1) {
+      content = content.substring(endIndex + 3).trim();
+    }
+  }
+
+  // LaTeX document structure
+  let latex = `\\documentclass[11pt]{article}
+\\usepackage[utf8]{inputenc}
+\\usepackage[T1]{fontenc}
+\\usepackage{graphicx}
+\\usepackage{booktabs}
+\\usepackage{longtable}
+\\usepackage{hyperref}
+\\usepackage{xcolor}
+\\usepackage{fancyhdr}
+\\usepackage[margin=1in]{geometry}
+
+% Define colors
+\\definecolor{sectioncolor}{RGB}{0,51,102}
+\\definecolor{tableheader}{RGB}{240,240,240}
+
+% Headers and footers
+\\pagestyle{fancy}
+\\fancyhf{}
+\\rfoot{Page \\thepage}
+\\lfoot{Generated with Mini-Engine}
+
+\\begin{document}
+
+`;
+
+  // Convert markdown elements to LaTeX
+  content = content
+    // Headers
+    .replace(/^# (.*?)$/gm, '\\section{$1}')
+    .replace(/^## (.*?)$/gm, '\\subsection{$1}')
+    .replace(/^### (.*?)$/gm, '\\subsubsection{$1}')
+    // Bold and italic
+    .replace(/\*\*\*(.*?)\*\*\*/g, '\\textbf{\\textit{$1}}')
+    .replace(/\*\*(.*?)\*\*/g, '\\textbf{$1}')
+    .replace(/\*(.*?)\*/g, '\\textit{$1}')
+    // Lists
+    .replace(/^- (.*?)$/gm, '\\item $1')
+    .replace(/^(\d+)\. (.*?)$/gm, '\\item $2')
+    // Code blocks
+    .replace(/```(.*?)```/gs, '\\begin{verbatim}$1\\end{verbatim}')
+    // Inline code
+    .replace(/`(.*?)`/g, '\\texttt{$1}')
+    // Line breaks
+    .replace(/\n\n/g, '\n\n\\vspace{0.5em}\n\n')
+    // Special characters
+    .replace(/\$/g, '\\$')
+    .replace(/%/g, '\\%')
+    .replace(/&/g, '\\&')
+    .replace(/#/g, '\\#')
+    .replace(/_/g, '\\_');
+
+  // Handle lists properly
+  content = content.replace(/(\\item.*\n)+/g, (match) => {
+    return '\\begin{itemize}\n' + match + '\\end{itemize}\n';
+  });
+
+  // Simple table detection and conversion
+  const tableRegex = /\|.*\|.*\|\n\|[-:\s|]+\|\n((\|.*\|\n)+)/g;
+  content = content.replace(tableRegex, (match) => {
+    const lines = match.trim().split('\n');
+    const headers = lines[0].split('|').filter(h => h.trim());
+    const rows = lines.slice(2).map(line =>
+      line.split('|').filter(cell => cell.trim())
+    );
+
+    let table = '\\begin{table}[h!]\n\\centering\n\\begin{tabular}{' +
+                'l'.repeat(headers.length) + '}\n\\toprule\n';
+
+    table += headers.join(' & ') + ' \\\\\n\\midrule\n';
+
+    rows.forEach(row => {
+      table += row.join(' & ') + ' \\\\\n';
+    });
+
+    table += '\\bottomrule\n\\end{tabular}\n\\end{table}\n';
+
+    return table;
+  });
+
+  latex += content;
+  latex += '\n\\end{document}';
+
+  return latex;
+}
+
+// Convert Markdown to Word-compatible HTML
+export async function markdownToDocx(markdown, outputPath) {
+  // Convert markdown to HTML
+  const html = marked(markdown);
+
+  // Create Word-compatible HTML document
+  const docHtml = `<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:w="urn:schemas-microsoft-com:office:word"
+      xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+  <meta charset="utf-8">
+  <title>Document</title>
+  <!--[if gte mso 9]>
+  <xml>
+    <w:WordDocument>
+      <w:View>Print</w:View>
+      <w:Zoom>100</w:Zoom>
+      <w:DoNotOptimizeForBrowser/>
+    </w:WordDocument>
+  </xml>
+  <![endif]-->
+  <style>
+    @page { size: 8.5in 11.0in; margin: 1in; }
+    body { font-family: Calibri, sans-serif; font-size: 11pt; line-height: 1.6; }
+    h1 { font-size: 20pt; font-weight: bold; color: #003366; page-break-after: avoid; }
+    h2 { font-size: 16pt; font-weight: bold; color: #0066cc; page-break-after: avoid; }
+    h3 { font-size: 14pt; font-weight: bold; color: #333333; page-break-after: avoid; }
+    table { border-collapse: collapse; width: 100%; margin: 10pt 0; }
+    th, td { border: 1px solid #ddd; padding: 8pt; text-align: left; }
+    th { background-color: #0066cc; color: white; font-weight: bold; }
+    tr:nth-child(even) { background-color: #f2f2f2; }
+    ul, ol { margin-left: 20pt; }
+    li { margin: 5pt 0; }
+    code { background: #f4f4f4; padding: 2pt 4pt; font-family: 'Courier New', monospace; }
+    pre { background: #f4f4f4; padding: 10pt; overflow-x: auto; }
+    strong { font-weight: bold; }
+    em { font-style: italic; }
+    .page-break { page-break-before: always; }
+  </style>
+</head>
+<body>
+  ${html}
+  <div style="margin-top: 30pt; padding-top: 10pt; border-top: 1px solid #ccc; color: #666; font-size: 9pt;">
+    Generated by Mini-Engine on ${new Date().toLocaleString()}
+  </div>
+</body>
+</html>`;
+
+  // Save as .doc file (HTML format that Word can open)
+  const docPath = outputPath.replace('.docx', '.doc');
+  await writeFile(docPath, docHtml, 'utf8');
+  console.error(`✅ Word document saved as: ${docPath}`);
+  console.error(`   Note: This is an HTML document that Word can open and save as .docx`);
+  return docPath;
+}
+
+// Convert query results to Excel
+export async function resultsToExcel(queryResults, metadata, outputPath) {
+  const workbook = new ExcelJS.Workbook();
+
+  // Metadata
+  workbook.creator = 'Mini-Engine';
+  workbook.created = new Date();
+  workbook.modified = new Date();
+
+  // Create worksheets for each query result set
+  for (const [queryName, results] of Object.entries(queryResults)) {
+    if (!results || results.length === 0) continue;
+
+    const worksheet = workbook.addWorksheet(queryName);
+
+    // Get column headers from first result
+    const columns = Object.keys(results[0]);
+
+    // Set up columns with formatting
+    worksheet.columns = columns.map(col => ({
+      header: col.charAt(0).toUpperCase() + col.slice(1).replace(/_/g, ' '),
+      key: col,
+      width: 20
+    }));
+
+    // Style the header row
+    worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF0051CC' }
+    };
+    worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // Add data rows
+    results.forEach(row => {
+      const excelRow = worksheet.addRow(row);
+
+      // Format numbers
+      columns.forEach((col, index) => {
+        const cell = excelRow.getCell(index + 1);
+        const value = row[col];
+
+        if (typeof value === 'number') {
+          if (col.includes('percent') || col.includes('rate')) {
+            cell.numFmt = '0.00%';
+          } else if (col.includes('price') || col.includes('revenue') || col.includes('value')) {
+            cell.numFmt = '$#,##0.00';
+          } else if (Number.isInteger(value)) {
+            cell.numFmt = '#,##0';
+          } else {
+            cell.numFmt = '#,##0.00';
+          }
+        }
+      });
+    });
+
+    // Add filters
+    worksheet.autoFilter = {
+      from: { row: 1, column: 1 },
+      to: { row: results.length + 1, column: columns.length }
+    };
+
+    // Freeze header row
+    worksheet.views = [{ state: 'frozen', ySplit: 1 }];
+
+    // Add conditional formatting for numeric columns
+    columns.forEach((col, index) => {
+      if (typeof results[0][col] === 'number') {
+        const columnLetter = String.fromCharCode(65 + index);
+
+        worksheet.addConditionalFormatting({
+          ref: `${columnLetter}2:${columnLetter}${results.length + 1}`,
+          rules: [
+            {
+              type: 'dataBar',
+              minLength: 0,
+              maxLength: 100,
+              color: 'FF638EC6',
+              showValue: true
+            }
+          ]
+        });
+      }
+    });
+  }
+
+  // Add summary sheet if metadata provided
+  if (metadata) {
+    const summarySheet = workbook.addWorksheet('Summary', { tabColor: { argb: 'FFFF6600' } });
+
+    summarySheet.columns = [
+      { header: 'Property', key: 'property', width: 30 },
+      { header: 'Value', key: 'value', width: 50 }
+    ];
+
+    summarySheet.getRow(1).font = { bold: true };
+    summarySheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFF6600' }
+    };
+
+    Object.entries(metadata).forEach(([key, value]) => {
+      summarySheet.addRow({
+        property: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
+        value: value
+      });
+    });
+  }
+
+  // Save workbook
+  await workbook.xlsx.writeFile(outputPath);
+  return outputPath;
+}
+
+// Create PowerPoint-compatible HTML presentation
+export async function resultsToPowerPoint(queryResults, metadata, outputPath) {
+  // Create an HTML presentation that can be opened in PowerPoint
+  let html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${metadata?.title || 'Data Analysis Report'}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Calibri, Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .slide {
+      width: 1024px;
+      height: 768px;
+      margin: 20px auto;
+      padding: 60px;
+      background: white;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      page-break-after: always;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .title-slide {
+      background: linear-gradient(135deg, #003366 0%, #0066cc 100%);
+      color: white;
+      text-align: center;
+      justify-content: center;
+      align-items: center;
+    }
+    .title-slide h1 {
+      font-size: 56pt;
+      font-weight: bold;
+      margin-bottom: 30px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    .title-slide .subtitle {
+      font-size: 24pt;
+      opacity: 0.9;
+    }
+    .title-slide .date {
+      font-size: 18pt;
+      margin-top: 50px;
+      opacity: 0.8;
+    }
+    .content-slide h2 {
+      font-size: 36pt;
+      color: #003366;
+      border-bottom: 4px solid #0066cc;
+      padding-bottom: 15px;
+      margin-bottom: 40px;
+    }
+    .data-table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 30px 0;
+      font-size: 14pt;
+    }
+    .data-table th, .data-table td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: left;
+    }
+    .data-table th {
+      background: linear-gradient(135deg, #0066cc 0%, #004499 100%);
+      color: white;
+      font-weight: bold;
+      text-transform: uppercase;
+      font-size: 12pt;
+    }
+    .data-table tr:nth-child(even) { background: #f8f9fa; }
+    .data-table tr:hover { background: #e8f4ff; }
+    .stats-box {
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-left: 5px solid #0066cc;
+      padding: 25px;
+      margin: 30px 0;
+      border-radius: 8px;
+    }
+    .stats-box h3 {
+      color: #003366;
+      font-size: 20pt;
+      margin-bottom: 15px;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .stat-item {
+      background: white;
+      padding: 15px;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .stat-label {
+      font-size: 11pt;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .stat-value {
+      font-size: 24pt;
+      font-weight: bold;
+      color: #0066cc;
+      margin-top: 5px;
+    }
+    .chart-placeholder {
+      background: linear-gradient(135deg, #e8f4ff 0%, #cce7ff 100%);
+      height: 300px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #003366;
+      font-size: 16pt;
+      margin: 30px 0;
+    }
+    .thank-you {
+      background: linear-gradient(135deg, #003366 0%, #0066cc 100%);
+      color: white;
+      text-align: center;
+      justify-content: center;
+      align-items: center;
+    }
+    .thank-you h1 {
+      font-size: 72pt;
+      font-weight: bold;
+      margin-bottom: 40px;
+      text-shadow: 3px 3px 6px rgba(0,0,0,0.4);
+    }
+    .thank-you .subtitle {
+      font-size: 24pt;
+      opacity: 0.9;
+    }
+    .slide-number {
+      position: absolute;
+      bottom: 20px;
+      right: 30px;
+      color: #666;
+      font-size: 12pt;
+    }
+    @media print {
+      body { background: white; }
+      .slide { box-shadow: none; margin: 0; }
+    }
+  </style>
+</head>
+<body>
+`;
+
+  // Title slide
+  html += `
+  <div class="slide title-slide">
+    <h1>${metadata?.title || 'Data Analysis Report'}</h1>
+    <div class="subtitle">${metadata?.description || 'Comprehensive Data Analysis'}</div>
+    <div class="date">${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+  </div>
+`;
+
+  let slideNumber = 2;
+
+  // Data slides
+  for (const [queryName, data] of Object.entries(queryResults)) {
+    if (!Array.isArray(data) || data.length === 0) continue;
+
+    const displayName = queryName.charAt(0).toUpperCase() + queryName.slice(1).replace(/_/g, ' ');
+    const columns = Object.keys(data[0] || {});
+
+    // Main data slide
+    html += `
+  <div class="slide content-slide">
+    <h2>${displayName}</h2>
+`;
+
+    // Create table for top results
+    const topResults = data.slice(0, 5);
+    if (columns.length > 0) {
+      html += `
+    <table class="data-table">
+      <thead>
+        <tr>
+          ${columns.slice(0, 5).map(col =>
+            `<th>${col.charAt(0).toUpperCase() + col.slice(1).replace(/_/g, ' ')}</th>`
+          ).join('')}
+        </tr>
+      </thead>
+      <tbody>
+`;
+
+      for (const row of topResults) {
+        html += `        <tr>
+`;
+        for (const col of columns.slice(0, 5)) {
+          let value = row[col];
+          if (typeof value === 'number') {
+            if (col.toLowerCase().includes('percent') || col.toLowerCase().includes('rate')) {
+              value = (value * 100).toFixed(2) + '%';
+            } else if (col.toLowerCase().includes('price') || col.toLowerCase().includes('revenue') ||
+                       col.toLowerCase().includes('cost') || col.toLowerCase().includes('profit')) {
+              value = '$' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            } else {
+              value = value.toLocaleString('en-US');
+            }
+          }
+          html += `          <td>${value || ''}</td>
+`;
+        }
+        html += `        </tr>
+`;
+      }
+
+      html += `      </tbody>
+    </table>
+`;
+
+      if (data.length > 5) {
+        html += `    <p style="font-style: italic; color: #666; margin-top: 10px;">Showing top 5 of ${data.length} results</p>
+`;
+      }
+    }
+
+    html += `    <div class="slide-number">${slideNumber}</div>
+  </div>
+`;
+    slideNumber++;
+
+    // Statistics slide if we have numeric data
+    const numericColumns = columns.filter(col =>
+      data.some(row => typeof row[col] === 'number')
+    );
+
+    if (numericColumns.length > 0) {
+      html += `
+  <div class="slide content-slide">
+    <h2>${displayName} - Analytics</h2>
+    <div class="stats-box">
+      <h3>Summary Statistics</h3>
+      <div class="stats-grid">
+`;
+
+      for (const col of numericColumns.slice(0, 4)) {
+        const values = data.map(row => row[col]).filter(v => typeof v === 'number');
+        if (values.length > 0) {
+          const sum = values.reduce((a, b) => a + b, 0);
+          const avg = sum / values.length;
+          const max = Math.max(...values);
+          const min = Math.min(...values);
+
+          let displayValue = avg;
+          if (col.toLowerCase().includes('percent') || col.toLowerCase().includes('rate')) {
+            displayValue = (avg * 100).toFixed(2) + '%';
+          } else if (col.toLowerCase().includes('price') || col.toLowerCase().includes('revenue') ||
+                     col.toLowerCase().includes('cost') || col.toLowerCase().includes('profit')) {
+            displayValue = '$' + avg.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+          } else {
+            displayValue = avg.toFixed(2);
+          }
+
+          html += `
+        <div class="stat-item">
+          <div class="stat-label">${col.replace(/_/g, ' ')}</div>
+          <div class="stat-value">${displayValue}</div>
+        </div>
+`;
+        }
+      }
+
+      html += `
+      </div>
+    </div>
+    <div class="chart-placeholder">
+      <div>📊 Chart visualization would appear here</div>
+    </div>
+    <div class="slide-number">${slideNumber}</div>
+  </div>
+`;
+      slideNumber++;
+    }
+  }
+
+  // Thank you slide
+  html += `
+  <div class="slide thank-you">
+    <h1>Thank You</h1>
+    <div class="subtitle">Generated with Mini-Engine</div>
+    <div class="date" style="margin-top: 40px; font-size: 16pt; opacity: 0.7;">${new Date().toISOString()}</div>
+  </div>
+`;
+
+  html += `
+</body>
+</html>
+`;
+
+  // Save as HTML that can be imported into PowerPoint
+  const htmlPath = outputPath.replace('.pptx', '-presentation.html');
+  await writeFile(htmlPath, html, 'utf8');
+  console.error(`✅ Presentation saved as: ${htmlPath}`);
+  console.error(`   To use in PowerPoint: File > Open > Browse to ${htmlPath}`);
+  console.error(`   Or open in browser and copy slides to PowerPoint`);
+  return htmlPath;
+}
+
+/**
+ * Document Generation Command
+ *
+ * Generate LaTeX, Word, Excel, and PowerPoint documents from knowledge graphs
+ */
+
+import { defineCommand } from 'citty';
+import { readFileSync, existsSync, writeFileSync } from 'fs';
+import { join, dirname, extname } from 'path';
+import { Parser } from 'n3';
+import { TemplateEngine } from '@kgen/templates';
+import { success, error, output } from '../utils/output.js';
+import { loadKgenConfig } from '../utils/config.js';
+
+export default defineCommand({
+  meta: {
+    name: 'document',
+    description: 'Generate documents (LaTeX, Word, Excel, PowerPoint) from knowledge graphs'
+  },
+  subCommands: {
+    generate: defineCommand({
+      meta: {
+        name: 'generate',
+        description: 'Generate document from RDF data'
+      },
+      args: {
+        graph: {
+          type: 'string',
+          description: 'Path to RDF/Turtle file with data',
+          alias: 'g',
+          required: true
+        },
+        template: {
+          type: 'string',
+          description: 'Template name (latex-paper, word-report, excel-data, ppt-slides)',
+          alias: 't',
+          required: true
+        },
+        output: {
+          type: 'string',
+          description: 'Output file path',
+          alias: 'o'
+        },
+        format: {
+          type: 'string',
+          description: 'Output format (latex, docx, xlsx, pptx, pdf)',
+          alias: 'f'
+        },
+        variables: {
+          type: 'string',
+          description: 'Additional variables as JSON',
+          alias: 'v'
+        }
+      },
+      async run({ args }) {
+        try {
+          const startTime = performance.now();
+
+          // Load RDF data
+          if (!existsSync(args.graph)) {
+            throw new Error(`Graph file not found: ${args.graph}`);
+          }
+
+          const graphContent = readFileSync(args.graph, 'utf8');
+          const parser = new Parser();
+          const quads = parser.parse(graphContent);
+
+          // Extract data from RDF
+          const extractedData = extractDataFromRDF(quads);
+
+          // Parse additional variables
+          let additionalVars = {};
+          if (args.variables) {
+            additionalVars = JSON.parse(args.variables);
+          }
+
+          // Determine output format
+          const outputFormat = args.format || getFormatFromTemplate(args.template);
+          const outputPath = args.output || generateOutputPath(args.template, outputFormat);
+
+          // Generate document based on format
+          let result;
+          switch (outputFormat) {
+            case 'latex':
+            case 'tex':
+              result = await generateLaTeX(args.template, extractedData, additionalVars, outputPath);
+              break;
+            case 'docx':
+              result = await generateWord(args.template, extractedData, additionalVars, outputPath);
+              break;
+            case 'xlsx':
+              result = await generateExcel(args.template, extractedData, additionalVars, outputPath);
+              break;
+            case 'pptx':
+              result = await generatePowerPoint(args.template, extractedData, additionalVars, outputPath);
+              break;
+            case 'pdf':
+              result = await generatePDF(args.template, extractedData, additionalVars, outputPath);
+              break;
+            default:
+              throw new Error(`Unsupported format: ${outputFormat}`);
+          }
+
+          const duration = performance.now() - startTime;
+
+          const response = success('document:generate', {
+            template: args.template,
+            format: outputFormat,
+            outputPath: result.path,
+            size: result.size,
+            pages: result.pages,
+            extractedTriples: quads.length,
+            metrics: {
+              durationMs: Math.round(duration)
+            }
+          });
+
+          output(response, args.format);
+          return response;
+
+        } catch (err) {
+          const response = error('document:generate', 'GENERATION_FAILED', err.message, {
+            template: args.template,
+            graph: args.graph
+          });
+
+          output(response, 'json');
+          process.exitCode = 1;
+          return response;
+        }
+      }
+    }),
+
+    list: defineCommand({
+      meta: {
+        name: 'list',
+        description: 'List available document templates'
+      },
+      args: {
+        category: {
+          type: 'string',
+          description: 'Filter by category (latex, office, all)',
+          default: 'all'
+        }
+      },
+      async run({ args }) {
+        const templates = getAvailableTemplates(args.category);
+
+        const result = success('document:list', {
+          templates,
+          categories: {
+            latex: templates.filter(t => t.category === 'latex').length,
+            office: templates.filter(t => t.category === 'office').length
+          }
+        });
+
+        output(result, 'json');
+        return result;
+      }
+    })
+  }
+});
+
+/**
+ * Extract structured data from RDF quads
+ */
+function extractDataFromRDF(quads) {
+  const data = {
+    title: '',
+    author: '',
+    sections: [],
+    metadata: {},
+    entities: new Map(),
+    properties: new Map()
+  };
+
+  // Group quads by subject
+  const subjects = new Map();
+  for (const quad of quads) {
+    const subj = quad.subject.value;
+    if (!subjects.has(subj)) {
+      subjects.set(subj, []);
+    }
+    subjects.get(subj).push(quad);
+  }
+
+  // Extract document structure
+  for (const [subject, subjectQuads] of subjects) {
+    const props = {};
+    for (const quad of subjectQuads) {
+      const predicate = quad.predicate.value;
+      const object = quad.object.value;
+
+      // Extract common document properties
+      if (predicate.includes('title')) {
+        data.title = object;
+      } else if (predicate.includes('author') || predicate.includes('creator')) {
+        data.author = object;
+      } else if (predicate.includes('section')) {
+        data.sections.push({
+          title: object,
+          content: ''
+        });
+      }
+
+      props[predicate] = object;
+    }
+    data.entities.set(subject, props);
+  }
+
+  return data;
+}
+
+/**
+ * Generate LaTeX document
+ */
+async function generateLaTeX(template, data, variables, outputPath) {
+  // Use a simple LaTeX template for now
+  const latexContent = generateLaTeXContent(data, variables);
+
+  writeFileSync(outputPath, latexContent);
+
+  return {
+    path: outputPath,
+    size: latexContent.length,
+    pages: estimatePages(latexContent)
+  };
+}
+
+/**
+ * Generate LaTeX content
+ */
+function generateLaTeXContent(data, variables) {
+  return `\\documentclass[11pt]{article}
+\\usepackage[utf8]{inputenc}
+\\usepackage{graphicx}
+\\usepackage{hyperref}
+
+\\title{${data.title || variables.title || 'Knowledge Graph Document'}}
+\\author{${data.author || variables.author || 'KGEN Generator'}}
+\\date{\\today}
+
+\\begin{document}
+
+\\maketitle
+
+\\begin{abstract}
+${variables.abstract || 'This document was generated from a knowledge graph using KGEN.'}
+\\end{abstract}
+
+\\section{Introduction}
+This document presents information extracted from the knowledge graph.
+
+${data.sections.map((section, i) => `
+\\section{${section.title}}
+${section.content}
+`).join('')}
+
+\\section{Extracted Entities}
+\\begin{itemize}
+${Array.from(data.entities.entries()).slice(0, 10).map(([subject, props]) => `
+\\item \\textbf{${subject.replace(/_/g, '\\_')}}
+\\begin{itemize}
+${Object.entries(props).slice(0, 5).map(([pred, obj]) => `
+\\item ${pred.split(/[#/]/).pop()}: ${String(obj).replace(/_/g, '\\_')}
+`).join('')}
+\\end{itemize}
+`).join('')}
+\\end{itemize}
+
+\\end{document}`;
+}
+
+/**
+ * Generate Word document
+ */
+async function generateWord(template, data, variables, outputPath) {
+  // Generate HTML that can be opened directly in Word
+  const htmlContent = generateWordHTML(data, variables);
+
+  // Save as .doc (HTML format that Word recognizes)
+  const docPath = outputPath.replace('.docx', '.doc');
+  writeFileSync(docPath, htmlContent);
+
+  return {
+    path: docPath,
+    size: htmlContent.length,
+    pages: estimatePages(htmlContent),
+    format: 'HTML-DOC'
+  };
+}
+
+/**
+ * Generate Word-compatible HTML with proper styling
+ */
+function generateWordHTML(data, variables) {
+  const title = data.title || variables.title || 'Document';
+  const author = data.author || variables.author || 'KGEN Generator';
+  const date = new Date().toLocaleDateString();
+
+  return `<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:w="urn:schemas-microsoft-com:office:word"
+      xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+  <meta charset="UTF-8">
+  <title>${title}</title>
+  <!--[if gte mso 9]>
+  <xml>
+    <w:WordDocument>
+      <w:View>Print</w:View>
+      <w:Zoom>100</w:Zoom>
+      <w:DoNotPromtForFilename/>
+    </w:WordDocument>
+  </xml>
+  <![endif]-->
+  <style>
+    @page { size: 8.5in 11in; margin: 1in; }
+    body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.6; }
+    h1 { font-size: 24pt; color: #2c3e50; margin-bottom: 10pt; }
+    h2 { font-size: 18pt; color: #34495e; margin-top: 12pt; margin-bottom: 6pt; }
+    h3 { font-size: 14pt; color: #34495e; margin-top: 10pt; margin-bottom: 5pt; }
+    p { margin: 0 0 10pt 0; }
+    .metadata { color: #7f8c8d; font-size: 10pt; margin-bottom: 20pt; }
+    .section { margin-bottom: 15pt; page-break-inside: avoid; }
+    table { border-collapse: collapse; width: 100%; margin: 10pt 0; }
+    th, td { border: 1px solid #ddd; padding: 8pt; text-align: left; }
+    th { background-color: #f0f0f0; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="document">
+    <h1>${title}</h1>
+    <div class="metadata">
+      <p>Author: ${author}</p>
+      <p>Generated: ${date}</p>
+      <p>Source: Knowledge Graph (${data.entities ? data.entities.size : 0} entities)</p>
+    </div>
+
+    ${variables.abstract ? `
+    <div class="section">
+      <h2>Abstract</h2>
+      <p>${variables.abstract}</p>
+    </div>
+    ` : ''}
+
+    ${(data.sections || []).map(section => `
+    <div class="section">
+      <h2>${section.title}</h2>
+      <p>${section.content || 'No content available'}</p>
+    </div>
+    `).join('')}
+
+    ${data.entities && data.entities.size > 0 ? `
+    <div class="section">
+      <h2>Entity Details</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Entity</th>
+            <th>Properties</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${Array.from(data.entities.entries()).slice(0, 20).map(([entity, props]) => `
+          <tr>
+            <td>${entity.replace('http://', '').replace('https://', '')}</td>
+            <td>${Object.entries(props).map(([k, v]) => `${k}: ${v}`).join('; ')}</td>
+          </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+    ` : ''}
+  </div>
+</body>
+</html>`;
+}
+
+/**
+ * Generate Excel spreadsheet
+ */
+async function generateExcel(template, data, variables, outputPath) {
+  // Generate CSV that can be imported into Excel
+  const csvContent = generateCSV(data, variables);
+
+  writeFileSync(outputPath, csvContent);
+
+  return {
+    path: outputPath,
+    size: csvContent.length,
+    pages: 1
+  };
+}
+
+/**
+ * Generate CSV from data
+ */
+function generateCSV(data, variables) {
+  const rows = [];
+
+  // Add headers
+  rows.push(['Subject', 'Predicate', 'Object']);
+
+  // Add entity data
+  for (const [subject, props] of data.entities) {
+    for (const [pred, obj] of Object.entries(props)) {
+      rows.push([subject, pred, obj]);
+    }
+  }
+
+  return rows.map(row => row.join(',')).join('\n');
+}
+
+/**
+ * Generate PowerPoint presentation
+ */
+async function generatePowerPoint(template, data, variables, outputPath) {
+  // Generate XML that represents slides
+  const xmlContent = generateSlidesXML(data, variables);
+
+  writeFileSync(outputPath, xmlContent);
+
+  return {
+    path: outputPath,
+    size: xmlContent.length,
+    pages: (data.sections || []).length + 1
+  };
+}
+
+/**
+ * Generate slides XML
+ */
+function generateSlidesXML(data, variables) {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<presentation>
+  <slide>
+    <title>${data.title || variables.title || 'Presentation'}</title>
+    <subtitle>${data.author || variables.author || ''}</subtitle>
+  </slide>
+  ${(data.sections || []).map(section => `
+  <slide>
+    <title>${section.title}</title>
+    <content>${section.content}</content>
+  </slide>
+  `).join('')}
+</presentation>`;
+}
+
+/**
+ * Generate PDF (via LaTeX compilation)
+ */
+async function generatePDF(template, data, variables, outputPath) {
+  // First generate LaTeX
+  const texPath = outputPath.replace('.pdf', '.tex');
+  await generateLaTeX(template, data, variables, texPath);
+
+  // Note: Actual PDF compilation would require pdflatex
+  // For now, we just return the TeX file
+  return {
+    path: texPath,
+    size: readFileSync(texPath).length,
+    pages: estimatePages(readFileSync(texPath, 'utf8'))
+  };
+}
+
+/**
+ * Get format from template name
+ */
+function getFormatFromTemplate(template) {
+  if (template.includes('latex') || template.includes('paper') || template.includes('thesis')) {
+    return 'latex';
+  } else if (template.includes('word') || template.includes('report')) {
+    return 'docx';
+  } else if (template.includes('excel') || template.includes('data')) {
+    return 'xlsx';
+  } else if (template.includes('power') || template.includes('slide')) {
+    return 'pptx';
+  }
+  return 'latex'; // default
+}
+
+/**
+ * Generate output path
+ */
+function generateOutputPath(template, format) {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  return `./generated/${template}-${timestamp}.${format}`;
+}
+
+/**
+ * Estimate number of pages
+ */
+function estimatePages(content) {
+  // Rough estimate: 3000 characters per page
+  return Math.max(1, Math.ceil(content.length / 3000));
+}
+
+/**
+ * Get available templates
+ */
+function getAvailableTemplates(category) {
+  const templates = [
+    // LaTeX templates
+    {
+      name: 'latex-paper',
+      category: 'latex',
+      description: 'Academic paper in IEEE/ACM format',
+      formats: ['tex', 'pdf']
+    },
+    {
+      name: 'latex-thesis',
+      category: 'latex',
+      description: 'PhD/Master thesis template',
+      formats: ['tex', 'pdf']
+    },
+    {
+      name: 'latex-report',
+      category: 'latex',
+      description: 'Technical report template',
+      formats: ['tex', 'pdf']
+    },
+    {
+      name: 'latex-presentation',
+      category: 'latex',
+      description: 'Beamer presentation slides',
+      formats: ['tex', 'pdf']
+    },
+    // Office templates
+    {
+      name: 'word-report',
+      category: 'office',
+      description: 'Professional Word report',
+      formats: ['docx', 'xml']
+    },
+    {
+      name: 'excel-data',
+      category: 'office',
+      description: 'Excel data spreadsheet',
+      formats: ['xlsx', 'csv']
+    },
+    {
+      name: 'powerpoint-slides',
+      category: 'office',
+      description: 'PowerPoint presentation',
+      formats: ['pptx', 'xml']
+    }
+  ];
+
+  if (category === 'all') {
+    return templates;
+  }
+
+  return templates.filter(t => t.category === category);
+}
+
+import { marked } from 'marked';
+import ExcelJS from 'exceljs';
+import { writeFile } from 'node:fs/promises';
+
+// Convert Markdown to LaTeX
+export function markdownToLaTeX(markdown) {
+  // Basic frontmatter removal
+  let content = markdown;
+  if (content.startsWith('---')) {
+    const endIndex = content.indexOf('---', 3);
+    if (endIndex !== -1) {
+      content = content.substring(endIndex + 3).trim();
+    }
+  }
+
+  // LaTeX document structure
+  let latex = `\\documentclass[11pt]{article}
+\\usepackage[utf8]{inputenc}
+\\usepackage[T1]{fontenc}
+\\usepackage{graphicx}
+\\usepackage{booktabs}
+\\usepackage{longtable}
+\\usepackage{hyperref}
+\\usepackage{xcolor}
+\\usepackage{fancyhdr}
+\\usepackage[margin=1in]{geometry}
+
+% Define colors
+\\definecolor{sectioncolor}{RGB}{0,51,102}
+\\definecolor{tableheader}{RGB}{240,240,240}
+
+% Headers and footers
+\\pagestyle{fancy}
+\\fancyhf{}
+\\rfoot{Page \\thepage}
+\\lfoot{Generated with Mini-Engine}
+
+\\begin{document}
+
+`;
+
+  // Convert markdown elements to LaTeX
+  content = content
+    // Headers
+    .replace(/^# (.*?)$/gm, '\\section{$1}')
+    .replace(/^## (.*?)$/gm, '\\subsection{$1}')
+    .replace(/^### (.*?)$/gm, '\\subsubsection{$1}')
+    // Bold and italic
+    .replace(/\*\*\*(.*?)\*\*\*/g, '\\textbf{\\textit{$1}}')
+    .replace(/\*\*(.*?)\*\*/g, '\\textbf{$1}')
+    .replace(/\*(.*?)\*/g, '\\textit{$1}')
+    // Lists
+    .replace(/^- (.*?)$/gm, '\\item $1')
+    .replace(/^(\d+)\. (.*?)$/gm, '\\item $2')
+    // Code blocks
+    .replace(/```(.*?)```/gs, '\\begin{verbatim}$1\\end{verbatim}')
+    // Inline code
+    .replace(/`(.*?)`/g, '\\texttt{$1}')
+    // Line breaks
+    .replace(/\n\n/g, '\n\n\\vspace{0.5em}\n\n')
+    // Special characters
+    .replace(/\$/g, '\\$')
+    .replace(/%/g, '\\%')
+    .replace(/&/g, '\\&')
+    .replace(/#/g, '\\#')
+    .replace(/_/g, '\\_');
+
+  // Handle lists properly
+  content = content.replace(/(\\item.*\n)+/g, (match) => {
+    return '\\begin{itemize}\n' + match + '\\end{itemize}\n';
+  });
+
+  // Simple table detection and conversion
+  const tableRegex = /\|.*\|.*\|\n\|[-:\s|]+\|\n((\|.*\|\n)+)/g;
+  content = content.replace(tableRegex, (match) => {
+    const lines = match.trim().split('\n');
+    const headers = lines[0].split('|').filter(h => h.trim());
+    const rows = lines.slice(2).map(line =>
+      line.split('|').filter(cell => cell.trim())
+    );
+
+    let table = '\\begin{table}[h!]\n\\centering\n\\begin{tabular}{' +
+                'l'.repeat(headers.length) + '}\n\\toprule\n';
+
+    table += headers.join(' & ') + ' \\\\\n\\midrule\n';
+
+    rows.forEach(row => {
+      table += row.join(' & ') + ' \\\\\n';
+    });
+
+    table += '\\bottomrule\n\\end{tabular}\n\\end{table}\n';
+
+    return table;
+  });
+
+  latex += content;
+  latex += '\n\\end{document}';
+
+  return latex;
+}
+
+// Convert Markdown to Word-compatible HTML
+export async function markdownToDocx(markdown, outputPath) {
+  // Convert markdown to HTML
+  const html = marked(markdown);
+
+  // Create Word-compatible HTML document
+  const docHtml = `<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:w="urn:schemas-microsoft-com:office:word"
+      xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+  <meta charset="utf-8">
+  <title>Document</title>
+  <!--[if gte mso 9]>
+  <xml>
+    <w:WordDocument>
+      <w:View>Print</w:View>
+      <w:Zoom>100</w:Zoom>
+      <w:DoNotOptimizeForBrowser/>
+    </w:WordDocument>
+  </xml>
+  <![endif]-->
+  <style>
+    @page { size: 8.5in 11.0in; margin: 1in; }
+    body { font-family: Calibri, sans-serif; font-size: 11pt; line-height: 1.6; }
+    h1 { font-size: 20pt; font-weight: bold; color: #003366; page-break-after: avoid; }
+    h2 { font-size: 16pt; font-weight: bold; color: #0066cc; page-break-after: avoid; }
+    h3 { font-size: 14pt; font-weight: bold; color: #333333; page-break-after: avoid; }
+    table { border-collapse: collapse; width: 100%; margin: 10pt 0; }
+    th, td { border: 1px solid #ddd; padding: 8pt; text-align: left; }
+    th { background-color: #0066cc; color: white; font-weight: bold; }
+    tr:nth-child(even) { background-color: #f2f2f2; }
+    ul, ol { margin-left: 20pt; }
+    li { margin: 5pt 0; }
+    code { background: #f4f4f4; padding: 2pt 4pt; font-family: 'Courier New', monospace; }
+    pre { background: #f4f4f4; padding: 10pt; overflow-x: auto; }
+    strong { font-weight: bold; }
+    em { font-style: italic; }
+    .page-break { page-break-before: always; }
+  </style>
+</head>
+<body>
+  ${html}
+  <div style="margin-top: 30pt; padding-top: 10pt; border-top: 1px solid #ccc; color: #666; font-size: 9pt;">
+    Generated by Mini-Engine on ${new Date().toLocaleString()}
+  </div>
+</body>
+</html>`;
+
+  // Save as .doc file (HTML format that Word can open)
+  const docPath = outputPath.replace('.docx', '.doc');
+  await writeFile(docPath, docHtml, 'utf8');
+  console.error(`✅ Word document saved as: ${docPath}`);
+  console.error(`   Note: This is an HTML document that Word can open and save as .docx`);
+  return docPath;
+}
+
+// Convert query results to Excel
+export async function resultsToExcel(queryResults, metadata, outputPath) {
+  const workbook = new ExcelJS.Workbook();
+
+  // Metadata
+  workbook.creator = 'Mini-Engine';
+  workbook.created = new Date();
+  workbook.modified = new Date();
+
+  // Create worksheets for each query result set
+  for (const [queryName, results] of Object.entries(queryResults)) {
+    if (!results || results.length === 0) continue;
+
+    const worksheet = workbook.addWorksheet(queryName);
+
+    // Get column headers from first result
+    const columns = Object.keys(results[0]);
+
+    // Set up columns with formatting
+    worksheet.columns = columns.map(col => ({
+      header: col.charAt(0).toUpperCase() + col.slice(1).replace(/_/g, ' '),
+      key: col,
+      width: 20
+    }));
+
+    // Style the header row
+    worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF0051CC' }
+    };
+    worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // Add data rows
+    results.forEach(row => {
+      const excelRow = worksheet.addRow(row);
+
+      // Format numbers
+      columns.forEach((col, index) => {
+        const cell = excelRow.getCell(index + 1);
+        const value = row[col];
+
+        if (typeof value === 'number') {
+          if (col.includes('percent') || col.includes('rate')) {
+            cell.numFmt = '0.00%';
+          } else if (col.includes('price') || col.includes('revenue') || col.includes('value')) {
+            cell.numFmt = '$#,##0.00';
+          } else if (Number.isInteger(value)) {
+            cell.numFmt = '#,##0';
+          } else {
+            cell.numFmt = '#,##0.00';
+          }
+        }
+      });
+    });
+
+    // Add filters
+    worksheet.autoFilter = {
+      from: { row: 1, column: 1 },
+      to: { row: results.length + 1, column: columns.length }
+    };
+
+    // Freeze header row
+    worksheet.views = [{ state: 'frozen', ySplit: 1 }];
+
+    // Add conditional formatting for numeric columns
+    columns.forEach((col, index) => {
+      if (typeof results[0][col] === 'number') {
+        const columnLetter = String.fromCharCode(65 + index);
+
+        worksheet.addConditionalFormatting({
+          ref: `${columnLetter}2:${columnLetter}${results.length + 1}`,
+          rules: [
+            {
+              type: 'dataBar',
+              minLength: 0,
+              maxLength: 100,
+              color: 'FF638EC6',
+              showValue: true
+            }
+          ]
+        });
+      }
+    });
+  }
+
+  // Add summary sheet if metadata provided
+  if (metadata) {
+    const summarySheet = workbook.addWorksheet('Summary', { tabColor: { argb: 'FFFF6600' } });
+
+    summarySheet.columns = [
+      { header: 'Property', key: 'property', width: 30 },
+      { header: 'Value', key: 'value', width: 50 }
+    ];
+
+    summarySheet.getRow(1).font = { bold: true };
+    summarySheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFF6600' }
+    };
+
+    Object.entries(metadata).forEach(([key, value]) => {
+      summarySheet.addRow({
+        property: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
+        value: value
+      });
+    });
+  }
+
+  // Save workbook
+  await workbook.xlsx.writeFile(outputPath);
+  return outputPath;
+}
+
+// Create PowerPoint-compatible HTML presentation
+export async function resultsToPowerPoint(queryResults, metadata, outputPath) {
+  // Create an HTML presentation that can be opened in PowerPoint
+  let html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${metadata?.title || 'Data Analysis Report'}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Calibri, Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .slide {
+      width: 1024px;
+      height: 768px;
+      margin: 20px auto;
+      padding: 60px;
+      background: white;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      page-break-after: always;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .title-slide {
+      background: linear-gradient(135deg, #003366 0%, #0066cc 100%);
+      color: white;
+      text-align: center;
+      justify-content: center;
+      align-items: center;
+    }
+    .title-slide h1 {
+      font-size: 56pt;
+      font-weight: bold;
+      margin-bottom: 30px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    .title-slide .subtitle {
+      font-size: 24pt;
+      opacity: 0.9;
+    }
+    .title-slide .date {
+      font-size: 18pt;
+      margin-top: 50px;
+      opacity: 0.8;
+    }
+    .content-slide h2 {
+      font-size: 36pt;
+      color: #003366;
+      border-bottom: 4px solid #0066cc;
+      padding-bottom: 15px;
+      margin-bottom: 40px;
+    }
+    .data-table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 30px 0;
+      font-size: 14pt;
+    }
+    .data-table th, .data-table td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: left;
+    }
+    .data-table th {
+      background: linear-gradient(135deg, #0066cc 0%, #004499 100%);
+      color: white;
+      font-weight: bold;
+      text-transform: uppercase;
+      font-size: 12pt;
+    }
+    .data-table tr:nth-child(even) { background: #f8f9fa; }
+    .data-table tr:hover { background: #e8f4ff; }
+    .stats-box {
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-left: 5px solid #0066cc;
+      padding: 25px;
+      margin: 30px 0;
+      border-radius: 8px;
+    }
+    .stats-box h3 {
+      color: #003366;
+      font-size: 20pt;
+      margin-bottom: 15px;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .stat-item {
+      background: white;
+      padding: 15px;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .stat-label {
+      font-size: 11pt;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .stat-value {
+      font-size: 24pt;
+      font-weight: bold;
+      color: #0066cc;
+      margin-top: 5px;
+    }
+    .chart-placeholder {
+      background: linear-gradient(135deg, #e8f4ff 0%, #cce7ff 100%);
+      height: 300px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #003366;
+      font-size: 16pt;
+      margin: 30px 0;
+    }
+    .thank-you {
+      background: linear-gradient(135deg, #003366 0%, #0066cc 100%);
+      color: white;
+      text-align: center;
+      justify-content: center;
+      align-items: center;
+    }
+    .thank-you h1 {
+      font-size: 72pt;
+      font-weight: bold;
+      margin-bottom: 40px;
+      text-shadow: 3px 3px 6px rgba(0,0,0,0.4);
+    }
+    .thank-you .subtitle {
+      font-size: 24pt;
+      opacity: 0.9;
+    }
+    .slide-number {
+      position: absolute;
+      bottom: 20px;
+      right: 30px;
+      color: #666;
+      font-size: 12pt;
+    }
+    @media print {
+      body { background: white; }
+      .slide { box-shadow: none; margin: 0; }
+    }
+  </style>
+</head>
+<body>
+`;
+
+  // Title slide
+  html += `
+  <div class="slide title-slide">
+    <h1>${metadata?.title || 'Data Analysis Report'}</h1>
+    <div class="subtitle">${metadata?.description || 'Comprehensive Data Analysis'}</div>
+    <div class="date">${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+  </div>
+`;
+
+  let slideNumber = 2;
+
+  // Data slides
+  for (const [queryName, data] of Object.entries(queryResults)) {
+    if (!Array.isArray(data) || data.length === 0) continue;
+
+    const displayName = queryName.charAt(0).toUpperCase() + queryName.slice(1).replace(/_/g, ' ');
+    const columns = Object.keys(data[0] || {});
+
+    // Main data slide
+    html += `
+  <div class="slide content-slide">
+    <h2>${displayName}</h2>
+`;
+
+    // Create table for top results
+    const topResults = data.slice(0, 5);
+    if (columns.length > 0) {
+      html += `
+    <table class="data-table">
+      <thead>
+        <tr>
+          ${columns.slice(0, 5).map(col =>
+            `<th>${col.charAt(0).toUpperCase() + col.slice(1).replace(/_/g, ' ')}</th>`
+          ).join('')}
+        </tr>
+      </thead>
+      <tbody>
+`;
+
+      for (const row of topResults) {
+        html += `        <tr>
+`;
+        for (const col of columns.slice(0, 5)) {
+          let value = row[col];
+          if (typeof value === 'number') {
+            if (col.toLowerCase().includes('percent') || col.toLowerCase().includes('rate')) {
+              value = (value * 100).toFixed(2) + '%';
+            } else if (col.toLowerCase().includes('price') || col.toLowerCase().includes('revenue') ||
+                       col.toLowerCase().includes('cost') || col.toLowerCase().includes('profit')) {
+              value = '$' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            } else {
+              value = value.toLocaleString('en-US');
+            }
+          }
+          html += `          <td>${value || ''}</td>
+`;
+        }
+        html += `        </tr>
+`;
+      }
+
+      html += `      </tbody>
+    </table>
+`;
+
+      if (data.length > 5) {
+        html += `    <p style="font-style: italic; color: #666; margin-top: 10px;">Showing top 5 of ${data.length} results</p>
+`;
+      }
+    }
+
+    html += `    <div class="slide-number">${slideNumber}</div>
+  </div>
+`;
+    slideNumber++;
+
+    // Statistics slide if we have numeric data
+    const numericColumns = columns.filter(col =>
+      data.some(row => typeof row[col] === 'number')
+    );
+
+    if (numericColumns.length > 0) {
+      html += `
+  <div class="slide content-slide">
+    <h2>${displayName} - Analytics</h2>
+    <div class="stats-box">
+      <h3>Summary Statistics</h3>
+      <div class="stats-grid">
+`;
+
+      for (const col of numericColumns.slice(0, 4)) {
+        const values = data.map(row => row[col]).filter(v => typeof v === 'number');
+        if (values.length > 0) {
+          const sum = values.reduce((a, b) => a + b, 0);
+          const avg = sum / values.length;
+          const max = Math.max(...values);
+          const min = Math.min(...values);
+
+          let displayValue = avg;
+          if (col.toLowerCase().includes('percent') || col.toLowerCase().includes('rate')) {
+            displayValue = (avg * 100).toFixed(2) + '%';
+          } else if (col.toLowerCase().includes('price') || col.toLowerCase().includes('revenue') ||
+                     col.toLowerCase().includes('cost') || col.toLowerCase().includes('profit')) {
+            displayValue = '$' + avg.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+          } else {
+            displayValue = avg.toFixed(2);
+          }
+
+          html += `
+        <div class="stat-item">
+          <div class="stat-label">${col.replace(/_/g, ' ')}</div>
+          <div class="stat-value">${displayValue}</div>
+        </div>
+`;
+        }
+      }
+
+      html += `
+      </div>
+    </div>
+    <div class="chart-placeholder">
+      <div>📊 Chart visualization would appear here</div>
+    </div>
+    <div class="slide-number">${slideNumber}</div>
+  </div>
+`;
+      slideNumber++;
+    }
+  }
+
+  // Thank you slide
+  html += `
+  <div class="slide thank-you">
+    <h1>Thank You</h1>
+    <div class="subtitle">Generated with Mini-Engine</div>
+    <div class="date" style="margin-top: 40px; font-size: 16pt; opacity: 0.7;">${new Date().toISOString()}</div>
+  </div>
+`;
+
+  html += `
+</body>
+</html>
+`;
+
+  // Save as HTML that can be imported into PowerPoint
+  const htmlPath = outputPath.replace('.pptx', '-presentation.html');
+  await writeFile(htmlPath, html, 'utf8');
+  console.error(`✅ Presentation saved as: ${htmlPath}`);
+  console.error(`   To use in PowerPoint: File > Open > Browse to ${htmlPath}`);
+  console.error(`   Or open in browser and copy slides to PowerPoint`);
+  return htmlPath;
+}

@@ -21,6 +21,7 @@ import { daemonCommand } from "./cli/daemon.mjs";
 import { eventCommand } from "./cli/event.mjs";
 import { auditCommand } from "./cli/audit.mjs";
 import { chatCommand } from "./cli/chat.mjs";
+import { graphCommand } from "./cli/graph-command.mjs";
 
 const commands = {
   daemon: handleDaemon,
@@ -37,6 +38,7 @@ const commands = {
   audit: auditCommand,
   chat: handleChat,
   llm: handleLLM,
+  graph: graphCommand,
 };
 
 async function main() {
@@ -384,6 +386,7 @@ Usage:
   gitvan audit [build|verify|list]                       Receipt audit
   gitvan chat [draft|generate|explain]                    AI job generation
   gitvan llm [call|models]                               AI operations
+  gitvan graph [save|load|init-default|stats]            Graph persistence
   gitvan schedule apply                                  Apply scheduled tasks
   gitvan worktree list                                   List all worktrees
   gitvan run <job-name>                                  Run a specific job (legacy)
@@ -397,6 +400,9 @@ Examples:
   gitvan chat generate "Create a changelog job"         Generate job via AI
   gitvan llm call "Summarize recent commits"            Call AI directly
   gitvan audit build --out audit.json                  Build audit pack
+  gitvan graph save my-data --backup true               Save graph with backup
+  gitvan graph init-default                             Initialize default graph
+  gitvan graph stats                                    Show graph statistics
 `);
 }
 

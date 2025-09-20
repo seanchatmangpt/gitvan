@@ -4,7 +4,7 @@
  */
 
 import { defineJob } from "../runtime/define-job.mjs";
-import { GitVanGraphArchitecture } from "./graph-architecture.mjs";
+import { GitVanGraphArchitecture } from "../core/graph-architecture.mjs";
 
 /**
  * Graph-Based Job Definition
@@ -47,57 +47,43 @@ export function defineGraphJob(config) {
 
 // Project Analysis Job
 export const projectAnalysisJob = defineGraphJob({
+  name: "project:analysis",
   meta: {
-    name: "project:analysis",
     description: "Analyze project structure and metadata using graph queries",
   },
   graphId: "project",
-  hooks: ["post-commit"],
+  hooks: [{ event: "post-commit" }],
   async run({ graph, inputs }) {
     // Analyze project files
     const projectFiles = inputs.files || [];
 
     // Add project analysis to graph
     await graph.addTurtle(`
-      @prefix gv: <https://gitvan.dev/project/> .
-      @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+      @prefix gv: <https://gitvan.dev/ontology#> .
+      @prefix dct: <http://purl.org/dc/terms/> .
       
-      gv:analysis_${Date.now()} rdf:type gv:ProjectAnalysis ;
-        gv:analyzedAt "${new Date().toISOString()}" ;
-        gv:fileCount "${projectFiles.length}" ;
-        gv:files "${JSON.stringify(projectFiles)}" .
+      <https://gitvan.dev/analysis/project> a gv:ProjectAnalysis ;
+          dct:title "Project Analysis" ;
+          dct:created "${new Date().toISOString()}"^^xsd:dateTime ;
+          gv:analyzedFiles ${projectFiles.length} .
     `);
-
-    // Query project metrics
-    await graph.setQuery(`
-      PREFIX gv: <https://gitvan.dev/project/>
-      SELECT ?fileCount ?analyzedAt WHERE {
-        ?analysis rdf:type gv:ProjectAnalysis ;
-          gv:fileCount ?fileCount ;
-          gv:analyzedAt ?analyzedAt .
-      }
-      ORDER BY DESC(?analyzedAt)
-      LIMIT 1
-    `);
-
-    const metrics = await graph.select();
 
     return {
       status: "completed",
-      metrics: metrics[0] || {},
-      analysis: "Project structure analyzed using graph queries",
+      analyzedFiles: projectFiles.length,
+      graphId: "project",
     };
   },
 });
 
 // AI Template Processing Job
 export const aiTemplateJob = defineGraphJob({
+  name: "ai:template-processing",
   meta: {
-    name: "ai:template-processing",
     description: "Process templates using AI graph loop enhancement",
   },
   graphId: "ai",
-  hooks: ["post-commit"],
+  hooks: [{ event: "post-commit" }],
   async run({ graph, graphArch, inputs }) {
     const templateId = inputs.templateId || `template_${Date.now()}`;
     const templateData = inputs.templateData || {};
@@ -121,273 +107,168 @@ export const aiTemplateJob = defineGraphJob({
 
 // Pack Dependency Analysis Job
 export const packDependencyJob = defineGraphJob({
+  name: "pack:dependency-analysis",
   meta: {
-    name: "pack:dependency-analysis",
     description: "Analyze pack dependencies using graph queries",
   },
   graphId: "packs",
-  hooks: ["post-commit"],
+  hooks: [{ event: "pre-commit" }],
   async run({ graph, inputs }) {
-    const packId = inputs.packId || "current";
+    const packId = inputs.packId || "unknown";
+    const dependencies = inputs.dependencies || [];
 
-    // Analyze pack dependencies
-    await graph.setQuery(`
-      PREFIX gv: <https://gitvan.dev/packs/>
-      SELECT ?packId ?dependencies ?compatibility WHERE {
-        ?pack rdf:type gv:Pack ;
-          gv:packId ?packId ;
-          gv:dependencies ?dependencies .
-        FILTER(?packId = "${packId}")
-      }
+    // Add dependency analysis to graph
+    await graph.addTurtle(`
+      @prefix gv: <https://gitvan.dev/ontology#> .
+      @prefix dct: <http://purl.org/dc/terms/> .
+      
+      <https://gitvan.dev/pack/${packId}> a gv:Pack ;
+          dct:title "${packId}" ;
+          gv:dependencyCount ${dependencies.length} .
     `);
-
-    const dependencies = await graph.select();
 
     return {
       status: "completed",
       packId,
-      dependencies,
-      analysis: "Pack dependencies analyzed using graph queries",
+      dependencies: dependencies.length,
     };
   },
 });
 
-// Marketplace Indexing Job
+// Marketplace Index Job
 export const marketplaceIndexJob = defineGraphJob({
+  name: "marketplace:index",
   meta: {
-    name: "marketplace:index",
-    description: "Index marketplace data using graph storage",
+    description: "Index marketplace data for search and discovery",
   },
   graphId: "marketplace",
-  hooks: ["post-commit"],
+  hooks: [{ event: "post-commit" }],
   async run({ graph, inputs }) {
-    const marketplaceData = inputs.marketplaceData || [];
+    const marketplaceData = inputs.data || [];
 
     // Index marketplace data
     for (const item of marketplaceData) {
       await graph.addTurtle(`
-        @prefix gv: <https://gitvan.dev/marketplace/> .
-        @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+        @prefix gv: <https://gitvan.dev/ontology#> .
+        @prefix dct: <http://purl.org/dc/terms/> .
         
-        gv:${item.id} rdf:type gv:MarketplaceItem ;
-          gv:itemId "${item.id}" ;
-          gv:name "${item.name}" ;
-          gv:type "${item.type}" ;
-          gv:category "${item.category}" ;
-          gv:indexedAt "${new Date().toISOString()}" .
+        <https://gitvan.dev/marketplace/${item.id}> a gv:MarketplaceItem ;
+            dct:title "${item.title}" ;
+            dct:description "${item.description}" ;
+            gv:category "${item.category}" .
       `);
     }
 
     return {
       status: "completed",
-      indexed: marketplaceData.length,
-      analysis: "Marketplace data indexed using graph storage",
+      indexedItems: marketplaceData.length,
     };
   },
 });
 
 // Graph Analytics Job
 export const graphAnalyticsJob = defineGraphJob({
+  name: "graph:analytics",
   meta: {
-    name: "graph:analytics",
     description: "Generate analytics from graph data",
   },
-  graphId: "jobs",
-  hooks: ["post-commit"],
-  async run({ graph, graphArch }) {
-    // Generate analytics from all graphs
-    const analytics = {};
-
-    // Project analytics
-    const projectGraph = graphArch.graphManager.getDefaultGraph("project");
-    await projectGraph.setQuery(`
-      PREFIX gv: <https://gitvan.dev/project/>
-      SELECT (COUNT(?event) as ?eventCount) WHERE {
-        ?event rdf:type gv:GitEvent .
+  graphId: "analytics",
+  hooks: [{ event: "post-commit" }],
+  async run({ graph, inputs }) {
+    const analyticsQuery = inputs.query || `
+      PREFIX gv: <https://gitvan.dev/ontology#>
+      SELECT ?type (COUNT(?item) as ?count) WHERE {
+        ?item rdf:type ?type .
       }
-    `);
-    analytics.project = await projectGraph.select();
+      GROUP BY ?type
+      ORDER BY DESC(?count)
+    `;
 
-    // Jobs analytics
-    await graph.setQuery(`
-      PREFIX gv: <https://gitvan.dev/jobs/>
-      SELECT (COUNT(?job) as ?jobCount) ?status WHERE {
-        ?job rdf:type gv:Job ;
-          gv:status ?status .
-      }
-      GROUP BY ?status
-    `);
-    analytics.jobs = await graph.select();
-
-    // Packs analytics
-    const packsGraph = graphArch.graphManager.getDefaultGraph("packs");
-    await packsGraph.setQuery(`
-      PREFIX gv: <https://gitvan.dev/packs/>
-      SELECT (COUNT(?pack) as ?packCount) WHERE {
-        ?pack rdf:type gv:Pack .
-      }
-    `);
-    analytics.packs = await packsGraph.select();
-
-    // AI analytics
-    const aiGraph = graphArch.graphManager.getDefaultGraph("ai");
-    await aiGraph.setQuery(`
-      PREFIX gv: <https://gitvan.dev/ai/>
-      SELECT (COUNT(?template) as ?templateCount) WHERE {
-        ?template rdf:type gv:Template .
-      }
-    `);
-    analytics.ai = await aiGraph.select();
+    await graph.setQuery(analyticsQuery);
+    const analytics = await graph.select();
 
     return {
       status: "completed",
       analytics,
-      generatedAt: new Date().toISOString(),
+      query: analyticsQuery,
     };
   },
 });
 
-// Graph-Based Report Generation Job
+// Graph Report Job
 export const graphReportJob = defineGraphJob({
+  name: "graph:report",
   meta: {
-    name: "graph:report-generation",
-    description: "Generate reports using graph data and templates",
+    description: "Generate comprehensive graph reports",
   },
-  graphId: "jobs",
-  hooks: ["post-commit"],
+  graphId: "reports",
+  hooks: [{ event: "post-commit" }],
   async run({ graph, inputs }) {
-    const reportType = inputs.reportType || "summary";
-    const template =
-      inputs.template ||
-      `
-# GitVan Graph Report
+    const reportType = inputs.type || "summary";
+    const reportData = inputs.data || {};
 
-## Summary
-Generated at: {{ generatedAt }}
-
-## Project Metrics
-{% for metric in projectMetrics %}
-- {{ metric.metric }}: {{ metric.value }}
-{% endfor %}
-
-## Job Statistics
-{% for stat in jobStats %}
-- {{ stat.status }}: {{ stat.count }}
-{% endfor %}
-`;
-
-    // Query data for report
-    await graph.setQuery(`
-      PREFIX gv: <https://gitvan.dev/jobs/>
-      SELECT ?status (COUNT(?job) as ?count) WHERE {
-        ?job rdf:type gv:Job ;
-          gv:status ?status .
-      }
-      GROUP BY ?status
-    `);
-
-    const jobStats = await graph.select();
-
-    // Generate report using template
-    await graph.setTemplate(template);
-    const report = await graph.render({
-      generatedAt: new Date().toISOString(),
-      projectMetrics: [
-        {
-          metric: "Total Jobs",
-          value: jobStats.reduce((sum, stat) => sum + parseInt(stat.count), 0),
-        },
-      ],
-      jobStats,
-    });
-
-    // Save report
-    await graph.snapshotText("reports", `${reportType}_report`, report, "md");
+    // Generate report data
+    const report = {
+      type: reportType,
+      timestamp: new Date().toISOString(),
+      data: reportData,
+      graphStats: {
+        quads: graph.store.size,
+        subjects: new Set([...graph.store].map(q => q.subject.value)).size,
+        predicates: new Set([...graph.store].map(q => q.predicate.value)).size,
+        objects: new Set([...graph.store].map(q => q.object.value)).size,
+      },
+    };
 
     return {
       status: "completed",
-      reportType,
       report,
-      saved: true,
     };
   },
 });
 
-// Graph-Based Data Migration Job
+// Graph Migration Job
 export const graphMigrationJob = defineGraphJob({
+  name: "graph:migration",
   meta: {
-    name: "graph:data-migration",
-    description: "Migrate data between graph systems",
+    description: "Migrate graph data between formats or versions",
   },
-  graphId: "jobs",
-  hooks: ["post-commit"],
+  graphId: "migration",
+  hooks: [{ event: "pre-commit" }],
   async run({ graph, inputs }) {
-    const sourceGraphId = inputs.sourceGraphId || "jobs";
-    const targetGraphId = inputs.targetGraphId || "project";
-    const migrationQuery =
-      inputs.migrationQuery ||
-      `
-      PREFIX gv: <https://gitvan.dev/jobs/>
-      SELECT ?jobId ?status ?createdAt WHERE {
-        ?job rdf:type gv:Job ;
-          gv:jobId ?jobId ;
-          gv:status ?status ;
-          gv:createdAt ?createdAt .
-      }
-    `;
+    const sourceFormat = inputs.sourceFormat || "turtle";
+    const targetFormat = inputs.targetFormat || "nquads";
+    const migrationData = inputs.data || "";
 
-    // Get source graph
-    const graphArch = new GitVanGraphArchitecture();
-    await graphArch.initialize();
-    const sourceGraph = await graphArch.graphManager.registry.getGraph(
-      sourceGraphId
-    );
-    const targetGraph = await graphArch.graphManager.registry.getGraph(
-      targetGraphId
-    );
-
-    // Execute migration query
-    await sourceGraph.setQuery(migrationQuery);
-    const migrationData = await sourceGraph.select();
-
-    // Migrate data to target graph
-    for (const item of migrationData) {
-      await targetGraph.addTurtle(`
-        @prefix gv: <https://gitvan.dev/migration/> .
-        @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-        
-        gv:migrated_${item.jobId} rdf:type gv:MigrationRecord ;
-          gv:originalId "${item.jobId}" ;
-          gv:status "${item.status}" ;
-          gv:createdAt "${item.createdAt}" ;
-          gv:migratedAt "${new Date().toISOString()}" .
-      `);
+    // Perform migration
+    let migratedData;
+    if (sourceFormat === "turtle" && targetFormat === "nquads") {
+      const parser = new (await import("n3")).Parser();
+      const quads = parser.parse(migrationData);
+      const writer = new (await import("n3")).Writer({ format: "N-Quads" });
+      migratedData = writer.quadsToString(quads);
+    } else {
+      migratedData = migrationData; // No conversion needed
     }
 
     return {
       status: "completed",
-      migrated: migrationData.length,
-      sourceGraphId,
-      targetGraphId,
-      migration: "Data migration completed using graph queries",
+      sourceFormat,
+      targetFormat,
+      migratedData,
     };
   },
 });
 
-// Export all graph-based jobs
+// Export all jobs as a collection
 export const graphJobs = {
-  projectAnalysis: projectAnalysisJob,
-  aiTemplate: aiTemplateJob,
-  packDependency: packDependencyJob,
-  marketplaceIndex: marketplaceIndexJob,
-  graphAnalytics: graphAnalyticsJob,
-  graphReport: graphReportJob,
-  graphMigration: graphMigrationJob,
+  "project:analysis": projectAnalysisJob,
+  "ai:template-processing": aiTemplateJob,
+  "pack:dependency-analysis": packDependencyJob,
+  "marketplace:index": marketplaceIndexJob,
+  "graph:analytics": graphAnalyticsJob,
+  "graph:report": graphReportJob,
+  "graph:migration": graphMigrationJob,
 };
 
 export default graphJobs;
-
-
-
-
-

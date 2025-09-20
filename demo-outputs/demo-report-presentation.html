@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitVan Output Demo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Calibri, Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .slide {
+      width: 1024px;
+      height: 768px;
+      margin: 20px auto;
+      padding: 60px;
+      background: white;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      page-break-after: always;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .title-slide {
+      background: linear-gradient(135deg, #003366 0%, #0066cc 100%);
+      color: white;
+      text-align: center;
+      justify-content: center;
+      align-items: center;
+    }
+    .title-slide h1 {
+      font-size: 56pt;
+      font-weight: bold;
+      margin-bottom: 30px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    .title-slide .subtitle {
+      font-size: 24pt;
+      opacity: 0.9;
+    }
+    .title-slide .date {
+      font-size: 18pt;
+      margin-top: 50px;
+      opacity: 0.8;
+    }
+    .content-slide h2 {
+      font-size: 36pt;
+      color: #003366;
+      border-bottom: 4px solid #0066cc;
+      padding-bottom: 15px;
+      margin-bottom: 40px;
+    }
+    .data-table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 30px 0;
+      font-size: 14pt;
+    }
+    .data-table th, .data-table td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: left;
+    }
+    .data-table th {
+      background: linear-gradient(135deg, #0066cc 0%, #004499 100%);
+      color: white;
+      font-weight: bold;
+      text-transform: uppercase;
+      font-size: 12pt;
+    }
+    .data-table tr:nth-child(even) { background: #f8f9fa; }
+    .slide-number {
+      position: absolute;
+      bottom: 20px;
+      right: 30px;
+      color: #666;
+      font-size: 12pt;
+    }
+    @media print {
+      body { background: white; }
+      .slide { box-shadow: none; margin: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="slide title-slide">
+    <h1>GitVan Output Demo</h1>
+    <div class="subtitle">Generated with GitVan</div>
+    <div class="date">9/20/2025</div>
+  </div>
+  
+  <div class="slide content-slide">
+    <h2>Data Summary</h2>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Key</th>
+          <th>Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        
+        <tr>
+          <td>title</td>
+          <td>GitVan Output Demo</td>
+        </tr>
+        
+        <tr>
+          <td>author</td>
+          <td>GitVan System</td>
+        </tr>
+        
+        <tr>
+          <td>date</td>
+          <td>9/20/2025</td>
+        </tr>
+        
+        <tr>
+          <td>data</td>
+          <td>[{"name":"John Doe","role":"Developer","experience":5},{"name":"Jane Smith","role":"Designer","experience":3},{"name":"Bob Johnson","role":"Manager","experience":8}]</td>
+        </tr>
+        
+        <tr>
+          <td>summary</td>
+          <td>{"totalEmployees":3,"averageExperience":5.3,"departments":["Engineering","Design","Management"]}</td>
+        </tr>
+        
+      </tbody>
+    </table>
+    <div class="slide-number">2</div>
+  </div>
+</body>
+</html>

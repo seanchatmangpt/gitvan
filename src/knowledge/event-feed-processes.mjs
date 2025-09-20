@@ -438,3 +438,4 @@ export class KnowledgeIngestion {
     };
   }
 }
+

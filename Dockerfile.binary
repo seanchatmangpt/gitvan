@@ -1,0 +1,61 @@
+# GitVan Binary Docker Solution
+# Instead of creating a true binary, we'll create a self-contained Docker image
+# that includes GitVan and all its dependencies as a single package
+
+FROM node:20-alpine AS builder
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package.json pnpm-lock.yaml ./
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy source code
+COPY src/ ./src/
+COPY bin/ ./bin/
+COPY templates/ ./templates/
+COPY packs/ ./packs/
+
+# Create a complete GitVan package
+RUN mkdir -p /gitvan-package && \
+    cp -r src/ bin/ templates/ packs/ package.json pnpm-lock.yaml node_modules/ /gitvan-package/
+
+# Runtime stage
+FROM node:20-alpine
+
+# Install system dependencies
+RUN apk add --no-cache \
+    git \
+    bash \
+    curl \
+    jq \
+    && npm install -g pnpm
+
+# Copy the complete GitVan package
+COPY --from=builder /gitvan-package /gitvan
+
+# Set working directory
+WORKDIR /workspace
+
+# Create a wrapper script that uses the bundled GitVan
+RUN echo '#!/bin/bash' > /usr/local/bin/gitvan && \
+    echo 'cd /workspace' >> /usr/local/bin/gitvan && \
+    echo 'node /gitvan/bin/gitvan.mjs "$@"' >> /usr/local/bin/gitvan && \
+    chmod +x /usr/local/bin/gitvan
+
+# Set Git configuration for container
+RUN git config --global user.name "GitVan User" && \
+    git config --global user.email "gitvan@container.local"
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD gitvan --help > /dev/null || exit 1
+
+# Default command
+CMD ["gitvan", "--help"]

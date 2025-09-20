@@ -71,6 +71,25 @@ test-results/
 test-results.json
 playwright-report/
 
+# Binary files and executables
+gitvan-binary
+gitvan-linux
+gitvan-macos
+gitvan-*
+*.exe
+*.bin
+*.binary
+*.app
+*.dmg
+*.pkg
+
+# Test directories and temporary test files
+test-*/
+workflow-*/
+test-output/
+test-debug/
+test-*/
+
 # Temporary files
 tmp/
 temp/

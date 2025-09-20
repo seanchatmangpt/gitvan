@@ -1,0 +1,47 @@
+{
+  "name": "gitvan-binary",
+  "version": "3.0.0",
+  "description": "GitVan as a standalone binary",
+  "main": "dist/cli.mjs",
+  "bin": {
+    "gitvan": "dist/gitvan.mjs"
+  },
+  "type": "module",
+  "dependencies": {
+    "citty": "^0.1.6",
+    "consola": "^3.4.2",
+    "unctx": "^2.4.1",
+    "pathe": "^2.0.3",
+    "defu": "^6.1.4",
+    "klona": "^2.0.6",
+    "lru-cache": "^11.2.1",
+    "zod": "^4.1.9",
+    "tinyglobby": "^0.2.15",
+    "gray-matter": "^4.0.3",
+    "js-yaml": "^4.1.0",
+    "json5": "^2.2.3",
+    "inflection": "^3.0.2",
+    "nunjucks": "^3.2.4",
+    "hookable": "^5.5.3",
+    "unrouting": "^0.0.1",
+    "giget": "^1.2.1",
+    "prompts": "^2.4.2",
+    "minimatch": "^10.0.3",
+    "semver": "^7.7.2"
+  },
+  "nexe": {
+    "input": "dist/gitvan.mjs",
+    "output": "gitvan-binary",
+    "target": "node18-linux-x64",
+    "build": true,
+    "bundle": true,
+    "resources": [
+      "dist/**/*",
+      "templates/**/*",
+      "packs/**/*"
+    ],
+    "patches": [
+      "fs"
+    ]
+  }
+}

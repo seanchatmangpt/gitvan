@@ -3,37 +3,35 @@
   "version": "2.0.1",
   "description": "Git-native development automation platform with AI-powered workflows",
   "type": "module",
-  "main": "src/index.mjs",
+  "main": "dist/cli.mjs",
   "bin": {
-    "gitvan": "bin/gitvan.mjs"
+    "gitvan": "dist/gitvan.mjs"
   },
   "exports": {
     ".": {
-      "import": "./src/index.mjs",
-      "types": "./types/index.d.ts"
+      "import": "./dist/cli.mjs",
+      "types": "./dist/types/index.d.ts"
     },
     "./define": {
-      "import": "./src/define.mjs",
-      "types": "./types/index.d.ts"
+      "import": "./dist/define.mjs",
+      "types": "./dist/types/index.d.ts"
     },
     "./composables": {
-      "import": "./src/composables/index.mjs",
-      "types": "./types/index.d.ts"
+      "import": "./dist/composables/index.mjs",
+      "types": "./dist/types/index.d.ts"
     },
     "./daemon": {
-      "import": "./src/runtime/daemon.mjs",
-      "types": "./types/index.d.ts"
+      "import": "./dist/runtime/daemon.mjs",
+      "types": "./dist/types/index.d.ts"
     },
     "./runtime": {
-      "import": "./src/runtime/config.mjs",
-      "types": "./types/index.d.ts"
+      "import": "./dist/runtime/config.mjs",
+      "types": "./dist/types/index.d.ts"
     },
-    "./types": "./types/index.d.ts"
+    "./types": "./dist/types/index.d.ts"
   },
   "files": [
-    "src/",
-    "bin/",
-    "types/",
+    "dist/",
     "templates/",
     "packs/",
     "README.md",
@@ -111,6 +109,7 @@
     "@types/nunjucks": "^3.2.6",
     "eslint": "^9.35.0",
     "eslint-config-unjs": "^0.5.0",
+    "unbuild": "^3.6.1",
     "vitest": "^1.0.0"
   },
   "engines": {
@@ -138,6 +137,11 @@
     "workflows:run": "gitvan workflow run",
     "setup": "gitvan setup",
     "save": "gitvan save"
+  },
+  "scripts": {
+    "build": "unbuild",
+    "dev": "unbuild --stub",
+    "prepublishOnly": "pnpm run build"
   },
   "publishConfig": {
     "access": "public"

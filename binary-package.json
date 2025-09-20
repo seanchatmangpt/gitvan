@@ -1,0 +1,23 @@
+{
+  "name": "gitvan-binary",
+  "version": "3.0.0",
+  "description": "GitVan - Git-native development automation platform",
+  "type": "module",
+  "main": "dist/cli.mjs",
+  "bin": {
+    "gitvan": "dist/bin/gitvan.mjs"
+  },
+  "pkg": {
+    "assets": [
+      "dist/**/*",
+      "templates/**/*",
+      "packs/**/*"
+    ],
+    "targets": [
+      "node18-linux-x64",
+      "node18-macos-x64",
+      "node18-win-x64"
+    ],
+    "outputPath": "binaries"
+  }
+}

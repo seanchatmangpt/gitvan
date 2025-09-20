@@ -1,0 +1,59 @@
+# GitVan Binary Docker Solution
+# Uses the unbuild-optimized GitVan with proper Docker structure
+
+FROM node:20-alpine AS builder
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package.json pnpm-lock.yaml ./
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy source code
+COPY src/ ./src/
+COPY bin/ ./bin/
+COPY templates/ ./templates/
+COPY packs/ ./packs/
+COPY build.config.ts ./
+
+# Build GitVan using unbuild
+RUN pnpm run build
+
+# Runtime stage
+FROM node:20-alpine
+
+# Install system dependencies
+RUN apk add --no-cache \
+    git \
+    bash \
+    curl \
+    jq \
+    && npm install -g pnpm
+
+# Copy the built GitVan package
+COPY --from=builder /app/dist /gitvan/dist
+COPY --from=builder /app/templates /gitvan/templates
+COPY --from=builder /app/packs /gitvan/packs
+COPY --from=builder /app/package.json /gitvan/package.json
+COPY --from=builder /app/pnpm-lock.yaml /gitvan/pnpm-lock.yaml
+
+# Install only production dependencies
+WORKDIR /gitvan
+RUN pnpm install --prod --frozen-lockfile
+
+# Create wrapper script
+RUN echo '#!/bin/bash' > /usr/local/bin/gitvan && \
+    echo 'cd /gitvan && node dist/bin/gitvan.mjs "$@"' >> /usr/local/bin/gitvan && \
+    chmod +x /usr/local/bin/gitvan
+
+# Set working directory
+WORKDIR /workspace
+
+# Set default command
+CMD ["gitvan", "--help"]

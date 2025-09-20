@@ -1,0 +1,140 @@
+# GitVan Ultra-Optimized Docker Solution
+# Combines unbuild + post-optimization techniques for minimal size
+# Target: <200MB for a CLI tool
+
+# Builder stage: Build and optimize GitVan
+FROM node:20-alpine AS builder
+
+# Install build tools
+RUN npm install -g pnpm terser node-prune
+
+# Set working directory
+WORKDIR /app
+
+# Copy source files
+COPY package.json pnpm-lock.yaml ./
+COPY src/ ./src/
+COPY bin/ ./bin/
+COPY templates/ ./templates/
+COPY packs/ ./packs/
+COPY build.config.optimized.ts ./build.config.ts
+
+# Install dependencies and build with optimization
+RUN pnpm install --frozen-lockfile
+RUN pnpm run build
+
+# Post-build optimization
+RUN echo "🔍 Post-build optimization..." && \
+    # Minify JavaScript files
+    find dist -name "*.mjs" -type f | while read file; do \
+        echo "Minifying $file" && \
+        terser "$file" \
+            --compress drop_console=true,drop_debugger=true,pure_funcs="console.log,console.info,console.debug",passes=2 \
+            --mangle toplevel=true \
+            --output "$file.min" && \
+        mv "$file.min" "$file"; \
+    done && \
+    # Remove source maps
+    find dist -name "*.map" -type f -delete && \
+    # Remove TypeScript files
+    find dist -name "*.ts" -type f -delete && \
+    find dist -name "*.d.ts" -type f -delete
+
+# Prune node_modules aggressively
+RUN echo "🔍 Pruning node_modules..." && \
+    # Remove documentation and test files
+    find node_modules -name "*.md" -type f -delete && \
+    find node_modules -name "*.txt" -type f -delete && \
+    find node_modules -name "*.map" -type f -delete && \
+    find node_modules -name "*.ts" -type f -delete && \
+    find node_modules -name "*.d.ts" -type f -delete && \
+    find node_modules -name "test" -type d -exec rm -rf {} + 2>/dev/null || true && \
+    find node_modules -name "tests" -type d -exec rm -rf {} + 2>/dev/null || true && \
+    find node_modules -name "docs" -type d -exec rm -rf {} + 2>/dev/null || true && \
+    find node_modules -name "examples" -type d -exec rm -rf {} + 2>/dev/null || true && \
+    find node_modules -name "*.test.js" -type f -delete && \
+    find node_modules -name "*.spec.js" -type f -delete && \
+    # Remove development files
+    find node_modules -name "*.config.js" -type f -delete && \
+    find node_modules -name "*.config.mjs" -type f -delete && \
+    find node_modules -name "webpack.config.js" -type f -delete && \
+    find node_modules -name "rollup.config.js" -type f -delete && \
+    find node_modules -name "vite.config.js" -type f -delete && \
+    # Remove unnecessary directories
+    find node_modules -name ".git" -type d -exec rm -rf {} + 2>/dev/null || true && \
+    find node_modules -name ".github" -type d -exec rm -rf {} + 2>/dev/null || true && \
+    find node_modules -name "coverage" -type d -exec rm -rf {} + 2>/dev/null || true && \
+    find node_modules -name "nyc_output" -type d -exec rm -rf {} + 2>/dev/null || true
+
+# Runtime stage: Minimal production image
+FROM node:20-alpine
+
+# Install only essential system dependencies
+RUN apk add --no-cache git bash
+
+# Copy optimized GitVan package
+COPY --from=builder /app/dist /gitvan/dist
+COPY --from=builder /app/templates /gitvan/templates
+COPY --from=builder /app/packs /gitvan/packs
+
+# Create minimal package.json with only essential dependencies
+RUN cat > /gitvan/package.json << 'EOF'
+{
+  "name": "gitvan-ultra-optimized",
+  "version": "3.0.0",
+  "description": "GitVan ultra-optimized for production",
+  "type": "module",
+  "main": "dist/cli.mjs",
+  "bin": {
+    "gitvan": "dist/gitvan.mjs"
+  },
+  "dependencies": {
+    "citty": "^0.1.6",
+    "consola": "^3.4.2",
+    "unctx": "^2.4.1",
+    "pathe": "^2.0.3",
+    "defu": "^6.1.4",
+    "klona": "^2.0.6",
+    "lru-cache": "^11.2.1",
+    "zod": "^4.1.9",
+    "tinyglobby": "^0.2.15",
+    "gray-matter": "^4.0.3",
+    "js-yaml": "^4.1.0",
+    "json5": "^2.2.3",
+    "inflection": "^3.0.2",
+    "nunjucks": "^3.2.4",
+    "hookable": "^5.5.3",
+    "unrouting": "^0.0.1",
+    "giget": "^1.2.1",
+    "prompts": "^2.4.2",
+    "minimatch": "^10.0.3",
+    "semver": "^7.7.2"
+  }
+}
+EOF
+
+# Install only production dependencies
+WORKDIR /gitvan
+RUN npm install --production --no-optional --no-audit --no-fund
+
+# Further prune the production node_modules
+RUN find node_modules -name "*.md" -type f -delete && \
+    find node_modules -name "*.txt" -type f -delete && \
+    find node_modules -name "*.map" -type f -delete && \
+    find node_modules -name "*.ts" -type f -delete && \
+    find node_modules -name "*.d.ts" -type f -delete && \
+    find node_modules -name "test" -type d -exec rm -rf {} + 2>/dev/null || true && \
+    find node_modules -name "tests" -type d -exec rm -rf {} + 2>/dev/null || true && \
+    find node_modules -name "docs" -type d -exec rm -rf {} + 2>/dev/null || true && \
+    find node_modules -name "examples" -type d -exec rm -rf {} + 2>/dev/null || true
+
+# Create wrapper script
+RUN echo '#!/bin/sh' > /usr/local/bin/gitvan && \
+    echo 'cd /gitvan && node dist/bin/gitvan.mjs "$@"' >> /usr/local/bin/gitvan && \
+    chmod +x /usr/local/bin/gitvan
+
+# Set working directory
+WORKDIR /workspace
+
+# Set default command
+CMD ["gitvan", "--help"]

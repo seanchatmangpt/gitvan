@@ -129,6 +129,7 @@ GitVan is a Git-native development automation platform that uses Git as a runtim
 - **VERIFY EXIT CODES** - commands must exit with code 0
 - **CHECK FOR WARNINGS** - warnings indicate potential issues
 - **VALIDATE ACTUAL FUNCTIONALITY** - not just that commands run
+- **HELP COMMANDS ARE NOT FUNCTIONALITY TESTS** - `--help` only tests help system, not actual functionality
 
 ### Error Detection Patterns
 - Look for: `❌`, `⚠️`, `Error:`, `Failed:`, `Cannot`, `TypeError`, `ReferenceError`
@@ -141,6 +142,8 @@ GitVan is a Git-native development automation platform that uses Git as a runtim
 - ✅ **ZERO** error messages or warnings
 - ✅ **ZERO** exit code (success)
 - ✅ **ACTUAL** functionality verified, not just "command ran"
+- ✅ **REAL COMMANDS TESTED** - not just `--help` commands
+- ✅ **ACTUAL OUTPUT VERIFIED** - commands produce expected results
 
 ### MANDATORY: Pre-Declaration Checklist
 Before declaring ANY task complete, you MUST:
@@ -149,7 +152,9 @@ Before declaring ANY task complete, you MUST:
 2. **CHECK EXIT CODE**: Verify the command exited with code 0
 3. **READ EVERY LINE**: Don't skip any output, especially at the end
 4. **VERIFY FUNCTIONALITY**: Test that the feature actually works, not just that a command ran
-5. **ADMIT FAILURES**: If there are ANY errors/warnings, state them explicitly
+5. **TEST REAL COMMANDS**: Run actual functionality commands, not just `--help`
+6. **VERIFY OUTPUT**: Check that commands produce expected results
+7. **ADMIT FAILURES**: If there are ANY errors/warnings, state them explicitly
 
 ### FAILURE EXAMPLES TO NEVER MISS:
 - `❌ Pre-commit hook not installed`
@@ -167,6 +172,9 @@ Before declaring ANY task complete, you MUST:
 - **NEVER declare success without checking ALL console output for errors**
 - **ALWAYS read the full output before claiming anything works**
 - **IF YOU SEE ANY FAILURE INDICATORS, THE TASK IS NOT COMPLETE**
+- **HELP COMMANDS ARE NOT FUNCTIONALITY TESTS** - `--help` only tests help system
+- **TEST REAL COMMANDS** - Run actual functionality, not just help commands
+- **VERIFY ACTUAL OUTPUT** - Commands must produce expected results
 
 ## Quick Commands
 ```bash

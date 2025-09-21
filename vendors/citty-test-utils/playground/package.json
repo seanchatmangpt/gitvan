@@ -1,0 +1,39 @@
+{
+  "name": "citty-test-utils-playground",
+  "version": "1.0.0",
+  "description": "Playground for testing citty-test-utils functionality",
+  "type": "module",
+  "main": "src/cli.mjs",
+  "bin": {
+    "playground": "src/cli.mjs"
+  },
+  "scripts": {
+    "start": "node src/cli.mjs",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:fast": "vitest run --reporter=basic --no-coverage",
+    "test:unit": "vitest run test/unit",
+    "test:integration": "vitest run test/integration",
+    "test:watch": "vitest watch",
+    "test:ui": "vitest --ui"
+  },
+  "keywords": [
+    "citty",
+    "testing",
+    "playground",
+    "cli",
+    "examples"
+  ],
+  "author": "GitVan Team",
+  "license": "MIT",
+  "dependencies": {
+    "citty": "^0.1.6",
+    "citty-test-utils": "file:.."
+  },
+  "devDependencies": {
+    "vitest": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

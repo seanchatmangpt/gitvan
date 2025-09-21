@@ -23,7 +23,7 @@ ex:data-processing-predicate rdf:type gh:ResultDelta ;
 
 # Workflow Pipeline
 ex:data-processing-pipeline rdf:type op:Pipeline ;
-    op:steps ex:analyze-data, ex:generate-report .
+    op:steps (ex:analyze-data, ex:generate-report) .
 
 # Step 1: Analyze Data
 ex:analyze-data rdf:type gv:SparqlStep ;

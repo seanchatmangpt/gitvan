@@ -1,10 +1,10 @@
 {
   "name": "citty-test-utils",
-  "version": "0.2.3",
-  "description": "Testing utilities for GitVan CLI with Docker cleanroom support and fluent assertions",
+  "version": "0.2.4",
+  "description": "Testing utilities for GitVan CLI with Docker cleanroom support, fluent assertions, and snapshot testing",
   "type": "module",
   "main": "index.js",
-  "types": "types.d.ts",
+  "types": "src/types.d.ts",
   "keywords": [
     "testing",
     "cli",
@@ -13,7 +13,9 @@
     "gitvan",
     "citty",
     "cleanroom",
-    "assertions"
+    "assertions",
+    "snapshot",
+    "snapshot-testing"
   ],
   "author": "GitVan Team",
   "license": "MIT",
@@ -34,26 +36,26 @@
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^1.6.1",
+    "citty": "^0.1.6",
     "vitest": "^1.0.0"
   },
   "scripts": {
     "test": "vitest",
     "test:run": "vitest run",
+    "test:fast": "vitest run --reporter=basic --no-coverage",
+    "test:unit": "vitest run test/unit",
+    "test:integration": "vitest run test/integration",
+    "test:citty-integration": "vitest run test/integration/citty-integration.test.mjs",
+    "test:bdd": "vitest run test/bdd",
     "test:coverage": "vitest run --coverage",
-    "test:unit": "vitest run tests/unit",
-    "test:integration": "vitest run tests/integration",
-    "test:bdd": "vitest run tests/bdd",
     "test:watch": "vitest watch",
     "test:ui": "vitest --ui",
     "demo": "node demo.mjs"
   },
   "files": [
     "index.js",
-    "cleanroom-runner.js",
-    "local-runner.js",
-    "assertions.js",
-    "scenario-dsl.js",
-    "types.d.ts",
+    "src/",
+    "playground/",
     "README.md",
     "LICENSE",
     "CHANGELOG.md",

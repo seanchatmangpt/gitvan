@@ -1,3 +1,5 @@
+import { matchSnapshot, snapshotUtils } from './snapshot.js'
+
 export function wrapExpectation(result) {
   return {
     result,
@@ -156,5 +158,71 @@ export function wrapExpectation(result) {
       }
       return this;
     },
+    
+    // Snapshot testing methods
+    expectSnapshot(snapshotName, options = {}) {
+      const testFile = options.testFile || getCallerFile()
+      const snapshotType = options.type || 'stdout'
+      const snapshotData = snapshotUtils.createSnapshotFromResult(result, snapshotType)
+      
+      const snapshotResult = matchSnapshot(snapshotData, testFile, snapshotName, {
+        args: result.args,
+        env: options.env,
+        cwd: result.cwd,
+        ...options
+      })
+      
+      if (!snapshotResult.match) {
+        throw new Error(snapshotResult.error || `Snapshot mismatch: ${snapshotName}`)
+      }
+      
+      if (snapshotResult.created) {
+        console.log(`✅ Created snapshot: ${snapshotName}`)
+      } else if (snapshotResult.updated) {
+        console.log(`✅ Updated snapshot: ${snapshotName}`)
+      }
+      
+      return this;
+    },
+    
+    expectSnapshotStdout(snapshotName, options = {}) {
+      return this.expectSnapshot(snapshotName, { ...options, type: 'stdout' })
+    },
+    
+    expectSnapshotStderr(snapshotName, options = {}) {
+      return this.expectSnapshot(snapshotName, { ...options, type: 'stderr' })
+    },
+    
+    expectSnapshotJson(snapshotName, options = {}) {
+      return this.expectSnapshot(snapshotName, { ...options, type: 'json' })
+    },
+    
+    expectSnapshotFull(snapshotName, options = {}) {
+      return this.expectSnapshot(snapshotName, { ...options, type: 'full' })
+    },
+    
+    expectSnapshotOutput(snapshotName, options = {}) {
+      return this.expectSnapshot(snapshotName, { ...options, type: 'output' })
+    },
   };
+}
+
+// Helper function to get caller file for snapshot testing
+function getCallerFile() {
+  const stack = new Error().stack
+  const lines = stack.split('\n')
+  
+  // Find the first line that's not from this file
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    if (line.includes('.test.') || line.includes('.spec.')) {
+      const match = line.match(/\((.+):\d+:\d+\)/)
+      if (match) {
+        return match[1]
+      }
+    }
+  }
+  
+  // Fallback to current working directory
+  return process.cwd()
 }

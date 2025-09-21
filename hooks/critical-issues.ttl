@@ -26,7 +26,7 @@ ex:critical-issues-predicate rdf:type gh:ASKPredicate ;
 
 # Workflow Pipeline
 ex:critical-issues-pipeline rdf:type op:Pipeline ;
-    op:steps ex:create-alert .
+    op:steps (ex:create-alert) .
 
 # Step 1: Create Alert
 ex:create-alert rdf:type gv:TemplateStep ;

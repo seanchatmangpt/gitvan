@@ -95,14 +95,46 @@ export function scenario(name: string): ScenarioBuilder;
 export function cleanroomScenario(name: string): ScenarioBuilder;
 export function localScenario(name: string): ScenarioBuilder;
 
+// Scenario execution result
+export interface ScenarioExecutionResult {
+  success: boolean;
+  result?: CliResult;
+  results?: CliResult[];
+}
+
+// Scenario executor interface
+export interface ScenarioExecutor {
+  execute(): Promise<ScenarioExecutionResult>;
+}
+
+// Scenarios pack types
+export type Environment = "local" | "cleanroom";
+
 export const scenarios: {
-  help: (options?: RunOptions) => ScenarioBuilder;
-  version: (options?: RunOptions) => ScenarioBuilder;
-  invalidCommand: (options?: RunOptions) => ScenarioBuilder;
-  initProject: (projectName?: string, options?: RunOptions) => ScenarioBuilder;
-  buildAndTest: (options?: RunOptions) => ScenarioBuilder;
-  cleanroomInit: (projectName?: string) => ScenarioBuilder;
-  localDev: (options?: RunOptions) => ScenarioBuilder;
+  help(env?: Environment): ScenarioExecutor;
+  version(env?: Environment): ScenarioExecutor;
+  invalidCommand(cmd?: string, env?: Environment): ScenarioExecutor;
+  initProject(name: string, env?: Environment): ScenarioExecutor;
+  configGet(key: string, env?: Environment): ScenarioExecutor;
+  configSet(key: string, value: string, env?: Environment): ScenarioExecutor;
+  subcommand(cmd: string, args?: string[], env?: Environment): ScenarioExecutor;
+  jsonOutput(args: string[], env?: Environment): ScenarioExecutor;
+  fileGenerated(
+    args: string[],
+    expectPath: string,
+    env?: Environment
+  ): ScenarioExecutor;
+  idempotent(args: string[], env?: Environment): ScenarioExecutor;
+  concurrent(
+    runs: Array<{ args: string[]; opts?: RunOptions }>,
+    env?: Environment
+  ): ScenarioExecutor;
+  interactive(script: string, env?: Environment): ScenarioExecutor;
+  errorCase(
+    args: string[],
+    msgOrRe: string | RegExp,
+    env?: Environment
+  ): ScenarioExecutor;
 };
 
 export const testUtils: {

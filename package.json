@@ -124,9 +124,9 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "build": "unbuild",
-    "dev": "unbuild --stub",
-    "test": "vitest run",
+    "build": "gitvan build",
+    "dev": "gitvan daemon",
+    "test": "vitest",
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage",
     "test:bdd": "vitest run --config vitest.bdd.config.mjs",
@@ -141,12 +141,26 @@
     "test:citty-utils:performance": "vitest run tests/citty-test-utils/performance/ --config vitest.citty-test-utils.config.mjs",
     "test:citty-utils:coverage": "vitest run tests/citty-test-utils/ --config vitest.citty-test-utils.config.mjs --coverage",
     "test:citty-utils:watch": "vitest --watch tests/citty-test-utils/ --config vitest.citty-test-utils.config.mjs",
+    "test:scenarios": "vitest run tests/e2e/gitvan-scenarios.test.mjs",
+    "test:scenarios:watch": "vitest --watch tests/e2e/gitvan-scenarios.test.mjs",
+    "test:scenarios:local": "vitest run tests/e2e/gitvan-scenarios-local.test.mjs",
+    "test:scenarios:local:watch": "vitest --watch tests/e2e/gitvan-scenarios-local.test.mjs",
     "demo:workflow:jtbd": "node demo-workflow-cli-jtbd-bdd.mjs",
     "demo:citty:bdd": "node demo-citty-cli-bdd.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "types": "echo 'TypeScript definitions only'",
-    "prepublishOnly": "pnpm run build"
+    "prepublishOnly": "pnpm run build",
+    "test:hooks": "vitest tests/hooks/",
+    "test:workflows": "vitest tests/workflows/",
+    "hooks": "gitvan hooks",
+    "hooks:list": "gitvan hooks list",
+    "hooks:evaluate": "gitvan hooks evaluate",
+    "workflows": "gitvan workflow",
+    "workflows:list": "gitvan workflow list",
+    "workflows:run": "gitvan workflow run",
+    "setup": "gitvan setup",
+    "save": "gitvan save"
   },
   "publishConfig": {
     "access": "public"

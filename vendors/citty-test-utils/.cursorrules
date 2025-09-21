@@ -1,0 +1,299 @@
+# Citty-Test-Utils - Cursor Rules
+
+## Project Overview
+Citty-Test-Utils is a comprehensive testing framework for CLI applications built with Citty. It provides Docker cleanroom testing, fluent assertions, scenario DSL, and pre-built testing patterns for reliable CLI testing.
+
+## Core Development Principles
+
+### Test-Driven Development (TDD)
+- **ALWAYS TEST BEFORE CLAIMING COMPLETION** - Run actual commands, verify they work
+- **IMPLEMENT 80/20 TEST-FIX LOOP** - Test → Fix → Verify (minimum 3 iterations)
+- **NEVER REPORT "COMPLETE" WITHOUT TESTING** - All features must be actually working
+- Use `npm test` to verify functionality before claiming completion
+
+### File Organization
+- **NEVER save working files to root folder**
+- Use appropriate subdirectories:
+  - `/tests` - Test files (unit, integration, bdd)
+  - `/docs` - Documentation and markdown files
+  - `/examples` - Example code and usage patterns
+  - `/scenarios` - Pre-built testing scenarios
+
+### Code Style & Standards
+- **Modular Design**: Files under 500 lines
+- **Environment Safety**: Never hardcode secrets
+- **Test-First**: Write tests before implementation
+- **Clean Architecture**: Separate concerns
+- **FAANG-level solutions**: Create code at the level of a FAANG solution architect
+
+## Citty-Test-Utils-Specific Rules
+
+### Testing Framework Architecture
+- **Dual Runner Support**: Both local and cleanroom (Docker) execution
+- **Fluent Assertions**: Chainable API for making expectations
+- **Scenario DSL**: Domain-specific language for multi-step workflows
+- **Pre-built Scenarios**: Common CLI testing patterns
+- **Cross-Environment Consistency**: Same tests work locally and in Docker
+
+### Local Runner
+- Use `runLocalCitty()` for direct process execution
+- Handle environment variable overrides properly
+- Support both GitVan CLI and test CLI execution
+- Implement proper timeout and error handling
+- Capture stdout, stderr, and exit codes accurately
+
+### Cleanroom Runner
+- Use `runCitty()` for Docker-based isolated testing
+- Leverage testcontainers for container management
+- Support both GitVan CLI and test CLI execution
+- Implement proper setup/teardown lifecycle
+- Ensure consistent results across environments
+
+### Assertions System
+- Implement fluent, chainable assertion methods
+- Support string matching, regex patterns, and custom matchers
+- Handle JSON output parsing and validation
+- Provide clear error messages with context
+- Support both success and failure expectations
+
+### Scenario DSL
+- Create reusable, composable test scenarios
+- Support step-by-step workflow execution
+- Implement retry logic and wait conditions
+- Provide temporary file management
+- Enable complex multi-step testing patterns
+
+### Scenarios Pack
+- Provide pre-built testing patterns for common CLI interactions
+- Support both local and cleanroom environments
+- Include help, version, subcommand, and error testing
+- Implement idempotent and concurrent execution patterns
+- Enable cross-environment consistency testing
+
+## Package Management
+- **ALWAYS USE npm** for package management (standard for npm packages)
+- Install dependencies with `npm install`
+- **NEVER manually edit package.json** - use `npm install <package-name>` to add dependencies
+- Run tests with `npm test`
+- Build with `npm run build`
+
+## Import/Export Patterns
+- Use ES modules (`import`/`export`)
+- Prefer named exports over default exports
+- Use relative imports for internal modules
+- Import from `./` paths for local modules
+
+## Error Handling
+- Implement comprehensive error handling
+- Use deterministic error messages
+- Handle Docker and process execution errors gracefully
+- Provide meaningful error context
+- Support both synchronous and asynchronous error handling
+
+## Performance Considerations
+- Cache Docker containers for cleanroom testing
+- Use parallel operations where possible
+- Implement efficient process spawning
+- Minimize Docker image pulls and container creation
+- Optimize test execution time
+
+## Documentation Standards
+- Keep documentation updated with code changes
+- Use clear, concise descriptions
+- Document API usage patterns
+- Explain testing scenarios and examples
+- Provide comprehensive README and API docs
+
+## Trust Building Protocol
+1. **Under-promise, over-deliver**
+2. **Show actual test output**
+3. **Admit when things are untested**
+4. **Verify before claiming success**
+
+## Capability Discovery Protocol
+- **ALWAYS CHECK FOR EXISTING TESTING CAPABILITIES FIRST** before using external tools
+- **SEARCH THE CODEBASE** for existing scenarios, assertions, or utilities
+- **USE BUILT-IN FEATURES** when available (e.g., scenarios pack instead of custom tests)
+- **LEVERAGE TESTING FRAMEWORK** (Vitest, testcontainers) before external tools
+- **CHECK FOR EXISTING SCENARIOS** before creating new testing patterns
+- **USE TESTING UTILITIES** (`runLocalCitty`, `runCitty`, assertions) instead of external libraries
+
+### Capability Check Examples
+- **CLI Testing**: Use `runLocalCitty()` or `runCitty()` instead of external process libraries
+- **Assertions**: Use fluent assertions instead of manual expect statements
+- **Scenarios**: Use scenarios pack instead of custom test implementations
+- **Docker Testing**: Use cleanroom runner instead of external Docker tools
+- **Workflow Testing**: Use scenario DSL instead of external workflow tools
+
+## Test Implementation Standards
+- **NEVER create simplified or mock versions of tests** - Always implement full functionality
+- **ALWAYS fix dependency issues properly** - Install missing packages, resolve conflicts
+- **NEVER skip complex functionality** - Implement complete features as specified
+- **ALWAYS resolve import/module issues** - Fix the root cause, don't work around it
+
+## CRITICAL: Error Checking Protocol
+- **ALWAYS CHECK CONSOLE OUTPUT FOR ERRORS** before declaring success
+- **NEVER declare success if there are ANY error messages** (❌, ⚠️, Error:, Failed:, etc.)
+- **READ THE FULL OUTPUT** - don't just look for ✅ symbols
+- **VERIFY EXIT CODES** - commands must exit with code 0
+- **CHECK FOR WARNINGS** - warnings indicate potential issues
+- **VALIDATE ACTUAL FUNCTIONALITY** - not just that commands run
+- **HELP COMMANDS ARE NOT FUNCTIONALITY TESTS** - `--help` only tests help system, not actual functionality
+
+### Error Detection Patterns
+- Look for: `❌`, `⚠️`, `Error:`, `Failed:`, `Cannot`, `TypeError`, `ReferenceError`
+- Check exit codes: `exit code: 0` = success, anything else = failure
+- Verify no warnings: `warning:`, `WARN:`, `⚠️`
+- Ensure clean output: no stack traces or error messages
+
+### Success Criteria
+- ✅ **ALL** console output shows success indicators
+- ✅ **ZERO** error messages or warnings
+- ✅ **ZERO** exit code (success)
+- ✅ **ACTUAL** functionality verified, not just "command ran"
+- ✅ **REAL COMMANDS TESTED** - not just `--help` commands
+- ✅ **ACTUAL OUTPUT VERIFIED** - commands produce expected results
+
+### MANDATORY: Pre-Declaration Checklist
+Before declaring ANY task complete, you MUST:
+
+1. **SCAN FOR FAILURE INDICATORS**: Run `grep -E "(❌|ERROR|Failed|✗|WARN|⚠️)"` on the output
+2. **CHECK EXIT CODE**: Verify the command exited with code 0
+3. **READ EVERY LINE**: Don't skip any output, especially at the end
+4. **VERIFY FUNCTIONALITY**: Test that the feature actually works, not just that a command ran
+5. **TEST REAL COMMANDS**: Run actual functionality commands, not just `--help`
+6. **VERIFY OUTPUT**: Check that commands produce expected results
+7. **ADMIT FAILURES**: If there are ANY errors/warnings, state them explicitly
+
+### FAILURE EXAMPLES TO NEVER MISS:
+- `❌ Test failed`
+- `ERROR ✗ Process spawn failed`
+- `WARN ✗ Docker not available`
+- `⚠️ Test timeout`
+- `WARN Container startup failed`
+- Any exit code != 0
+- Any stack traces or error messages
+
+**REMEMBER:**
+- Writing a file to disk DOES NOT mean it works
+- Finishing a TODO is NOT enough without verification
+- You MUST verify with actual command execution
+- **NEVER declare success without checking ALL console output for errors**
+- **ALWAYS read the full output before claiming anything works**
+- **IF YOU SEE ANY FAILURE INDICATORS, THE TASK IS NOT COMPLETE**
+- **HELP COMMANDS ARE NOT FUNCTIONALITY TESTS** - `--help` only tests help system
+- **TEST REAL COMMANDS** - Run actual functionality, not just help commands
+- **VERIFY ACTUAL OUTPUT** - Commands must produce expected results
+
+## Quick Commands
+```bash
+# Run all tests
+npm test
+
+# Run specific test file
+npm test tests/integration/citty-integration.test.mjs
+
+# Run citty integration tests
+npm run test:citty-integration
+
+# Install dependencies
+npm install
+
+# Run tests with coverage
+npm run test:coverage
+
+# Run unit tests only
+npm run test:unit
+
+# Run integration tests only
+npm run test:integration
+
+# Run BDD tests only
+npm run test:bdd
+```
+
+## Project Structure
+```
+citty-test-utils/
+├── index.js              # Main entry point
+├── local-runner.js       # Local process execution
+├── cleanroom-runner.js   # Docker-based testing
+├── assertions.js         # Fluent assertion API
+├── scenario-dsl.js       # Scenario domain language
+├── scenarios.js          # Pre-built testing patterns
+├── test-cli.mjs          # Test CLI for integration
+├── types.d.ts           # TypeScript definitions
+├── package.json          # Package configuration
+├── README.md            # Documentation
+├── LICENSE              # License file
+├── CHANGELOG.md         # Change log
+├── docs/                # Documentation
+│   ├── guides/          # Getting started guides
+│   ├── cookbooks/       # Usage patterns
+│   ├── examples/        # Code examples
+│   └── api/            # API reference
+├── tests/               # Test files
+│   ├── unit/           # Unit tests
+│   ├── integration/    # Integration tests
+│   └── bdd/           # BDD tests
+└── examples/           # Usage examples
+```
+
+## Local Runner Usage Pattern
+```javascript
+// Correct local runner usage
+const result = await runLocalCitty(["--help"], {
+  cwd: process.cwd(),
+  env: { TEST_CLI: "true" }
+});
+
+result
+  .expectSuccess()
+  .expectOutput(/USAGE/)
+  .expectNoStderr();
+```
+
+## Cleanroom Runner Usage Pattern
+```javascript
+// Correct cleanroom runner usage
+await setupCleanroom({ rootDir: ".", timeout: 60000 });
+
+const result = await runCitty(["--version"], {
+  env: { TEST_CLI: "true" }
+});
+
+result
+  .expectSuccess()
+  .expectOutput(/1\.0\.0/);
+
+await teardownCleanroom();
+```
+
+## Scenario DSL Usage Pattern
+```javascript
+// Correct scenario usage
+const scenario = scenario("Test CLI Help")
+  .step("Get help", async () => {
+    const result = await runLocalCitty(["--help"], { env: { TEST_CLI: "true" } });
+    result.expectSuccess().expectOutput(/USAGE/);
+    return result;
+  })
+  .step("Verify commands", async (ctx) => {
+    expect(ctx.steps[0].result.stdout).toContain("test-cli");
+  });
+
+const result = await scenario.execute();
+```
+
+## Scenarios Pack Usage Pattern
+```javascript
+// Correct scenarios pack usage
+const result = await scenarios.help("local").execute();
+expect(result.success).toBe(true);
+expect(result.result.stdout).toContain("USAGE");
+
+const versionResult = await scenarios.version("cleanroom").execute();
+expect(versionResult.success).toBe(true);
+```
+
+This project prioritizes reliability, testability, and maintainability while providing comprehensive CLI testing capabilities for any Citty-based application.

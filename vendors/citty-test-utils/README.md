@@ -1,6 +1,6 @@
 # citty-test-utils
 
-A comprehensive testing utility for GitVan CLI applications with Docker cleanroom support, fluent assertions, and advanced scenario DSL.
+A comprehensive testing utility for CLI applications built with Citty, featuring Docker cleanroom support, fluent assertions, and advanced scenario DSL.
 
 [![npm version](https://badge.fury.io/js/citty-test-utils.svg)](https://badge.fury.io/js/citty-test-utils)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -17,46 +17,52 @@ npm install citty-test-utils
 ```javascript
 import { runLocalCitty, setupCleanroom, runCitty, teardownCleanroom } from 'citty-test-utils'
 
-// Local testing with automatic project detection
-const result = await runLocalCitty(['--help'])
+// Local testing
+const result = await runLocalCitty(['--help'], { 
+  cwd: './playground',
+  env: { TEST_CLI: 'true' }
+})
 result.expectSuccess().expectOutput('USAGE').expectNoStderr()
 
 // Docker cleanroom testing
-await setupCleanroom({ rootDir: '.' })
-const cleanResult = await runCitty(['--version'])
+await setupCleanroom({ rootDir: './playground' })
+const cleanResult = await runCitty(['--version'], {
+  env: { TEST_CLI: 'true' }
+})
 cleanResult.expectSuccess().expectOutput(/\d+\.\d+\.\d+/)
 await teardownCleanroom()
 ```
 
-> **Note**: These examples assume you're working within a GitVan project. The local runner automatically detects the GitVan project root and executes commands against the local CLI.
+> **Note**: This example uses the included playground project. The playground demonstrates all features of `citty-test-utils` with a complete Citty CLI implementation.
 
 ## Features
 
-- **🔍 Smart Project Detection**: Automatically finds GitVan project root from any directory
 - **🏃 Local Runner**: Execute CLI commands locally with timeout and environment support
 - **🐳 Docker Cleanroom**: Isolated testing in Docker containers using testcontainers
 - **🔗 Fluent Assertions**: Chainable expectation API with detailed error messages
 - **📋 Scenario DSL**: Complex multi-step test workflows with retry mechanisms
 - **🛠️ Test Utilities**: Wait conditions, retry logic, temporary files, and more
 - **📦 Pre-built Scenarios**: Ready-to-use test templates for common workflows
+- **🎯 Scenarios Pack**: Common CLI testing patterns with simple API
 - **⚡ TypeScript Support**: Complete type definitions for all APIs
 - **🔄 Cross-Environment**: Test consistency between local and cleanroom environments
+- **🎮 Playground Project**: Complete example implementation with comprehensive tests
 
 ## Core API
 
 ### Local Runner
 
-Execute GitVan CLI commands locally with automatic project root detection.
+Execute CLI commands locally with proper working directory and environment configuration.
 
 ```javascript
 import { runLocalCitty } from 'citty-test-utils'
 
 const result = await runLocalCitty(['--help'], {
-  cwd: process.cwd(),     // Working directory (auto-detected if not provided)
-  json: false,            // Parse stdout as JSON
-  timeout: 30000,         // Timeout in milliseconds
-  env: {                  // Environment variables
-    NODE_ENV: 'test'
+  cwd: './playground',        // Working directory for CLI execution
+  json: false,                // Parse stdout as JSON
+  timeout: 30000,             // Timeout in milliseconds
+  env: {                      // Environment variables
+    TEST_CLI: 'true'
   }
 })
 
@@ -64,7 +70,7 @@ const result = await runLocalCitty(['--help'], {
 result
   .expectSuccess()                    // Shorthand for expectExit(0)
   .expectOutput('USAGE')              // String match
-  .expectOutput(/gitvan/)             // Regex match
+  .expectOutput(/playground/)         // Regex match
   .expectNoStderr()                   // Expect empty stderr
   .expectOutputLength(100, 5000)      // Length range validation
 ```
@@ -78,15 +84,18 @@ import { setupCleanroom, runCitty, teardownCleanroom } from 'citty-test-utils'
 
 // Setup (run once per test suite)
 await setupCleanroom({ 
-  rootDir: '.',                    // Directory to copy into container
-  nodeImage: 'node:20-alpine'      // Docker image to use
+  rootDir: './playground',           // Directory to copy into container
+  nodeImage: 'node:20-alpine'        // Docker image to use
 })
 
 // Run commands in cleanroom
 const result = await runCitty(['--help'], {
   json: false,    // Parse stdout as JSON
   cwd: '/app',    // Working directory in container
-  timeout: 30000  // Timeout in milliseconds
+  timeout: 30000, // Timeout in milliseconds
+  env: {          // Environment variables
+    TEST_CLI: 'true'
+  }
 })
 
 // Cleanup (run once per test suite)
@@ -106,7 +115,7 @@ result
   .expectExit(0)                     // Check specific exit code
   .expectExitCodeIn([0, 1, 2])       // Check exit code is in array
   .expectOutput('Usage:')            // String match
-  .expectOutput(/gitvan/)            // Regex match
+  .expectOutput(/playground/)        // Regex match
   .expectOutputContains('commands')  // Contains text
   .expectOutputNotContains('error')  // Does not contain text
   .expectStderr('')                  // Check stderr
@@ -144,11 +153,11 @@ const result = await scenario('Complete workflow')
   .execute('local')  // or 'cleanroom'
 
 // Pre-built scenarios
-await scenarios.help().execute('local')
-await scenarios.version().execute('local')
-await scenarios.invalidCommand().execute('local')
-await scenarios.initProject('my-project').execute('local')
-await scenarios.buildAndTest().execute('local')
+await scenarios.help('local').execute()
+await scenarios.version('local').execute()
+await scenarios.invalidCommand('nonexistent', 'local').execute()
+await scenarios.jsonOutput(['greet', 'Alice', '--json'], 'local').execute()
+await scenarios.subcommand('math', ['add', '5', '3'], 'local').execute()
 
 // Environment-specific scenarios
 await cleanroomScenario('Cleanroom test')
@@ -158,8 +167,8 @@ await cleanroomScenario('Cleanroom test')
   .execute()
 
 await localScenario('Local test')
-  .step('Start dev')
-  .run('dev', { env: { NODE_ENV: 'development' } })
+  .step('Test greet command')
+  .run(['greet', 'Alice'], { env: { TEST_CLI: 'true' } })
   .expectSuccess()
   .execute()
 ```
@@ -190,6 +199,45 @@ const tempFile = await testUtils.createTempFile('test content', '.txt')
 await testUtils.cleanupTempFiles([tempFile])
 ```
 
+### Scenarios Pack
+
+Pre-built testing patterns for common CLI scenarios with a simple, consistent API.
+
+```javascript
+import { scenarios } from 'citty-test-utils'
+
+// Basic scenarios
+await scenarios.help('local').execute()
+await scenarios.version('cleanroom').execute()
+await scenarios.invalidCommand('nope', 'local').execute()
+
+// JSON output testing
+await scenarios.jsonOutput(['greet', 'Alice', '--json'], 'local').execute()
+await scenarios.subcommand('math', ['add', '5', '3'], 'local').execute()
+
+// Robustness testing
+await scenarios.idempotent(['greet', 'Alice'], 'local').execute()
+await scenarios.concurrent([
+  { args: ['--help'] },
+  { args: ['--version'] },
+  { args: ['greet', 'Test'] }
+], 'cleanroom').execute()
+
+// Error testing
+await scenarios.errorCase(['invalid-command'], /Unknown command/, 'local').execute()
+```
+
+**Available Scenarios:**
+
+- `help(env?)` - Test help command output
+- `version(env?)` - Test version command output  
+- `invalidCommand(cmd?, env?)` - Test invalid command handling
+- `jsonOutput(args, env?)` - Test JSON output parsing
+- `subcommand(cmd, args?, env?)` - Test subcommand execution
+- `idempotent(args, env?)` - Test idempotent operations
+- `concurrent(runs[], env?)` - Test concurrent execution
+- `errorCase(args, msgOrRe, env?)` - Test error conditions
+
 ## Complete Example
 
 ```javascript
@@ -203,13 +251,16 @@ import {
   testUtils
 } from 'citty-test-utils'
 
-async function testGitVanCLI() {
+async function testPlaygroundCLI() {
   // Test local runner
-  const localResult = await runLocalCitty(['--help'])
+  const localResult = await runLocalCitty(['--help'], {
+    cwd: './playground',
+    env: { TEST_CLI: 'true' }
+  })
   localResult
     .expectSuccess()
     .expectOutput('USAGE')
-    .expectOutput(/gitvan/)
+    .expectOutput(/playground/)
     .expectNoStderr()
 
   // Test scenario
@@ -231,15 +282,18 @@ async function testGitVanCLI() {
   console.log('Scenario success:', scenarioResult.success)
 
   // Test pre-built scenarios
-  const helpResult = await scenarios.help().execute('local')
-  const versionResult = await scenarios.version().execute('local')
+  const helpResult = await scenarios.help('local').execute()
+  const versionResult = await scenarios.version('local').execute()
   
   console.log('Help success:', helpResult.success)
   console.log('Version success:', versionResult.success)
 
   // Test flaky operations
   await testUtils.retry(async () => {
-    const result = await runLocalCitty(['--help'])
+    const result = await runLocalCitty(['--help'], {
+      cwd: './playground',
+      env: { TEST_CLI: 'true' }
+    })
     result.expectSuccess()
   }, 3, 1000)
 }
@@ -247,9 +301,9 @@ async function testGitVanCLI() {
 // For Vitest users
 import { describe, it, beforeAll, afterAll } from 'vitest'
 
-describe('GitVan CLI Tests', () => {
+describe('Playground CLI Tests', () => {
   beforeAll(async () => {
-    await setupCleanroom({ rootDir: '.' })
+    await setupCleanroom({ rootDir: './playground' })
   })
 
   afterAll(async () => {
@@ -257,20 +311,25 @@ describe('GitVan CLI Tests', () => {
   })
 
   it('should work locally', async () => {
-    const result = await runLocalCitty(['--help'])
+    const result = await runLocalCitty(['--help'], {
+      cwd: './playground',
+      env: { TEST_CLI: 'true' }
+    })
     result
       .expectSuccess()
       .expectOutput('USAGE')
-      .expectOutput(/gitvan/)
+      .expectOutput(/playground/)
       .expectNoStderr()
   })
 
   it('should work in cleanroom', async () => {
-    const result = await runCitty(['--help'])
+    const result = await runCitty(['--help'], {
+      env: { TEST_CLI: 'true' }
+    })
     result
       .expectSuccess()
       .expectOutput('USAGE')
-      .expectOutput(/gitvan/)
+      .expectOutput(/playground/)
       .expectNoStderr()
   })
 
@@ -294,8 +353,8 @@ describe('GitVan CLI Tests', () => {
   })
 
   it('should use pre-built scenarios', async () => {
-    const helpResult = await scenarios.help().execute('local')
-    const versionResult = await scenarios.version().execute('local')
+    const helpResult = await scenarios.help('local').execute()
+    const versionResult = await scenarios.version('local').execute()
     
     expect(helpResult.success).toBe(true)
     expect(versionResult.success).toBe(true)
@@ -303,7 +362,10 @@ describe('GitVan CLI Tests', () => {
 
   it('should handle flaky operations', async () => {
     await testUtils.retry(async () => {
-      const result = await runLocalCitty(['--help'])
+      const result = await runLocalCitty(['--help'], {
+        cwd: './playground',
+        env: { TEST_CLI: 'true' }
+      })
       result.expectSuccess()
     }, 3, 1000)
   })
@@ -329,8 +391,13 @@ Stderr: Error: Command not found
 Test consistency between local and cleanroom environments:
 
 ```javascript
-const localResult = await runLocalCitty(['--version'])
-const cleanroomResult = await runCitty(['--version'])
+const localResult = await runLocalCitty(['--version'], {
+  cwd: './playground',
+  env: { TEST_CLI: 'true' }
+})
+const cleanroomResult = await runCitty(['--version'], {
+  env: { TEST_CLI: 'true' }
+})
 
 expect(localResult.result.stdout).toBe(cleanroomResult.result.stdout)
 ```
@@ -355,18 +422,18 @@ const result = await scenario('Custom workflow')
 
 ```javascript
 // Local development with custom environment
-const result = await runLocalCitty(['dev'], {
+const result = await runLocalCitty(['greet', 'Alice'], {
+  cwd: './playground',
   env: {
-    NODE_ENV: 'development',
-    DEBUG: 'true',
-    PORT: '3000'
+    TEST_CLI: 'true',
+    DEBUG: 'true'
   },
   timeout: 60000
 })
 
 // Cleanroom with specific Docker image
 await setupCleanroom({ 
-  rootDir: '.',
+  rootDir: './playground',
   nodeImage: 'node:18-alpine'
 })
 ```
@@ -375,24 +442,43 @@ await setupCleanroom({
 
 - **Node.js**: >= 18.0.0
 - **Docker**: Required for cleanroom testing
-- **GitVan Project**: Required for CLI testing
+- **Citty Project**: Required for CLI testing
 
 ## Project Setup
 
-To use `citty-test-utils`, you need to be working within a GitVan project:
+To use `citty-test-utils`, you need a Citty-based CLI project:
 
-1. **Install GitVan**: Follow the [GitVan setup guide](https://github.com/seanchatmangpt/gitvan)
-2. **Install citty-test-utils**: `npm install citty-test-utils`
-3. **Run tests**: The local runner will automatically detect your GitVan project root
+1. **Install citty-test-utils**: `npm install citty-test-utils`
+2. **Use the playground**: The included playground demonstrates all features
+3. **Run tests**: The playground includes comprehensive test examples
 
 ```bash
 # Example project structure
-my-gitvan-project/
+my-citty-project/
 ├── src/
-│   └── cli.mjs          # GitVan CLI
-├── package.json         # Contains "name": "gitvan"
+│   └── cli.mjs          # Citty CLI
+├── package.json         # Contains citty dependency
 └── tests/
     └── my-tests.mjs     # Your tests using citty-test-utils
+```
+
+## Playground Project
+
+The included playground project (`./playground/`) serves as a complete example:
+
+- **Full Citty CLI**: Demonstrates commands, subcommands, and options
+- **Comprehensive Tests**: Unit, integration, and scenario tests
+- **All Features**: Shows every aspect of `citty-test-utils`
+- **Best Practices**: Demonstrates proper usage patterns
+
+```bash
+# Run playground tests
+cd playground
+npm install
+npm test
+
+# Run playground CLI
+npm start
 ```
 
 ## TypeScript Support
@@ -435,7 +521,7 @@ npm run test:ui
 
 ## Contributing
 
-Contributions are welcome! Please see the [GitVan repository](https://github.com/seanchatmangpt/gitvan) for contribution guidelines.
+Contributions are welcome! Please see the project repository for contribution guidelines.
 
 ## License
 

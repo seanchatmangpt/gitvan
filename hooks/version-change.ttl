@@ -26,7 +26,7 @@ ex:version-change-predicate rdf:type gh:ResultDelta ;
 
 # Workflow Pipeline
 ex:version-change-pipeline rdf:type op:Pipeline ;
-    op:steps ex:notify-team, ex:update-changelog .
+    op:steps (ex:notify-team, ex:update-changelog) .
 
 # Step 1: Notify Team
 ex:notify-team rdf:type gv:TemplateStep ;

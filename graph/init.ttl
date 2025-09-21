@@ -5,17 +5,17 @@
 
 # Project Information
 ex:project rdf:type gv:Project ;
-    gv:name "definitive-test" ;
-    gv:description "Definitive test project" ;
+    gv:name "gitvan-project" ;
+    gv:description "A GitVan-powered project with Knowledge Hook Engine" ;
     gv:version "1.0.0" ;
-    gv:createdDate "2025-09-20T17:40:33.906Z" ;
+    gv:createdDate "2025-09-21T05:26:28.726Z" ;
     gv:status "active" .
 
 # Initial Project State
 ex:project-state rdf:type gv:ProjectState ;
     gv:project ex:project ;
     gv:phase "initialization" ;
-    gv:lastUpdated "2025-09-20T17:40:33.906Z" ;
+    gv:lastUpdated "2025-09-21T05:26:28.726Z" ;
     gv:status "setup-complete" .
 
 # Sample Entities for Testing
@@ -35,4 +35,4 @@ ex:project-metrics rdf:type gv:ProjectMetrics ;
     gv:totalItems 2 ;
     gv:activeItems 1 ;
     gv:pendingItems 1 ;
-    gv:lastCalculated "2025-09-20T17:40:33.906Z" .
+    gv:lastCalculated "2025-09-21T05:26:28.726Z" .

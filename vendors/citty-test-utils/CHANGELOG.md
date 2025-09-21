@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.4] - 2024-01-XX
+
+### Added
+- **Scenarios Pack**: Pre-built testing patterns for common CLI scenarios
+- 13 ready-to-use scenario templates with simple API
+- Support for both local and cleanroom environments in scenarios
+- Comprehensive scenarios including:
+  - Basic commands (help, version, invalid command)
+  - Project workflows (init, config get/set)
+  - Robustness testing (idempotent, concurrent)
+  - Output validation (JSON, file generation)
+  - Error testing (error cases, interactive input)
+- TypeScript definitions for all scenario methods
+- Updated package.json to include scenarios.js in files array
+- Generic scenarios designed to work with any CLI application
+
+### Scenarios API
+- `scenarios.help(env?)` - Test help command output
+- `scenarios.version(env?)` - Test version command output  
+- `scenarios.invalidCommand(cmd?, env?)` - Test invalid command handling
+- `scenarios.initProject(name, env?)` - Test project initialization
+- `scenarios.configGet(key, env?)` - Test configuration retrieval
+- `scenarios.configSet(key, value, env?)` - Test configuration setting
+- `scenarios.subcommand(cmd, args?, env?)` - Test subcommand execution
+- `scenarios.jsonOutput(args, env?)` - Test JSON output parsing
+- `scenarios.fileGenerated(args, expectPath, env?)` - Test file generation
+- `scenarios.idempotent(args, env?)` - Test idempotent operations
+- `scenarios.concurrent(runs[], env?)` - Test concurrent execution
+- `scenarios.interactive(script, env?)` - Test interactive input
+- `scenarios.errorCase(args, msgOrRe, env?)` - Test error conditions
+
+### Documentation
+- Updated README with comprehensive scenarios pack documentation
+- Added usage examples for all scenario types
+- Updated feature list to highlight scenarios pack
+
 ## [0.2.3] - 2024-01-XX
 
 ### Fixed

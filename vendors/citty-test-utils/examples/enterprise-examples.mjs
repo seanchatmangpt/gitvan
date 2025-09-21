@@ -1,11 +1,11 @@
 /**
  * Enterprise Examples and Use Cases
- * 
+ *
  * Comprehensive examples demonstrating enterprise noun-verb CLI testing
  * patterns, cross-domain workflows, and compliance testing scenarios.
  */
 
-import { 
+import {
   enterpriseRunner,
   enterpriseUtils,
   enterpriseScenarios,
@@ -13,7 +13,7 @@ import {
   enterpriseTestUtils,
   testUtils,
   globalContextManager,
-  contextUtils
+  contextUtils,
 } from '../index.js'
 
 /**
@@ -25,7 +25,8 @@ export async function infrastructureExamples() {
   console.log('=== Infrastructure Domain Examples ===')
 
   // Create server using fluent command builder
-  const serverResult = await enterpriseUtils.infra()
+  const serverResult = await enterpriseUtils
+    .infra()
     .server()
     .create()
     .arg('--type', 'web')
@@ -36,7 +37,8 @@ export async function infrastructureExamples() {
   console.log('Server created:', serverResult.success)
 
   // List servers
-  const listResult = await enterpriseUtils.infra()
+  const listResult = await enterpriseUtils
+    .infra()
     .server()
     .list()
     .arg('--region', 'us-east-1')
@@ -45,7 +47,8 @@ export async function infrastructureExamples() {
   console.log('Servers listed:', listResult.success)
 
   // Show server details
-  const showResult = await enterpriseUtils.infra()
+  const showResult = await enterpriseUtils
+    .infra()
     .server()
     .show()
     .arg('--id', 'web-server-001')
@@ -59,7 +62,8 @@ export async function developmentExamples() {
   console.log('=== Development Domain Examples ===')
 
   // Create project
-  const projectResult = await enterpriseUtils.dev()
+  const projectResult = await enterpriseUtils
+    .dev()
     .project()
     .create()
     .arg('--name', 'my-app')
@@ -69,7 +73,8 @@ export async function developmentExamples() {
   console.log('Project created:', projectResult.success)
 
   // Run tests
-  const testResult = await enterpriseUtils.dev()
+  const testResult = await enterpriseUtils
+    .dev()
     .test()
     .run()
     .arg('--project', 'my-app')
@@ -79,7 +84,8 @@ export async function developmentExamples() {
   console.log('Tests run:', testResult.success)
 
   // Deploy application
-  const deployResult = await enterpriseUtils.dev()
+  const deployResult = await enterpriseUtils
+    .dev()
     .project()
     .deploy()
     .arg('--project', 'my-app')
@@ -94,7 +100,8 @@ export async function securityExamples() {
   console.log('=== Security Domain Examples ===')
 
   // Create user
-  const userResult = await enterpriseUtils.security()
+  const userResult = await enterpriseUtils
+    .security()
     .user()
     .create()
     .arg('--name', 'john.doe')
@@ -105,7 +112,8 @@ export async function securityExamples() {
   console.log('User created:', userResult.success)
 
   // Validate policy
-  const policyResult = await enterpriseUtils.security()
+  const policyResult = await enterpriseUtils
+    .security()
     .policy()
     .validate()
     .arg('--policy', 'rbac')
@@ -115,7 +123,8 @@ export async function securityExamples() {
   console.log('Policy validated:', policyResult.success)
 
   // Audit user access
-  const auditResult = await enterpriseUtils.security()
+  const auditResult = await enterpriseUtils
+    .security()
     .user()
     .audit()
     .arg('--user', 'john.doe')
@@ -133,62 +142,63 @@ export async function securityExamples() {
 export async function deploymentWorkflowExample() {
   console.log('=== Application Deployment Workflow ===')
 
-  const workflow = await scenarioUtils.workflow('Application Deployment')
+  const workflow = await scenarioUtils
+    .workflow('Application Deployment')
     .step('Create Project')
     .run({
       domain: 'dev',
       resource: 'project',
       action: 'create',
       args: { name: 'my-app', type: 'web' },
-      options: {}
+      options: {},
     })
     .expectSuccess()
     .expectResourceCreated('dev', 'project', 'my-app')
-    
+
     .step('Run Tests')
     .run({
       domain: 'dev',
       resource: 'test',
       action: 'run',
       args: { project: 'my-app', suite: 'integration' },
-      options: {}
+      options: {},
     })
     .expectSuccess()
     .expectOutput('All tests passed')
-    
+
     .step('Create Infrastructure')
     .run({
       domain: 'infra',
       resource: 'server',
       action: 'create',
       args: { type: 'web', region: 'us-east-1' },
-      options: {}
+      options: {},
     })
     .expectSuccess()
     .expectResourceCreated('infra', 'server', 'web-server-001')
-    
+
     .step('Deploy Application')
     .run({
       domain: 'dev',
       resource: 'project',
       action: 'deploy',
       args: { project: 'my-app', server: 'web-server-001' },
-      options: {}
+      options: {},
     })
     .expectSuccess()
     .expectOutput('Deployment successful')
-    
+
     .step('Setup Monitoring')
     .run({
       domain: 'monitor',
       resource: 'alert',
       action: 'create',
       args: { resource: 'web-server-001', metric: 'cpu' },
-      options: {}
+      options: {},
     })
     .expectSuccess()
     .expectResourceCreated('monitor', 'alert', 'cpu-alert-001')
-    
+
     .execute('local')
 
   console.log('Deployment workflow completed:', workflow.success)
@@ -199,51 +209,52 @@ export async function deploymentWorkflowExample() {
 export async function complianceWorkflowExample() {
   console.log('=== Compliance Validation Workflow ===')
 
-  const complianceWorkflow = await scenarioUtils.workflow('SOX Compliance Validation')
+  const complianceWorkflow = await scenarioUtils
+    .workflow('SOX Compliance Validation')
     .step('User Access Audit')
     .run({
       domain: 'security',
       resource: 'user',
       action: 'audit',
       args: { standard: 'sox' },
-      options: {}
+      options: {},
     })
     .expectSuccess()
     .expectComplianceValidated('sox')
-    
+
     .step('Policy Validation')
     .run({
       domain: 'security',
       resource: 'policy',
       action: 'validate',
       args: { standard: 'sox' },
-      options: {}
+      options: {},
     })
     .expectSuccess()
     .expectPolicyEnforced('sox')
-    
+
     .step('Infrastructure Audit')
     .run({
       domain: 'infra',
       resource: 'server',
       action: 'audit',
       args: { standard: 'sox' },
-      options: {}
+      options: {},
     })
     .expectSuccess()
     .expectComplianceValidated('sox')
-    
+
     .step('Generate Compliance Report')
     .run({
       domain: 'compliance',
       resource: 'report',
       action: 'generate',
       args: { standard: 'sox', format: 'json' },
-      options: {}
+      options: {},
     })
     .expectSuccess()
     .expectOutput('Compliance report generated')
-    
+
     .execute('cleanroom')
 
   console.log('Compliance workflow completed:', complianceWorkflow.success)
@@ -266,16 +277,14 @@ export async function contextAwareTestingExample() {
     region: 'us-east-1',
     compliance: 'sox',
     user: 'admin',
-    role: 'admin'
+    role: 'admin',
   })
 
   // Commands automatically include context
-  const result = await enterpriseRunner.executeDomain(
-    'infra',
-    'server',
-    'create',
-    ['--type', 'web']
-  )
+  const result = await enterpriseRunner.executeDomain('infra', 'server', 'create', [
+    '--type',
+    'web',
+  ])
 
   console.log('Context-aware command executed:', result.success)
   console.log('Context included:', result.result.stdout.includes('enterprise-prod'))
@@ -295,8 +304,8 @@ export async function workspaceManagementExample() {
       { resource: 'server', actions: ['create', 'list', 'show', 'update', 'delete'] },
       { resource: 'project', actions: ['create', 'list', 'show', 'deploy'] },
       { resource: 'user', actions: ['create', 'list', 'show', 'audit'] },
-      { resource: 'alert', actions: ['create', 'list', 'show', 'update'] }
-    ]
+      { resource: 'alert', actions: ['create', 'list', 'show', 'update'] },
+    ],
   })
 
   console.log('Workspace created:', workspace.name)
@@ -305,12 +314,7 @@ export async function workspaceManagementExample() {
   await testUtils.switchWorkspace('enterprise-prod')
 
   // Test workspace isolation
-  const result = await enterpriseRunner.executeDomain(
-    'infra',
-    'server',
-    'list',
-    []
-  )
+  const result = await enterpriseRunner.executeDomain('infra', 'server', 'list', [])
 
   console.log('Workspace isolation test:', result.success)
   console.log('Workspace context applied:', result.result.stdout.includes('enterprise-prod'))
@@ -328,21 +332,21 @@ export async function resourceLifecycleExample() {
   const server = await testUtils.createResource('infra', 'server', {
     type: 'web',
     region: 'us-east-1',
-    size: 'large'
+    size: 'large',
   })
 
   console.log('Server created:', server.id)
 
   // Update server resource
   const updatedServer = await testUtils.updateResource('infra', 'server', server.id, {
-    size: 'xlarge'
+    size: 'xlarge',
   })
 
   console.log('Server updated:', updatedServer.id)
 
   // List server resources
   const servers = await testUtils.listResources('infra', 'server', {
-    region: 'us-east-1'
+    region: 'us-east-1',
   })
 
   console.log('Servers found:', servers.length)
@@ -362,16 +366,16 @@ export async function crossDomainResourceExample() {
     infra: {
       servers: 3,
       region: 'us-east-1',
-      type: 'web'
+      type: 'web',
     },
     security: {
       policies: ['rbac', 'encryption'],
-      users: ['admin', 'developer']
+      users: ['admin', 'developer'],
     },
     monitor: {
       alerts: ['cpu', 'memory', 'disk'],
-      dashboard: 'prod-overview'
-    }
+      dashboard: 'prod-overview',
+    },
   })
 
   console.log('Deployment completed:', deployment.success)
@@ -387,11 +391,12 @@ export async function crossDomainResourceExample() {
 export async function soxComplianceExample() {
   console.log('=== SOX Compliance Testing ===')
 
-  const soxCompliance = await scenarioUtils.compliance('sox')
+  const soxCompliance = await scenarioUtils
+    .compliance('sox')
     .validate({
       domains: ['infra', 'security', 'data'],
       resources: ['server', 'user', 'database'],
-      standards: ['sox']
+      standards: ['sox'],
     })
     .audit(['infra', 'security'])
     .report('json')
@@ -406,11 +411,12 @@ export async function soxComplianceExample() {
 export async function gdprComplianceExample() {
   console.log('=== GDPR Compliance Testing ===')
 
-  const gdprCompliance = await scenarioUtils.compliance('gdpr')
+  const gdprCompliance = await scenarioUtils
+    .compliance('gdpr')
     .validate({
       domains: ['data', 'security'],
       resources: ['database', 'user'],
-      standards: ['gdpr']
+      standards: ['gdpr'],
     })
     .audit(['data', 'security'])
     .report('json')
@@ -429,40 +435,41 @@ export async function gdprComplianceExample() {
 export async function performanceTestingExample() {
   console.log('=== Performance Testing ===')
 
-  const performanceTest = await scenarioUtils.workflow('Server Performance Testing')
+  const performanceTest = await scenarioUtils
+    .workflow('Server Performance Testing')
     .step('Create Server')
     .run({
       domain: 'infra',
       resource: 'server',
       action: 'create',
       args: { type: 'web', region: 'us-east-1' },
-      options: {}
+      options: {},
     })
     .expectSuccess()
     .expectResourceCreated('infra', 'server', 'web-server-001')
-    
+
     .step('Deploy Application')
     .run({
       domain: 'dev',
       resource: 'project',
       action: 'deploy',
       args: { server: 'web-server-001', app: 'my-app' },
-      options: {}
+      options: {},
     })
     .expectSuccess()
     .expectOutput('Application deployed successfully')
-    
+
     .step('Load Test')
     .run({
       domain: 'monitor',
       resource: 'load',
       action: 'test',
       args: { server: 'web-server-001', duration: '300', users: '100' },
-      options: {}
+      options: {},
     })
     .expectSuccess()
     .expectOutput('Load test completed')
-    
+
     .execute('local')
 
   console.log('Performance test completed:', performanceTest.success)
@@ -477,52 +484,53 @@ export async function performanceTestingExample() {
 export async function multiTenantTestingExample() {
   console.log('=== Multi-Tenant Testing ===')
 
-  const tenantIsolation = await scenarioUtils.workflow('Multi-Tenant Isolation Testing')
+  const tenantIsolation = await scenarioUtils
+    .workflow('Multi-Tenant Isolation Testing')
     .step('Create Tenant A')
     .run({
       domain: 'tenant',
       resource: 'tenant',
       action: 'create',
       args: { name: 'tenant-a', domain: 'tenant-a.com' },
-      options: {}
+      options: {},
     })
     .expectSuccess()
     .expectResourceCreated('tenant', 'tenant', 'tenant-a')
-    
+
     .step('Create Tenant B')
     .run({
       domain: 'tenant',
       resource: 'tenant',
       action: 'create',
       args: { name: 'tenant-b', domain: 'tenant-b.com' },
-      options: {}
+      options: {},
     })
     .expectSuccess()
     .expectResourceCreated('tenant', 'tenant', 'tenant-b')
-    
+
     .step('Create Resources for Tenant A')
     .run({
       domain: 'infra',
       resource: 'server',
       action: 'create',
       args: { tenant: 'tenant-a', type: 'web' },
-      options: {}
+      options: {},
     })
     .expectSuccess()
     .expectResourceCreated('infra', 'server', 'tenant-a-server-001')
-    
+
     .step('Verify Tenant A Isolation')
     .run({
       domain: 'infra',
       resource: 'server',
       action: 'list',
       args: { tenant: 'tenant-a' },
-      options: {}
+      options: {},
     })
     .expectSuccess()
     .expectOutputContains('tenant-a-server-001')
     .expectOutputNotContains('tenant-b-server-001')
-    
+
     .execute('local')
 
   console.log('Multi-tenant isolation test completed:', tenantIsolation.success)
@@ -533,73 +541,74 @@ export async function multiTenantTestingExample() {
 export async function disasterRecoveryExample() {
   console.log('=== Disaster Recovery Testing ===')
 
-  const disasterRecovery = await scenarioUtils.workflow('Disaster Recovery Testing')
+  const disasterRecovery = await scenarioUtils
+    .workflow('Disaster Recovery Testing')
     .step('Create Primary Server')
     .run({
       domain: 'infra',
       resource: 'server',
       action: 'create',
       args: { type: 'web', region: 'us-east-1', name: 'primary-server' },
-      options: {}
+      options: {},
     })
     .expectSuccess()
     .expectResourceCreated('infra', 'server', 'primary-server')
-    
+
     .step('Deploy Application')
     .run({
       domain: 'dev',
       resource: 'project',
       action: 'deploy',
       args: { server: 'primary-server', app: 'my-app' },
-      options: {}
+      options: {},
     })
     .expectSuccess()
     .expectOutput('Application deployed successfully')
-    
+
     .step('Create Backup')
     .run({
       domain: 'data',
       resource: 'backup',
       action: 'create',
       args: { resource: 'primary-server', schedule: 'daily' },
-      options: {}
+      options: {},
     })
     .expectSuccess()
     .expectResourceCreated('data', 'backup', 'backup-001')
-    
+
     .step('Simulate Disaster')
     .run({
       domain: 'infra',
       resource: 'server',
       action: 'delete',
       args: { id: 'primary-server', 'simulate-disaster': 'true' },
-      options: {}
+      options: {},
     })
     .expectSuccess()
     .expectResourceDeleted('infra', 'server', 'primary-server')
-    
+
     .step('Create Recovery Server')
     .run({
       domain: 'infra',
       resource: 'server',
       action: 'create',
       args: { type: 'web', region: 'us-west-2', name: 'recovery-server' },
-      options: {}
+      options: {},
     })
     .expectSuccess()
     .expectResourceCreated('infra', 'server', 'recovery-server')
-    
+
     .step('Restore from Backup')
     .run({
       domain: 'data',
       resource: 'backup',
       action: 'restore',
       args: { backup: 'backup-001', server: 'recovery-server' },
-      options: {}
+      options: {},
     })
     .expectSuccess()
     .expectOutput('Backup restored successfully')
-    
+
     .execute('cleanroom')
 
   console.log('Disaster recovery test completed:', disasterRecovery.success)
@@ -649,5 +658,5 @@ export default {
   performanceTestingExample,
   multiTenantTestingExample,
   disasterRecoveryExample,
-  runAllExamples
+  runAllExamples,
 }

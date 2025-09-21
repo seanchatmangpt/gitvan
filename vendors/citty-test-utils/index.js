@@ -10,7 +10,7 @@ export * from './src/snapshot-management.js'
 // Enterprise Noun-Verb CLI Testing Framework
 export * from './src/command-builder.js'
 export * from './src/domain-registry.js'
-export * from './src/enhanced-runner.js'
+export * from './src/enterprise-runner.js'
 export * from './src/enterprise-scenarios.js'
 export * from './src/enterprise-assertions.js'
 export * from './src/enterprise-test-utils.js'

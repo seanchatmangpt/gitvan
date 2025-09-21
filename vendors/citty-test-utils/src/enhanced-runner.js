@@ -6,7 +6,8 @@
  * Supports domain-aware execution, batch processing, and pipeline execution
  */
 
-import { runLocalCitty, runCitty } from './local-runner.js'
+import { runLocalCitty } from './local-runner.js'
+import { runCitty } from './cleanroom-runner.js'
 import { domainRegistry } from './domain-registry.js'
 
 export class EnterpriseRunner {
@@ -31,7 +32,7 @@ export class EnterpriseRunner {
     // Merge context with options
     const runnerOptions = {
       ...options,
-      context: { ...this.context, ...options.context }
+      context: { ...this.context, ...options.context },
     }
 
     // Execute command
@@ -49,14 +50,14 @@ export class EnterpriseRunner {
   async executeWithContext(command, context, options = {}) {
     // Merge context
     const mergedContext = { ...this.context, ...context }
-    
+
     // Build command array
     const commandArray = Array.isArray(command) ? command : [command]
 
     // Execute with context
     const runnerOptions = {
       ...options,
-      context: mergedContext
+      context: mergedContext,
     }
 
     const runner = options.runner || 'local'
@@ -71,12 +72,7 @@ export class EnterpriseRunner {
 
   // Batch execution
   async executeBatch(commands, options = {}) {
-    const {
-      parallel = false,
-      maxConcurrency = 5,
-      stopOnError = false,
-      timeout = 30000
-    } = options
+    const { parallel = false, maxConcurrency = 5, stopOnError = false, timeout = 30000 } = options
 
     const results = []
     const errors = []
@@ -84,7 +80,7 @@ export class EnterpriseRunner {
     if (parallel) {
       // Execute commands in parallel with concurrency limit
       const semaphore = new Semaphore(maxConcurrency)
-      
+
       const promises = commands.map(async (command, index) => {
         try {
           await semaphore.acquire()
@@ -123,8 +119,8 @@ export class EnterpriseRunner {
       results,
       errors,
       totalCommands: commands.length,
-      successfulCommands: results.filter(r => r !== null).length,
-      failedCommands: errors.length
+      successfulCommands: results.filter((r) => r !== null).length,
+      failedCommands: errors.length,
     }
   }
 
@@ -134,7 +130,7 @@ export class EnterpriseRunner {
       validateDependencies = true,
       stopOnError = true,
       timeout = 300000,
-      retryPolicy = null
+      retryPolicy = null,
     } = options
 
     const results = []
@@ -167,16 +163,16 @@ export class EnterpriseRunner {
             step: step.name,
             success: true,
             result,
-            duration: Date.now() - startTime
+            duration: Date.now() - startTime,
           })
         } catch (error) {
           const stepResult = {
             step: step.name,
             success: false,
             error,
-            duration: Date.now() - startTime
+            duration: Date.now() - startTime,
           }
-          
+
           results.push(stepResult)
           errors.push(stepResult)
 
@@ -194,7 +190,7 @@ export class EnterpriseRunner {
       steps: results,
       errors,
       duration: Date.now() - startTime,
-      pipeline: pipeline.name
+      pipeline: pipeline.name,
     }
   }
 
@@ -250,7 +246,7 @@ export class EnterpriseRunner {
   async executeStep(step, options = {}) {
     const stepOptions = {
       ...options,
-      timeout: step.timeout || options.timeout
+      timeout: step.timeout || options.timeout,
     }
 
     return this.executeCommand(step.command, stepOptions)
@@ -265,7 +261,7 @@ export class EnterpriseRunner {
         return await this.executeStep(step)
       } catch (error) {
         lastError = error
-        
+
         if (attempt === maxAttempts) {
           throw error
         }
@@ -276,7 +272,7 @@ export class EnterpriseRunner {
           currentDelay = delay * Math.pow(2, attempt - 1)
         }
 
-        await new Promise(resolve => setTimeout(resolve, currentDelay))
+        await new Promise((resolve) => setTimeout(resolve, currentDelay))
       }
     }
 
@@ -284,8 +280,8 @@ export class EnterpriseRunner {
   }
 
   validatePipelineDependencies(pipeline) {
-    const stepNames = new Set(pipeline.steps.map(step => step.name))
-    
+    const stepNames = new Set(pipeline.steps.map((step) => step.name))
+
     for (const step of pipeline.steps) {
       for (const dependency of step.dependencies || []) {
         if (!stepNames.has(dependency)) {
@@ -333,7 +329,7 @@ export class PipelineBuilder {
       description: '',
       steps: [],
       dependencies: [],
-      metadata: {}
+      metadata: {},
     }
   }
 
@@ -350,7 +346,7 @@ export class PipelineBuilder {
       condition: options.condition,
       retryPolicy: options.retryPolicy,
       timeout: options.timeout,
-      metadata: options.metadata || {}
+      metadata: options.metadata || {},
     })
     return this
   }
@@ -393,5 +389,5 @@ export default {
   PipelineBuilder,
   pipeline,
   enterpriseRunner,
-  enterpriseRunnerInstance
+  enterpriseRunnerInstance,
 }

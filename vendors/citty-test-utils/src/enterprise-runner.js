@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 // src/enterprise-runner.js - Enhanced Enterprise Runner System
 
-import { runLocalCitty, setupCleanroom, runCitty, teardownCleanroom } from './local-runner.js'
+import { runLocalCitty } from './local-runner.js'
+import { setupCleanroom, runCitty, teardownCleanroom } from './cleanroom-runner.js'
 import { domainRegistry } from './domain-registry.js'
 
 /**
  * Enterprise Runner Interface
- * 
+ *
  * Provides domain-aware execution with:
  * - Context management
  * - Batch execution
@@ -21,7 +22,7 @@ export class EnterpriseRunner {
       defaultEnvironment: 'local',
       enableContext: true,
       enableAudit: true,
-      ...options
+      ...options,
     }
     this.context = new EnterpriseContext()
     this.auditLog = []
@@ -32,45 +33,45 @@ export class EnterpriseRunner {
   async executeDomain(domain, resource, action, args = [], options = {}) {
     // Validate command structure
     domainRegistry.validateCommand(domain, resource, action)
-    
+
     // Get command metadata
     const metadata = domainRegistry.getCommandMetadata(domain, resource, action)
-    
+
     // Build command
     const command = `${domain} ${resource} ${action} ${args.join(' ')}`.trim()
-    
+
     // Execute with context
     const result = await this.executeWithContext(command, {
       domain,
       resource,
       action,
       metadata,
-      ...options
+      ...options,
     })
-    
+
     return result
   }
 
   // Context-aware execution
   async executeWithContext(command, context = {}) {
     const startTime = Date.now()
-    
+
     // Merge context
     const fullContext = {
       ...this.context.getContext(),
-      ...context
+      ...context,
     }
-    
+
     // Determine runner
     const runner = this.getRunner(fullContext.environment || this.options.defaultEnvironment)
-    
+
     // Execute command
     const result = await runner(command.split(' '), {
       context: fullContext,
       timeout: fullContext.timeout || this.options.defaultTimeout,
-      ...fullContext.options
+      ...fullContext.options,
     })
-    
+
     // Audit logging
     if (this.options.enableAudit) {
       this.auditLog.push({
@@ -79,35 +80,35 @@ export class EnterpriseRunner {
         context: fullContext,
         result: {
           exitCode: result.result.exitCode,
-          duration: Date.now() - startTime
-        }
+          duration: Date.now() - startTime,
+        },
       })
     }
-    
+
     return result
   }
 
   // Batch execution
   async executeBatch(commands) {
     this.batchResults = []
-    
+
     for (const command of commands) {
       try {
         const result = await this.executeWithContext(command.command, command.context)
         this.batchResults.push({
           command: command.command,
           success: true,
-          result
+          result,
         })
       } catch (error) {
         this.batchResults.push({
           command: command.command,
           success: false,
-          error: error.message
+          error: error.message,
         })
       }
     }
-    
+
     return this.batchResults
   }
 
@@ -115,20 +116,20 @@ export class EnterpriseRunner {
   async executePipeline(pipeline) {
     const results = []
     let context = { ...this.context.getContext() }
-    
+
     for (const stage of pipeline.stages) {
       try {
         const result = await this.executeWithContext(stage.command, {
           ...context,
-          ...stage.context
+          ...stage.context,
         })
-        
+
         results.push({
           stage: stage.name,
           success: true,
-          result
+          result,
         })
-        
+
         // Update context for next stage
         if (stage.updateContext) {
           context = { ...context, ...stage.updateContext(result) }
@@ -137,20 +138,20 @@ export class EnterpriseRunner {
         results.push({
           stage: stage.name,
           success: false,
-          error: error.message
+          error: error.message,
         })
-        
+
         // Handle pipeline failure
         if (pipeline.failFast) {
           break
         }
       }
     }
-    
+
     return {
       pipeline: pipeline.name,
       results,
-      success: results.every(r => r.success)
+      success: results.every((r) => r.success),
     }
   }
 
@@ -203,7 +204,7 @@ export class EnterpriseRunner {
 
 /**
  * Enterprise Context Management
- * 
+ *
  * Manages enterprise context including:
  * - Domain and project context
  * - Environment and region settings
@@ -222,7 +223,7 @@ export class EnterpriseContext {
       user: null,
       role: null,
       workspace: null,
-      timestamp: new Date()
+      timestamp: new Date(),
     }
   }
 
@@ -248,7 +249,7 @@ export class EnterpriseContext {
       user: null,
       role: null,
       workspace: null,
-      timestamp: new Date()
+      timestamp: new Date(),
     }
     return this
   }
@@ -336,12 +337,12 @@ export class EnterpriseContext {
   // Validate context
   validate() {
     const required = ['domain', 'project', 'environment']
-    const missing = required.filter(field => !this.context[field])
-    
+    const missing = required.filter((field) => !this.context[field])
+
     if (missing.length > 0) {
       throw new Error(`Missing required context fields: ${missing.join(', ')}`)
     }
-    
+
     return true
   }
 
@@ -355,7 +356,7 @@ export class EnterpriseContext {
 
 /**
  * Pipeline Builder
- * 
+ *
  * Builds complex multi-stage pipelines with:
  * - Stage definitions
  * - Context passing
@@ -378,7 +379,7 @@ export class PipelineBuilder {
       command,
       context: options.context || {},
       updateContext: options.updateContext || null,
-      rollback: options.rollback || null
+      rollback: options.rollback || null,
     })
     return this
   }
@@ -401,7 +402,7 @@ export class PipelineBuilder {
       name: this.name,
       stages: this.stages,
       failFast: this.failFast,
-      rollback: this.rollback
+      rollback: this.rollback,
     }
   }
 }
@@ -426,5 +427,5 @@ export default {
   PipelineBuilder,
   createEnterpriseRunner,
   createEnterpriseContext,
-  createPipeline
+  createPipeline,
 }

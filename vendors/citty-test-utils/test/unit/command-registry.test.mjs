@@ -1,16 +1,16 @@
 /**
  * Enterprise Command Registry System Tests
- * 
+ *
  * Tests the dynamic registration and management of domains, resources, and actions
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
-import { 
-  CommandRegistry, 
-  createEnterpriseRegistry, 
+import {
+  CommandRegistry,
+  createEnterpriseRegistry,
   globalRegistry,
   defaultDomains,
-  defaultResources 
+  defaultResources,
 } from '../../src/command-registry.js'
 
 describe('Enterprise Command Registry System', () => {
@@ -34,12 +34,12 @@ describe('Enterprise Command Registry System', () => {
           name: 'infra',
           description: 'Infrastructure management',
           resources: ['server', 'network'],
-          actions: ['create', 'list', 'show']
+          actions: ['create', 'list', 'show'],
         }
 
         registry.registerDomain(domainDef)
         const domain = registry.getDomain('infra')
-        
+
         expect(domain).toBeDefined()
         expect(domain.name).toBe('infra')
         expect(domain.description).toBe('Infrastructure management')
@@ -60,7 +60,7 @@ describe('Enterprise Command Registry System', () => {
       it('should get domain by name', () => {
         registry.registerDomain({
           name: 'dev',
-          description: 'Development operations'
+          description: 'Development operations',
         })
 
         const domain = registry.getDomain('dev')
@@ -79,8 +79,8 @@ describe('Enterprise Command Registry System', () => {
 
         const domains = registry.listDomains()
         expect(domains).toHaveLength(2)
-        expect(domains.map(d => d.name)).toContain('infra')
-        expect(domains.map(d => d.name)).toContain('dev')
+        expect(domains.map((d) => d.name)).toContain('infra')
+        expect(domains.map((d) => d.name)).toContain('dev')
       })
     })
 
@@ -88,7 +88,7 @@ describe('Enterprise Command Registry System', () => {
       beforeEach(() => {
         registry.registerDomain({
           name: 'infra',
-          description: 'Infrastructure management'
+          description: 'Infrastructure management',
         })
       })
 
@@ -98,12 +98,12 @@ describe('Enterprise Command Registry System', () => {
           description: 'Server instances',
           actions: ['create', 'list', 'show'],
           attributes: ['type', 'region', 'size'],
-          relationships: ['network', 'storage']
+          relationships: ['network', 'storage'],
         }
 
         registry.registerResource('infra', resourceDef)
         const resource = registry.getResource('infra', 'server')
-        
+
         expect(resource).toBeDefined()
         expect(resource.domain).toBe('infra')
         expect(resource.name).toBe('server')
@@ -131,14 +131,14 @@ describe('Enterprise Command Registry System', () => {
       it('should update domain resources when registering resource', () => {
         registry.registerResource('infra', { name: 'server' })
         const domain = registry.getDomain('infra')
-        
+
         expect(domain.resources.has('server')).toBe(true)
       })
 
       it('should get resource by domain and name', () => {
         registry.registerResource('infra', {
           name: 'server',
-          description: 'Server instances'
+          description: 'Server instances',
         })
 
         const resource = registry.getResource('infra', 'server')
@@ -157,8 +157,8 @@ describe('Enterprise Command Registry System', () => {
 
         const resources = registry.listResources('infra')
         expect(resources).toHaveLength(2)
-        expect(resources.map(r => r.name)).toContain('server')
-        expect(resources.map(r => r.name)).toContain('network')
+        expect(resources.map((r) => r.name)).toContain('server')
+        expect(resources.map((r) => r.name)).toContain('network')
       })
     })
 
@@ -166,11 +166,11 @@ describe('Enterprise Command Registry System', () => {
       beforeEach(() => {
         registry.registerDomain({
           name: 'infra',
-          description: 'Infrastructure management'
+          description: 'Infrastructure management',
         })
         registry.registerResource('infra', {
           name: 'server',
-          description: 'Server instances'
+          description: 'Server instances',
         })
       })
 
@@ -181,12 +181,12 @@ describe('Enterprise Command Registry System', () => {
           args: ['--type', '--region'],
           options: ['--verbose', '--dry-run'],
           handler: () => {},
-          metadata: { category: 'crud' }
+          metadata: { category: 'crud' },
         }
 
         registry.registerAction('infra', 'server', actionDef)
         const action = registry.getAction('infra', 'server', 'create')
-        
+
         expect(action).toBeDefined()
         expect(action.domain).toBe('infra')
         expect(action.resource).toBe('server')
@@ -215,21 +215,21 @@ describe('Enterprise Command Registry System', () => {
       it('should update resource actions when registering action', () => {
         registry.registerAction('infra', 'server', { name: 'create' })
         const resource = registry.getResource('infra', 'server')
-        
+
         expect(resource.actions.has('create')).toBe(true)
       })
 
       it('should update domain actions when registering action', () => {
         registry.registerAction('infra', 'server', { name: 'create' })
         const domain = registry.getDomain('infra')
-        
+
         expect(domain.actions.has('create')).toBe(true)
       })
 
       it('should get action by domain, resource, and name', () => {
         registry.registerAction('infra', 'server', {
           name: 'create',
-          description: 'Create server'
+          description: 'Create server',
         })
 
         const action = registry.getAction('infra', 'server', 'create')
@@ -249,8 +249,8 @@ describe('Enterprise Command Registry System', () => {
 
         const actions = registry.listActions('infra', 'server')
         expect(actions).toHaveLength(2)
-        expect(actions.map(a => a.name)).toContain('create')
-        expect(actions.map(a => a.name)).toContain('list')
+        expect(actions.map((a) => a.name)).toContain('create')
+        expect(actions.map((a) => a.name)).toContain('list')
       })
     })
 
@@ -258,21 +258,21 @@ describe('Enterprise Command Registry System', () => {
       beforeEach(() => {
         registry.registerDomain({
           name: 'infra',
-          description: 'Infrastructure management'
+          description: 'Infrastructure management',
         })
         registry.registerResource('infra', {
           name: 'server',
-          description: 'Server instances'
+          description: 'Server instances',
         })
         registry.registerAction('infra', 'server', {
           name: 'create',
-          description: 'Create server'
+          description: 'Create server',
         })
       })
 
       it('should validate valid command', () => {
         const result = registry.validateCommand('infra', 'server', 'create')
-        
+
         expect(result.valid).toBe(true)
         expect(result.domain).toBeDefined()
         expect(result.resource).toBeDefined()
@@ -281,23 +281,25 @@ describe('Enterprise Command Registry System', () => {
 
       it('should reject invalid domain', () => {
         const result = registry.validateCommand('non-existent', 'server', 'create')
-        
+
         expect(result.valid).toBe(false)
         expect(result.error).toBe("Domain 'non-existent' not found")
       })
 
       it('should reject invalid resource', () => {
         const result = registry.validateCommand('infra', 'non-existent', 'create')
-        
+
         expect(result.valid).toBe(false)
         expect(result.error).toBe("Resource 'non-existent' not found in domain 'infra'")
       })
 
       it('should reject invalid action', () => {
         const result = registry.validateCommand('infra', 'server', 'non-existent')
-        
+
         expect(result.valid).toBe(false)
-        expect(result.error).toBe("Action 'non-existent' not found for resource 'server' in domain 'infra'")
+        expect(result.error).toBe(
+          "Action 'non-existent' not found for resource 'server' in domain 'infra'"
+        )
       })
     })
 
@@ -313,33 +315,33 @@ describe('Enterprise Command Registry System', () => {
 
       it('should discover commands by domain pattern', () => {
         const results = registry.discoverCommands({ domain: 'infra' })
-        
+
         expect(results).toHaveLength(3)
-        expect(results.every(r => r.domain === 'infra')).toBe(true)
+        expect(results.every((r) => r.domain === 'infra')).toBe(true)
       })
 
       it('should discover commands by resource pattern', () => {
         const results = registry.discoverCommands({ resource: 'server' })
-        
+
         expect(results).toHaveLength(2)
-        expect(results.every(r => r.resource === 'server')).toBe(true)
+        expect(results.every((r) => r.resource === 'server')).toBe(true)
       })
 
       it('should discover commands by action pattern', () => {
         const results = registry.discoverCommands({ action: 'create' })
-        
+
         expect(results).toHaveLength(2)
-        expect(results.every(r => r.action === 'create')).toBe(true)
+        expect(results.every((r) => r.action === 'create')).toBe(true)
       })
 
       it('should discover commands by multiple patterns', () => {
-        const results = registry.discoverCommands({ 
-          domain: 'infra', 
-          action: 'create' 
+        const results = registry.discoverCommands({
+          domain: 'infra',
+          action: 'create',
         })
-        
+
         expect(results).toHaveLength(2)
-        expect(results.every(r => r.domain === 'infra' && r.action === 'create')).toBe(true)
+        expect(results.every((r) => r.domain === 'infra' && r.action === 'create')).toBe(true)
       })
     })
 
@@ -363,20 +365,20 @@ describe('Enterprise Command Registry System', () => {
           name: 'infra',
           description: 'Infrastructure',
           resources: ['server'],
-          actions: ['create']
+          actions: ['create'],
         })
         registry.registerResource('infra', {
           name: 'server',
           description: 'Server instances',
           actions: ['create'],
           attributes: ['type'],
-          relationships: ['network']
+          relationships: ['network'],
         })
         registry.registerAction('infra', 'server', {
           name: 'create',
           description: 'Create server',
           args: ['--type'],
-          options: ['--verbose']
+          options: ['--verbose'],
         })
 
         const exported = registry.export()
@@ -390,32 +392,38 @@ describe('Enterprise Command Registry System', () => {
 
       it('should import registry configuration', () => {
         const config = {
-          domains: [{
-            name: 'dev',
-            description: 'Development',
-            resources: ['project'],
-            actions: ['create']
-          }],
-          resources: [{
-            domain: 'dev',
-            name: 'project',
-            description: 'Project instances',
-            actions: ['create'],
-            attributes: ['name'],
-            relationships: ['app']
-          }],
-          actions: [{
-            domain: 'dev',
-            resource: 'project',
-            name: 'create',
-            description: 'Create project',
-            args: ['--name'],
-            options: ['--verbose']
-          }]
+          domains: [
+            {
+              name: 'dev',
+              description: 'Development',
+              resources: ['project'],
+              actions: ['create'],
+            },
+          ],
+          resources: [
+            {
+              domain: 'dev',
+              name: 'project',
+              description: 'Project instances',
+              actions: ['create'],
+              attributes: ['name'],
+              relationships: ['app'],
+            },
+          ],
+          actions: [
+            {
+              domain: 'dev',
+              resource: 'project',
+              name: 'create',
+              description: 'Create project',
+              args: ['--name'],
+              options: ['--verbose'],
+            },
+          ],
         }
 
         registry.import(config)
-        
+
         expect(registry.getDomain('dev')).toBeDefined()
         expect(registry.getResource('dev', 'project')).toBeDefined()
         expect(registry.getAction('dev', 'project', 'create')).toBeDefined()
@@ -426,7 +434,7 @@ describe('Enterprise Command Registry System', () => {
   describe('Default Enterprise Registry', () => {
     it('should create enterprise registry with default domains', () => {
       const enterpriseRegistry = createEnterpriseRegistry()
-      
+
       expect(enterpriseRegistry.getDomain('infra')).toBeDefined()
       expect(enterpriseRegistry.getDomain('dev')).toBeDefined()
       expect(enterpriseRegistry.getDomain('security')).toBeDefined()
@@ -436,7 +444,7 @@ describe('Enterprise Command Registry System', () => {
 
     it('should create enterprise registry with default resources', () => {
       const enterpriseRegistry = createEnterpriseRegistry()
-      
+
       expect(enterpriseRegistry.getResource('infra', 'server')).toBeDefined()
       expect(enterpriseRegistry.getResource('infra', 'network')).toBeDefined()
       expect(enterpriseRegistry.getResource('dev', 'project')).toBeDefined()

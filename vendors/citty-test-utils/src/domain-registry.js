@@ -3,7 +3,7 @@
 
 /**
  * Enterprise Domain Registry System
- * 
+ *
  * Manages business domains as first-class citizens with:
  * - Domain definitions and metadata
  * - Resource and action mappings
@@ -22,23 +22,23 @@ export class DomainRegistry {
   // Register a domain
   registerDomain(domain) {
     this.domains.set(domain.name, domain)
-    
+
     // Register resources
     if (domain.resources) {
-      domain.resources.forEach(resource => {
+      domain.resources.forEach((resource) => {
         this.resources.set(`${domain.name}.${resource.name}`, {
           ...resource,
-          domain: domain.name
+          domain: domain.name,
         })
       })
     }
 
     // Register actions
     if (domain.actions) {
-      domain.actions.forEach(action => {
+      domain.actions.forEach((action) => {
         this.actions.set(`${domain.name}.${action.name}`, {
           ...action,
-          domain: domain.name
+          domain: domain.name,
         })
       })
     }
@@ -58,14 +58,12 @@ export class DomainRegistry {
 
   // Get resources for a domain
   getDomainResources(domainName) {
-    return Array.from(this.resources.values())
-      .filter(resource => resource.domain === domainName)
+    return Array.from(this.resources.values()).filter((resource) => resource.domain === domainName)
   }
 
   // Get actions for a domain
   getDomainActions(domainName) {
-    return Array.from(this.actions.values())
-      .filter(action => action.domain === domainName)
+    return Array.from(this.actions.values()).filter((action) => action.domain === domainName)
   }
 
   // Get resource information
@@ -101,7 +99,7 @@ export class DomainRegistry {
   getCommandMetadata(domain, resource, action) {
     const domainInfo = this.getDomain(domain)
     const resourceInfo = this.getResource(domain, resource)
-    
+
     return {
       domain: domainInfo,
       resource: resourceInfo,
@@ -110,7 +108,7 @@ export class DomainRegistry {
       description: `${action} ${resource} in ${domain} domain`,
       category: domainInfo.category || 'general',
       compliance: domainInfo.compliance || [],
-      governance: domainInfo.governance || []
+      governance: domainInfo.governance || [],
     }
   }
 }
@@ -131,7 +129,7 @@ export const domainConfigs = {
         description: 'Compute server instances',
         actions: ['create', 'list', 'show', 'update', 'delete', 'restart', 'scale'],
         attributes: ['type', 'region', 'size', 'status', 'created'],
-        relationships: ['network', 'storage', 'monitoring']
+        relationships: ['network', 'storage', 'monitoring'],
       },
       {
         name: 'network',
@@ -139,7 +137,7 @@ export const domainConfigs = {
         description: 'Network infrastructure',
         actions: ['create', 'list', 'show', 'update', 'delete', 'configure'],
         attributes: ['cidr', 'region', 'status', 'created'],
-        relationships: ['server', 'security']
+        relationships: ['server', 'security'],
       },
       {
         name: 'storage',
@@ -147,7 +145,7 @@ export const domainConfigs = {
         description: 'Storage systems and volumes',
         actions: ['create', 'list', 'show', 'update', 'delete', 'backup', 'restore'],
         attributes: ['type', 'size', 'region', 'status', 'created'],
-        relationships: ['server', 'backup']
+        relationships: ['server', 'backup'],
       },
       {
         name: 'database',
@@ -155,8 +153,8 @@ export const domainConfigs = {
         description: 'Database instances and clusters',
         actions: ['create', 'list', 'show', 'update', 'delete', 'backup', 'restore'],
         attributes: ['type', 'version', 'size', 'region', 'status', 'created'],
-        relationships: ['server', 'storage', 'backup']
-      }
+        relationships: ['server', 'storage', 'backup'],
+      },
     ],
     actions: [
       {
@@ -164,51 +162,51 @@ export const domainConfigs = {
         description: 'Create new resource',
         category: 'CRUD',
         requires: ['name', 'type'],
-        optional: ['region', 'size', 'config']
+        optional: ['region', 'size', 'config'],
       },
       {
         name: 'list',
         description: 'List resources',
         category: 'CRUD',
         requires: [],
-        optional: ['filter', 'format']
+        optional: ['filter', 'format'],
       },
       {
         name: 'show',
         description: 'Show resource details',
         category: 'CRUD',
         requires: ['id'],
-        optional: ['format']
+        optional: ['format'],
       },
       {
         name: 'update',
         description: 'Update resource',
         category: 'CRUD',
         requires: ['id'],
-        optional: ['config', 'tags']
+        optional: ['config', 'tags'],
       },
       {
         name: 'delete',
         description: 'Delete resource',
         category: 'CRUD',
         requires: ['id'],
-        optional: ['force']
+        optional: ['force'],
       },
       {
         name: 'backup',
         description: 'Backup resource',
         category: 'Operations',
         requires: ['id'],
-        optional: ['schedule', 'retention']
+        optional: ['schedule', 'retention'],
       },
       {
         name: 'restore',
         description: 'Restore resource',
         category: 'Operations',
         requires: ['id', 'backup'],
-        optional: ['target']
-      }
-    ]
+        optional: ['target'],
+      },
+    ],
   },
 
   dev: {
@@ -225,7 +223,7 @@ export const domainConfigs = {
         description: 'Development projects',
         actions: ['create', 'list', 'show', 'update', 'delete', 'deploy'],
         attributes: ['name', 'type', 'status', 'created', 'updated'],
-        relationships: ['app', 'test', 'scenario']
+        relationships: ['app', 'test', 'scenario'],
       },
       {
         name: 'app',
@@ -233,7 +231,7 @@ export const domainConfigs = {
         description: 'Application instances',
         actions: ['create', 'list', 'show', 'update', 'delete', 'deploy', 'run'],
         attributes: ['name', 'version', 'status', 'created', 'updated'],
-        relationships: ['project', 'test']
+        relationships: ['project', 'test'],
       },
       {
         name: 'test',
@@ -241,7 +239,7 @@ export const domainConfigs = {
         description: 'Test suites and cases',
         actions: ['create', 'list', 'show', 'update', 'delete', 'run', 'schedule'],
         attributes: ['name', 'type', 'status', 'duration', 'results'],
-        relationships: ['project', 'scenario', 'snapshot']
+        relationships: ['project', 'scenario', 'snapshot'],
       },
       {
         name: 'scenario',
@@ -249,7 +247,7 @@ export const domainConfigs = {
         description: 'Test scenarios',
         actions: ['create', 'list', 'show', 'update', 'delete', 'run'],
         attributes: ['name', 'type', 'status', 'steps', 'created'],
-        relationships: ['test', 'snapshot']
+        relationships: ['test', 'snapshot'],
       },
       {
         name: 'snapshot',
@@ -257,8 +255,8 @@ export const domainConfigs = {
         description: 'Test snapshots',
         actions: ['create', 'list', 'show', 'update', 'delete', 'compare'],
         attributes: ['name', 'type', 'status', 'created', 'size'],
-        relationships: ['test', 'scenario']
-      }
+        relationships: ['test', 'scenario'],
+      },
     ],
     actions: [
       {
@@ -266,58 +264,58 @@ export const domainConfigs = {
         description: 'Create new resource',
         category: 'CRUD',
         requires: ['name'],
-        optional: ['type', 'config']
+        optional: ['type', 'config'],
       },
       {
         name: 'list',
         description: 'List resources',
         category: 'CRUD',
         requires: [],
-        optional: ['filter', 'format']
+        optional: ['filter', 'format'],
       },
       {
         name: 'show',
         description: 'Show resource details',
         category: 'CRUD',
         requires: ['id'],
-        optional: ['format']
+        optional: ['format'],
       },
       {
         name: 'update',
         description: 'Update resource',
         category: 'CRUD',
         requires: ['id'],
-        optional: ['config', 'tags']
+        optional: ['config', 'tags'],
       },
       {
         name: 'delete',
         description: 'Delete resource',
         category: 'CRUD',
         requires: ['id'],
-        optional: ['force']
+        optional: ['force'],
       },
       {
         name: 'run',
         description: 'Run resource',
         category: 'Operations',
         requires: ['id'],
-        optional: ['config', 'environment']
+        optional: ['config', 'environment'],
       },
       {
         name: 'deploy',
         description: 'Deploy resource',
         category: 'Operations',
         requires: ['id'],
-        optional: ['environment', 'config']
+        optional: ['environment', 'config'],
       },
       {
         name: 'schedule',
         description: 'Schedule resource',
         category: 'Operations',
         requires: ['id', 'schedule'],
-        optional: ['config']
-      }
-    ]
+        optional: ['config'],
+      },
+    ],
   },
 
   security: {
@@ -334,7 +332,7 @@ export const domainConfigs = {
         description: 'User accounts and identities',
         actions: ['create', 'list', 'show', 'update', 'delete', 'audit'],
         attributes: ['name', 'email', 'status', 'created', 'lastLogin'],
-        relationships: ['role', 'policy']
+        relationships: ['role', 'policy'],
       },
       {
         name: 'role',
@@ -342,7 +340,7 @@ export const domainConfigs = {
         description: 'User roles and permissions',
         actions: ['create', 'list', 'show', 'update', 'delete', 'audit'],
         attributes: ['name', 'permissions', 'status', 'created'],
-        relationships: ['user', 'policy']
+        relationships: ['user', 'policy'],
       },
       {
         name: 'policy',
@@ -350,7 +348,7 @@ export const domainConfigs = {
         description: 'Security policies and rules',
         actions: ['create', 'list', 'show', 'update', 'delete', 'validate'],
         attributes: ['name', 'type', 'status', 'created', 'updated'],
-        relationships: ['user', 'role']
+        relationships: ['user', 'role'],
       },
       {
         name: 'secret',
@@ -358,7 +356,7 @@ export const domainConfigs = {
         description: 'Secrets and credentials',
         actions: ['create', 'list', 'show', 'update', 'delete', 'rotate'],
         attributes: ['name', 'type', 'status', 'created', 'expires'],
-        relationships: ['user', 'policy']
+        relationships: ['user', 'policy'],
       },
       {
         name: 'certificate',
@@ -366,8 +364,8 @@ export const domainConfigs = {
         description: 'SSL/TLS certificates',
         actions: ['create', 'list', 'show', 'update', 'delete', 'validate'],
         attributes: ['name', 'type', 'status', 'created', 'expires'],
-        relationships: ['secret', 'policy']
-      }
+        relationships: ['secret', 'policy'],
+      },
     ],
     actions: [
       {
@@ -375,70 +373,70 @@ export const domainConfigs = {
         description: 'Create new resource',
         category: 'CRUD',
         requires: ['name'],
-        optional: ['type', 'config']
+        optional: ['type', 'config'],
       },
       {
         name: 'list',
         description: 'List resources',
         category: 'CRUD',
         requires: [],
-        optional: ['filter', 'format']
+        optional: ['filter', 'format'],
       },
       {
         name: 'show',
         description: 'Show resource details',
         category: 'CRUD',
         requires: ['id'],
-        optional: ['format']
+        optional: ['format'],
       },
       {
         name: 'update',
         description: 'Update resource',
         category: 'CRUD',
         requires: ['id'],
-        optional: ['config', 'tags']
+        optional: ['config', 'tags'],
       },
       {
         name: 'delete',
         description: 'Delete resource',
         category: 'CRUD',
         requires: ['id'],
-        optional: ['force']
+        optional: ['force'],
       },
       {
         name: 'audit',
         description: 'Audit resource',
         category: 'Security',
         requires: ['id'],
-        optional: ['scope', 'format']
+        optional: ['scope', 'format'],
       },
       {
         name: 'validate',
         description: 'Validate resource',
         category: 'Security',
         requires: ['id'],
-        optional: ['rules', 'format']
+        optional: ['rules', 'format'],
       },
       {
         name: 'rotate',
         description: 'Rotate resource',
         category: 'Security',
         requires: ['id'],
-        optional: ['schedule']
-      }
-    ]
-  }
+        optional: ['schedule'],
+      },
+    ],
+  },
 }
 
 // Initialize registry with pre-defined domains
 export function createDomainRegistry() {
   const registry = new DomainRegistry()
-  
+
   // Register all pre-defined domains
-  Object.values(domainConfigs).forEach(domain => {
+  Object.values(domainConfigs).forEach((domain) => {
     registry.registerDomain(domain)
   })
-  
+
   return registry
 }
 

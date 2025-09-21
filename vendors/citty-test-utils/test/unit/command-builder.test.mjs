@@ -1,11 +1,17 @@
 /**
  * Enterprise Command Builder System Tests
- * 
+ *
  * Tests the fluent API for constructing enterprise noun-verb CLI commands
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
-import { command, CommandBuilder, ResourceBuilder, ActionBuilder } from '../../src/command-builder.js'
+import {
+  command,
+  CommandBuilder,
+  ResourceBuilder,
+  ActionBuilder,
+  enterprise,
+} from '../../src/command-builder.js'
 
 describe('Enterprise Command Builder System', () => {
   let builder
@@ -17,81 +23,78 @@ describe('Enterprise Command Builder System', () => {
   describe('CommandBuilder', () => {
     it('should create a new command builder instance', () => {
       expect(builder).toBeInstanceOf(CommandBuilder)
-      expect(builder.domain).toBeNull()
-      expect(builder.resource).toBeNull()
-      expect(builder.action).toBeNull()
+      expect(builder.getDomain()).toBeNull()
+      expect(builder.getResource()).toBeNull()
+      expect(builder.getAction()).toBeNull()
     })
 
     it('should support domain-first approach', () => {
       const resourceBuilder = builder.domain('infra')
       expect(resourceBuilder).toBeInstanceOf(ResourceBuilder)
-      expect(builder.domain).toBe('infra')
+      expect(builder.getDomain()).toBe('infra')
     })
 
     it('should support resource-first approach', () => {
       const actionBuilder = builder.resource('infra', 'server')
       expect(actionBuilder).toBeInstanceOf(ActionBuilder)
-      expect(builder.domain).toBe('infra')
-      expect(builder.resource).toBe('server')
+      expect(builder.getDomain()).toBe('infra')
+      expect(builder.getResource()).toBe('server')
     })
 
     it('should support direct command construction', () => {
       const result = builder.command('infra', 'server', 'create')
       expect(result).toBe(builder)
-      expect(builder.domain).toBe('infra')
-      expect(builder.resource).toBe('server')
-      expect(builder.action).toBe('create')
+      expect(builder.getDomain()).toBe('infra')
+      expect(builder.getResource()).toBe('server')
+      expect(builder.getAction()).toBe('create')
     })
 
     it('should add arguments', () => {
-      builder.command('infra', 'server', 'create')
-        .arg('--type', 'web')
-        .arg('--region', 'us-east-1')
-      
-      expect(builder._args).toEqual({
+      builder.command('infra', 'server', 'create').arg('--type', 'web').arg('--region', 'us-east-1')
+
+      expect(builder.getArgs()).toEqual({
         '--type': 'web',
-        '--region': 'us-east-1'
+        '--region': 'us-east-1',
       })
     })
 
     it('should add multiple arguments', () => {
-      builder.command('infra', 'server', 'create')
-        .args({
-          '--type': 'web',
-          '--region': 'us-east-1',
-          '--size': 'large'
-        })
-      
-      expect(builder._args).toEqual({
+      builder.command('infra', 'server', 'create').args({
         '--type': 'web',
         '--region': 'us-east-1',
-        '--size': 'large'
+        '--size': 'large',
+      })
+
+      expect(builder.getArgs()).toEqual({
+        '--type': 'web',
+        '--region': 'us-east-1',
+        '--size': 'large',
       })
     })
 
     it('should add options', () => {
-      builder.command('infra', 'server', 'create')
+      builder
+        .command('infra', 'server', 'create')
         .option('--verbose', true)
         .option('--dry-run', false)
-      
-      expect(builder._options).toEqual({
+
+      expect(builder.getOptions()).toEqual({
         '--verbose': true,
-        '--dry-run': false
+        '--dry-run': false,
       })
     })
 
     it('should add multiple options', () => {
-      builder.command('infra', 'server', 'create')
-        .options({
-          '--verbose': true,
-          '--dry-run': false,
-          '--json': true
-        })
-      
-      expect(builder._options).toEqual({
+      builder.command('infra', 'server', 'create').options({
         '--verbose': true,
         '--dry-run': false,
-        '--json': true
+        '--json': true,
+      })
+
+      expect(builder.getOptions()).toEqual({
+        '--verbose': true,
+        '--dry-run': false,
+        '--json': true,
       })
     })
 
@@ -99,13 +102,12 @@ describe('Enterprise Command Builder System', () => {
       const context = {
         project: 'my-project',
         environment: 'staging',
-        region: 'us-east-1'
+        region: 'us-east-1',
       }
-      
-      builder.command('infra', 'server', 'create')
-        .context(context)
-      
-      expect(builder._context).toEqual(context)
+
+      builder.command('infra', 'server', 'create').context(context)
+
+      expect(builder.getContext()).toEqual(context)
     })
 
     it('should build command array correctly', () => {
@@ -115,12 +117,17 @@ describe('Enterprise Command Builder System', () => {
         .arg('--region', 'us-east-1')
         .option('--verbose', true)
         .build()
-      
+
       expect(commandArray).toEqual([
-        'infra', 'server', 'create',
-        '--type', 'web',
-        '--region', 'us-east-1',
-        '--verbose', true
+        'infra',
+        'server',
+        'create',
+        '--type',
+        'web',
+        '--region',
+        'us-east-1',
+        '--verbose',
+        true,
       ])
     })
 
@@ -135,31 +142,31 @@ describe('Enterprise Command Builder System', () => {
     it('should set resource and return ActionBuilder', () => {
       const actionBuilder = builder.domain('infra').resource('server')
       expect(actionBuilder).toBeInstanceOf(ActionBuilder)
-      expect(builder.resource).toBe('server')
+      expect(builder.getResource()).toBe('server')
     })
 
     it('should support server resource', () => {
       const actionBuilder = builder.domain('infra').server()
       expect(actionBuilder).toBeInstanceOf(ActionBuilder)
-      expect(builder.resource).toBe('server')
+      expect(builder.getResource()).toBe('server')
     })
 
     it('should support network resource', () => {
       const actionBuilder = builder.domain('infra').network()
       expect(actionBuilder).toBeInstanceOf(ActionBuilder)
-      expect(builder._resource).toBe('network')
+      expect(builder.getResource()).toBe('network')
     })
 
     it('should support project resource', () => {
       const actionBuilder = builder.domain('dev').project()
       expect(actionBuilder).toBeInstanceOf(ActionBuilder)
-      expect(builder._resource).toBe('project')
+      expect(builder.getResource()).toBe('project')
     })
 
     it('should support user resource', () => {
       const actionBuilder = builder.domain('security').user()
       expect(actionBuilder).toBeInstanceOf(ActionBuilder)
-      expect(builder._resource).toBe('user')
+      expect(builder.getResource()).toBe('user')
     })
   })
 
@@ -167,42 +174,42 @@ describe('Enterprise Command Builder System', () => {
     it('should set action and return CommandBuilder', () => {
       const commandBuilder = builder.domain('infra').server().create()
       expect(commandBuilder).toBeInstanceOf(CommandBuilder)
-      expect(builder.action).toBe('create')
+      expect(builder.getAction()).toBe('create')
     })
 
     it('should support create action', () => {
       const commandBuilder = builder.domain('infra').server().create()
-      expect(builder.action).toBe('create')
+      expect(builder.getAction()).toBe('create')
     })
 
     it('should support list action', () => {
       const commandBuilder = builder.domain('infra').server().list()
-      expect(builder._action).toBe('list')
+      expect(builder.getAction()).toBe('list')
     })
 
     it('should support show action', () => {
       const commandBuilder = builder.domain('infra').server().show()
-      expect(builder._action).toBe('show')
+      expect(builder.getAction()).toBe('show')
     })
 
     it('should support update action', () => {
       const commandBuilder = builder.domain('infra').server().update()
-      expect(builder._action).toBe('update')
+      expect(builder.getAction()).toBe('update')
     })
 
     it('should support delete action', () => {
       const commandBuilder = builder.domain('infra').server().delete()
-      expect(builder._action).toBe('delete')
+      expect(builder.getAction()).toBe('delete')
     })
 
     it('should support deploy action', () => {
       const commandBuilder = builder.domain('dev').app().deploy()
-      expect(builder._action).toBe('deploy')
+      expect(builder.getAction()).toBe('deploy')
     })
 
     it('should support audit action', () => {
       const commandBuilder = builder.domain('security').user().audit()
-      expect(builder._action).toBe('audit')
+      expect(builder.getAction()).toBe('audit')
     })
   })
 
@@ -272,12 +279,17 @@ describe('Enterprise Command Builder System', () => {
         .option('--verbose', true)
         .context({ project: 'my-project' })
         .build()
-      
+
       expect(commandArray).toEqual([
-        'infra', 'server', 'create',
-        '--type', 'web',
-        '--region', 'us-east-1',
-        '--verbose', true
+        'infra',
+        'server',
+        'create',
+        '--type',
+        'web',
+        '--region',
+        'us-east-1',
+        '--verbose',
+        true,
       ])
     })
 
@@ -288,26 +300,33 @@ describe('Enterprise Command Builder System', () => {
         .args({
           '--name': 'my-app',
           '--type': 'web',
-          '--framework': 'react'
+          '--framework': 'react',
         })
         .options({
           '--verbose': true,
-          '--json': true
+          '--json': true,
         })
         .context({
           project: 'enterprise-prod',
           environment: 'staging',
-          compliance: 'sox'
+          compliance: 'sox',
         })
         .build()
-      
+
       expect(commandArray).toEqual([
-        'dev', 'project', 'create',
-        '--name', 'my-app',
-        '--type', 'web',
-        '--framework', 'react',
-        '--verbose', true,
-        '--json', true
+        'dev',
+        'project',
+        'create',
+        '--name',
+        'my-app',
+        '--type',
+        'web',
+        '--framework',
+        'react',
+        '--verbose',
+        true,
+        '--json',
+        true,
       ])
     })
   })

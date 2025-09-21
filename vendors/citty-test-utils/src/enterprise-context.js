@@ -1,6 +1,6 @@
 /**
  * Enterprise Context Management System
- * 
+ *
  * Provides enterprise context and workspace management for CLI testing
  * Supports multi-tenant, multi-environment, and compliance-aware testing
  */
@@ -25,18 +25,42 @@ export class EnterpriseContext {
   }
 
   // Getters
-  get domain() { return this._domain }
-  get project() { return this._project }
-  get environment() { return this._environment }
-  get region() { return this._region }
-  get compliance() { return this._compliance }
-  get user() { return this._user }
-  get role() { return this._role }
-  get workspace() { return this._workspace }
-  get tenant() { return this._tenant }
-  get metadata() { return { ...this._metadata } }
-  get createdAt() { return this._createdAt }
-  get updatedAt() { return this._updatedAt }
+  get domain() {
+    return this._domain
+  }
+  get project() {
+    return this._project
+  }
+  get environment() {
+    return this._environment
+  }
+  get region() {
+    return this._region
+  }
+  get compliance() {
+    return this._compliance
+  }
+  get user() {
+    return this._user
+  }
+  get role() {
+    return this._role
+  }
+  get workspace() {
+    return this._workspace
+  }
+  get tenant() {
+    return this._tenant
+  }
+  get metadata() {
+    return { ...this._metadata }
+  }
+  get createdAt() {
+    return this._createdAt
+  }
+  get updatedAt() {
+    return this._updatedAt
+  }
 
   // Setters
   setDomain(domain) {
@@ -113,7 +137,7 @@ export class EnterpriseContext {
       role: overrides.role || this._role,
       workspace: overrides.workspace || this._workspace,
       tenant: overrides.tenant || this._tenant,
-      metadata: { ...this._metadata, ...overrides.metadata }
+      metadata: { ...this._metadata, ...overrides.metadata },
     })
   }
 
@@ -122,9 +146,10 @@ export class EnterpriseContext {
    */
   toCommandArgs() {
     const args = []
-    
+
     if (this._project) args.push('--project', this._project)
-    if (this._environment && this._environment !== 'development') args.push('--environment', this._environment)
+    if (this._environment && this._environment !== 'development')
+      args.push('--environment', this._environment)
     if (this._region && this._region !== 'us-east-1') args.push('--region', this._region)
     if (this._compliance) args.push('--compliance', this._compliance)
     if (this._user && this._user !== 'test-user') args.push('--user', this._user)
@@ -149,7 +174,7 @@ export class EnterpriseContext {
       ENTERPRISE_ROLE: this._role,
       ENTERPRISE_WORKSPACE: this._workspace,
       ENTERPRISE_TENANT: this._tenant,
-      ...this._metadata
+      ...this._metadata,
     }
   }
 
@@ -169,7 +194,7 @@ export class EnterpriseContext {
       tenant: this._tenant,
       metadata: this._metadata,
       createdAt: this._createdAt,
-      updatedAt: this._updatedAt
+      updatedAt: this._updatedAt,
     }
   }
 
@@ -199,16 +224,36 @@ export class EnterpriseWorkspace {
   }
 
   // Getters
-  get id() { return this._id }
-  get name() { return this._name }
-  get description() { return this._description }
-  get domains() { return Array.from(this._domains) }
-  get resources() { return Array.from(this._resources) }
-  get permissions() { return [...this._permissions] }
-  get context() { return this._context }
-  get metadata() { return { ...this._metadata } }
-  get createdAt() { return this._createdAt }
-  get updatedAt() { return this._updatedAt }
+  get id() {
+    return this._id
+  }
+  get name() {
+    return this._name
+  }
+  get description() {
+    return this._description
+  }
+  get domains() {
+    return Array.from(this._domains)
+  }
+  get resources() {
+    return Array.from(this._resources)
+  }
+  get permissions() {
+    return [...this._permissions]
+  }
+  get context() {
+    return this._context
+  }
+  get metadata() {
+    return { ...this._metadata }
+  }
+  get createdAt() {
+    return this._createdAt
+  }
+  get updatedAt() {
+    return this._updatedAt
+  }
 
   /**
    * Add domain to workspace
@@ -259,7 +304,7 @@ export class EnterpriseWorkspace {
    * Remove permission from workspace
    */
   removePermission(permission) {
-    this._permissions = this._permissions.filter(p => p !== permission)
+    this._permissions = this._permissions.filter((p) => p !== permission)
     this._updatedAt = new Date()
     return this
   }
@@ -268,9 +313,7 @@ export class EnterpriseWorkspace {
    * Check if workspace has permission for resource and action
    */
   hasPermission(resource, action) {
-    return this._permissions.some(p => 
-      p.resource === resource && p.actions.includes(action)
-    )
+    return this._permissions.some((p) => p.resource === resource && p.actions.includes(action))
   }
 
   /**
@@ -300,7 +343,7 @@ export class EnterpriseWorkspace {
       context: this._context.toJSON(),
       metadata: this._metadata,
       createdAt: this._createdAt,
-      updatedAt: this._updatedAt
+      updatedAt: this._updatedAt,
     }
   }
 }
@@ -348,7 +391,10 @@ export class EnterpriseContextManager {
    */
   updateContext(updates) {
     Object.entries(updates).forEach(([key, value]) => {
-      if (typeof this._currentContext[`set${key.charAt(0).toUpperCase() + key.slice(1)}`] === 'function') {
+      if (
+        typeof this._currentContext[`set${key.charAt(0).toUpperCase() + key.slice(1)}`] ===
+        'function'
+      ) {
         this._currentContext[`set${key.charAt(0).toUpperCase() + key.slice(1)}`](value)
       }
     })
@@ -379,7 +425,7 @@ export class EnterpriseContextManager {
   createWorkspace(name, config = {}) {
     const workspace = new EnterpriseWorkspace({
       name,
-      ...config
+      ...config,
     })
 
     this._workspaces.set(workspace.id, workspace)
@@ -463,8 +509,8 @@ export class EnterpriseContextManager {
   export() {
     return {
       currentContext: this._currentContext.toJSON(),
-      workspaces: Array.from(this._workspaces.values()).map(w => w.toJSON()),
-      contextHistory: this._contextHistory.map(c => c.toJSON())
+      workspaces: Array.from(this._workspaces.values()).map((w) => w.toJSON()),
+      contextHistory: this._contextHistory.map((c) => c.toJSON()),
     }
   }
 
@@ -478,14 +524,14 @@ export class EnterpriseContextManager {
 
     if (data.workspaces) {
       this._workspaces.clear()
-      data.workspaces.forEach(workspaceData => {
+      data.workspaces.forEach((workspaceData) => {
         const workspace = new EnterpriseWorkspace(workspaceData)
         this._workspaces.set(workspace.id, workspace)
       })
     }
 
     if (data.contextHistory) {
-      this._contextHistory = data.contextHistory.map(c => EnterpriseContext.fromJSON(c))
+      this._contextHistory = data.contextHistory.map((c) => EnterpriseContext.fromJSON(c))
     }
 
     return this
@@ -562,7 +608,7 @@ export const contextUtils = {
    */
   deleteWorkspace(identifier) {
     return globalContextManager.deleteWorkspace(identifier)
-  }
+  },
 }
 
 export default EnterpriseContextManager

@@ -297,3 +297,4 @@ expect(versionResult.success).toBe(true);
 ```
 
 This project prioritizes reliability, testability, and maintainability while providing comprehensive CLI testing capabilities for any Citty-based application.
+

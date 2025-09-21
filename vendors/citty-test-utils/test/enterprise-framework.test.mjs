@@ -94,7 +94,7 @@ describe('Enterprise Noun-Verb CLI Testing Framework', () => {
       expect(infraDomain.name).toBe('infra')
       expect(infraDomain.displayName).toBe('Infrastructure')
       expect(infraDomain.resources).toHaveLength(4)
-      expect(infraDomain.actions).toHaveLength(6)
+      expect(infraDomain.actions).toHaveLength(7)
     })
 
     it('should validate command structure', () => {
@@ -116,7 +116,7 @@ describe('Enterprise Noun-Verb CLI Testing Framework', () => {
       const infraActions = domainRegistry.getDomainActions('infra')
       
       expect(infraResources).toHaveLength(4)
-      expect(infraActions).toHaveLength(6)
+      expect(infraActions).toHaveLength(7)
       
       const resourceNames = infraResources.map(r => r.name)
       expect(resourceNames).toContain('server')
@@ -215,7 +215,7 @@ describe('Enterprise Noun-Verb CLI Testing Framework', () => {
 
       expect(scenario.name).toBe('Test Infrastructure Server Creation')
       expect(scenario.domain).toBe('infra')
-      expect(scenario.steps).toHaveLength(2)
+      expect(scenario.steps).toHaveLength(4)
     })
 
     it('should support pre-built enterprise scenarios', () => {

@@ -1,16 +1,16 @@
 /**
  * Enterprise Context Management System Tests
- * 
+ *
  * Tests enterprise context and workspace management for CLI testing
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
-import { 
-  EnterpriseContext, 
-  EnterpriseWorkspace, 
+import {
+  EnterpriseContext,
+  EnterpriseWorkspace,
   EnterpriseContextManager,
   globalContextManager,
-  contextUtils 
+  contextUtils,
 } from '../../src/enterprise-context.js'
 
 describe('Enterprise Context Management System', () => {
@@ -45,7 +45,7 @@ describe('Enterprise Context Management System', () => {
         role: 'admin',
         workspace: 'prod',
         tenant: 'enterprise',
-        metadata: { version: '1.0' }
+        metadata: { version: '1.0' },
       }
 
       const customContext = new EnterpriseContext(contextData)
@@ -135,7 +135,7 @@ describe('Enterprise Context Management System', () => {
       it('should clone context', () => {
         context.setDomain('infra').setProject('my-project')
         const cloned = context.clone()
-        
+
         expect(cloned).toBeInstanceOf(EnterpriseContext)
         expect(cloned.domain).toBe('infra')
         expect(cloned.project).toBe('my-project')
@@ -144,11 +144,11 @@ describe('Enterprise Context Management System', () => {
 
       it('should clone context with overrides', () => {
         context.setDomain('infra').setProject('my-project')
-        const cloned = context.clone({ 
+        const cloned = context.clone({
           environment: 'production',
-          region: 'eu-west-1'
+          region: 'eu-west-1',
         })
-        
+
         expect(cloned.domain).toBe('infra')
         expect(cloned.project).toBe('my-project')
         expect(cloned.environment).toBe('production')
@@ -170,12 +170,18 @@ describe('Enterprise Context Management System', () => {
 
         const args = context.toCommandArgs()
         expect(args).toEqual([
-          '--project', 'my-project',
-          '--environment', 'staging',
-          '--compliance', 'sox',
-          '--user', 'admin',
-          '--workspace', 'prod',
-          '--tenant', 'enterprise'
+          '--project',
+          'my-project',
+          '--environment',
+          'staging',
+          '--compliance',
+          'sox',
+          '--user',
+          'admin',
+          '--workspace',
+          'prod',
+          '--tenant',
+          'enterprise',
         ])
       })
 
@@ -211,17 +217,14 @@ describe('Enterprise Context Management System', () => {
           ENTERPRISE_ROLE: 'admin',
           ENTERPRISE_WORKSPACE: 'prod',
           ENTERPRISE_TENANT: 'enterprise',
-          version: '1.0'
+          version: '1.0',
         })
       })
     })
 
     describe('Serialization', () => {
       it('should serialize to JSON', () => {
-        context
-          .setDomain('infra')
-          .setProject('my-project')
-          .setMetadata({ version: '1.0' })
+        context.setDomain('infra').setProject('my-project').setMetadata({ version: '1.0' })
 
         const json = context.toJSON()
         expect(json.domain).toBe('infra')
@@ -235,7 +238,7 @@ describe('Enterprise Context Management System', () => {
         const json = {
           domain: 'infra',
           project: 'my-project',
-          metadata: { version: '1.0' }
+          metadata: { version: '1.0' },
         }
 
         const contextFromJson = EnterpriseContext.fromJSON(json)
@@ -256,10 +259,10 @@ describe('Enterprise Context Management System', () => {
         resources: ['server', 'project'],
         permissions: [
           { resource: 'server', actions: ['create', 'list', 'show'] },
-          { resource: 'project', actions: ['create', 'deploy'] }
+          { resource: 'project', actions: ['create', 'deploy'] },
         ],
         context: new EnterpriseContext({ project: 'test-project' }),
-        metadata: { team: 'backend' }
+        metadata: { team: 'backend' },
       })
     })
 
@@ -337,7 +340,7 @@ describe('Enterprise Context Management System', () => {
       it('should update workspace context', () => {
         const result = workspace.updateContext({
           environment: 'production',
-          region: 'eu-west-1'
+          region: 'eu-west-1',
         })
         expect(result).toBe(workspace)
         expect(workspace.context.environment).toBe('production')
@@ -379,9 +382,9 @@ describe('Enterprise Context Management System', () => {
         const contextData = {
           domain: 'infra',
           project: 'my-project',
-          environment: 'staging'
+          environment: 'staging',
         }
-        
+
         const result = manager.setContext(contextData)
         expect(result).toBeInstanceOf(EnterpriseContext)
         expect(result.domain).toBe('infra')
@@ -392,9 +395,9 @@ describe('Enterprise Context Management System', () => {
       it('should set context from EnterpriseContext instance', () => {
         const contextInstance = new EnterpriseContext({
           domain: 'dev',
-          project: 'test-project'
+          project: 'test-project',
         })
-        
+
         const result = manager.setContext(contextInstance)
         expect(result).toBe(contextInstance)
       })
@@ -403,9 +406,9 @@ describe('Enterprise Context Management System', () => {
         manager.setContext({ domain: 'infra' })
         const result = manager.updateContext({
           project: 'my-project',
-          environment: 'staging'
+          environment: 'staging',
         })
-        
+
         expect(result.domain).toBe('infra')
         expect(result.project).toBe('my-project')
         expect(result.environment).toBe('staging')
@@ -414,7 +417,7 @@ describe('Enterprise Context Management System', () => {
       it('should clear current context', () => {
         manager.setContext({ domain: 'infra', project: 'my-project' })
         const result = manager.clearContext()
-        
+
         expect(result).toBeInstanceOf(EnterpriseContext)
         expect(result.domain).toBeNull()
         expect(result.project).toBeNull()
@@ -424,7 +427,7 @@ describe('Enterprise Context Management System', () => {
         manager.setContext({ domain: 'infra' })
         manager.setContext({ domain: 'dev' })
         manager.setContext({ domain: 'security' })
-        
+
         const history = manager.getContextHistory()
         expect(history).toHaveLength(3)
         expect(history[0].domain).toBeNull() // Initial context
@@ -435,7 +438,7 @@ describe('Enterprise Context Management System', () => {
       it('should restore context from history', () => {
         manager.setContext({ domain: 'infra' })
         manager.setContext({ domain: 'dev' })
-        
+
         const result = manager.restoreContext(0)
         expect(result.domain).toBeNull() // Restored initial context
       })
@@ -452,9 +455,9 @@ describe('Enterprise Context Management System', () => {
         const workspace = manager.createWorkspace('test-workspace', {
           description: 'Test workspace',
           domains: ['infra', 'dev'],
-          resources: ['server', 'project']
+          resources: ['server', 'project'],
         })
-        
+
         expect(workspace).toBeInstanceOf(EnterpriseWorkspace)
         expect(workspace.name).toBe('test-workspace')
         expect(workspace.domains).toEqual(['infra', 'dev'])
@@ -464,14 +467,14 @@ describe('Enterprise Context Management System', () => {
       it('should get workspace by ID', () => {
         const workspace = manager.createWorkspace('test-workspace')
         const retrieved = manager.getWorkspace(workspace.id)
-        
+
         expect(retrieved).toBe(workspace)
       })
 
       it('should get workspace by name', () => {
         const workspace = manager.createWorkspace('test-workspace')
         const retrieved = manager.getWorkspace('test-workspace')
-        
+
         expect(retrieved).toBe(workspace)
       })
 
@@ -483,18 +486,18 @@ describe('Enterprise Context Management System', () => {
       it('should list all workspaces', () => {
         manager.createWorkspace('workspace-1')
         manager.createWorkspace('workspace-2')
-        
+
         const workspaces = manager.listWorkspaces()
         expect(workspaces).toHaveLength(2)
-        expect(workspaces.map(w => w.name)).toContain('workspace-1')
-        expect(workspaces.map(w => w.name)).toContain('workspace-2')
+        expect(workspaces.map((w) => w.name)).toContain('workspace-1')
+        expect(workspaces.map((w) => w.name)).toContain('workspace-2')
       })
 
       it('should switch to workspace', () => {
         const workspace = manager.createWorkspace('test-workspace', {
-          context: new EnterpriseContext({ project: 'workspace-project' })
+          context: new EnterpriseContext({ project: 'workspace-project' }),
         })
-        
+
         const result = manager.switchWorkspace('test-workspace')
         expect(result.project).toBe('workspace-project')
       })
@@ -508,7 +511,7 @@ describe('Enterprise Context Management System', () => {
       it('should delete workspace', () => {
         const workspace = manager.createWorkspace('test-workspace')
         const result = manager.deleteWorkspace('test-workspace')
-        
+
         expect(result).toBe(true)
         expect(manager.getWorkspace('test-workspace')).toBeNull()
       })
@@ -524,9 +527,9 @@ describe('Enterprise Context Management System', () => {
       it('should export all data', () => {
         manager.setContext({ domain: 'infra', project: 'my-project' })
         manager.createWorkspace('test-workspace', {
-          context: new EnterpriseContext({ project: 'workspace-project' })
+          context: new EnterpriseContext({ project: 'workspace-project' }),
         })
-        
+
         const exported = manager.export()
         expect(exported.currentContext).toBeDefined()
         expect(exported.workspaces).toHaveLength(1)
@@ -536,20 +539,22 @@ describe('Enterprise Context Management System', () => {
       it('should import all data', () => {
         const data = {
           currentContext: { domain: 'dev', project: 'imported-project' },
-          workspaces: [{
-            name: 'imported-workspace',
-            description: 'Imported workspace',
-            domains: ['dev'],
-            resources: ['project'],
-            permissions: [],
-            context: { project: 'workspace-project' },
-            metadata: {}
-          }],
-          contextHistory: [{ domain: 'infra' }]
+          workspaces: [
+            {
+              name: 'imported-workspace',
+              description: 'Imported workspace',
+              domains: ['dev'],
+              resources: ['project'],
+              permissions: [],
+              context: { project: 'workspace-project' },
+              metadata: {},
+            },
+          ],
+          contextHistory: [{ domain: 'infra' }],
         }
-        
+
         manager.import(data)
-        
+
         expect(manager.getCurrentContext().domain).toBe('dev')
         expect(manager.getCurrentContext().project).toBe('imported-project')
         expect(manager.listWorkspaces()).toHaveLength(1)
@@ -580,7 +585,7 @@ describe('Enterprise Context Management System', () => {
     it('should work with global context manager', async () => {
       await contextUtils.setContext({ domain: 'infra', project: 'test-project' })
       const currentContext = contextUtils.getCurrentContext()
-      
+
       expect(currentContext.domain).toBe('infra')
       expect(currentContext.project).toBe('test-project')
     })

@@ -1,6 +1,6 @@
 /**
  * Enterprise Resource Management Utilities
- * 
+ *
  * Provides CRUD operations for test resources, cross-domain operations,
  * and enterprise resource lifecycle management.
  */
@@ -9,189 +9,21 @@ import { enterpriseRunner } from './enterprise-runner.js'
 import { globalContextManager } from './enterprise-context.js'
 
 /**
- * Resource interface
- */
-export interface Resource {
-  id: string
-  domain: string
-  type: string
-  attributes: Record<string, any>
-  relationships: Relationship[]
-  state: ResourceState
-  metadata: Record<string, any>
-  createdAt: Date
-  updatedAt: Date
-}
-
-/**
- * Relationship interface
- */
-export interface Relationship {
-  type: string
-  target: string
-  direction: 'inbound' | 'outbound' | 'bidirectional'
-  metadata?: Record<string, any>
-}
-
-/**
- * Resource state interface
- */
-export interface ResourceState {
-  current: string
-  previous: string
-  transitions: StateTransition[]
-  metadata?: Record<string, any>
-}
-
-/**
- * State transition interface
- */
-export interface StateTransition {
-  from: string
-  to: string
-  condition: string
-  timestamp: Date
-}
-
-/**
- * Deployment configuration interface
- */
-export interface DeploymentConfig {
-  infra: InfrastructureConfig
-  security: SecurityConfig
-  monitor: MonitoringConfig
-  metadata?: Record<string, any>
-}
-
-/**
- * Infrastructure configuration interface
- */
-export interface InfrastructureConfig {
-  servers: number
-  region: string
-  type: string
-  metadata?: Record<string, any>
-}
-
-/**
- * Security configuration interface
- */
-export interface SecurityConfig {
-  policies: string[]
-  users: string[]
-  metadata?: Record<string, any>
-}
-
-/**
- * Monitoring configuration interface
- */
-export interface MonitoringConfig {
-  alerts: string[]
-  dashboard: string
-  metadata?: Record<string, any>
-}
-
-/**
- * Deployment result interface
- */
-export interface DeploymentResult {
-  success: boolean
-  resources: Resource[]
-  duration: number
-  metadata?: Record<string, any>
-}
-
-/**
- * Compliance scope interface
- */
-export interface ComplianceScope {
-  domains: string[]
-  resources: string[]
-  standards: string[]
-  metadata?: Record<string, any>
-}
-
-/**
- * Compliance result interface
- */
-export interface ComplianceResult {
-  success: boolean
-  score: number
-  violations: ComplianceViolation[]
-  duration: number
-  metadata?: Record<string, any>
-}
-
-/**
- * Compliance violation interface
- */
-export interface ComplianceViolation {
-  requirement: string
-  description: string
-  severity: 'low' | 'medium' | 'high' | 'critical'
-  evidence: any[]
-  remediation: string[]
-}
-
-/**
- * Workspace configuration interface
- */
-export interface WorkspaceConfig {
-  name: string
-  description: string
-  domains: string[]
-  resources: string[]
-  permissions: Permission[]
-  metadata?: Record<string, any>
-}
-
-/**
- * Permission interface
- */
-export interface Permission {
-  resource: string
-  actions: string[]
-  conditions?: ConditionFunction[]
-  metadata?: Record<string, any>
-}
-
-/**
- * Condition function interface
- */
-export interface ConditionFunction {
-  (context: any): boolean
-}
-
-/**
- * Workspace interface
- */
-export interface Workspace {
-  id: string
-  name: string
-  description: string
-  domains: string[]
-  resources: string[]
-  permissions: Permission[]
-  context: any
-  metadata: Record<string, any>
-  createdAt: Date
-  updatedAt: Date
-}
-
-/**
  * Enterprise Test Utilities implementation
  */
 export class EnterpriseTestUtils {
-  private contextManager = globalContextManager
-  private resources = new Map<string, Resource>()
+  constructor() {
+    this.contextManager = globalContextManager
+    this.resources = new Map()
+  }
 
   /**
    * Create a resource
    */
-  async createResource(domain: string, resource: string, data: any): Promise<Resource> {
+  async createResource(domain, resource, data) {
     const id = this.generateResourceId(domain, resource)
-    
-    const resourceObj: Resource = {
+
+    const resourceObj = {
       id,
       domain,
       type: resource,
@@ -200,19 +32,21 @@ export class EnterpriseTestUtils {
       state: {
         current: 'created',
         previous: 'none',
-        transitions: [{
-          from: 'none',
-          to: 'created',
-          condition: 'create',
-          timestamp: new Date()
-        }]
+        transitions: [
+          {
+            from: 'none',
+            to: 'created',
+            condition: 'create',
+            timestamp: new Date(),
+          },
+        ],
       },
       metadata: {
         createdBy: this.contextManager.getCurrentContext().user || 'system',
-        createdAt: new Date()
+        createdAt: new Date(),
       },
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     }
 
     this.resources.set(id, resourceObj)
@@ -222,14 +56,14 @@ export class EnterpriseTestUtils {
   /**
    * List resources
    */
-  async listResources(domain: string, resource: string, filter?: any): Promise<Resource[]> {
+  async listResources(domain, resource, filter) {
     const allResources = Array.from(this.resources.values())
-    
-    return allResources.filter(r => {
+
+    return allResources.filter((r) => {
       if (r.domain !== domain || r.type !== resource) {
         return false
       }
-      
+
       if (filter) {
         for (const [key, value] of Object.entries(filter)) {
           if (r.attributes[key] !== value) {
@@ -237,7 +71,7 @@ export class EnterpriseTestUtils {
           }
         }
       }
-      
+
       return true
     })
   }
@@ -245,7 +79,7 @@ export class EnterpriseTestUtils {
   /**
    * Get a resource
    */
-  async getResource(domain: string, resource: string, id: string): Promise<Resource> {
+  async getResource(domain, resource, id) {
     const resourceObj = this.resources.get(id)
     if (!resourceObj) {
       throw new Error(`Resource ${domain}.${resource} ${id} not found`)
@@ -256,7 +90,7 @@ export class EnterpriseTestUtils {
   /**
    * Update a resource
    */
-  async updateResource(domain: string, resource: string, id: string, data: any): Promise<Resource> {
+  async updateResource(domain, resource, id, data) {
     const resourceObj = this.resources.get(id)
     if (!resourceObj) {
       throw new Error(`Resource ${domain}.${resource} ${id} not found`)
@@ -270,7 +104,7 @@ export class EnterpriseTestUtils {
       from: previousState,
       to: 'updated',
       condition: 'update',
-      timestamp: new Date()
+      timestamp: new Date(),
     })
     resourceObj.updatedAt = new Date()
 
@@ -281,7 +115,7 @@ export class EnterpriseTestUtils {
   /**
    * Delete a resource
    */
-  async deleteResource(domain: string, resource: string, id: string): Promise<void> {
+  async deleteResource(domain, resource, id) {
     const resourceObj = this.resources.get(id)
     if (!resourceObj) {
       throw new Error(`Resource ${domain}.${resource} ${id} not found`)
@@ -293,9 +127,9 @@ export class EnterpriseTestUtils {
   /**
    * Deploy application with cross-domain resources
    */
-  async deployApplication(app: string, config: DeploymentConfig): Promise<DeploymentResult> {
+  async deployApplication(app, config) {
     const startTime = Date.now()
-    const resources: Resource[] = []
+    const resources = []
 
     try {
       // Create infrastructure resources
@@ -304,7 +138,7 @@ export class EnterpriseTestUtils {
           const server = await this.createResource('infra', 'server', {
             name: `${app}-server-${i + 1}`,
             type: config.infra.type,
-            region: config.infra.region
+            region: config.infra.region,
           })
           resources.push(server)
         }
@@ -315,7 +149,7 @@ export class EnterpriseTestUtils {
         for (const user of config.security.users) {
           const userResource = await this.createResource('security', 'user', {
             name: user,
-            role: 'developer'
+            role: 'developer',
           })
           resources.push(userResource)
         }
@@ -323,7 +157,7 @@ export class EnterpriseTestUtils {
         for (const policy of config.security.policies) {
           const policyResource = await this.createResource('security', 'policy', {
             name: policy,
-            type: 'rbac'
+            type: 'rbac',
           })
           resources.push(policyResource)
         }
@@ -334,7 +168,7 @@ export class EnterpriseTestUtils {
         for (const alert of config.monitor.alerts) {
           const alertResource = await this.createResource('monitor', 'alert', {
             name: alert,
-            type: 'metric'
+            type: 'metric',
           })
           resources.push(alertResource)
         }
@@ -346,10 +180,9 @@ export class EnterpriseTestUtils {
         duration: Date.now() - startTime,
         metadata: {
           app,
-          config
-        }
+          config,
+        },
       }
-
     } catch (error) {
       return {
         success: false,
@@ -358,8 +191,8 @@ export class EnterpriseTestUtils {
         metadata: {
           app,
           config,
-          error: (error as Error).message
-        }
+          error: error.message,
+        },
       }
     }
   }
@@ -367,9 +200,9 @@ export class EnterpriseTestUtils {
   /**
    * Validate compliance
    */
-  async validateCompliance(standard: string, scope: ComplianceScope): Promise<ComplianceResult> {
+  async validateCompliance(standard, scope) {
     const startTime = Date.now()
-    const violations: ComplianceViolation[] = []
+    const violations = []
 
     try {
       // Validate each domain
@@ -389,7 +222,7 @@ export class EnterpriseTestUtils {
               description: `Compliance validation failed for domain ${domain}`,
               severity: 'high',
               evidence: [result.stderr],
-              remediation: [`Fix compliance issues in domain ${domain}`]
+              remediation: [`Fix compliance issues in domain ${domain}`],
             })
           }
         } catch (error) {
@@ -397,13 +230,13 @@ export class EnterpriseTestUtils {
             requirement: `${domain}-validation`,
             description: `Compliance validation error for domain ${domain}`,
             severity: 'critical',
-            evidence: [(error as Error).message],
-            remediation: [`Resolve compliance validation error in domain ${domain}`]
+            evidence: [error.message],
+            remediation: [`Resolve compliance validation error in domain ${domain}`],
           })
         }
       }
 
-      const score = Math.max(0, 100 - (violations.length * 10))
+      const score = Math.max(0, 100 - violations.length * 10)
       const success = violations.length === 0
 
       return {
@@ -413,27 +246,28 @@ export class EnterpriseTestUtils {
         duration: Date.now() - startTime,
         metadata: {
           standard,
-          scope
-        }
+          scope,
+        },
       }
-
     } catch (error) {
       return {
         success: false,
         score: 0,
-        violations: [{
-          requirement: 'compliance-execution',
-          description: 'Compliance validation execution failed',
-          severity: 'critical',
-          evidence: [(error as Error).message],
-          remediation: ['Resolve compliance validation execution error']
-        }],
+        violations: [
+          {
+            requirement: 'compliance-execution',
+            description: 'Compliance validation execution failed',
+            severity: 'critical',
+            evidence: [error.message],
+            remediation: ['Resolve compliance validation execution error'],
+          },
+        ],
         duration: Date.now() - startTime,
         metadata: {
           standard,
           scope,
-          error: (error as Error).message
-        }
+          error: error.message,
+        },
       }
     }
   }
@@ -441,56 +275,56 @@ export class EnterpriseTestUtils {
   /**
    * Set enterprise context
    */
-  async setContext(context: any): Promise<void> {
+  async setContext(context) {
     this.contextManager.setContext(context)
   }
 
   /**
    * Get current context
    */
-  async getContext(): Promise<any> {
+  async getContext() {
     return this.contextManager.getCurrentContext()
   }
 
   /**
    * Clear context
    */
-  async clearContext(): Promise<void> {
+  async clearContext() {
     this.contextManager.clearContext()
   }
 
   /**
    * Create workspace
    */
-  async createWorkspace(name: string, config: WorkspaceConfig): Promise<Workspace> {
+  async createWorkspace(name, config) {
     return this.contextManager.createWorkspace(name, config)
   }
 
   /**
    * Switch workspace
    */
-  async switchWorkspace(name: string): Promise<void> {
+  async switchWorkspace(name) {
     this.contextManager.switchWorkspace(name)
   }
 
   /**
    * List workspaces
    */
-  async listWorkspaces(): Promise<Workspace[]> {
+  async listWorkspaces() {
     return this.contextManager.listWorkspaces()
   }
 
   /**
    * Delete workspace
    */
-  async deleteWorkspace(name: string): Promise<void> {
+  async deleteWorkspace(name) {
     this.contextManager.deleteWorkspace(name)
   }
 
   /**
    * Generate resource ID
    */
-  private generateResourceId(domain: string, resource: string): string {
+  generateResourceId(domain, resource) {
     const timestamp = Date.now()
     const random = Math.random().toString(36).substr(2, 9)
     return `${domain}-${resource}-${timestamp}-${random}`
@@ -499,28 +333,28 @@ export class EnterpriseTestUtils {
   /**
    * Get all resources
    */
-  getAllResources(): Resource[] {
+  getAllResources() {
     return Array.from(this.resources.values())
   }
 
   /**
    * Clear all resources
    */
-  clearAllResources(): void {
+  clearAllResources() {
     this.resources.clear()
   }
 
   /**
    * Export resources
    */
-  exportResources(): Record<string, Resource> {
+  exportResources() {
     return Object.fromEntries(this.resources)
   }
 
   /**
    * Import resources
    */
-  importResources(resources: Record<string, Resource>): void {
+  importResources(resources) {
     this.resources.clear()
     for (const [id, resource] of Object.entries(resources)) {
       this.resources.set(id, resource)
@@ -540,50 +374,46 @@ export const testUtils = {
   /**
    * Resource CRUD operations
    */
-  createResource: (domain: string, resource: string, data: any) => 
+  createResource: (domain, resource, data) =>
     enterpriseTestUtils.createResource(domain, resource, data),
-  
-  listResources: (domain: string, resource: string, filter?: any) => 
+
+  listResources: (domain, resource, filter) =>
     enterpriseTestUtils.listResources(domain, resource, filter),
-  
-  getResource: (domain: string, resource: string, id: string) => 
-    enterpriseTestUtils.getResource(domain, resource, id),
-  
-  updateResource: (domain: string, resource: string, id: string, data: any) => 
+
+  getResource: (domain, resource, id) => enterpriseTestUtils.getResource(domain, resource, id),
+
+  updateResource: (domain, resource, id, data) =>
     enterpriseTestUtils.updateResource(domain, resource, id, data),
-  
-  deleteResource: (domain: string, resource: string, id: string) => 
+
+  deleteResource: (domain, resource, id) =>
     enterpriseTestUtils.deleteResource(domain, resource, id),
 
   /**
    * Cross-domain operations
    */
-  deployApplication: (app: string, config: DeploymentConfig) => 
-    enterpriseTestUtils.deployApplication(app, config),
-  
-  validateCompliance: (standard: string, scope: ComplianceScope) => 
-    enterpriseTestUtils.validateCompliance(standard, scope),
+  deployApplication: (app, config) => enterpriseTestUtils.deployApplication(app, config),
+
+  validateCompliance: (standard, scope) => enterpriseTestUtils.validateCompliance(standard, scope),
 
   /**
    * Context management
    */
-  setContext: (context: any) => enterpriseTestUtils.setContext(context),
+  setContext: (context) => enterpriseTestUtils.setContext(context),
   getContext: () => enterpriseTestUtils.getContext(),
   clearContext: () => enterpriseTestUtils.clearContext(),
 
   /**
    * Workspace management
    */
-  createWorkspace: (name: string, config: WorkspaceConfig) => 
-    enterpriseTestUtils.createWorkspace(name, config),
-  
-  switchWorkspace: (name: string) => enterpriseTestUtils.switchWorkspace(name),
+  createWorkspace: (name, config) => enterpriseTestUtils.createWorkspace(name, config),
+
+  switchWorkspace: (name) => enterpriseTestUtils.switchWorkspace(name),
   listWorkspaces: () => enterpriseTestUtils.listWorkspaces(),
-  deleteWorkspace: (name: string) => enterpriseTestUtils.deleteWorkspace(name)
+  deleteWorkspace: (name) => enterpriseTestUtils.deleteWorkspace(name),
 }
 
 export default {
   EnterpriseTestUtils,
   enterpriseTestUtils,
-  testUtils
+  testUtils,
 }

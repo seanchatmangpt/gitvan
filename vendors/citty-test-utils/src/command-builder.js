@@ -65,41 +65,40 @@ export class CommandBuilder {
     return this
   }
 
-  // Build command array
+  // Build command object
   build() {
     if (!this._domain || !this._resource || !this._action) {
       throw new Error('Command must have domain, resource, and action')
     }
 
-    const commandArray = [this._domain, this._resource, this._action]
-    
+    const args = []
     // Add arguments
     for (const [key, value] of Object.entries(this._args)) {
-      commandArray.push(key, String(value))
+      args.push(key, String(value))
     }
 
     // Add options
     for (const [key, value] of Object.entries(this._options)) {
       if (typeof value === 'boolean') {
         if (value) {
-          commandArray.push(key)
+          args.push(key, true)
         }
       } else {
-        commandArray.push(key, String(value))
+        args.push(key, String(value))
       }
     }
 
-    return commandArray
+    return [this._domain, this._resource, this._action, ...args]
   }
 
   // Execute command
   async execute(runner = 'local', options = {}) {
     const commandArray = this.build()
     const { runLocalCitty, runCitty } = await import('./index.js')
-    
+
     const runnerOptions = {
       ...options,
-      context: { ...this.context, ...options.context }
+      context: { ...this._context, ...options.context },
     }
 
     if (runner === 'local') {
@@ -109,6 +108,77 @@ export class CommandBuilder {
     } else {
       throw new Error(`Unknown runner: ${runner}`)
     }
+  }
+
+  // Convenience methods for common arguments
+  withName(name) {
+    this._args['--name'] = name
+    return this
+  }
+
+  withType(type) {
+    this._args['--type'] = type
+    return this
+  }
+
+  withRegion(region) {
+    this._args['--region'] = region
+    return this
+  }
+
+  withSize(size) {
+    this._args['--size'] = size
+    return this
+  }
+
+  withConfig(config) {
+    this._args['--config'] = config
+    return this
+  }
+
+  withEnvironment(env) {
+    this._args['--environment'] = env
+    return this
+  }
+
+  withCompliance(compliance) {
+    this._args['--compliance'] = compliance
+    return this
+  }
+
+  withUser(user) {
+    this._args['--user'] = user
+    return this
+  }
+
+  withRole(role) {
+    this._args['--role'] = role
+    return this
+  }
+
+  withWorkspace(workspace) {
+    this._args['--workspace'] = workspace
+    return this
+  }
+
+  // Getters for test access
+  getDomain() {
+    return this._domain
+  }
+  getResource() {
+    return this._resource
+  }
+  getAction() {
+    return this._action
+  }
+  getArgs() {
+    return this._args
+  }
+  getOptions() {
+    return this._options
+  }
+  getContext() {
+    return this._context
   }
 }
 
@@ -285,78 +355,138 @@ export class ActionBuilder {
 export function command(domainName = null) {
   const builder = new CommandBuilder()
   if (domainName) {
-    builder.domain = domainName
+    builder._domain = domainName
     return new ResourceBuilder(builder)
   }
   return builder
 }
 
-// Convenience functions for common patterns
-export const cmd = command
+// Resource-first approach
+export function createCommand() {
+  return new CommandBuilder()
+}
 
-// Domain-specific command builders
-export const infra = () => command('infra')
-export const dev = () => command('dev')
-export const security = () => command('security')
-export const monitor = () => command('monitor')
-export const data = () => command('data')
-export const compliance = () => command('compliance')
-export const tenant = () => command('tenant')
+// Domain-specific builders
+export const infra = {
+  server: () => command('infra').server(),
+  network: () => command('infra').network(),
+  storage: () => command('infra').storage(),
+  database: () => command('infra').database(),
+}
 
-// Resource-specific command builders
-export const server = () => command().resource('infra', 'server')
-export const network = () => command().resource('infra', 'network')
-export const user = () => command().resource('security', 'user')
-export const project = () => command().resource('dev', 'project')
-export const test = () => command().resource('dev', 'test')
-export const policy = () => command().resource('security', 'policy')
-export const alert = () => command().resource('monitor', 'alert')
-export const backup = () => command().resource('data', 'backup')
+export const dev = {
+  project: () => command('dev').project(),
+  app: () => command('dev').app(),
+  test: () => command('dev').test(),
+  scenario: () => command('dev').scenario(),
+  snapshot: () => command('dev').snapshot(),
+}
 
-// Action-specific command builders
-export const create = () => command()
-export const list = () => command()
-export const show = () => command()
-export const update = () => command()
-export const deleteCmd = () => command()
-export const run = () => command()
-export const deploy = () => command()
-export const audit = () => command()
-export const validate = () => command()
-export const configure = () => command()
-export const scale = () => command()
+export const security = {
+  user: () => command('security').user(),
+  role: () => command('security').role(),
+  policy: () => command('security').policy(),
+  secret: () => command('security').secret(),
+  certificate: () => command('security').certificate(),
+}
 
-// Export all components
-export default {
-  CommandBuilder,
-  ResourceBuilder,
-  ActionBuilder,
-  command,
-  cmd,
-  infra,
-  dev,
-  security,
-  monitor,
-  data,
-  compliance,
-  tenant,
-  server,
-  network,
-  user,
-  project,
-  test,
-  policy,
-  alert,
-  backup,
-  create,
-  list,
-  show,
-  update,
-  delete: deleteCmd,
-  run,
-  deploy,
-  audit,
-  validate,
-  configure,
-  scale
+// Enterprise convenience functions for common command patterns
+export const enterprise = {
+  infra: {
+    server: {
+      create: (options = {}, args = {}, context = {}) => {
+        const builder = command('infra').server().create()
+        return builder.args(args).options(options).context(context)
+      },
+      list: (options = {}, args = {}, context = {}) => {
+        const builder = command('infra').server().list()
+        return builder.args(args).options(options).context(context)
+      },
+      show: (options = {}, args = {}, context = {}) => {
+        const builder = command('infra').server().show()
+        // Handle single string parameter as --id arg
+        if (typeof options === 'string') {
+          builder.arg('--id', options)
+          return builder.args(args).context(context)
+        }
+        return builder.args(args).options(options).context(context)
+      },
+      update: (options = {}, args = {}, context = {}) => {
+        const builder = command('infra').server().update()
+        return builder.args(args).options(options).context(context)
+      },
+      delete: (options = {}, args = {}, context = {}) => {
+        const builder = command('infra').server().delete()
+        return builder.args(args).options(options).context(context)
+      },
+    },
+    network: {
+      create: (options = {}, args = {}, context = {}) => {
+        const builder = command('infra').network().create()
+        return builder.args(args).options(options).context(context)
+      },
+      configure: (options = {}, args = {}, context = {}) => {
+        const builder = command('infra').network().configure()
+        return builder.args(args).options(options).context(context)
+      },
+    },
+  },
+  dev: {
+    project: {
+      create: (options = {}, args = {}, context = {}) => {
+        const builder = command('dev').project().create()
+        return builder.args(args).options(options).context(context)
+      },
+      deploy: (options = {}, args = {}, context = {}) => {
+        const builder = command('dev').project().deploy()
+        // Handle two-parameter pattern: (id, options)
+        if (typeof options === 'string' && typeof args === 'object' && !Array.isArray(args)) {
+          builder.arg('--id', options)
+          return builder.options(args).context(context)
+        }
+        return builder.args(args).options(options).context(context)
+      },
+    },
+    test: {
+      run: (options = {}, args = {}, context = {}) => {
+        const builder = command('dev').test().run()
+        return builder.args(args).options(options).context(context)
+      },
+      schedule: (options = {}, args = {}, context = {}) => {
+        const builder = command('dev').test().schedule()
+        return builder.args(args).options(options).context(context)
+      },
+    },
+  },
+  security: {
+    user: {
+      create: (options = {}, args = {}, context = {}) => {
+        const builder = command('security').user().create()
+        return builder.args(args).options(options).context(context)
+      },
+      list: (options = {}, args = {}, context = {}) => {
+        const builder = command('security').user().list()
+        return builder.args(args).options(options).context(context)
+      },
+      audit: (options = {}, args = {}, context = {}) => {
+        const builder = command('security').user().audit()
+        // Handle two-parameter pattern: (id, options)
+        if (typeof options === 'string' && typeof args === 'object' && !Array.isArray(args)) {
+          builder.arg('--id', options)
+          return builder.options(args).context(context)
+        }
+        return builder.args(args).options(options).context(context)
+      },
+    },
+    policy: {
+      validate: (options = {}, args = {}, context = {}) => {
+        const builder = command('security').policy().validate()
+        return builder.args(args).options(options).context(context)
+      },
+      enforce: (options = {}, args = {}, context = {}) => {
+        const builder = command('security').policy().enforce()
+        return builder.args(args).options(options).context(context)
+      },
+    },
+  },
 }

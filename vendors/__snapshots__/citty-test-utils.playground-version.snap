@@ -1,0 +1,16 @@
+{
+  "data": "1.0.0",
+  "metadata": {
+    "created": "2025-09-21T06:43:56.583Z",
+    "testFile": "/Users/sac/gitvan/vendors/citty-test-utils",
+    "snapshotName": "playground-version",
+    "options": {
+      "args": [
+        "--version"
+      ],
+      "cwd": "/Users/sac/.cache/tmp/citty-playground-snapshot-rXH3DE",
+      "type": "stdout"
+    },
+    "version": "1.0.0"
+  }
+}

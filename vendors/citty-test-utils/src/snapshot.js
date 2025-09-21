@@ -44,10 +44,15 @@ export class SnapshotManager {
       testName,
       snapshotName,
       args: args ? args.join(' ') : '',
-      env: env ? Object.keys(env).sort().map(k => `${k}=${env[k]}`).join(',') : '',
-      cwd: cwd || ''
+      env: env
+        ? Object.keys(env)
+            .sort()
+            .map((k) => `${k}=${env[k]}`)
+            .join(',')
+        : '',
+      cwd: cwd || '',
     }
-    
+
     const contextStr = JSON.stringify(context, Object.keys(context).sort())
     return createHash('sha256').update(contextStr).digest('hex').substring(0, 16)
   }
@@ -59,12 +64,12 @@ export class SnapshotManager {
     const testDir = dirname(testFile)
     const testBaseName = basename(testFile, extname(testFile))
     const snapshotDir = join(testDir, this.config.snapshotDir)
-    
+
     // Ensure snapshot directory exists
     if (!existsSync(snapshotDir)) {
       mkdirSync(snapshotDir, { recursive: true })
     }
-    
+
     return join(snapshotDir, `${testBaseName}.${snapshotName}.snap`)
   }
 
@@ -75,7 +80,7 @@ export class SnapshotManager {
     if (!existsSync(snapshotPath)) {
       return null
     }
-    
+
     try {
       const content = readFileSync(snapshotPath, 'utf8')
       return JSON.parse(content)
@@ -106,7 +111,7 @@ export class SnapshotManager {
   normalizeData(data, options = {}) {
     if (typeof data === 'string') {
       let normalized = data
-      
+
       if (this.config.ignoreWhitespace) {
         // Normalize whitespace but preserve structure
         normalized = normalized
@@ -116,7 +121,7 @@ export class SnapshotManager {
           .replace(/\s+\n/g, '\n') // Remove trailing whitespace from lines
           .trim()
       }
-      
+
       if (this.config.ignoreTimestamps) {
         // Remove common timestamp patterns
         normalized = normalized
@@ -124,26 +129,26 @@ export class SnapshotManager {
           .replace(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/g, '[TIMESTAMP]')
           .replace(/at \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/g, 'at [TIMESTAMP]')
       }
-      
+
       return normalized
     }
-    
+
     if (typeof data === 'object' && data !== null) {
       const normalized = { ...data }
-      
+
       if (this.config.ignoreTimestamps) {
         // Remove timestamp fields
         const timestampFields = ['timestamp', 'createdAt', 'updatedAt', 'date', 'time']
-        timestampFields.forEach(field => {
+        timestampFields.forEach((field) => {
           if (normalized[field]) {
             normalized[field] = '[TIMESTAMP]'
           }
         })
       }
-      
+
       return normalized
     }
-    
+
     return data
   }
 
@@ -153,31 +158,31 @@ export class SnapshotManager {
   compareData(current, expected, path = '') {
     const currentNormalized = this.normalizeData(current)
     const expectedNormalized = this.normalizeData(expected)
-    
+
     if (currentNormalized === expectedNormalized) {
       return { match: true }
     }
-    
+
     if (typeof currentNormalized !== typeof expectedNormalized) {
       return {
         match: false,
         error: `Type mismatch at ${path}: expected ${typeof expectedNormalized}, got ${typeof currentNormalized}`,
-        diff: this.generateDiff(currentNormalized, expectedNormalized)
+        diff: this.generateDiff(currentNormalized, expectedNormalized),
       }
     }
-    
+
     if (typeof currentNormalized === 'string') {
       return this.compareStrings(currentNormalized, expectedNormalized, path)
     }
-    
+
     if (typeof currentNormalized === 'object') {
       return this.compareObjects(currentNormalized, expectedNormalized, path)
     }
-    
+
     return {
       match: false,
       error: `Value mismatch at ${path}: expected ${expectedNormalized}, got ${currentNormalized}`,
-      diff: this.generateDiff(currentNormalized, expectedNormalized)
+      diff: this.generateDiff(currentNormalized, expectedNormalized),
     }
   }
 
@@ -188,16 +193,20 @@ export class SnapshotManager {
     if (current === expected) {
       return { match: true }
     }
-    
+
     const diff = this.generateStringDiff(current, expected)
     return {
       match: false,
       error: `String mismatch at ${path}`,
       diff,
-      current: current.length > this.config.maxDiffSize ? 
-        current.substring(0, this.config.maxDiffSize) + '...' : current,
-      expected: expected.length > this.config.maxDiffSize ? 
-        expected.substring(0, this.config.maxDiffSize) + '...' : expected
+      current:
+        current.length > this.config.maxDiffSize
+          ? current.substring(0, this.config.maxDiffSize) + '...'
+          : current,
+      expected:
+        expected.length > this.config.maxDiffSize
+          ? expected.substring(0, this.config.maxDiffSize) + '...'
+          : expected,
     }
   }
 
@@ -208,25 +217,25 @@ export class SnapshotManager {
     const currentKeys = Object.keys(current || {})
     const expectedKeys = Object.keys(expected || {})
     const allKeys = new Set([...currentKeys, ...expectedKeys])
-    
+
     const differences = []
-    
+
     for (const key of allKeys) {
       const currentPath = path ? `${path}.${key}` : key
       const currentValue = current[key]
       const expectedValue = expected[key]
-      
+
       if (!(key in current)) {
         differences.push({
           path: currentPath,
           type: 'missing',
-          expected: expectedValue
+          expected: expectedValue,
         })
       } else if (!(key in expected)) {
         differences.push({
           path: currentPath,
           type: 'extra',
-          current: currentValue
+          current: currentValue,
         })
       } else {
         const comparison = this.compareData(currentValue, expectedValue, currentPath)
@@ -234,21 +243,21 @@ export class SnapshotManager {
           differences.push({
             path: currentPath,
             type: 'mismatch',
-            ...comparison
+            ...comparison,
           })
         }
       }
     }
-    
+
     if (differences.length === 0) {
       return { match: true }
     }
-    
+
     return {
       match: false,
       error: `Object mismatch at ${path}`,
       differences,
-      diff: this.generateDiff(current, expected)
+      diff: this.generateDiff(current, expected),
     }
   }
 
@@ -259,21 +268,21 @@ export class SnapshotManager {
     const currentLines = current.split('\n')
     const expectedLines = expected.split('\n')
     const maxLines = Math.max(currentLines.length, expectedLines.length)
-    
+
     const diff = []
     for (let i = 0; i < maxLines; i++) {
       const currentLine = currentLines[i] || ''
       const expectedLine = expectedLines[i] || ''
-      
+
       if (currentLine !== expectedLine) {
         diff.push({
           line: i + 1,
           current: currentLine,
-          expected: expectedLine
+          expected: expectedLine,
         })
       }
     }
-    
+
     return diff.slice(0, 10) // Limit diff size
   }
 
@@ -282,10 +291,14 @@ export class SnapshotManager {
    */
   generateDiff(current, expected) {
     return {
-      current: typeof current === 'string' && current.length > this.config.maxDiffSize ? 
-        current.substring(0, this.config.maxDiffSize) + '...' : current,
-      expected: typeof expected === 'string' && expected.length > this.config.maxDiffSize ? 
-        expected.substring(0, this.config.maxDiffSize) + '...' : expected
+      current:
+        typeof current === 'string' && current.length > this.config.maxDiffSize
+          ? current.substring(0, this.config.maxDiffSize) + '...'
+          : current,
+      expected:
+        typeof expected === 'string' && expected.length > this.config.maxDiffSize
+          ? expected.substring(0, this.config.maxDiffSize) + '...'
+          : expected,
     }
   }
 
@@ -295,7 +308,7 @@ export class SnapshotManager {
   matchSnapshot(currentData, testFile, snapshotName, options = {}) {
     const snapshotPath = this.getSnapshotPath(testFile, snapshotName)
     const existingSnapshot = this.loadSnapshot(snapshotPath)
-    
+
     // If updating snapshots or no existing snapshot, save current data
     if (this.config.updateSnapshots || !existingSnapshot) {
       const snapshotData = {
@@ -305,45 +318,45 @@ export class SnapshotManager {
           testFile,
           snapshotName,
           options,
-          version: '1.0.0'
-        }
+          version: '1.0.0',
+        },
       }
-      
+
       this.saveSnapshot(snapshotPath, snapshotData)
-      
+
       if (!existingSnapshot) {
         return {
           match: true,
           created: true,
-          message: `✅ Created new snapshot: ${snapshotName}`
+          message: `✅ Created new snapshot: ${snapshotName}`,
         }
       } else {
         return {
           match: true,
           updated: true,
-          message: `✅ Updated snapshot: ${snapshotName}`
+          message: `✅ Updated snapshot: ${snapshotName}`,
         }
       }
     }
-    
+
     // Compare with existing snapshot
     const comparison = this.compareData(currentData, existingSnapshot.data)
-    
+
     if (comparison.match) {
       return {
         match: true,
-        message: `✅ Snapshot matches: ${snapshotName}`
+        message: `✅ Snapshot matches: ${snapshotName}`,
       }
     }
-    
+
     // Generate detailed error message
     const errorMessage = this.generateErrorMessage(comparison, snapshotName, snapshotPath)
-    
+
     return {
       match: false,
       error: errorMessage,
       snapshotPath,
-      comparison
+      comparison,
     }
   }
 
@@ -353,11 +366,11 @@ export class SnapshotManager {
   generateErrorMessage(comparison, snapshotName, snapshotPath) {
     let message = `❌ Snapshot mismatch: ${snapshotName}\n`
     message += `📁 Snapshot file: ${snapshotPath}\n`
-    
+
     if (comparison.error) {
       message += `🔍 Error: ${comparison.error}\n`
     }
-    
+
     if (comparison.diff) {
       message += `📊 Diff:\n`
       if (comparison.diff.current !== undefined) {
@@ -367,16 +380,16 @@ export class SnapshotManager {
         message += `Expected: ${JSON.stringify(comparison.diff.expected)}\n`
       }
     }
-    
+
     if (comparison.differences) {
       message += `🔍 Differences:\n`
-      comparison.differences.forEach(diff => {
+      comparison.differences.forEach((diff) => {
         message += `  ${diff.path}: ${diff.type}\n`
       })
     }
-    
+
     message += `\n💡 To update snapshots, run with --update-snapshots flag`
-    
+
     return message
   }
 
@@ -384,7 +397,7 @@ export class SnapshotManager {
    * Clean up created snapshots (for testing)
    */
   cleanup() {
-    this.createdSnapshots.forEach(snapshotPath => {
+    this.createdSnapshots.forEach((snapshotPath) => {
       try {
         if (existsSync(snapshotPath)) {
           const { unlinkSync } = require('node:fs')
@@ -404,7 +417,7 @@ export class SnapshotManager {
     return {
       totalSnapshots: this.snapshots.size,
       createdSnapshots: this.createdSnapshots.size,
-      config: this.config
+      config: this.config,
     }
   }
 }
@@ -459,12 +472,12 @@ export const snapshotUtils = {
           stderr: result.stderr,
           args: result.args,
           cwd: result.cwd,
-          json: result.json
+          json: result.json,
         }
       case 'output':
         return {
           stdout: result.stdout,
-          stderr: result.stderr
+          stderr: result.stderr,
         }
       default:
         return result[type] || result.stdout
@@ -479,8 +492,8 @@ export const snapshotUtils = {
       data,
       metadata: {
         created: new Date().toISOString(),
-        ...metadata
-      }
+        ...metadata,
+      },
     }
   },
 
@@ -491,13 +504,13 @@ export const snapshotUtils = {
     if (!snapshotData || typeof snapshotData !== 'object') {
       return { valid: false, error: 'Snapshot data must be an object' }
     }
-    
+
     if (!snapshotData.data) {
       return { valid: false, error: 'Snapshot data must have a data property' }
     }
-    
+
     return { valid: true }
-  }
+  },
 }
 
 export default {
@@ -506,5 +519,5 @@ export default {
   getSnapshotManager,
   resetSnapshotManager,
   matchSnapshot,
-  snapshotUtils
+  snapshotUtils,
 }

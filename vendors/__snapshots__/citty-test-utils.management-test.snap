@@ -1,0 +1,16 @@
+{
+  "data": "",
+  "metadata": {
+    "created": "2025-09-21T06:46:54.441Z",
+    "testFile": "/Users/sac/gitvan/vendors/citty-test-utils",
+    "snapshotName": "management-test",
+    "options": {
+      "args": [
+        "--help"
+      ],
+      "cwd": "/Users/sac/gitvan/vendors/citty-test-utils",
+      "type": "stdout"
+    },
+    "version": "1.0.0"
+  }
+}

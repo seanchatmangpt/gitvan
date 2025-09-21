@@ -1,0 +1,16 @@
+{
+  "data": "USAGE: playground-cli [options]\nOPTIONS:\n  --help     Show help\n  --version  Show version\n  --json     Output JSON",
+  "metadata": {
+    "created": "2025-09-21T06:43:57.341Z",
+    "testFile": "/Users/sac/gitvan/vendors/citty-test-utils",
+    "snapshotName": "types-stdout",
+    "options": {
+      "args": [
+        "--help"
+      ],
+      "cwd": "/Users/sac/.cache/tmp/citty-playground-types-Jrf0ly",
+      "type": "stdout"
+    },
+    "version": "1.0.0"
+  }
+}

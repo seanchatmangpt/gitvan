@@ -1,0 +1,24 @@
+{
+  "data": {
+    "exitCode": 0,
+    "stdout": "1.0.0",
+    "stderr": "",
+    "args": [
+      "--version"
+    ],
+    "cwd": "/Users/sac/.cache/tmp/citty-playground-types-Jrf0ly"
+  },
+  "metadata": {
+    "created": "2025-09-21T06:43:57.547Z",
+    "testFile": "/Users/sac/gitvan/vendors/citty-test-utils",
+    "snapshotName": "types-full",
+    "options": {
+      "args": [
+        "--version"
+      ],
+      "cwd": "/Users/sac/.cache/tmp/citty-playground-types-Jrf0ly",
+      "type": "full"
+    },
+    "version": "1.0.0"
+  }
+}

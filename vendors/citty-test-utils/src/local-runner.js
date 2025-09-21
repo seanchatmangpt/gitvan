@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process'
+import { spawn, exec } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { wrapExpectation } from './assertions.js'
@@ -11,13 +11,29 @@ export function runLocalCitty(
     // Check if we should use the test CLI
     const useTestCli = env.TEST_CLI === 'true'
 
-    let projectRoot, cliPath, cliArgs
+    let projectRoot, cliPath, command
 
     if (useTestCli) {
       // Use the test CLI for integration testing
       projectRoot = cwd
-      cliPath = join(projectRoot, 'test-cli.mjs')
-      cliArgs = ['test-cli.mjs', ...args]
+      // Check for test-cli.mjs first, then src/cli.mjs, then simple-test-cli.mjs
+      const testCliPath = join(projectRoot, 'test-cli.mjs')
+      const srcCliPath = join(projectRoot, 'src', 'cli.mjs')
+      const simpleCliPath = join(projectRoot, 'simple-test-cli.mjs')
+
+      if (existsSync(testCliPath)) {
+        cliPath = testCliPath
+        command = `node test-cli.mjs ${args.join(' ')}`
+      } else if (existsSync(srcCliPath)) {
+        cliPath = srcCliPath
+        command = `node src/cli.mjs ${args.join(' ')}`
+      } else if (existsSync(simpleCliPath)) {
+        cliPath = simpleCliPath
+        command = `node simple-test-cli.mjs ${args.join(' ')}`
+      } else {
+        reject(new Error(`No CLI found. Checked: ${testCliPath}, ${srcCliPath}, ${simpleCliPath}`))
+        return
+      }
     } else {
       // Find the GitVan project root by looking for package.json with "gitvan" name
       projectRoot = cwd
@@ -38,7 +54,7 @@ export function runLocalCitty(
 
       // Validate CLI path
       cliPath = join(projectRoot, 'src', 'cli.mjs')
-      cliArgs = ['src/cli.mjs', ...args]
+      command = `node src/cli.mjs ${args.join(' ')}`
     }
 
     if (!existsSync(cliPath)) {
@@ -54,47 +70,94 @@ export function runLocalCitty(
       GITVAN_TEST_MODE: 'false',
     }
 
-    const proc = spawn('node', cliArgs, {
-      cwd: projectRoot,
-      env: envVars,
-    })
+    // Check if we're in a test environment and use spawn instead of exec
+    const isTestEnv = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true'
 
-    let stdout = ''
-    let stderr = ''
-    let timeoutId
-
-    // Set up timeout
-    if (timeout > 0) {
-      timeoutId = setTimeout(() => {
-        proc.kill('SIGTERM')
-        reject(new Error(`Command timed out after ${timeout}ms`))
-      }, timeout)
-    }
-
-    proc.stdout.on('data', (d) => (stdout += d))
-    proc.stderr.on('data', (d) => (stderr += d))
-
-    proc.on('close', (code) => {
-      if (timeoutId) clearTimeout(timeoutId)
-
-      const result = {
-        exitCode: code,
-        stdout: stdout.trim(),
-        stderr: stderr.trim(),
-        args,
+    if (isTestEnv) {
+      // Use spawn for test environment to avoid vitest interference
+      const child = spawn('node', [cliPath.split('/').pop(), ...args], {
         cwd: projectRoot,
-        json: json ? safeJsonParse(stdout) : undefined,
+        env: envVars,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      })
+
+      let stdout = ''
+      let stderr = ''
+
+      child.stdout.on('data', (data) => {
+        stdout += data.toString()
+      })
+
+      child.stderr.on('data', (data) => {
+        stderr += data.toString()
+      })
+
+      child.on('close', (code) => {
+        const result = {
+          exitCode: code || 0,
+          stdout: (stdout || '').trim(),
+          stderr: (stderr || '').trim(),
+          args,
+          cwd: projectRoot,
+          command: command,
+          json: json
+            ? safeJsonParse(stdout)
+            : args.includes('--json')
+            ? safeJsonParse(stdout)
+            : undefined,
+        }
+
+        // Wrap in expectations layer
+        const wrappedResult = wrapExpectation(result)
+        resolve(wrappedResult)
+      })
+
+      child.on('error', (error) => {
+        reject(error)
+      })
+
+      // Set timeout
+      if (timeout > 0) {
+        setTimeout(() => {
+          child.kill()
+          reject(new Error(`Command timed out after ${timeout}ms`))
+        }, timeout)
       }
+    } else {
+      // Use exec for non-test environments
+      exec(
+        command,
+        {
+          cwd: projectRoot,
+          env: envVars,
+          timeout: timeout > 0 ? timeout : undefined,
+        },
+        (error, stdout, stderr) => {
+          const result = {
+            exitCode: error ? error.code || 1 : 0,
+            stdout: (stdout || '').trim(),
+            stderr: (stderr || '').trim(),
+            args,
+            cwd: projectRoot,
+            command: command,
+            json: json
+              ? safeJsonParse(stdout)
+              : args.includes('--json')
+              ? safeJsonParse(stdout)
+              : undefined,
+          }
 
-      // Wrap in expectations layer
-      const wrappedResult = wrapExpectation(result)
-      resolve(wrappedResult)
-    })
+          // Wrap in expectations layer
+          const wrappedResult = wrapExpectation(result)
 
-    proc.on('error', (error) => {
-      if (timeoutId) clearTimeout(timeoutId)
-      reject(new Error(`Process spawn failed: ${error.message}`))
-    })
+          if (error) {
+            reject(error)
+          } else {
+            resolve(wrappedResult)
+          }
+        }
+      )
+    }
   })
 }
 

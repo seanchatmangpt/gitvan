@@ -1,0 +1,16 @@
+{
+  "data": "",
+  "metadata": {
+    "created": "2025-09-21T06:44:33.380Z",
+    "testFile": "/Users/sac/gitvan/vendors/citty-test-utils",
+    "snapshotName": "help-first-run",
+    "options": {
+      "args": [
+        "--help"
+      ],
+      "cwd": "/Users/sac/gitvan/vendors/citty-test-utils",
+      "type": "stdout"
+    },
+    "version": "1.0.0"
+  }
+}

@@ -1,50 +1,13 @@
 #!/usr/bin/env node
-// playground/src/cli.mjs - Citty CLI for testing citty-test-utils
+// src/cli.mjs - Test CLI for citty-test-utils integration testing
 
 import { defineCommand, runMain } from 'citty'
 
-const playground = defineCommand({
+const testCli = defineCommand({
   meta: {
-    name: 'playground',
+    name: 'test-cli',
     version: '1.0.0',
-    description: 'Playground CLI for testing citty-test-utils functionality',
-  },
-  args: {
-    'show-help': {
-      type: 'boolean',
-      description: 'Show help information',
-      default: false,
-    },
-    'show-version': {
-      type: 'boolean',
-      description: 'Show version information',
-      default: false,
-    },
-  },
-  run: async (ctx) => {
-    const { 'show-help': showHelp, 'show-version': showVersion } = ctx.args
-
-    if (showVersion) {
-      console.log('1.0.0')
-      return
-    }
-
-    if (showHelp || ctx.args._.length === 0) {
-      // Show help
-      console.log('Playground CLI for testing citty-test-utils functionality (playground v1.0.0)')
-      console.log('')
-      console.log('USAGE playground greet|math|error|info')
-      console.log('')
-      console.log('COMMANDS')
-      console.log('')
-      console.log('  greet    Greet someone                     ')
-      console.log('   math    Perform mathematical operations   ')
-      console.log('  error    Simulate different types of errors')
-      console.log('   info    Show playground information       ')
-      console.log('')
-      console.log('Use playground <command> --help for more information about a command.')
-      return
-    }
+    description: 'Test CLI for citty-test-utils integration testing',
   },
   subCommands: {
     greet: defineCommand({
@@ -72,10 +35,6 @@ const playground = defineCommand({
       run: async (ctx) => {
         const { name, verbose, count } = ctx.args
 
-        if (verbose) {
-          console.log('Verbose mode enabled')
-        }
-
         if (ctx.args.json) {
           console.log(
             JSON.stringify({
@@ -85,6 +44,10 @@ const playground = defineCommand({
             })
           )
         } else {
+          if (verbose) {
+            console.log('Verbose mode enabled')
+          }
+
           for (let i = 0; i < count; i++) {
             console.log(`Hello, ${name}! (${i + 1}/${count})`)
           }
@@ -206,13 +169,13 @@ const playground = defineCommand({
     info: defineCommand({
       meta: {
         name: 'info',
-        description: 'Show playground information',
+        description: 'Show test CLI information',
       },
       run: async (ctx) => {
         const info = {
-          name: 'citty-test-utils-playground',
+          name: 'citty-test-utils-test-cli',
           version: '1.0.0',
-          description: 'Playground CLI for testing citty-test-utils functionality',
+          description: 'Test CLI for citty-test-utils integration testing',
           commands: ['greet', 'math', 'error', 'info'],
           features: [
             'Basic command execution',
@@ -226,7 +189,7 @@ const playground = defineCommand({
         if (ctx.args.json) {
           console.log(JSON.stringify(info, null, 2))
         } else {
-          console.log('Playground CLI Information:')
+          console.log('Test CLI Information:')
           console.log(`Name: ${info.name}`)
           console.log(`Version: ${info.version}`)
           console.log(`Description: ${info.description}`)
@@ -240,4 +203,4 @@ const playground = defineCommand({
 })
 
 // Always run the CLI when this script is executed
-runMain(playground)
+runMain(testCli)

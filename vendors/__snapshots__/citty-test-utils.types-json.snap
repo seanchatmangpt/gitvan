@@ -1,0 +1,19 @@
+{
+  "data": {
+    "version": "1.0.0",
+    "status": "running"
+  },
+  "metadata": {
+    "created": "2025-09-21T06:43:57.480Z",
+    "testFile": "/Users/sac/gitvan/vendors/citty-test-utils",
+    "snapshotName": "types-json",
+    "options": {
+      "args": [
+        "--json"
+      ],
+      "cwd": "/Users/sac/.cache/tmp/citty-playground-types-Jrf0ly",
+      "type": "json"
+    },
+    "version": "1.0.0"
+  }
+}

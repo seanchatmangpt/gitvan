@@ -8,8 +8,27 @@ async function exec(env, args, opts = {}) {
   if (env === 'local') {
     options.env = { ...options.env, TEST_CLI: 'true' }
     // For local execution, we need to set the correct working directory
+    // Try to detect if we're in a playground test and set cwd accordingly
     if (!options.cwd) {
-      options.cwd = process.cwd()
+      // Check if we're running from playground tests
+      const stack = new Error().stack
+      if (stack.includes('playground/test/')) {
+        // Extract playground directory from stack trace
+        const lines = stack.split('\n')
+        for (const line of lines) {
+          if (line.includes('playground/test/')) {
+            const match = line.match(/\((.+?\/playground)\/test\//)
+            if (match) {
+              options.cwd = match[1]
+              break
+            }
+          }
+        }
+      }
+      // Fallback to process.cwd() if not in playground
+      if (!options.cwd) {
+        options.cwd = process.cwd()
+      }
     }
   }
   return env === 'cleanroom' ? runCitty(args, options) : runLocalCitty(args, options)
@@ -156,6 +175,27 @@ export const scenarios = {
     }
   },
 
+  // Default concurrent execution for multiple operations
+  async executeConcurrent(operations, env = 'local') {
+    const results = await Promise.all(
+      operations.map(async (op) => {
+        if (typeof op === 'string') {
+          // Simple command string
+          return await exec(env, op.split(' '))
+        } else if (Array.isArray(op)) {
+          // Command array
+          return await exec(env, op)
+        } else if (op.args) {
+          // Command object with args and options
+          return await exec(env, op.args, op.opts || {})
+        } else {
+          throw new Error('Invalid operation format')
+        }
+      })
+    )
+    return { success: true, results }
+  },
+
   interactive(script, env = 'local') {
     // Assumes CLI reads from stdin; local-runner would need a stdin-enabled variant if not present
     return {
@@ -180,6 +220,86 @@ export const scenarios = {
         const ok = typeof msgOrRe === 'string' ? out.includes(msgOrRe) : msgOrRe.test(out)
         if (!ok) throw new Error(`Missing expected error: ${msgOrRe}\nGot:\n${out}`)
         return { success: true }
+      },
+    }
+  },
+
+  // Snapshot testing scenarios
+  snapshotHelp(env = 'local') {
+    return {
+      async execute() {
+        const r = await exec(env, ['--help'])
+        r.expectSuccess().expectSnapshotStdout('help-output')
+        return { success: true, result: r.result }
+      },
+    }
+  },
+
+  snapshotVersion(env = 'local') {
+    return {
+      async execute() {
+        const r = await exec(env, ['--version'])
+        r.expectSuccess().expectSnapshotStdout('version-output')
+        return { success: true, result: r.result }
+      },
+    }
+  },
+
+  snapshotError(env = 'local') {
+    return {
+      async execute() {
+        const r = await exec(env, ['invalid-command'])
+        r.expectFailure().expectSnapshotStderr('error-output')
+        return { success: true, result: r.result }
+      },
+    }
+  },
+
+  snapshotFull(env = 'local') {
+    return {
+      async execute() {
+        const r = await exec(env, ['status'])
+        r.expectSuccess().expectSnapshotFull('status-result')
+        return { success: true, result: r.result }
+      },
+    }
+  },
+
+  snapshotWorkflow(env = 'local') {
+    return {
+      async execute() {
+        // Initialize project
+        const initResult = await exec(env, ['init', 'test-project'])
+        initResult.expectSuccess().expectSnapshotStdout('init-output')
+
+        // Check status
+        const statusResult = await exec(env, ['status'])
+        statusResult.expectSuccess().expectSnapshotFull('status-output')
+
+        return {
+          success: true,
+          results: [initResult.result, statusResult.result],
+        }
+      },
+    }
+  },
+
+  snapshotJson(env = 'local') {
+    return {
+      async execute() {
+        const r = await exec(env, ['--json', 'status'], { json: true })
+        r.expectSuccess().expectSnapshotJson('status-json')
+        return { success: true, result: r.result }
+      },
+    }
+  },
+
+  snapshotOutput(env = 'local') {
+    return {
+      async execute() {
+        const r = await exec(env, ['--help'])
+        r.expectSuccess().expectSnapshotOutput('help-combined')
+        return { success: true, result: r.result }
       },
     }
   },

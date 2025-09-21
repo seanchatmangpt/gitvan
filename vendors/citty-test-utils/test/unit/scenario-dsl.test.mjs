@@ -50,7 +50,7 @@ describe('Scenario DSL Unit Tests', () => {
       expect(mockRunner).toHaveBeenCalledTimes(2)
       expect(mockRunner).toHaveBeenNthCalledWith(1, ['--help'], {})
       expect(mockRunner).toHaveBeenNthCalledWith(2, ['--version'], {})
-      expect(results).toHaveLength(2)
+      expect(results.results).toHaveLength(2)
     })
 
     it('should throw error for step without command', async () => {

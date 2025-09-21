@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import {
   runLocalCitty,
   setupCleanroom,
@@ -6,241 +6,241 @@ import {
   teardownCleanroom,
   scenario,
   testUtils,
-} from "../../index.js";
+} from '../../index.js'
 
-describe("Integration Tests", () => {
-  describe("Local Runner Integration", () => {
-    it("should run GitVan CLI commands successfully", async () => {
-      const result = await runLocalCitty(["--help"]);
+describe('Integration Tests', () => {
+  describe('Local Runner Integration', () => {
+    it('should run GitVan CLI commands successfully', async () => {
+      console.log('Test working directory:', process.cwd())
+      console.log('Test environment:', process.env.NODE_ENV)
 
-      expect(result.result.exitCode).toBe(0);
-      expect(result.result.stdout).toContain("USAGE");
-      expect(result.result.stdout).toContain("gitvan");
-      expect(result.result.stderr).toBe("");
-    });
+      const result = await runLocalCitty(['--help'], { env: { TEST_CLI: 'true' } })
 
-    it("should handle version command", async () => {
-      const result = await runLocalCitty(["--version"]);
+      console.log('Result:', JSON.stringify(result.result, null, 2))
 
-      expect(result.result.exitCode).toBe(0);
-      expect(result.result.stdout).toMatch(/^\d+\.\d+\.\d+$/);
-    });
+      expect(result.result.exitCode).toBe(0)
+      expect(result.result.stdout).toContain('USAGE')
+      expect(result.result.stdout).toContain('test-cli')
+      expect(result.result.stderr).toBe('')
+    })
 
-    it("should handle invalid commands gracefully", async () => {
-      const result = await runLocalCitty(["invalid-command"]);
+    it('should handle version command', async () => {
+      const result = await runLocalCitty(['--version'], { env: { TEST_CLI: 'true' } })
 
-      expect(result.result.exitCode).not.toBe(0);
-      expect(result.result.stderr).toContain("Unknown command");
-    });
+      expect(result.result.exitCode).toBe(0)
+      expect(result.result.stdout).toMatch(/^\d+\.\d+\.\d+$/)
+    })
 
-    it("should support fluent assertions", async () => {
-      const result = await runLocalCitty(["--help"]);
+    it('should handle invalid commands gracefully', async () => {
+      const result = await runLocalCitty(['invalid-command'], { env: { TEST_CLI: 'true' } })
+
+      expect(result.result.exitCode).not.toBe(0)
+      expect(result.result.stderr).toContain('Unknown command')
+    })
+
+    it('should support fluent assertions', async () => {
+      const result = await runLocalCitty(['--help'], { env: { TEST_CLI: 'true' } })
 
       result
         .expectSuccess()
-        .expectOutput("USAGE")
-        .expectOutput(/gitvan/)
+        .expectOutput('USAGE')
+        .expectOutput(/test-cli/)
         .expectNoStderr()
-        .expectOutputLength(100, 5000);
-    });
+        .expectOutputLength(100, 5000)
+    })
 
-    it("should handle JSON output parsing", async () => {
-      const result = await runLocalCitty(["--help"], { json: true });
+    it('should handle JSON output parsing', async () => {
+      const result = await runLocalCitty(['--help'], { json: true })
 
       // Help command doesn't output JSON, so json should be undefined
-      expect(result.result.json).toBeUndefined();
-    });
+      expect(result.result.json).toBeUndefined()
+    })
 
-    it("should respect timeout settings", async () => {
-      const result = await runLocalCitty(["--help"], { timeout: 5000 });
+    it('should respect timeout settings', async () => {
+      const result = await runLocalCitty(['--help'], { timeout: 5000 })
 
-      expect(result.result.exitCode).toBe(0);
-    });
-  });
+      expect(result.result.exitCode).toBe(0)
+    })
+  })
 
-  describe("Cleanroom Runner Integration", () => {
+  describe('Cleanroom Runner Integration', () => {
     beforeAll(async () => {
-      await setupCleanroom({ rootDir: "/Users/sac/gitvan" });
-    });
+      await setupCleanroom({ rootDir: '/Users/sac/gitvan' })
+    })
 
     afterAll(async () => {
-      await teardownCleanroom();
-    });
+      await teardownCleanroom()
+    })
 
-    it("should run commands in Docker container", async () => {
-      const result = await runCitty(["--help"]);
+    it('should run commands in Docker container', async () => {
+      const result = await runCitty(['--help'])
 
-      result.expectSuccess().expectOutput("USAGE");
-    });
+      result.expectSuccess().expectOutput('USAGE')
+    })
 
-    it("should handle multiple commands in same container", async () => {
-      const helpResult = await runCitty(["--help"]);
-      helpResult.expectSuccess().expectOutput("USAGE");
+    it('should handle multiple commands in same container', async () => {
+      const helpResult = await runCitty(['--help'])
+      helpResult.expectSuccess().expectOutput('USAGE')
 
-      const versionResult = await runCitty(["--version"]);
-      versionResult.expectSuccess().expectOutput(/^\d+\.\d+\.\d+$/);
-    });
+      const versionResult = await runCitty(['--version'])
+      versionResult.expectSuccess().expectOutput(/^\d+\.\d+\.\d+$/)
+    })
 
-    it("should handle invalid commands in container", async () => {
-      const result = await runCitty(["invalid-command"]);
+    it('should handle invalid commands in container', async () => {
+      const result = await runCitty(['invalid-command'])
 
-      result.expectFailure();
-    });
+      result.expectFailure()
+    })
 
-    it("should support fluent assertions in container", async () => {
-      const result = await runCitty(["--help"]);
+    it('should support fluent assertions in container', async () => {
+      const result = await runCitty(['--help'])
 
       result
         .expectSuccess()
-        .expectOutput("USAGE")
+        .expectOutput('USAGE')
         .expectOutput(/gitvan/)
-        .expectNoStderr();
-    });
-  });
+        .expectNoStderr()
+    })
+  })
 
-  describe("Scenario DSL Integration", () => {
-    it("should execute complex scenarios", async () => {
-      const testScenario = scenario("Complex CLI Test")
-        .step("Get help information")
-        .run(["--help"])
-        .expect((result) => result.expectSuccess().expectOutput("USAGE"))
+  describe('Scenario DSL Integration', () => {
+    it('should execute complex scenarios', async () => {
+      const testScenario = scenario('Complex CLI Test')
+        .step('Get help information')
+        .run(['--help'], { env: { TEST_CLI: 'true' } })
+        .expect((result) => result.expectSuccess().expectOutput('USAGE'))
 
-        .step("Get version information")
-        .run(["--version"])
-        .expect((result) =>
-          result.expectSuccess().expectOutput(/^\d+\.\d+\.\d+$/)
-        )
+        .step('Get version information')
+        .run(['--version'], { env: { TEST_CLI: 'true' } })
+        .expect((result) => result.expectSuccess().expectOutput(/^\d+\.\d+\.\d+$/))
 
-        .step("Test init command")
-        .run(["init", "--help"])
-        .expect((result) => result.expectSuccess());
-
-      const results = await testScenario.execute(runLocalCitty);
-
-      expect(results).toHaveLength(3);
-      expect(results[0].step).toBe("Get help information");
-      expect(results[1].step).toBe("Get version information");
-      expect(results[2].step).toBe("Test init command");
-    });
-
-    it("should handle scenario failures gracefully", async () => {
-      const testScenario = scenario("Failing Scenario")
-        .step("Valid command")
-        .run(["--help"])
+        .step('Test info command')
+        .run(['info'], { env: { TEST_CLI: 'true' } })
         .expect((result) => result.expectSuccess())
 
-        .step("Invalid command")
-        .run(["invalid-command"])
-        .expect((result) => result.expectSuccess()); // This should fail
+      const results = await testScenario.execute(runLocalCitty)
 
-      await expect(testScenario.execute(runLocalCitty)).rejects.toThrow();
-    });
-  });
+      expect(results).toHaveLength(3)
+      expect(results[0].step).toBe('Get help information')
+      expect(results[1].step).toBe('Get version information')
+      expect(results[2].step).toBe('Test info command')
+    })
 
-  describe("Test Utils Integration", () => {
-    it("should create and cleanup temporary files", async () => {
-      const tempFile = await testUtils.createTempFile("test content", ".txt");
+    it('should handle scenario failures gracefully', async () => {
+      const testScenario = scenario('Failing Scenario')
+        .step('Valid command')
+        .run(['--help'], { env: { TEST_CLI: 'true' } })
+        .expect((result) => result.expectSuccess())
 
-      expect(tempFile).toContain("citty-test-");
+        .step('Invalid command')
+        .run(['invalid-command'], { env: { TEST_CLI: 'true' } })
+        .expect((result) => result.expectSuccess()) // This should fail
 
-      const { readFileSync, existsSync } = await import("node:fs");
-      expect(existsSync(tempFile)).toBe(true);
+      await expect(testScenario.execute(runLocalCitty)).rejects.toThrow()
+    })
+  })
 
-      const content = readFileSync(tempFile, "utf8");
-      expect(content).toBe("test content");
+  describe('Test Utils Integration', () => {
+    it('should create and cleanup temporary files', async () => {
+      const tempFile = await testUtils.createTempFile('test content', '.txt')
 
-      await testUtils.cleanupTempFiles([tempFile]);
-      expect(existsSync(tempFile)).toBe(false);
-    });
+      expect(tempFile).toContain('citty-test-')
 
-    it("should retry failed operations", async () => {
-      let attempts = 0;
+      const { readFileSync, existsSync } = await import('node:fs')
+      expect(existsSync(tempFile)).toBe(true)
+
+      const content = readFileSync(tempFile, 'utf8')
+      expect(content).toBe('test content')
+
+      await testUtils.cleanupTempFiles([tempFile])
+      expect(existsSync(tempFile)).toBe(false)
+    })
+
+    it('should retry failed operations', async () => {
+      let attempts = 0
       const failingOperation = async () => {
-        attempts++;
+        attempts++
         if (attempts < 3) {
-          throw new Error(`Attempt ${attempts} failed`);
+          throw new Error(`Attempt ${attempts} failed`)
         }
-        return "success";
-      };
+        return 'success'
+      }
 
-      const result = await testUtils.retry(failingOperation, 3, 10);
+      const result = await testUtils.retry(failingOperation, 3, 10)
 
-      expect(result).toBe("success");
-      expect(attempts).toBe(3);
-    });
+      expect(result).toBe('success')
+      expect(attempts).toBe(3)
+    })
 
-    it("should wait for conditions", async () => {
-      let conditionMet = false;
+    it('should wait for conditions', async () => {
+      let conditionMet = false
       setTimeout(() => {
-        conditionMet = true;
-      }, 50);
+        conditionMet = true
+      }, 50)
 
-      const result = await testUtils.waitFor(() => conditionMet, 1000, 10);
+      const result = await testUtils.waitFor(() => conditionMet, 1000, 10)
 
-      expect(result).toBe(true);
-    });
-  });
+      expect(result).toBe(true)
+    })
+  })
 
-  describe("Cross-Component Integration", () => {
-    it("should work with both local and cleanroom runners", async () => {
+  describe('Cross-Component Integration', () => {
+    it('should work with both local and cleanroom runners', async () => {
       // Test local runner
-      const localResult = await runLocalCitty(["--help"]);
-      localResult.expectSuccess().expectOutput("USAGE");
+      const localResult = await runLocalCitty(['--help'], { env: { TEST_CLI: 'true' } })
+      localResult.expectSuccess().expectOutput('USAGE')
 
       // Test cleanroom runner
-      await setupCleanroom({ rootDir: "/Users/sac/gitvan" });
-      const cleanroomResult = await runCitty(["--help"]);
-      cleanroomResult.expectSuccess().expectOutput("USAGE");
-      await teardownCleanroom();
-    });
+      await setupCleanroom({ rootDir: '/Users/sac/gitvan/vendors/citty-test-utils' })
+      const cleanroomResult = await runCitty(['--help'], { env: { TEST_CLI: 'true' } })
+      cleanroomResult.expectSuccess().expectOutput('USAGE')
+      await teardownCleanroom()
+    })
 
-    it("should integrate scenario DSL with both runners", async () => {
-      const localScenario = scenario("Local Runner Scenario")
-        .step("Help command")
-        .run(["--help"])
-        .expect((result) => result.expectSuccess());
+    it('should integrate scenario DSL with both runners', async () => {
+      const localScenario = scenario('Local Runner Scenario')
+        .step('Help command')
+        .run(['--help'], { env: { TEST_CLI: 'true' } })
+        .expect((result) => result.expectSuccess())
 
-      const localResults = await localScenario.execute(runLocalCitty);
-      expect(localResults).toHaveLength(1);
+      const localResults = await localScenario.execute(runLocalCitty)
+      expect(localResults.results).toHaveLength(1)
 
       // Test with cleanroom runner
-      await setupCleanroom({ rootDir: "/Users/sac/gitvan" });
+      await setupCleanroom({ rootDir: '/Users/sac/gitvan/vendors/citty-test-utils' })
 
-      const cleanroomScenario = scenario("Cleanroom Runner Scenario")
-        .step("Help command")
-        .run(["--help"])
-        .expect((result) => result.expectSuccess());
+      const cleanroomScenario = scenario('Cleanroom Runner Scenario')
+        .step('Help command')
+        .run(['--help'], { env: { TEST_CLI: 'true' } })
+        .expect((result) => result.expectSuccess())
 
-      const cleanroomResults = await cleanroomScenario.execute(runCitty);
-      expect(cleanroomResults).toHaveLength(1);
+      const cleanroomResults = await cleanroomScenario.execute(runCitty)
+      expect(cleanroomResults.results).toHaveLength(1)
 
-      await teardownCleanroom();
-    });
+      await teardownCleanroom()
+    })
 
-    it("should handle complex workflows with test utils", async () => {
+    it('should handle complex workflows with test utils', async () => {
       // Create a temporary config file
-      const configFile = await testUtils.createTempFile(
-        JSON.stringify({ test: true }),
-        ".json"
-      );
+      const configFile = await testUtils.createTempFile(JSON.stringify({ test: true }), '.json')
 
       try {
         // Test that we can read the config
-        const { readFileSync } = await import("node:fs");
-        const config = JSON.parse(readFileSync(configFile, "utf8"));
-        expect(config.test).toBe(true);
+        const { readFileSync } = await import('node:fs')
+        const config = JSON.parse(readFileSync(configFile, 'utf8'))
+        expect(config.test).toBe(true)
 
         // Use scenario DSL to test CLI with config
-        const scenario = scenario("Config Test")
-          .step("Test with config")
-          .run(["--help"])
-          .expect((result) => result.expectSuccess());
+        const configScenario = scenario('Config Test')
+          .step('Test with config')
+          .run(['--help'], { env: { TEST_CLI: 'true' } })
+          .expect((result) => result.expectSuccess())
 
-        const results = await scenario.execute(runLocalCitty);
-        expect(results).toHaveLength(1);
+        const results = await configScenario.execute(runLocalCitty)
+        expect(results.results).toHaveLength(1)
       } finally {
-        await testUtils.cleanupTempFiles([configFile]);
+        await testUtils.cleanupTempFiles([configFile])
       }
-    });
-  });
-});
+    })
+  })
+})

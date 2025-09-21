@@ -1,0 +1,16 @@
+{
+  "data": "USAGE: test-cli [options]\nOPTIONS:\n  --help     Show help\n  --version  Show version",
+  "metadata": {
+    "created": "2025-09-21T06:35:38.719Z",
+    "testFile": "/Users/sac/gitvan/vendors/citty-test-utils",
+    "snapshotName": "scenario-help",
+    "options": {
+      "args": [
+        "--help"
+      ],
+      "cwd": "/Users/sac/.cache/tmp/citty-snapshot-scenario-3pjJCu",
+      "type": "stdout"
+    },
+    "version": "1.0.0"
+  }
+}

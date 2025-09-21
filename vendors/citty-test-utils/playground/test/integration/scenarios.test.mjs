@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import { scenario, scenarios, setupCleanroom, teardownCleanroom } from 'citty-test-utils'
+import { scenario, setupCleanroom, teardownCleanroom } from 'citty-test-utils'
+import { scenarios } from '../../scenario-config.mjs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 

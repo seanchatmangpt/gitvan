@@ -48,7 +48,7 @@ export async function runCitty(
   try {
     // Check if we should use the test CLI
     const useTestCli = env.TEST_CLI === 'true'
-    const cliPath = useTestCli ? 'test-cli.mjs' : 'src/cli.mjs'
+    const cliPath = useTestCli ? 'src/cli.mjs' : 'src/cli.mjs' // Fixed: always use src/cli.mjs for playground
 
     const { exitCode, output, stderr } = await singleton.container.exec(
       ['node', cliPath, ...args],
@@ -61,7 +61,11 @@ export async function runCitty(
       stderr: stderr.trim(),
       args,
       cwd,
-      json: json ? safeJsonParse(output) : undefined,
+      json: json
+        ? safeJsonParse(output)
+        : args.includes('--json')
+        ? safeJsonParse(output)
+        : undefined,
     }
 
     // Wrap in expectations layer

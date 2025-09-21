@@ -1,0 +1,16 @@
+{
+  "data": "USAGE: playground-cli [options]\nOPTIONS:\n  --help     Show help\n  --version  Show version",
+  "metadata": {
+    "created": "2025-09-21T06:43:57.756Z",
+    "testFile": "/Users/sac/gitvan/vendors/citty-test-utils",
+    "snapshotName": "management-version",
+    "options": {
+      "args": [
+        "--version"
+      ],
+      "cwd": "/Users/sac/.cache/tmp/citty-playground-management-4uVXI1",
+      "type": "stdout"
+    },
+    "version": "1.0.0"
+  }
+}

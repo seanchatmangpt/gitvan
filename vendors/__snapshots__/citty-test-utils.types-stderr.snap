@@ -1,0 +1,16 @@
+{
+  "data": "Unknown command",
+  "metadata": {
+    "created": "2025-09-21T06:43:57.410Z",
+    "testFile": "/Users/sac/gitvan/vendors/citty-test-utils",
+    "snapshotName": "types-stderr",
+    "options": {
+      "args": [
+        "invalid-command"
+      ],
+      "cwd": "/Users/sac/.cache/tmp/citty-playground-types-Jrf0ly",
+      "type": "stderr"
+    },
+    "version": "1.0.0"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "data": "",
+  "metadata": {
+    "created": "2025-09-21T06:46:26.980Z",
+    "testFile": "/Users/sac/gitvan/vendors/citty-test-utils",
+    "snapshotName": "custom-env-help",
+    "options": {
+      "args": [
+        "--help"
+      ],
+      "env": {
+        "TEST_CLI": "true",
+        "CUSTOM_ENV": "test"
+      },
+      "cwd": "/Users/sac/gitvan/vendors/citty-test-utils",
+      "type": "stdout"
+    },
+    "version": "1.0.0"
+  }
+}

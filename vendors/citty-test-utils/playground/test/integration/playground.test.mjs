@@ -16,19 +16,19 @@ const playgroundDir = join(dirname(__filename), '../..')
 describe('Playground CLI Tests', () => {
   describe('Basic Commands', () => {
     it('should show help information', async () => {
-      const result = await runLocalCitty(['--help'], {
+      const result = await runLocalCitty(['--show-help'], {
         cwd: playgroundDir,
         env: { TEST_CLI: 'true' },
       })
 
       result
         .expectSuccess()
-        .expectOutput(/test-cli/)
+        .expectOutput(/playground/)
         .expectOutput(/COMMANDS/)
     })
 
     it('should show version information', async () => {
-      const result = await runLocalCitty(['--version'], {
+      const result = await runLocalCitty(['--show-version'], {
         cwd: playgroundDir,
         env: { TEST_CLI: 'true' },
       })

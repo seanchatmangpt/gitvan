@@ -70,7 +70,9 @@ describe('Assertions Unit Tests', () => {
         ...mockResult,
         stderr: 'error message',
       })
-      expect(() => expectation.expectStderr('')).toThrow('Expected stderr to match ')
+      expect(() => expectation.expectStderr('different error')).toThrow(
+        'Expected stderr to match different error'
+      )
     })
   })
 

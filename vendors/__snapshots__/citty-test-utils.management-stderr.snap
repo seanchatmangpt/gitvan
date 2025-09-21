@@ -1,0 +1,16 @@
+{
+  "data": "[error] Unknown command `invalid-command`",
+  "metadata": {
+    "created": "2025-09-21T06:46:58.772Z",
+    "testFile": "/Users/sac/gitvan/vendors/citty-test-utils",
+    "snapshotName": "management-stderr",
+    "options": {
+      "args": [
+        "invalid-command"
+      ],
+      "cwd": "/Users/sac/gitvan/vendors/citty-test-utils",
+      "type": "stderr"
+    },
+    "version": "1.0.0"
+  }
+}

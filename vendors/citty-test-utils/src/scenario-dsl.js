@@ -5,8 +5,26 @@ import { matchSnapshot, snapshotUtils } from './snapshot.js'
 export function scenario(name) {
   const steps = []
   let currentStep = null
+  let concurrentMode = false
+  let concurrentSteps = []
 
   const builder = {
+    // Expose steps for testing
+    get _steps() {
+      return steps
+    },
+
+    // Enable concurrent execution mode
+    concurrent() {
+      concurrentMode = true
+      return this
+    },
+
+    // Disable concurrent execution mode (default)
+    sequential() {
+      concurrentMode = false
+      return this
+    },
     step(description, action = null) {
       currentStep = {
         description,
@@ -53,53 +71,193 @@ export function scenario(name) {
       const results = []
       let lastResult = null
 
-      for (const step of steps) {
-        if (!step.command && !step.action) {
-          throw new Error(`Step "${step.description}" has no command or action`)
+      if (concurrentMode) {
+        // Execute all steps concurrently
+        console.log(`🚀 Executing ${steps.length} steps concurrently`)
+
+        const concurrentPromises = steps.map(async (step, index) => {
+          if (!step.command && !step.action) {
+            throw new Error(`Step "${step.description}" has no command or action`)
+          }
+
+          // Check if step has expectations (unless it's an action step)
+          if (!step.action && step.expectations.length === 0) {
+            throw new Error(`Step "${step.description}" has no expectations`)
+          }
+
+          try {
+            console.log(`🔄 Starting concurrent step ${index + 1}: ${step.description}`)
+
+            let result
+
+            if (step.action) {
+              // Execute custom action
+              result = await step.action({ lastResult, context: {} })
+            } else {
+              // Execute the command
+              if (typeof runner === 'function') {
+                // Use provided runner function (for testing)
+                result = await runner(step.command.args, step.command.options)
+              } else {
+                // Use default runners
+                const options = { ...step.command.options }
+                if (runner === 'local') {
+                  options.env = { ...options.env, TEST_CLI: 'true' }
+                  // Try to detect playground directory for local execution
+                  if (!options.cwd) {
+                    const stack = new Error().stack
+                    if (stack.includes('playground/test/')) {
+                      const lines = stack.split('\n')
+                      for (const line of lines) {
+                        if (line.includes('playground/test/')) {
+                          const match = line.match(/\((.+?\/playground)\/test\//)
+                          if (match) {
+                            options.cwd = match[1]
+                            break
+                          }
+                        }
+                      }
+                    }
+                    if (!options.cwd) {
+                      options.cwd = process.cwd()
+                    }
+                  }
+                }
+                result =
+                  runner === 'cleanroom'
+                    ? await runCitty(step.command.args, options)
+                    : await runLocalCitty(step.command.args, options)
+              }
+            }
+
+            // Apply expectations
+            for (const expectation of step.expectations) {
+              try {
+                expectation(result)
+              } catch (error) {
+                console.log(
+                  `❌ Expectation failed in concurrent step "${step.description}": ${error.message}`
+                )
+                throw error
+              }
+            }
+
+            console.log(`✅ Concurrent step ${index + 1} completed: ${step.description}`)
+            return { step: step.description, result, success: true, index }
+          } catch (error) {
+            console.log(
+              `❌ Concurrent step ${index + 1} failed: ${step.description} - ${error.message}`
+            )
+            return {
+              step: step.description,
+              error: error.message,
+              success: false,
+              index,
+            }
+          }
+        })
+
+        const concurrentResults = await Promise.all(concurrentPromises)
+
+        // Sort results by original step order
+        concurrentResults.sort((a, b) => a.index - b.index)
+
+        // Check if any steps failed and throw an error if so
+        const failedSteps = concurrentResults.filter((r) => !r.success)
+        if (failedSteps.length > 0) {
+          const firstFailure = failedSteps[0]
+          throw new Error(`Concurrent step "${firstFailure.step}" failed: ${firstFailure.error}`)
         }
 
-        console.log(`🔄 Executing: ${step.description}`)
+        // Extract results and lastResult
+        for (const concurrentResult of concurrentResults) {
+          results.push(concurrentResult)
+          if (concurrentResult.success && concurrentResult.result) {
+            lastResult = concurrentResult.result
+          }
+        }
 
-        try {
-          let result
-
-          if (step.action) {
-            // Execute custom action
-            result = await step.action({ lastResult, context: {} })
-          } else {
-            // Execute the command
-            const options = { ...step.command.options }
-            if (runner === 'local') {
-              options.env = { ...options.env, TEST_CLI: 'true' }
-            }
-            result =
-              runner === 'cleanroom'
-                ? await runCitty(step.command.args, options)
-                : await runLocalCitty(step.command.args, options)
+        console.log(`🎉 All ${steps.length} concurrent steps completed`)
+      } else {
+        // Execute steps sequentially (original behavior)
+        for (const step of steps) {
+          if (!step.command && !step.action) {
+            throw new Error(`Step "${step.description}" has no command or action`)
           }
 
-          lastResult = result
-
-          // Apply expectations
-          for (const expectation of step.expectations) {
-            try {
-              expectation(result)
-            } catch (error) {
-              console.log(`❌ Expectation failed in step "${step.description}": ${error.message}`)
-              throw error
-            }
+          // Check if step has expectations (unless it's an action step)
+          if (!step.action && step.expectations.length === 0) {
+            throw new Error(`Step "${step.description}" has no expectations`)
           }
 
-          results.push({ step: step.description, result, success: true })
-          console.log(`✅ Step completed: ${step.description}`)
-        } catch (error) {
-          console.log(`❌ Step failed: ${step.description} - ${error.message}`)
-          results.push({
-            step: step.description,
-            error: error.message,
-            success: false,
-          })
-          throw error
+          console.log(`🔄 Executing: ${step.description}`)
+
+          try {
+            let result
+
+            if (step.action) {
+              // Execute custom action
+              result = await step.action({ lastResult, context: {} })
+            } else {
+              // Execute the command
+              if (typeof runner === 'function') {
+                // Use provided runner function (for testing)
+                result = await runner(step.command.args, step.command.options)
+              } else {
+                // Use default runners
+                const options = { ...step.command.options }
+                if (runner === 'local') {
+                  options.env = { ...options.env, TEST_CLI: 'true' }
+                  // Try to detect playground directory for local execution
+                  if (!options.cwd) {
+                    const stack = new Error().stack
+                    if (stack.includes('playground/test/')) {
+                      const lines = stack.split('\n')
+                      for (const line of lines) {
+                        if (line.includes('playground/test/')) {
+                          const match = line.match(/\((.+?\/playground)\/test\//)
+                          if (match) {
+                            options.cwd = match[1]
+                            break
+                          }
+                        }
+                      }
+                    }
+                    if (!options.cwd) {
+                      options.cwd = process.cwd()
+                    }
+                  }
+                }
+                result =
+                  runner === 'cleanroom'
+                    ? await runCitty(step.command.args, options)
+                    : await runLocalCitty(step.command.args, options)
+              }
+            }
+
+            lastResult = result
+
+            // Apply expectations
+            for (const expectation of step.expectations) {
+              try {
+                expectation(result)
+              } catch (error) {
+                console.log(`❌ Expectation failed in step "${step.description}": ${error.message}`)
+                throw error
+              }
+            }
+
+            results.push({ step: step.description, result, success: true })
+            console.log(`✅ Step completed: ${step.description}`)
+          } catch (error) {
+            console.log(`❌ Step failed: ${step.description} - ${error.message}`)
+            results.push({
+              step: step.description,
+              error: error.message,
+              success: false,
+            })
+            throw error
+          }
         }
       }
 
@@ -108,6 +266,7 @@ export function scenario(name) {
         results,
         success: results.every((r) => r.success),
         lastResult,
+        concurrent: concurrentMode,
       }
     },
 
@@ -200,7 +359,17 @@ export function scenario(name) {
     },
   }
 
+  // Add static method to create concurrent scenarios by default
+  builder.constructor.concurrent = function (name) {
+    return scenario(name).concurrent()
+  }
+
   return builder
+}
+
+// Export a concurrent scenario factory function
+export function concurrentScenario(name) {
+  return scenario(name).concurrent()
 }
 
 // Helper function to get caller file for snapshot testing

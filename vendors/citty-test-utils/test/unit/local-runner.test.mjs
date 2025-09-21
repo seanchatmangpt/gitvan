@@ -1,25 +1,25 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+
+// Mock child_process at the module level
+vi.mock('node:child_process', () => ({
+  exec: vi.fn(),
+}))
+
 import { runLocalCitty } from '../../src/local-runner.js'
+import { exec } from 'node:child_process'
 
 describe('Local Runner Unit Tests', () => {
   describe('runLocalCitty', () => {
-    it('should find GitVan project root correctly', async () => {
-      // Mock the spawn function to avoid actual process execution
-      const mockSpawn = vi.fn().mockReturnValue({
-        stdout: { on: vi.fn() },
-        stderr: { on: vi.fn() },
-        on: vi.fn((event, callback) => {
-          if (event === 'close') {
-            // Simulate successful process completion
-            setTimeout(() => callback(0), 10)
-          }
-        }),
-      })
+    beforeEach(() => {
+      vi.clearAllMocks()
+    })
 
-      // Mock the child_process module
-      vi.doMock('node:child_process', () => ({
-        spawn: mockSpawn,
-      }))
+    it('should find GitVan project root correctly', async () => {
+      // Mock the exec function to avoid actual process execution
+      exec.mockImplementation((command, options, callback) => {
+        // Simulate successful process completion
+        setTimeout(() => callback(null, 'Mock output', ''), 10)
+      })
 
       const result = await runLocalCitty(['--help'])
 
@@ -29,34 +29,21 @@ describe('Local Runner Unit Tests', () => {
     })
 
     it('should handle process errors', async () => {
-      const mockSpawn = vi.fn().mockReturnValue({
-        stdout: { on: vi.fn() },
-        stderr: { on: vi.fn() },
-        on: vi.fn((event, callback) => {
-          if (event === 'error') {
-            setTimeout(() => callback(new Error('Process spawn failed')), 10)
-          }
-        }),
+      exec.mockImplementation((command, options, callback) => {
+        // Simulate process error
+        setTimeout(() => callback(new Error('Process exec failed')), 10)
       })
 
-      vi.doMock('node:child_process', () => ({
-        spawn: mockSpawn,
-      }))
-
-      await expect(runLocalCitty(['--help'])).rejects.toThrow('Process spawn failed')
+      await expect(runLocalCitty(['--help'])).rejects.toThrow('Process exec failed')
     })
 
     it('should handle timeout', async () => {
-      const mockSpawn = vi.fn().mockReturnValue({
-        stdout: { on: vi.fn() },
-        stderr: { on: vi.fn() },
-        on: vi.fn(),
-        kill: vi.fn(),
+      exec.mockImplementation((command, options, callback) => {
+        // Simulate timeout error
+        const error = new Error('Command timed out after 10ms')
+        error.code = 'TIMEOUT'
+        setTimeout(() => callback(error), 10)
       })
-
-      vi.doMock('node:child_process', () => ({
-        spawn: mockSpawn,
-      }))
 
       await expect(runLocalCitty(['--help'], { timeout: 10 })).rejects.toThrow(
         'Command timed out after 10ms'
@@ -64,25 +51,10 @@ describe('Local Runner Unit Tests', () => {
     })
 
     it('should handle JSON parsing', async () => {
-      const mockSpawn = vi.fn().mockReturnValue({
-        stdout: {
-          on: vi.fn((event, callback) => {
-            if (event === 'data') {
-              callback(Buffer.from('{"version": "3.0.0"}'))
-            }
-          }),
-        },
-        stderr: { on: vi.fn() },
-        on: vi.fn((event, callback) => {
-          if (event === 'close') {
-            setTimeout(() => callback(0), 10)
-          }
-        }),
+      exec.mockImplementation((command, options, callback) => {
+        // Simulate successful process completion with JSON output
+        setTimeout(() => callback(null, '{"version": "3.0.0"}', ''), 10)
       })
-
-      vi.doMock('node:child_process', () => ({
-        spawn: mockSpawn,
-      }))
 
       const result = await runLocalCitty(['--version'], { json: true })
 
@@ -90,25 +62,10 @@ describe('Local Runner Unit Tests', () => {
     })
 
     it('should handle invalid JSON gracefully', async () => {
-      const mockSpawn = vi.fn().mockReturnValue({
-        stdout: {
-          on: vi.fn((event, callback) => {
-            if (event === 'data') {
-              callback(Buffer.from('not json'))
-            }
-          }),
-        },
-        stderr: { on: vi.fn() },
-        on: vi.fn((event, callback) => {
-          if (event === 'close') {
-            setTimeout(() => callback(0), 10)
-          }
-        }),
+      exec.mockImplementation((command, options, callback) => {
+        // Simulate successful process completion with invalid JSON output
+        setTimeout(() => callback(null, 'not json', ''), 10)
       })
-
-      vi.doMock('node:child_process', () => ({
-        spawn: mockSpawn,
-      }))
 
       const result = await runLocalCitty(['--help'], { json: true })
 
@@ -116,30 +73,21 @@ describe('Local Runner Unit Tests', () => {
     })
 
     it('should pass environment variables', async () => {
-      const mockSpawn = vi.fn().mockReturnValue({
-        stdout: { on: vi.fn() },
-        stderr: { on: vi.fn() },
-        on: vi.fn((event, callback) => {
-          if (event === 'close') {
-            setTimeout(() => callback(0), 10)
-          }
-        }),
+      exec.mockImplementation((command, options, callback) => {
+        // Simulate successful process completion
+        setTimeout(() => callback(null, 'Mock output', ''), 10)
       })
-
-      vi.doMock('node:child_process', () => ({
-        spawn: mockSpawn,
-      }))
 
       await runLocalCitty(['--help'], { env: { TEST_VAR: 'test_value' } })
 
-      expect(mockSpawn).toHaveBeenCalledWith(
-        'node',
-        ['src/cli.mjs', '--help'],
+      expect(exec).toHaveBeenCalledWith(
+        expect.stringContaining('node src/cli.mjs --help'),
         expect.objectContaining({
           env: expect.objectContaining({
             TEST_VAR: 'test_value',
           }),
-        })
+        }),
+        expect.any(Function)
       )
     })
   })

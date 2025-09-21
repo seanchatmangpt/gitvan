@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { 
-  SnapshotConfig, 
-  SnapshotManager, 
-  getSnapshotManager, 
+import {
+  SnapshotConfig,
+  SnapshotManager,
+  getSnapshotManager,
   resetSnapshotManager,
   matchSnapshot,
-  snapshotUtils
+  snapshotUtils,
 } from '../../src/snapshot.js'
 import { writeFileSync, unlinkSync, existsSync, mkdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'
@@ -19,20 +19,20 @@ describe('Snapshot Testing Core', () => {
     const { mkdtempSync } = require('node:fs')
     const { tmpdir } = require('node:os')
     tempDir = mkdtempSync(join(tmpdir(), 'citty-snapshot-test-'))
-    
+
     // Create test file for snapshot testing
     const testFile = join(tempDir, 'test-file.test.mjs')
     writeFileSync(testFile, '// Test file for snapshots', 'utf8')
-    
+
     // Create snapshot manager with temp directory
     const config = new SnapshotConfig({
       snapshotDir: '__snapshots__',
       updateSnapshots: false,
       ciMode: false,
       ignoreWhitespace: true,
-      ignoreTimestamps: true
+      ignoreTimestamps: true,
     })
-    
+
     snapshotManager = new SnapshotManager(config)
   })
 
@@ -44,7 +44,7 @@ describe('Snapshot Testing Core', () => {
     } catch (error) {
       // Ignore cleanup errors
     }
-    
+
     // Reset global snapshot manager
     resetSnapshotManager()
   })
@@ -65,7 +65,7 @@ describe('Snapshot Testing Core', () => {
         updateSnapshots: true,
         ciMode: true,
         ignoreWhitespace: false,
-        ignoreTimestamps: false
+        ignoreTimestamps: false,
       })
       expect(config.snapshotDir).toBe('custom-snapshots')
       expect(config.updateSnapshots).toBe(true)
@@ -112,7 +112,7 @@ describe('Snapshot Testing Core', () => {
       const data = {
         message: 'hello',
         timestamp: '2024-01-01T12:00:00.000Z',
-        count: 42
+        count: 42,
       }
       const normalized = snapshotManager.normalizeData(data)
       expect(normalized.timestamp).toBe('[TIMESTAMP]')
@@ -149,7 +149,7 @@ describe('Snapshot Testing Core', () => {
     it('should create new snapshot when none exists', () => {
       const testFile = join(tempDir, 'test-file.test.mjs')
       const result = snapshotManager.matchSnapshot('test data', testFile, 'new-snapshot')
-      
+
       expect(result.match).toBe(true)
       expect(result.created).toBe(true)
       expect(result.message).toContain('Created new snapshot')
@@ -157,26 +157,26 @@ describe('Snapshot Testing Core', () => {
 
     it('should match existing snapshot', () => {
       const testFile = join(tempDir, 'test-file.test.mjs')
-      
+
       // Create initial snapshot
       snapshotManager.matchSnapshot('test data', testFile, 'existing-snapshot')
-      
+
       // Match against existing snapshot
       const result = snapshotManager.matchSnapshot('test data', testFile, 'existing-snapshot')
-      
+
       expect(result.match).toBe(true)
       expect(result.created).toBeUndefined()
     })
 
     it('should detect snapshot mismatch', () => {
       const testFile = join(tempDir, 'test-file.test.mjs')
-      
+
       // Create initial snapshot
       snapshotManager.matchSnapshot('original data', testFile, 'mismatch-test')
-      
+
       // Try to match different data
       const result = snapshotManager.matchSnapshot('different data', testFile, 'mismatch-test')
-      
+
       expect(result.match).toBe(false)
       expect(result.error).toContain('Snapshot mismatch')
     })
@@ -185,13 +185,13 @@ describe('Snapshot Testing Core', () => {
       const config = new SnapshotConfig({ updateSnapshots: true })
       const manager = new SnapshotManager(config)
       const testFile = join(tempDir, 'test-file.test.mjs')
-      
+
       // Create initial snapshot
       manager.matchSnapshot('original data', testFile, 'update-test')
-      
+
       // Update snapshot
       const result = manager.matchSnapshot('updated data', testFile, 'update-test')
-      
+
       expect(result.match).toBe(true)
       expect(result.updated).toBe(true)
     })
@@ -205,9 +205,9 @@ describe('Snapshot Testing Core', () => {
         exitCode: 0,
         args: ['--help'],
         cwd: '/test',
-        json: { message: 'hello' }
+        json: { message: 'hello' },
       }
-      
+
       const snapshot = snapshotUtils.createSnapshotFromResult(result, 'stdout')
       expect(snapshot).toBe('hello world')
     })
@@ -219,9 +219,9 @@ describe('Snapshot Testing Core', () => {
         exitCode: 1,
         args: ['invalid'],
         cwd: '/test',
-        json: null
+        json: null,
       }
-      
+
       const snapshot = snapshotUtils.createSnapshotFromResult(result, 'stderr')
       expect(snapshot).toBe('error message')
     })
@@ -233,9 +233,9 @@ describe('Snapshot Testing Core', () => {
         exitCode: 0,
         args: ['--json'],
         cwd: '/test',
-        json: { message: 'hello' }
+        json: { message: 'hello' },
       }
-      
+
       const snapshot = snapshotUtils.createSnapshotFromResult(result, 'json')
       expect(snapshot).toEqual({ message: 'hello' })
     })
@@ -247,9 +247,9 @@ describe('Snapshot Testing Core', () => {
         exitCode: 0,
         args: ['--help'],
         cwd: '/test',
-        json: null
+        json: null,
       }
-      
+
       const snapshot = snapshotUtils.createSnapshotFromResult(result, 'full')
       expect(snapshot).toEqual({
         exitCode: 0,
@@ -257,16 +257,16 @@ describe('Snapshot Testing Core', () => {
         stderr: '',
         args: ['--help'],
         cwd: '/test',
-        json: null
+        json: null,
       })
     })
 
     it('should create custom snapshot', () => {
       const data = { custom: 'data' }
       const metadata = { test: 'test' }
-      
+
       const snapshot = snapshotUtils.createSnapshot(data, metadata)
-      
+
       expect(snapshot.data).toEqual(data)
       expect(snapshot.metadata.test).toBe('test')
       expect(snapshot.metadata.created).toBeDefined()
@@ -275,10 +275,10 @@ describe('Snapshot Testing Core', () => {
     it('should validate snapshot data', () => {
       const validSnapshot = { data: 'test' }
       const invalidSnapshot = 'not an object'
-      
+
       const validResult = snapshotUtils.validateSnapshot(validSnapshot)
       const invalidResult = snapshotUtils.validateSnapshot(invalidSnapshot)
-      
+
       expect(validResult.valid).toBe(true)
       expect(invalidResult.valid).toBe(false)
       expect(invalidResult.error).toContain('must be an object')
@@ -310,7 +310,7 @@ describe('Snapshot Testing Core', () => {
     it('should work with convenience function', () => {
       const testFile = join(tempDir, 'test-file.test.mjs')
       const result = matchSnapshot('test data', testFile, 'convenience-test')
-      
+
       expect(result.match).toBe(true)
       expect(result.created).toBe(true)
     })

@@ -1,0 +1,16 @@
+{
+  "data": "USAGE: playground-cli [options]\nOPTIONS:\n  --help     Show help\n  --version  Show version\n  --json     Output JSON\n\nCOMMANDS:\n  greet <name>  Greet someone\n  math <op>     Math operations",
+  "metadata": {
+    "created": "2025-09-21T06:43:56.503Z",
+    "testFile": "/Users/sac/gitvan/vendors/citty-test-utils",
+    "snapshotName": "playground-help",
+    "options": {
+      "args": [
+        "--help"
+      ],
+      "cwd": "/Users/sac/.cache/tmp/citty-playground-snapshot-rXH3DE",
+      "type": "stdout"
+    },
+    "version": "1.0.0"
+  }
+}

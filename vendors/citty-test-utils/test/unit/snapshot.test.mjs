@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { 
-  SnapshotConfig, 
-  SnapshotManager, 
-  getSnapshotManager, 
+import {
+  SnapshotConfig,
+  SnapshotManager,
+  getSnapshotManager,
   resetSnapshotManager,
   matchSnapshot,
-  snapshotUtils
+  snapshotUtils,
 } from '../../src/snapshot.js'
 import { runLocalCitty } from '../../src/local-runner.js'
 import { scenario, scenarios } from '../../src/scenario-dsl.js'
@@ -21,20 +21,20 @@ describe('Snapshot Testing', () => {
     const { mkdtempSync } = require('node:fs')
     const { tmpdir } = require('node:os')
     tempDir = mkdtempSync(join(tmpdir(), 'citty-snapshot-test-'))
-    
+
     // Create test file for snapshot testing
     const testFile = join(tempDir, 'test-file.test.mjs')
     writeFileSync(testFile, '// Test file for snapshots', 'utf8')
-    
+
     // Create snapshot manager with temp directory
     const config = new SnapshotConfig({
       snapshotDir: '__snapshots__',
       updateSnapshots: false,
       ciMode: false,
       ignoreWhitespace: true,
-      ignoreTimestamps: true
+      ignoreTimestamps: true,
     })
-    
+
     snapshotManager = new SnapshotManager(config)
   })
 
@@ -46,7 +46,7 @@ describe('Snapshot Testing', () => {
     } catch (error) {
       // Ignore cleanup errors
     }
-    
+
     // Reset global snapshot manager
     resetSnapshotManager()
   })
@@ -67,7 +67,7 @@ describe('Snapshot Testing', () => {
         updateSnapshots: true,
         ciMode: true,
         ignoreWhitespace: false,
-        ignoreTimestamps: false
+        ignoreTimestamps: false,
       })
       expect(config.snapshotDir).toBe('custom-snapshots')
       expect(config.updateSnapshots).toBe(true)
@@ -94,7 +94,7 @@ describe('Snapshot Testing', () => {
       const testFile = join(tempDir, 'test-file.test.mjs')
       const snapshotPath = snapshotManager.getSnapshotPath(testFile, 'test-snapshot')
       expect(snapshotPath).toContain('__snapshots__')
-      expect(snapshotPath).toContain('test-file.test-snapshot.snap')
+      expect(snapshotPath).toContain('test-file.test.test-snapshot.snap')
     })
 
     it('should normalize string data', () => {
@@ -114,7 +114,7 @@ describe('Snapshot Testing', () => {
       const data = {
         message: 'hello',
         timestamp: '2024-01-01T12:00:00.000Z',
-        count: 42
+        count: 42,
       }
       const normalized = snapshotManager.normalizeData(data)
       expect(normalized.timestamp).toBe('[TIMESTAMP]')
@@ -151,7 +151,7 @@ describe('Snapshot Testing', () => {
     it('should create new snapshot when none exists', () => {
       const testFile = join(tempDir, 'test-file.test.mjs')
       const result = snapshotManager.matchSnapshot('test data', testFile, 'new-snapshot')
-      
+
       expect(result.match).toBe(true)
       expect(result.created).toBe(true)
       expect(result.message).toContain('Created new snapshot')
@@ -159,26 +159,26 @@ describe('Snapshot Testing', () => {
 
     it('should match existing snapshot', () => {
       const testFile = join(tempDir, 'test-file.test.mjs')
-      
+
       // Create initial snapshot
       snapshotManager.matchSnapshot('test data', testFile, 'existing-snapshot')
-      
+
       // Match against existing snapshot
       const result = snapshotManager.matchSnapshot('test data', testFile, 'existing-snapshot')
-      
+
       expect(result.match).toBe(true)
       expect(result.created).toBeUndefined()
     })
 
     it('should detect snapshot mismatch', () => {
       const testFile = join(tempDir, 'test-file.test.mjs')
-      
+
       // Create initial snapshot
       snapshotManager.matchSnapshot('original data', testFile, 'mismatch-test')
-      
+
       // Try to match different data
       const result = snapshotManager.matchSnapshot('different data', testFile, 'mismatch-test')
-      
+
       expect(result.match).toBe(false)
       expect(result.error).toContain('Snapshot mismatch')
     })
@@ -187,13 +187,13 @@ describe('Snapshot Testing', () => {
       const config = new SnapshotConfig({ updateSnapshots: true })
       const manager = new SnapshotManager(config)
       const testFile = join(tempDir, 'test-file.test.mjs')
-      
+
       // Create initial snapshot
       manager.matchSnapshot('original data', testFile, 'update-test')
-      
+
       // Update snapshot
       const result = manager.matchSnapshot('updated data', testFile, 'update-test')
-      
+
       expect(result.match).toBe(true)
       expect(result.updated).toBe(true)
     })
@@ -207,9 +207,9 @@ describe('Snapshot Testing', () => {
         exitCode: 0,
         args: ['--help'],
         cwd: '/test',
-        json: { message: 'hello' }
+        json: { message: 'hello' },
       }
-      
+
       const snapshot = snapshotUtils.createSnapshotFromResult(result, 'stdout')
       expect(snapshot).toBe('hello world')
     })
@@ -221,9 +221,9 @@ describe('Snapshot Testing', () => {
         exitCode: 1,
         args: ['invalid'],
         cwd: '/test',
-        json: null
+        json: null,
       }
-      
+
       const snapshot = snapshotUtils.createSnapshotFromResult(result, 'stderr')
       expect(snapshot).toBe('error message')
     })
@@ -235,9 +235,9 @@ describe('Snapshot Testing', () => {
         exitCode: 0,
         args: ['--json'],
         cwd: '/test',
-        json: { message: 'hello' }
+        json: { message: 'hello' },
       }
-      
+
       const snapshot = snapshotUtils.createSnapshotFromResult(result, 'json')
       expect(snapshot).toEqual({ message: 'hello' })
     })
@@ -249,9 +249,9 @@ describe('Snapshot Testing', () => {
         exitCode: 0,
         args: ['--help'],
         cwd: '/test',
-        json: null
+        json: null,
       }
-      
+
       const snapshot = snapshotUtils.createSnapshotFromResult(result, 'full')
       expect(snapshot).toEqual({
         exitCode: 0,
@@ -259,16 +259,16 @@ describe('Snapshot Testing', () => {
         stderr: '',
         args: ['--help'],
         cwd: '/test',
-        json: null
+        json: null,
       })
     })
 
     it('should create custom snapshot', () => {
       const data = { custom: 'data' }
       const metadata = { test: 'test' }
-      
+
       const snapshot = snapshotUtils.createSnapshot(data, metadata)
-      
+
       expect(snapshot.data).toEqual(data)
       expect(snapshot.metadata.test).toBe('test')
       expect(snapshot.metadata.created).toBeDefined()
@@ -277,10 +277,10 @@ describe('Snapshot Testing', () => {
     it('should validate snapshot data', () => {
       const validSnapshot = { data: 'test' }
       const invalidSnapshot = 'not an object'
-      
+
       const validResult = snapshotUtils.validateSnapshot(validSnapshot)
       const invalidResult = snapshotUtils.validateSnapshot(invalidSnapshot)
-      
+
       expect(validResult.valid).toBe(true)
       expect(invalidResult.valid).toBe(false)
       expect(invalidResult.error).toContain('must be an object')
@@ -291,256 +291,207 @@ describe('Snapshot Testing', () => {
     it('should work with runLocalCitty and snapshot assertions', async () => {
       // This test requires a test CLI to be available
       // We'll create a simple test CLI for this test
-      const testCliPath = join(tempDir, 'test-cli.mjs')
-      const testCliContent = `
-import { defineCommand } from 'citty'
+      const testCliPath = join(tempDir, 'simple-test-cli.mjs')
+      const testCliContent = `#!/usr/bin/env node
+// simple-test-cli.mjs - Simple Test CLI for citty-test-utils debugging
 
-export default defineCommand({
-  meta: {
-    name: 'test-cli',
-    version: '1.0.0'
-  },
-  args: {
-    help: {
-      type: 'boolean',
-      alias: 'h',
-      description: 'Show help'
-    },
-    version: {
-      type: 'boolean',
-      alias: 'v',
-      description: 'Show version'
-    }
-  },
-  run({ args }) {
-    if (args.help) {
-      console.log('USAGE: test-cli [options]')
-      console.log('OPTIONS:')
-      console.log('  -h, --help     Show help')
-      console.log('  -v, --version  Show version')
-      return
-    }
-    
-    if (args.version) {
-      console.log('1.0.0')
-      return
-    }
-    
-    console.log('Hello from test CLI')
-  }
-})
-`
+const args = process.argv.slice(2);
+
+if (args.includes('--help')) {
+  console.log('Simple Test CLI v1.0.0\\n');
+  console.log('USAGE simple-test-cli <command>\\n');
+  console.log('COMMANDS\\n');
+  console.log('  help    Show this help message');
+  console.log('  version Show version information');
+  console.log('\\nUse simple-test-cli <command> for more information about a command.');
+} else if (args.includes('--version')) {
+  console.log('1.0.0');
+} else if (args.includes('error')) {
+  console.error('A simple error occurred.');
+  process.exit(1);
+} else {
+  console.log('Simple Test CLI v1.0.0');
+}`
       writeFileSync(testCliPath, testCliContent, 'utf8')
-      
+
       // Test snapshot with help output
-      const result = await runLocalCitty(['--help'], { 
+      const result = await runLocalCitty(['--help'], {
         cwd: tempDir,
-        env: { TEST_CLI: 'true' }
+        env: { TEST_CLI: 'true' },
       })
-      
-      result
-        .expectSuccess()
-        .expectSnapshotStdout('help-output')
+
+      result.expectSuccess().expectSnapshotStdout('help-output')
     })
 
     it('should work with version snapshot', async () => {
-      const testCliPath = join(tempDir, 'test-cli.mjs')
-      const testCliContent = `
-import { defineCommand } from 'citty'
+      const testCliPath = join(tempDir, 'simple-test-cli.mjs')
+      const testCliContent = `#!/usr/bin/env node
+// simple-test-cli.mjs - Simple Test CLI for citty-test-utils debugging
 
-export default defineCommand({
-  meta: {
-    name: 'test-cli',
-    version: '1.0.0'
-  },
-  args: {
-    version: {
-      type: 'boolean',
-      alias: 'v',
-      description: 'Show version'
-    }
-  },
-  run({ args }) {
-    if (args.version) {
-      console.log('1.0.0')
-      return
-    }
-    
-    console.log('Hello from test CLI')
-  }
-})
-`
+const args = process.argv.slice(2);
+
+if (args.includes('--help')) {
+  console.log('Simple Test CLI v1.0.0\\n');
+  console.log('USAGE simple-test-cli <command>\\n');
+  console.log('COMMANDS\\n');
+  console.log('  help    Show this help message');
+  console.log('  version Show version information');
+  console.log('\\nUse simple-test-cli <command> for more information about a command.');
+} else if (args.includes('--version')) {
+  console.log('1.0.0');
+} else if (args.includes('error')) {
+  console.error('A simple error occurred.');
+  process.exit(1);
+} else {
+  console.log('Simple Test CLI v1.0.0');
+}`
       writeFileSync(testCliPath, testCliContent, 'utf8')
-      
-      const result = await runLocalCitty(['--version'], { 
+
+      const result = await runLocalCitty(['--version'], {
         cwd: tempDir,
-        env: { TEST_CLI: 'true' }
+        env: { TEST_CLI: 'true' },
       })
-      
-      result
-        .expectSuccess()
-        .expectSnapshotStdout('version-output')
+
+      result.expectSuccess().expectSnapshotStdout('version-output')
     })
   })
 
   describe('Integration with Scenario DSL', () => {
     it('should work with scenario snapshot expectations', async () => {
-      const testCliPath = join(tempDir, 'test-cli.mjs')
-      const testCliContent = `
-import { defineCommand } from 'citty'
+      const testCliPath = join(tempDir, 'simple-test-cli.mjs')
+      const testCliContent = `#!/usr/bin/env node
+// simple-test-cli.mjs - Simple Test CLI for citty-test-utils debugging
 
-export default defineCommand({
-  meta: {
-    name: 'test-cli',
-    version: '1.0.0'
-  },
-  args: {
-    help: {
-      type: 'boolean',
-      alias: 'h',
-      description: 'Show help'
-    }
-  },
-  run({ args }) {
-    if (args.help) {
-      console.log('USAGE: test-cli [options]')
-      console.log('OPTIONS:')
-      console.log('  -h, --help     Show help')
-      return
-    }
-    
-    console.log('Hello from test CLI')
-  }
-})
-`
+const args = process.argv.slice(2);
+
+if (args.includes('--help')) {
+  console.log('Simple Test CLI v1.0.0\\n');
+  console.log('USAGE simple-test-cli <command>\\n');
+  console.log('COMMANDS\\n');
+  console.log('  help    Show this help message');
+  console.log('  version Show version information');
+  console.log('\\nUse simple-test-cli <command> for more information about a command.');
+} else if (args.includes('--version')) {
+  console.log('1.0.0');
+} else if (args.includes('error')) {
+  console.error('A simple error occurred.');
+  process.exit(1);
+} else {
+  console.log('Simple Test CLI v1.0.0');
+}`
       writeFileSync(testCliPath, testCliContent, 'utf8')
-      
+
       const result = await scenario('Scenario snapshot test')
         .step('Get help')
         .run('--help', { cwd: tempDir, env: { TEST_CLI: 'true' } })
         .expectSuccess()
         .expectSnapshotStdout('scenario-help')
         .execute()
-      
+
       expect(result.success).toBe(true)
     })
 
     it('should work with scenario snapshot steps', async () => {
-      const testCliPath = join(tempDir, 'test-cli.mjs')
-      const testCliContent = `
-import { defineCommand } from 'citty'
+      const testCliPath = join(tempDir, 'simple-test-cli.mjs')
+      const testCliContent = `#!/usr/bin/env node
+// simple-test-cli.mjs - Simple Test CLI for citty-test-utils debugging
 
-export default defineCommand({
-  meta: {
-    name: 'test-cli',
-    version: '1.0.0'
-  },
-  args: {
-    help: {
-      type: 'boolean',
-      alias: 'h',
-      description: 'Show help'
-    }
-  },
-  run({ args }) {
-    if (args.help) {
-      console.log('USAGE: test-cli [options]')
-      console.log('OPTIONS:')
-      console.log('  -h, --help     Show help')
-      return
-    }
-    
-    console.log('Hello from test CLI')
-  }
-})
-`
+const args = process.argv.slice(2);
+
+if (args.includes('--help')) {
+  console.log('Simple Test CLI v1.0.0\\n');
+  console.log('USAGE simple-test-cli <command>\\n');
+  console.log('COMMANDS\\n');
+  console.log('  help    Show this help message');
+  console.log('  version Show version information');
+  console.log('\\nUse simple-test-cli <command> for more information about a command.');
+} else if (args.includes('--version')) {
+  console.log('1.0.0');
+} else if (args.includes('error')) {
+  console.error('A simple error occurred.');
+  process.exit(1);
+} else {
+  console.log('Simple Test CLI v1.0.0');
+}`
       writeFileSync(testCliPath, testCliContent, 'utf8')
-      
+
       const result = await scenario('Scenario snapshot step test')
         .step('Get help')
         .run('--help', { cwd: tempDir, env: { TEST_CLI: 'true' } })
         .expectSuccess()
         .snapshot('scenario-step-help')
         .execute()
-      
+
       expect(result.success).toBe(true)
     })
   })
 
   describe('Pre-built Snapshot Scenarios', () => {
     it('should work with snapshotHelp scenario', async () => {
-      const testCliPath = join(tempDir, 'test-cli.mjs')
-      const testCliContent = `
-import { defineCommand } from 'citty'
+      const testCliPath = join(tempDir, 'simple-test-cli.mjs')
+      const testCliContent = `#!/usr/bin/env node
+// simple-test-cli.mjs - Simple Test CLI for citty-test-utils debugging
 
-export default defineCommand({
-  meta: {
-    name: 'test-cli',
-    version: '1.0.0'
-  },
-  args: {
-    help: {
-      type: 'boolean',
-      alias: 'h',
-      description: 'Show help'
-    }
-  },
-  run({ args }) {
-    if (args.help) {
-      console.log('USAGE: test-cli [options]')
-      console.log('OPTIONS:')
-      console.log('  -h, --help     Show help')
-      return
-    }
-    
-    console.log('Hello from test CLI')
-  }
-})
-`
+const args = process.argv.slice(2);
+
+if (args.includes('--help')) {
+  console.log('Simple Test CLI v1.0.0\\n');
+  console.log('USAGE simple-test-cli <command>\\n');
+  console.log('COMMANDS\\n');
+  console.log('  help    Show this help message');
+  console.log('  version Show version information');
+  console.log('\\nUse simple-test-cli <command> for more information about a command.');
+} else if (args.includes('--version')) {
+  console.log('1.0.0');
+} else if (args.includes('error')) {
+  console.error('A simple error occurred.');
+  process.exit(1);
+} else {
+  console.log('Simple Test CLI v1.0.0');
+}`
       writeFileSync(testCliPath, testCliContent, 'utf8')
-      
-      const result = await scenarios.snapshotHelp({ 
-        cwd: tempDir, 
-        env: { TEST_CLI: 'true' } 
-      }).execute()
-      
+
+      const result = await scenarios
+        .snapshotHelp({
+          cwd: tempDir,
+          env: { TEST_CLI: 'true' },
+        })
+        .execute()
+
       expect(result.success).toBe(true)
     })
 
     it('should work with snapshotVersion scenario', async () => {
-      const testCliPath = join(tempDir, 'test-cli.mjs')
-      const testCliContent = `
-import { defineCommand } from 'citty'
+      const testCliPath = join(tempDir, 'simple-test-cli.mjs')
+      const testCliContent = `#!/usr/bin/env node
+// simple-test-cli.mjs - Simple Test CLI for citty-test-utils debugging
 
-export default defineCommand({
-  meta: {
-    name: 'test-cli',
-    version: '1.0.0'
-  },
-  args: {
-    version: {
-      type: 'boolean',
-      alias: 'v',
-      description: 'Show version'
-    }
-  },
-  run({ args }) {
-    if (args.version) {
-      console.log('1.0.0')
-      return
-    }
-    
-    console.log('Hello from test CLI')
-  }
-})
-`
+const args = process.argv.slice(2);
+
+if (args.includes('--help')) {
+  console.log('Simple Test CLI v1.0.0\\n');
+  console.log('USAGE simple-test-cli <command>\\n');
+  console.log('COMMANDS\\n');
+  console.log('  help    Show this help message');
+  console.log('  version Show version information');
+  console.log('\\nUse simple-test-cli <command> for more information about a command.');
+} else if (args.includes('--version')) {
+  console.log('1.0.0');
+} else if (args.includes('error')) {
+  console.error('A simple error occurred.');
+  process.exit(1);
+} else {
+  console.log('Simple Test CLI v1.0.0');
+}`
       writeFileSync(testCliPath, testCliContent, 'utf8')
-      
-      const result = await scenarios.snapshotVersion({ 
-        cwd: tempDir, 
-        env: { TEST_CLI: 'true' } 
-      }).execute()
-      
+
+      const result = await scenarios
+        .snapshotVersion({
+          cwd: tempDir,
+          env: { TEST_CLI: 'true' },
+        })
+        .execute()
+
       expect(result.success).toBe(true)
     })
   })
@@ -570,7 +521,7 @@ export default defineCommand({
     it('should work with convenience function', () => {
       const testFile = join(tempDir, 'test-file.test.mjs')
       const result = matchSnapshot('test data', testFile, 'convenience-test')
-      
+
       expect(result.match).toBe(true)
       expect(result.created).toBe(true)
     })

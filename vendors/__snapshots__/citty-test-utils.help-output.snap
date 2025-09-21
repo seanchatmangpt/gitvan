@@ -1,0 +1,16 @@
+{
+  "data": "USAGE: test-cli [options]\nOPTIONS:\n  --help     Show help\n  --version  Show version\n  --json     Output JSON\n\nCOMMANDS:\n  greet <name>  Greet someone\n  math <op>     Math operations",
+  "metadata": {
+    "created": "2025-09-21T06:35:38.605Z",
+    "testFile": "/Users/sac/gitvan/vendors/citty-test-utils",
+    "snapshotName": "help-output",
+    "options": {
+      "args": [
+        "--help"
+      ],
+      "cwd": "/Users/sac/.cache/tmp/citty-snapshot-demo-qEMhq1",
+      "type": "stdout"
+    },
+    "version": "1.0.0"
+  }
+}

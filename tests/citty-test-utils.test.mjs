@@ -12,45 +12,80 @@ describe("Citty Test Utils", () => {
       try {
         const result = await runLocalCitty(["--help"]);
         console.log("Local runner result:", result);
-        // Basic verification that we got a result
-        if (result && typeof result.exitCode === "number") {
+
+        // Basic verification that we got a wrapped result
+        if (
+          result &&
+          result.result &&
+          typeof result.result.exitCode === "number"
+        ) {
           console.log(
             "✅ Local runner works - got exit code:",
-            result.exitCode
+            result.result.exitCode
           );
+
+          // Verify we got actual help output
+          if (result.result.stdout && result.result.stdout.length > 0) {
+            console.log("✅ Local runner produces output");
+            if (result.result.stdout.includes("USAGE")) {
+              console.log("✅ Local runner produces correct help output");
+            }
+          } else {
+            console.log(
+              "⚠️  Local runner output is empty (may be suppressed in test environment)"
+            );
+          }
+
+          // Test fluent assertions - just test exit code since output may be suppressed
+          result.expectExit(0);
+          console.log("✅ Local runner fluent assertions work");
         }
       } catch (error) {
-        console.log(
-          "Local runner error (expected if CLI doesn't exist):",
-          error.message
-        );
-        // This is expected if the CLI doesn't exist yet
+        console.log("Local runner error:", error.message);
+        throw error; // Re-throw to fail the test
       }
     });
   });
 
   describe("Cleanroom Runner", () => {
+    let cleanroomAvailable = false;
+
     beforeAll(async () => {
       console.log("Setting up cleanroom...");
       try {
-        await setupCleanroom({ rootDir: "." });
+        // Use Promise.race to timeout quickly if Docker setup takes too long
+        await Promise.race([
+          setupCleanroom({ rootDir: "." }),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("Docker setup timeout")), 10000)
+          ),
+        ]);
         console.log("✅ Cleanroom setup completed");
+        cleanroomAvailable = true;
       } catch (error) {
         console.log("Cleanroom setup error:", error.message);
-        // Skip tests if Docker isn't available
+        console.log("ℹ️  Skipping cleanroom tests (Docker not available)");
+        cleanroomAvailable = false;
       }
-    });
+    }, 12000); // 12 second timeout for Docker setup
 
     afterAll(async () => {
-      try {
-        await teardownCleanroom();
-        console.log("✅ Cleanroom teardown completed");
-      } catch (error) {
-        console.log("Cleanroom teardown error:", error.message);
+      if (cleanroomAvailable) {
+        try {
+          await teardownCleanroom();
+          console.log("✅ Cleanroom teardown completed");
+        } catch (error) {
+          console.log("Cleanroom teardown error:", error.message);
+        }
       }
     });
 
     it("should run citty command in cleanroom", async () => {
+      if (!cleanroomAvailable) {
+        console.log("⏭️  Skipping cleanroom test (Docker not available)");
+        return;
+      }
+
       try {
         const result = await runCitty(["--help"]);
         console.log("Cleanroom runner result:", result);
@@ -66,11 +101,8 @@ describe("Citty Test Utils", () => {
           );
         }
       } catch (error) {
-        console.log(
-          "Cleanroom runner error (expected if CLI doesn't exist):",
-          error.message
-        );
-        // This is expected if the CLI doesn't exist yet
+        console.log("Cleanroom runner error:", error.message);
+        throw error; // Re-throw to fail the test
       }
     });
   });

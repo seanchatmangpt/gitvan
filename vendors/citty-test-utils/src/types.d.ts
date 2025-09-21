@@ -247,3 +247,365 @@ export function matchSnapshot(
   options?: SnapshotOptions
 ): SnapshotResult
 export const snapshotUtils: SnapshotUtils
+
+// Enterprise Noun-Verb CLI Testing Framework Types
+
+// Command Builder Types
+export interface CommandBuilder {
+  domain: string | null
+  resource: string | null
+  action: string | null
+  args: string[]
+  options: Record<string, any>
+  context: Record<string, any>
+}
+
+export interface BuiltCommand {
+  domain: string
+  resource: string
+  action: string
+  args: string[]
+  options: Record<string, any>
+  context: Record<string, any>
+  command: string
+  fullCommand: string
+}
+
+// Domain Registry Types
+export interface Domain {
+  name: string
+  displayName: string
+  description: string
+  category: string
+  compliance: string[]
+  governance: string[]
+  resources: Resource[]
+  actions: Action[]
+}
+
+export interface Resource {
+  name: string
+  displayName: string
+  description: string
+  actions: string[]
+  attributes: string[]
+  relationships: string[]
+}
+
+export interface Action {
+  name: string
+  description: string
+  category: string
+  requires: string[]
+  optional: string[]
+}
+
+export interface DomainRegistry {
+  registerDomain(domain: Domain): this
+  getDomain(name: string): Domain | undefined
+  getAllDomains(): Domain[]
+  getDomainResources(domainName: string): Resource[]
+  getDomainActions(domainName: string): Action[]
+  getResource(domainName: string, resourceName: string): Resource | undefined
+  getAction(domainName: string, actionName: string): Action | undefined
+  validateCommand(domain: string, resource: string, action: string): boolean
+  getCommandMetadata(domain: string, resource: string, action: string): CommandMetadata
+}
+
+export interface CommandMetadata {
+  domain: Domain
+  resource: Resource
+  action: string
+  command: string
+  description: string
+  category: string
+  compliance: string[]
+  governance: string[]
+}
+
+// Enterprise Runner Types
+export interface EnterpriseContext {
+  domain?: string
+  project?: string
+  environment?: string
+  region?: string
+  compliance?: string
+  user?: string
+  role?: string
+  workspace?: string
+  timestamp: Date
+}
+
+export interface EnterpriseRunner {
+  executeDomain(domain: string, resource: string, action: string, args?: string[], options?: any): Promise<CliExpectation>
+  executeWithContext(command: string, context?: any): Promise<CliExpectation>
+  executeBatch(commands: Command[]): Promise<BatchResult[]>
+  executePipeline(pipeline: Pipeline): Promise<PipelineResult>
+  setContext(context: EnterpriseContext): this
+  getContext(): EnterpriseContext
+  clearContext(): this
+  getAuditLog(): AuditEntry[]
+  clearAuditLog(): this
+  getBatchResults(): BatchResult[]
+  clearBatchResults(): this
+}
+
+export interface Command {
+  command: string
+  context?: any
+}
+
+export interface BatchResult {
+  command: string
+  success: boolean
+  result?: CliExpectation
+  error?: string
+}
+
+export interface Pipeline {
+  name: string
+  stages: PipelineStage[]
+  failFast: boolean
+  rollback: boolean
+}
+
+export interface PipelineStage {
+  name: string
+  command: string
+  context: any
+  updateContext?: (result: CliExpectation) => any
+  rollback?: string
+}
+
+export interface PipelineResult {
+  pipeline: string
+  results: PipelineStageResult[]
+  success: boolean
+}
+
+export interface PipelineStageResult {
+  stage: string
+  success: boolean
+  result?: CliExpectation
+  error?: string
+}
+
+export interface AuditEntry {
+  timestamp: Date
+  command: string
+  context: any
+  result: {
+    exitCode: number
+    duration: number
+  }
+}
+
+// Enterprise Scenario Types
+export interface EnterpriseScenarioBuilder {
+  name: string
+  domain: string | null
+  steps: EnterpriseScenarioStep[]
+  context: EnterpriseContext
+  compliance: string[]
+  audit: any[]
+}
+
+export interface EnterpriseScenarioStep {
+  description: string
+  command?: string
+  action?: Function
+  options?: any
+  expectations?: (string | Expectation)[]
+}
+
+export interface Expectation {
+  type: string
+  match: string | RegExp
+}
+
+export interface EnterpriseScenarioResult {
+  scenario: string
+  domain: string | null
+  results: EnterpriseScenarioStepResult[]
+  success: boolean
+  context: EnterpriseContext
+  compliance: string[]
+}
+
+export interface EnterpriseScenarioStepResult {
+  step: string
+  success: boolean
+  result?: CliExpectation
+  error?: string
+}
+
+// Enterprise Assertions Types
+export interface EnterpriseAssertions extends CliExpectation {
+  expectResourceCreated(domain: string, resource: string, id: string): this
+  expectResourceUpdated(domain: string, resource: string, id: string): this
+  expectResourceDeleted(domain: string, resource: string, id: string): this
+  expectResourceListed(domain: string, resource: string, expectedCount?: number): this
+  expectResourceShown(domain: string, resource: string, id: string): this
+  expectDomainOperation(domain: string, operation: string): this
+  expectCrossDomainConsistency(domains: string[]): this
+  expectComplianceValidated(standard: string): this
+  expectPolicyEnforced(policy: string): this
+  expectAuditLog(action: string, resource: string, user: string): this
+  expectAuditTrail(operations: Operation[]): this
+  expectResourceState(domain: string, resource: string, id: string, expectedState: string): this
+  expectResourceAttributes(domain: string, resource: string, id: string, attributes: string[]): this
+}
+
+export interface Operation {
+  action: string
+  resource: string
+  user: string
+}
+
+export interface ResourceValidator {
+  registerValidator(domain: string, resource: string, validator: Function): this
+  validateResource(domain: string, resource: string, data: any): any
+  validateResourceState(domain: string, resource: string, id: string): any
+  validateResourceRelationships(domain: string, resource: string, id: string): any
+}
+
+// Enterprise Test Utils Types
+export interface EnterpriseTestUtils {
+  createResource(domain: string, resource: string, data: any): Promise<ResourceInstance>
+  listResources(domain: string, resource: string, filter?: any): Promise<ResourceList>
+  getResource(domain: string, resource: string, id: string): Promise<ResourceInstance>
+  updateResource(domain: string, resource: string, id: string, data: any): Promise<ResourceInstance>
+  deleteResource(domain: string, resource: string, id: string): Promise<ResourceInstance>
+  deployApplication(app: string, config: any): Promise<DeploymentResult>
+  validateCompliance(standard: string, scope?: string): Promise<ComplianceResult>
+  setContext(context: EnterpriseContext): this
+  getContext(): EnterpriseContext
+  clearContext(): this
+  createWorkspace(name: string, config: any): Promise<Workspace>
+  switchWorkspace(name: string): Promise<Workspace>
+  listWorkspaces(): Promise<Workspace[]>
+  deleteWorkspace(name: string): Promise<Workspace>
+  cleanupWorkspaceResources(workspaceName: string): Promise<CleanupResult>
+  getResourceReferences(): ResourceInstance[]
+  getResourceReference(domain: string, resource: string, name: string): ResourceInstance | undefined
+  cleanupAllResources(): Promise<CleanupResult>
+}
+
+export interface ResourceInstance {
+  domain: string
+  resource: string
+  name: string
+  data: any
+  created: Date
+  updated?: Date
+}
+
+export interface ResourceList {
+  domain: string
+  resource: string
+  resources: any[]
+  count: number
+}
+
+export interface DeploymentResult {
+  app: string
+  server: string
+  environment: string
+  region: string
+  deployed: Date
+}
+
+export interface ComplianceResult {
+  standard: string
+  scope: string
+  result: any
+  validated: Date
+}
+
+export interface Workspace {
+  name: string
+  config: any
+  created: Date
+  context?: EnterpriseContext
+}
+
+export interface CleanupResult {
+  cleanedUp: number
+  resources: ResourceInstance[]
+}
+
+// Export functions and classes
+export function command(domainName: string): CommandBuilder
+export function createCommand(): CommandBuilder
+export function createDomainRegistry(): DomainRegistry
+export function createEnterpriseRunner(options?: any): EnterpriseRunner
+export function createEnterpriseContext(): EnterpriseContext
+export function createPipeline(name: string): PipelineBuilder
+export function createEnterpriseScenario(name: string, domain?: string): EnterpriseScenarioBuilder
+export function createEnterpriseAssertions(result: CliResult): EnterpriseAssertions
+export function createResourceValidator(): ResourceValidator
+export function createEnterpriseTestUtils(options?: any): EnterpriseTestUtils
+
+// Export domain-specific builders
+export const infra: {
+  server: () => CommandBuilder
+  network: () => CommandBuilder
+  storage: () => CommandBuilder
+  database: () => CommandBuilder
+}
+
+export const dev: {
+  project: () => CommandBuilder
+  app: () => CommandBuilder
+  test: () => CommandBuilder
+  scenario: () => CommandBuilder
+  snapshot: () => CommandBuilder
+}
+
+export const security: {
+  user: () => CommandBuilder
+  role: () => CommandBuilder
+  policy: () => CommandBuilder
+  secret: () => CommandBuilder
+  certificate: () => CommandBuilder
+}
+
+// Export enterprise scenarios
+export const enterpriseScenarios: {
+  infra: {
+    server: {
+      create: (options?: any) => EnterpriseScenarioBuilder
+      lifecycle: (options?: any) => EnterpriseScenarioBuilder
+      disasterRecovery: (options?: any) => EnterpriseScenarioBuilder
+    }
+    network: {
+      create: (options?: any) => EnterpriseScenarioBuilder
+    }
+  }
+  dev: {
+    project: {
+      create: (options?: any) => EnterpriseScenarioBuilder
+      deploy: (options?: any) => EnterpriseScenarioBuilder
+      ciCd: (options?: any) => EnterpriseScenarioBuilder
+    }
+    test: {
+      run: (options?: any) => EnterpriseScenarioBuilder
+      regression: (options?: any) => EnterpriseScenarioBuilder
+      performance: (options?: any) => EnterpriseScenarioBuilder
+    }
+  }
+  security: {
+    user: {
+      audit: (options?: any) => EnterpriseScenarioBuilder
+      lifecycle: (options?: any) => EnterpriseScenarioBuilder
+    }
+    policy: {
+      validate: (options?: any) => EnterpriseScenarioBuilder
+    }
+  }
+  crossDomain: {
+    deployment: (options?: any) => EnterpriseScenarioBuilder
+    compliance: (options?: any) => EnterpriseScenarioBuilder
+    disasterRecovery: (options?: any) => EnterpriseScenarioBuilder
+  }
+}

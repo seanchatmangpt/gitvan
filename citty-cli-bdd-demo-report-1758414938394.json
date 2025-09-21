@@ -1,0 +1,683 @@
+{
+  "timestamp": "2025-09-21T00:35:38.394Z",
+  "title": "Citty CLI BDD Testing Demonstration Report",
+  "summary": {
+    "totalJobs": 6,
+    "totalScenarios": 17,
+    "passedScenarios": 16,
+    "failedScenarios": 1
+  },
+  "jobs": [
+    {
+      "name": "Discover Available Commands",
+      "totalScenarios": 3,
+      "passedScenarios": 3,
+      "failedScenarios": 0,
+      "successRate": "100.00"
+    },
+    {
+      "name": "Execute Commands Successfully",
+      "totalScenarios": 3,
+      "passedScenarios": 3,
+      "failedScenarios": 0,
+      "successRate": "100.00"
+    },
+    {
+      "name": "Handle Errors Gracefully",
+      "totalScenarios": 3,
+      "passedScenarios": 3,
+      "failedScenarios": 0,
+      "successRate": "100.00"
+    },
+    {
+      "name": "Provide Interactive Experience",
+      "totalScenarios": 2,
+      "passedScenarios": 1,
+      "failedScenarios": 1,
+      "successRate": "50.00"
+    },
+    {
+      "name": "Maintain Consistency and Reliability",
+      "totalScenarios": 3,
+      "passedScenarios": 3,
+      "failedScenarios": 0,
+      "successRate": "100.00"
+    },
+    {
+      "name": "Provide Rich Output Formats",
+      "totalScenarios": 3,
+      "passedScenarios": 3,
+      "failedScenarios": 0,
+      "successRate": "100.00"
+    }
+  ],
+  "scenarios": [
+    {
+      "job": "Discover Available Commands",
+      "scenario": "Show help information",
+      "success": true,
+      "output": "Git-native development automation platform (gitvan v3.0.0)\n\nUSAGE gitvan graph|daemon|event|cron|audit|hooks|workflow|jtbd|init|setup|save|ensure|pack|marketplace|scaffold|compose|chat\n\nCOMMANDS\n\n        graph    Graph persistence and operations for GitVan                                                 \n       daemon    Manage GitVan daemon (start, stop, status, restart)                                         \n        event    Manage GitVan events (simulate, test, list, trigger)                                        \n         cron    Manage GitVan cron jobs (list, start, dry-run, status)                                      \n        audit    Manage GitVan audit and verification (build, verify, list, show)                            \n        hooks    Manage GitVan Knowledge Hooks                                                               \n     workflow    Manage GitVan Workflows                                                                     \n         jtbd    Manage GitVan Jobs-to-be-Done (JTBD) Hooks                                                  \n         init    Initialize GitVan project with Knowledge Hook Engine support                                \n        setup    Complete autonomic setup: start daemon, install hooks, and auto-install packs (non-blocking)\n         save    Save changes with AI-generated commit message and automatic job execution                   \n       ensure    Ensure GitVan is properly configured in the repository                                      \n         pack    Manage GitVan packs                                                                         \n  marketplace    Browse and install packs from the GitVan marketplace                                        \n     scaffold    Run a pack scaffold to generate content                                                     \n      compose    Compose multiple packs together                                                             \n         chat    AI-powered chat interface for job generation                                                \n\nUse gitvan <command> --help for more information about a command.\n\n"
+    },
+    {
+      "job": "Discover Available Commands",
+      "scenario": "List available commands",
+      "success": true,
+      "output": "Git-native development automation platform (gitvan v3.0.0)\n\nUSAGE gitvan graph|daemon|event|cron|audit|hooks|workflow|jtbd|init|setup|save|ensure|pack|marketplace|scaffold|compose|chat\n\nCOMMANDS\n\n        graph    Graph persistence and operations for GitVan                                                 \n       daemon    Manage GitVan daemon (start, stop, status, restart)                                         \n        event    Manage GitVan events (simulate, test, list, trigger)                                        \n         cron    Manage GitVan cron jobs (list, start, dry-run, status)                                      \n        audit    Manage GitVan audit and verification (build, verify, list, show)                            \n        hooks    Manage GitVan Knowledge Hooks                                                               \n     workflow    Manage GitVan Workflows                                                                     \n         jtbd    Manage GitVan Jobs-to-be-Done (JTBD) Hooks                                                  \n         init    Initialize GitVan project with Knowledge Hook Engine support                                \n        setup    Complete autonomic setup: start daemon, install hooks, and auto-install packs (non-blocking)\n         save    Save changes with AI-generated commit message and automatic job execution                   \n       ensure    Ensure GitVan is properly configured in the repository                                      \n         pack    Manage GitVan packs                                                                         \n  marketplace    Browse and install packs from the GitVan marketplace                                        \n     scaffold    Run a pack scaffold to generate content                                                     \n      compose    Compose multiple packs together                                                             \n         chat    AI-powered chat interface for job generation                                                \n\nUse gitvan <command> --help for more information about a command.\n\n"
+    },
+    {
+      "job": "Discover Available Commands",
+      "scenario": "Show version information",
+      "success": true,
+      "output": "3.0.0\n(node:34533) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n"
+    },
+    {
+      "job": "Execute Commands Successfully",
+      "scenario": "Execute basic workflow command",
+      "success": true,
+      "output": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 13 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n📋 Available Workflows:\n──────────────────────────────────────────────────\n[gitvan] 📋 Found 11 workflows\n🔧 http://example.org/auto-template\n   Title: Auto Template\n   Pipelines: 0\n\n🔧 http://example.org/code-generation-workflow\n   Title: Code Generation Pipeline\n   Pipelines: 0\n\n🔧 http://example.org/data-processing-workflow\n   Title: Data Processing Pipeline\n   Pipelines: 0\n\n🔧 http://example.org/data-processing-workflow\n   Title: Data Processing Workflow\n   Pipelines: 0\n\n🔧 http://example.org/demo-template\n   Title: 'Demo\n   Pipelines: 0\n\n🔧 http://example.org/scrum-of-scrums-workflow\n   Title: Scrum of Scrums Multi-Team Coordination\n   Pipelines: 0\n\n🔧 http://example.org/scrum-sprint-workflow\n   Title: Scrum Team Sprint Workflow\n   Pipelines: 0\n\n🔧 http://example.org/scrum-team-setup-workflow\n   Title: Scrum Team Setup and Sprint Initialization\n   Pipelines: 0\n\n🔧 http://example.org/test-cursor-workflow-optimized\n   Title: Optimized Test Cursor Workflow\n   Pipelines: 0\n\n🔧 http://example.org/test-cursor-workflow\n   Title: Test Cursor Workflow\n   Pipelines: 0\n\n🔧 http://example.org/test-workflow\n   Title: Test Workflow\n   Pipelines: 0\n\n(node:34561) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n"
+    },
+    {
+      "job": "Execute Commands Successfully",
+      "scenario": "Execute command with options",
+      "success": true,
+      "output": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 13 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n📋 Available Workflows:\n──────────────────────────────────────────────────\n[gitvan] 📋 Found 11 workflows\n🔧 http://example.org/auto-template\n   Title: Auto Template\n   Pipelines: 0\n\n🔧 http://example.org/code-generation-workflow\n   Title: Code Generation Pipeline\n   Pipelines: 0\n\n🔧 http://example.org/data-processing-workflow\n   Title: Data Processing Pipeline\n   Pipelines: 0\n\n🔧 http://example.org/data-processing-workflow\n   Title: Data Processing Workflow\n   Pipelines: 0\n\n🔧 http://example.org/demo-template\n   Title: 'Demo\n   Pipelines: 0\n\n🔧 http://example.org/scrum-of-scrums-workflow\n   Title: Scrum of Scrums Multi-Team Coordination\n   Pipelines: 0\n\n🔧 http://example.org/scrum-sprint-workflow\n   Title: Scrum Team Sprint Workflow\n   Pipelines: 0\n\n🔧 http://example.org/scrum-team-setup-workflow\n   Title: Scrum Team Setup and Sprint Initialization\n   Pipelines: 0\n\n🔧 http://example.org/test-cursor-workflow-optimized\n   Title: Optimized Test Cursor Workflow\n   Pipelines: 0\n\n🔧 http://example.org/test-cursor-workflow\n   Title: Test Cursor Workflow\n   Pipelines: 0\n\n🔧 http://example.org/test-workflow\n   Title: Test Workflow\n   Pipelines: 0\n\n(node:34579) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n"
+    },
+    {
+      "job": "Execute Commands Successfully",
+      "scenario": "Execute command with arguments",
+      "success": true,
+      "output": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 13 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n🔍 Validating workflow: http://example.org/test-workflow\n[gitvan] 📋 Found 11 workflows\n✅ Workflow validation passed\n   Title: Test Workflow\n   Pipelines: 0\n   ID: http://example.org/test-workflow\n✅ Workflow structure is valid\n(node:34596) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n"
+    },
+    {
+      "job": "Handle Errors Gracefully",
+      "scenario": "Handle unknown command",
+      "success": true,
+      "error": null,
+      "output": "Git-native development automation platform (gitvan v3.0.0)\n\nUSAGE gitvan graph|daemon|event|cron|audit|hooks|workflow|jtbd|init|setup|save|ensure|pack|marketplace|scaffold|compose|chat\n\nCOMMANDS\n\n        graph    Graph persistence and operations for GitVan                                                 \n       daemon    Manage GitVan daemon (start, stop, status, restart)                                         \n        event    Manage GitVan events (simulate, test, list, trigger)                                        \n         cron    Manage GitVan cron jobs (list, start, dry-run, status)                                      \n        audit    Manage GitVan audit and verification (build, verify, list, show)                            \n        hooks    Manage GitVan Knowledge Hooks                                                               \n     workflow    Manage GitVan Workflows                                                                     \n         jtbd    Manage GitVan Jobs-to-be-Done (JTBD) Hooks                                                  \n         init    Initialize GitVan project with Knowledge Hook Engine support                                \n        setup    Complete autonomic setup: start daemon, install hooks, and auto-install packs (non-blocking)\n         save    Save changes with AI-generated commit message and automatic job execution                   \n       ensure    Ensure GitVan is properly configured in the repository                                      \n         pack    Manage GitVan packs                                                                         \n  marketplace    Browse and install packs from the GitVan marketplace                                        \n     scaffold    Run a pack scaffold to generate content                                                     \n      compose    Compose multiple packs together                                                             \n         chat    AI-powered chat interface for job generation                                                \n\nUse gitvan <command> --help for more information about a command.\n\n\n ERROR  Unknown command unknown-command\n\n"
+    },
+    {
+      "job": "Handle Errors Gracefully",
+      "scenario": "Handle missing arguments",
+      "success": true,
+      "error": null,
+      "output": "Execute a workflow (workflow run)\n\nUSAGE workflow run [OPTIONS] <WORKFLOWID>\n\nARGUMENTS\n\n  WORKFLOWID    Workflow ID to execute    \n\nOPTIONS\n\n  --dry-run    Show what would be executed without actually running             \n  --verbose    Show detailed execution information                              \n    --input    Input parameters in key=value format (can be used multiple times)\n\n\n\n ERROR  Missing required positional argument: WORKFLOWID\n\n"
+    },
+    {
+      "job": "Handle Errors Gracefully",
+      "scenario": "Handle invalid arguments",
+      "success": true,
+      "error": null,
+      "output": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 13 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n🔍 Validating workflow: invalid-workflow\n[gitvan] 📋 Found 11 workflows\n(node:34662) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n❌ Validation failed: Workflow not found: invalid-workflow\n❌ Failed to validate workflow: Workflow not found: invalid-workflow\n"
+    },
+    {
+      "job": "Provide Interactive Experience",
+      "scenario": "Handle interactive input",
+      "success": true,
+      "output": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 13 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n📝 Creating workflow template: demo-interactive\n✅ Workflow template created: workflows/demo-interactive.ttl\n📝 Edit the template to customize your workflow\n(node:34683) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n"
+    },
+    {
+      "job": "Provide Interactive Experience",
+      "scenario": "Provide helpful error messages",
+      "success": false,
+      "error": "Command failed: node src/cli.mjs workflow validate invalid\n(node:34700) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n❌ Validation failed: Workflow not found: invalid\n❌ Failed to validate workflow: Workflow not found: invalid\n",
+      "output": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 14 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n🔍 Validating workflow: invalid\n[gitvan] 📋 Found 12 workflows\n(node:34700) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n❌ Validation failed: Workflow not found: invalid\n❌ Failed to validate workflow: Workflow not found: invalid\n"
+    },
+    {
+      "job": "Maintain Consistency and Reliability",
+      "scenario": "Ensure command idempotency",
+      "success": true,
+      "output": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 14 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n📋 Available Workflows:\n──────────────────────────────────────────────────\n[gitvan] 📋 Found 12 workflows\n🔧 http://example.org/auto-template\n   Title: Auto Template\n   Pipelines: 0\n\n🔧 http://example.org/code-generation-workflow\n   Title: Code Generation Pipeline\n   Pipelines: 0\n\n🔧 http://example.org/data-processing-workflow\n   Title: Data Processing Pipeline\n   Pipelines: 0\n\n🔧 http://example.org/data-processing-workflow\n   Title: Data Processing Workflow\n   Pipelines: 0\n\n🔧 http://example.org/demo-interactive\n   Title: 'Demo\n   Pipelines: 0\n\n🔧 http://example.org/demo-template\n   Title: 'Demo\n   Pipelines: 0\n\n🔧 http://example.org/scrum-of-scrums-workflow\n   Title: Scrum of Scrums Multi-Team Coordination\n   Pipelines: 0\n\n🔧 http://example.org/scrum-sprint-workflow\n   Title: Scrum Team Sprint Workflow\n   Pipelines: 0\n\n🔧 http://example.org/scrum-team-setup-workflow\n   Title: Scrum Team Setup and Sprint Initialization\n   Pipelines: 0\n\n🔧 http://example.org/test-cursor-workflow-optimized\n   Title: Optimized Test Cursor Workflow\n   Pipelines: 0\n\n🔧 http://example.org/test-cursor-workflow\n   Title: Test Cursor Workflow\n   Pipelines: 0\n\n🔧 http://example.org/test-workflow\n   Title: Test Workflow\n   Pipelines: 0\n\n(node:34717) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n"
+    },
+    {
+      "job": "Maintain Consistency and Reliability",
+      "scenario": "Ensure command determinism",
+      "success": true,
+      "output": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 14 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n📊 Workflow Engine Statistics:\n────────────────────────────────────────\n[gitvan] 📋 Found 12 workflows\nTotal workflows: 12\nGraph directory: ./workflows\nEngine initialized: Yes\n\n📋 Workflow Summary:\n  1. http://example.org/auto-template - Auto Template\n  2. http://example.org/code-generation-workflow - Code Generation Pipeline\n  3. http://example.org/data-processing-workflow - Data Processing Pipeline\n  4. http://example.org/data-processing-workflow - Data Processing Workflow\n  5. http://example.org/demo-interactive - 'Demo\n  6. http://example.org/demo-template - 'Demo\n  7. http://example.org/scrum-of-scrums-workflow - Scrum of Scrums Multi-Team Coordination\n  8. http://example.org/scrum-sprint-workflow - Scrum Team Sprint Workflow\n  9. http://example.org/scrum-team-setup-workflow - Scrum Team Setup and Sprint Initialization\n  10. http://example.org/test-cursor-workflow-optimized - Optimized Test Cursor Workflow\n  11. http://example.org/test-cursor-workflow - Test Cursor Workflow\n  12. http://example.org/test-workflow - Test Workflow\n(node:34749) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n"
+    },
+    {
+      "job": "Maintain Consistency and Reliability",
+      "scenario": "Ensure reasonable performance",
+      "success": true,
+      "output": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 14 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n📋 Available Workflows:\n──────────────────────────────────────────────────\n[gitvan] 📋 Found 12 workflows\n🔧 http://example.org/auto-template\n   Title: Auto Template\n   Pipelines: 0\n\n🔧 http://example.org/code-generation-workflow\n   Title: Code Generation Pipeline\n   Pipelines: 0\n\n🔧 http://example.org/data-processing-workflow\n   Title: Data Processing Pipeline\n   Pipelines: 0\n\n🔧 http://example.org/data-processing-workflow\n   Title: Data Processing Workflow\n   Pipelines: 0\n\n🔧 http://example.org/demo-interactive\n   Title: 'Demo\n   Pipelines: 0\n\n🔧 http://example.org/demo-template\n   Title: 'Demo\n   Pipelines: 0\n\n🔧 http://example.org/scrum-of-scrums-workflow\n   Title: Scrum of Scrums Multi-Team Coordination\n   Pipelines: 0\n\n🔧 http://example.org/scrum-sprint-workflow\n   Title: Scrum Team Sprint Workflow\n   Pipelines: 0\n\n🔧 http://example.org/scrum-team-setup-workflow\n   Title: Scrum Team Setup and Sprint Initialization\n   Pipelines: 0\n\n🔧 http://example.org/test-cursor-workflow-optimized\n   Title: Optimized Test Cursor Workflow\n   Pipelines: 0\n\n🔧 http://example.org/test-cursor-workflow\n   Title: Test Cursor Workflow\n   Pipelines: 0\n\n🔧 http://example.org/test-workflow\n   Title: Test Workflow\n   Pipelines: 0\n\n(node:34770) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n"
+    },
+    {
+      "job": "Provide Rich Output Formats",
+      "scenario": "Format output clearly",
+      "success": true,
+      "output": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 14 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n📋 Available Workflows:\n──────────────────────────────────────────────────\n[gitvan] 📋 Found 12 workflows\n🔧 http://example.org/auto-template\n   Title: Auto Template\n   Pipelines: 0\n\n🔧 http://example.org/code-generation-workflow\n   Title: Code Generation Pipeline\n   Pipelines: 0\n\n🔧 http://example.org/data-processing-workflow\n   Title: Data Processing Pipeline\n   Pipelines: 0\n\n🔧 http://example.org/data-processing-workflow\n   Title: Data Processing Workflow\n   Pipelines: 0\n\n🔧 http://example.org/demo-interactive\n   Title: 'Demo\n   Pipelines: 0\n\n🔧 http://example.org/demo-template\n   Title: 'Demo\n   Pipelines: 0\n\n🔧 http://example.org/scrum-of-scrums-workflow\n   Title: Scrum of Scrums Multi-Team Coordination\n   Pipelines: 0\n\n🔧 http://example.org/scrum-sprint-workflow\n   Title: Scrum Team Sprint Workflow\n   Pipelines: 0\n\n🔧 http://example.org/scrum-team-setup-workflow\n   Title: Scrum Team Setup and Sprint Initialization\n   Pipelines: 0\n\n🔧 http://example.org/test-cursor-workflow-optimized\n   Title: Optimized Test Cursor Workflow\n   Pipelines: 0\n\n🔧 http://example.org/test-cursor-workflow\n   Title: Test Cursor Workflow\n   Pipelines: 0\n\n🔧 http://example.org/test-workflow\n   Title: Test Workflow\n   Pipelines: 0\n\n(node:34823) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n"
+    },
+    {
+      "job": "Provide Rich Output Formats",
+      "scenario": "Structure output properly",
+      "success": true,
+      "output": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 14 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n📊 Workflow Engine Statistics:\n────────────────────────────────────────\n[gitvan] 📋 Found 12 workflows\nTotal workflows: 12\nGraph directory: ./workflows\nEngine initialized: Yes\n\n📋 Workflow Summary:\n  1. http://example.org/auto-template - Auto Template\n  2. http://example.org/code-generation-workflow - Code Generation Pipeline\n  3. http://example.org/data-processing-workflow - Data Processing Pipeline\n  4. http://example.org/data-processing-workflow - Data Processing Workflow\n  5. http://example.org/demo-interactive - 'Demo\n  6. http://example.org/demo-template - 'Demo\n  7. http://example.org/scrum-of-scrums-workflow - Scrum of Scrums Multi-Team Coordination\n  8. http://example.org/scrum-sprint-workflow - Scrum Team Sprint Workflow\n  9. http://example.org/scrum-team-setup-workflow - Scrum Team Setup and Sprint Initialization\n  10. http://example.org/test-cursor-workflow-optimized - Optimized Test Cursor Workflow\n  11. http://example.org/test-cursor-workflow - Test Cursor Workflow\n  12. http://example.org/test-workflow - Test Workflow\n(node:34840) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n"
+    },
+    {
+      "job": "Provide Rich Output Formats",
+      "scenario": "Handle errors clearly",
+      "success": true,
+      "error": null,
+      "output": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 14 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n🔍 Validating workflow: invalid\n[gitvan] 📋 Found 12 workflows\n(node:34858) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n❌ Validation failed: Workflow not found: invalid\n❌ Failed to validate workflow: Workflow not found: invalid\n"
+    }
+  ],
+  "commandHistory": [
+    {
+      "success": true,
+      "command": "--help",
+      "args": [
+        "--help"
+      ],
+      "stdout": "Git-native development automation platform (gitvan v3.0.0)\n\nUSAGE gitvan graph|daemon|event|cron|audit|hooks|workflow|jtbd|init|setup|save|ensure|pack|marketplace|scaffold|compose|chat\n\nCOMMANDS\n\n        graph    Graph persistence and operations for GitVan                                                 \n       daemon    Manage GitVan daemon (start, stop, status, restart)                                         \n        event    Manage GitVan events (simulate, test, list, trigger)                                        \n         cron    Manage GitVan cron jobs (list, start, dry-run, status)                                      \n        audit    Manage GitVan audit and verification (build, verify, list, show)                            \n        hooks    Manage GitVan Knowledge Hooks                                                               \n     workflow    Manage GitVan Workflows                                                                     \n         jtbd    Manage GitVan Jobs-to-be-Done (JTBD) Hooks                                                  \n         init    Initialize GitVan project with Knowledge Hook Engine support                                \n        setup    Complete autonomic setup: start daemon, install hooks, and auto-install packs (non-blocking)\n         save    Save changes with AI-generated commit message and automatic job execution                   \n       ensure    Ensure GitVan is properly configured in the repository                                      \n         pack    Manage GitVan packs                                                                         \n  marketplace    Browse and install packs from the GitVan marketplace                                        \n     scaffold    Run a pack scaffold to generate content                                                     \n      compose    Compose multiple packs together                                                             \n         chat    AI-powered chat interface for job generation                                                \n\nUse gitvan <command> --help for more information about a command.\n\n",
+      "stderr": "",
+      "exitCode": 0,
+      "duration": 1815,
+      "timestamp": "2025-09-21T00:35:22.797Z"
+    },
+    {
+      "success": true,
+      "command": "--help",
+      "args": [
+        "--help"
+      ],
+      "stdout": "Git-native development automation platform (gitvan v3.0.0)\n\nUSAGE gitvan graph|daemon|event|cron|audit|hooks|workflow|jtbd|init|setup|save|ensure|pack|marketplace|scaffold|compose|chat\n\nCOMMANDS\n\n        graph    Graph persistence and operations for GitVan                                                 \n       daemon    Manage GitVan daemon (start, stop, status, restart)                                         \n        event    Manage GitVan events (simulate, test, list, trigger)                                        \n         cron    Manage GitVan cron jobs (list, start, dry-run, status)                                      \n        audit    Manage GitVan audit and verification (build, verify, list, show)                            \n        hooks    Manage GitVan Knowledge Hooks                                                               \n     workflow    Manage GitVan Workflows                                                                     \n         jtbd    Manage GitVan Jobs-to-be-Done (JTBD) Hooks                                                  \n         init    Initialize GitVan project with Knowledge Hook Engine support                                \n        setup    Complete autonomic setup: start daemon, install hooks, and auto-install packs (non-blocking)\n         save    Save changes with AI-generated commit message and automatic job execution                   \n       ensure    Ensure GitVan is properly configured in the repository                                      \n         pack    Manage GitVan packs                                                                         \n  marketplace    Browse and install packs from the GitVan marketplace                                        \n     scaffold    Run a pack scaffold to generate content                                                     \n      compose    Compose multiple packs together                                                             \n         chat    AI-powered chat interface for job generation                                                \n\nUse gitvan <command> --help for more information about a command.\n\n",
+      "stderr": "",
+      "exitCode": 0,
+      "duration": 995,
+      "timestamp": "2025-09-21T00:35:23.793Z"
+    },
+    {
+      "success": true,
+      "command": "--version",
+      "args": [
+        "--version"
+      ],
+      "stdout": "3.0.0\n",
+      "stderr": "(node:34533) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n",
+      "exitCode": 0,
+      "duration": 930,
+      "timestamp": "2025-09-21T00:35:24.723Z"
+    },
+    {
+      "success": true,
+      "command": "workflow list",
+      "args": [
+        "workflow",
+        "list"
+      ],
+      "stdout": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 13 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n📋 Available Workflows:\n──────────────────────────────────────────────────\n[gitvan] 📋 Found 11 workflows\n🔧 http://example.org/auto-template\n   Title: Auto Template\n   Pipelines: 0\n\n🔧 http://example.org/code-generation-workflow\n   Title: Code Generation Pipeline\n   Pipelines: 0\n\n🔧 http://example.org/data-processing-workflow\n   Title: Data Processing Pipeline\n   Pipelines: 0\n\n🔧 http://example.org/data-processing-workflow\n   Title: Data Processing Workflow\n   Pipelines: 0\n\n🔧 http://example.org/demo-template\n   Title: 'Demo\n   Pipelines: 0\n\n🔧 http://example.org/scrum-of-scrums-workflow\n   Title: Scrum of Scrums Multi-Team Coordination\n   Pipelines: 0\n\n🔧 http://example.org/scrum-sprint-workflow\n   Title: Scrum Team Sprint Workflow\n   Pipelines: 0\n\n🔧 http://example.org/scrum-team-setup-workflow\n   Title: Scrum Team Setup and Sprint Initialization\n   Pipelines: 0\n\n🔧 http://example.org/test-cursor-workflow-optimized\n   Title: Optimized Test Cursor Workflow\n   Pipelines: 0\n\n🔧 http://example.org/test-cursor-workflow\n   Title: Test Cursor Workflow\n   Pipelines: 0\n\n🔧 http://example.org/test-workflow\n   Title: Test Workflow\n   Pipelines: 0\n\n",
+      "stderr": "(node:34561) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n",
+      "exitCode": 0,
+      "duration": 964,
+      "timestamp": "2025-09-21T00:35:25.687Z"
+    },
+    {
+      "success": true,
+      "command": "workflow list --verbose",
+      "args": [
+        "workflow",
+        "list",
+        "--verbose"
+      ],
+      "stdout": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 13 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n📋 Available Workflows:\n──────────────────────────────────────────────────\n[gitvan] 📋 Found 11 workflows\n🔧 http://example.org/auto-template\n   Title: Auto Template\n   Pipelines: 0\n\n🔧 http://example.org/code-generation-workflow\n   Title: Code Generation Pipeline\n   Pipelines: 0\n\n🔧 http://example.org/data-processing-workflow\n   Title: Data Processing Pipeline\n   Pipelines: 0\n\n🔧 http://example.org/data-processing-workflow\n   Title: Data Processing Workflow\n   Pipelines: 0\n\n🔧 http://example.org/demo-template\n   Title: 'Demo\n   Pipelines: 0\n\n🔧 http://example.org/scrum-of-scrums-workflow\n   Title: Scrum of Scrums Multi-Team Coordination\n   Pipelines: 0\n\n🔧 http://example.org/scrum-sprint-workflow\n   Title: Scrum Team Sprint Workflow\n   Pipelines: 0\n\n🔧 http://example.org/scrum-team-setup-workflow\n   Title: Scrum Team Setup and Sprint Initialization\n   Pipelines: 0\n\n🔧 http://example.org/test-cursor-workflow-optimized\n   Title: Optimized Test Cursor Workflow\n   Pipelines: 0\n\n🔧 http://example.org/test-cursor-workflow\n   Title: Test Cursor Workflow\n   Pipelines: 0\n\n🔧 http://example.org/test-workflow\n   Title: Test Workflow\n   Pipelines: 0\n\n",
+      "stderr": "(node:34579) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n",
+      "exitCode": 0,
+      "duration": 1005,
+      "timestamp": "2025-09-21T00:35:26.692Z"
+    },
+    {
+      "success": true,
+      "command": "workflow validate http://example.org/test-workflow",
+      "args": [
+        "workflow",
+        "validate",
+        "http://example.org/test-workflow"
+      ],
+      "stdout": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 13 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n🔍 Validating workflow: http://example.org/test-workflow\n[gitvan] 📋 Found 11 workflows\n✅ Workflow validation passed\n   Title: Test Workflow\n   Pipelines: 0\n   ID: http://example.org/test-workflow\n✅ Workflow structure is valid\n",
+      "stderr": "(node:34596) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n",
+      "exitCode": 0,
+      "duration": 954,
+      "timestamp": "2025-09-21T00:35:27.646Z"
+    },
+    {
+      "success": false,
+      "command": "unknown-command",
+      "args": [
+        "unknown-command"
+      ],
+      "stdout": "Git-native development automation platform (gitvan v3.0.0)\n\nUSAGE gitvan graph|daemon|event|cron|audit|hooks|workflow|jtbd|init|setup|save|ensure|pack|marketplace|scaffold|compose|chat\n\nCOMMANDS\n\n        graph    Graph persistence and operations for GitVan                                                 \n       daemon    Manage GitVan daemon (start, stop, status, restart)                                         \n        event    Manage GitVan events (simulate, test, list, trigger)                                        \n         cron    Manage GitVan cron jobs (list, start, dry-run, status)                                      \n        audit    Manage GitVan audit and verification (build, verify, list, show)                            \n        hooks    Manage GitVan Knowledge Hooks                                                               \n     workflow    Manage GitVan Workflows                                                                     \n         jtbd    Manage GitVan Jobs-to-be-Done (JTBD) Hooks                                                  \n         init    Initialize GitVan project with Knowledge Hook Engine support                                \n        setup    Complete autonomic setup: start daemon, install hooks, and auto-install packs (non-blocking)\n         save    Save changes with AI-generated commit message and automatic job execution                   \n       ensure    Ensure GitVan is properly configured in the repository                                      \n         pack    Manage GitVan packs                                                                         \n  marketplace    Browse and install packs from the GitVan marketplace                                        \n     scaffold    Run a pack scaffold to generate content                                                     \n      compose    Compose multiple packs together                                                             \n         chat    AI-powered chat interface for job generation                                                \n\nUse gitvan <command> --help for more information about a command.\n\n",
+      "stderr": "\n ERROR  Unknown command unknown-command\n\n",
+      "exitCode": 1,
+      "error": "Command failed: node src/cli.mjs unknown-command\n\n ERROR  Unknown command unknown-command\n\n",
+      "duration": 943,
+      "timestamp": "2025-09-21T00:35:28.589Z"
+    },
+    {
+      "success": false,
+      "command": "workflow run",
+      "args": [
+        "workflow",
+        "run"
+      ],
+      "stdout": "Execute a workflow (workflow run)\n\nUSAGE workflow run [OPTIONS] <WORKFLOWID>\n\nARGUMENTS\n\n  WORKFLOWID    Workflow ID to execute    \n\nOPTIONS\n\n  --dry-run    Show what would be executed without actually running             \n  --verbose    Show detailed execution information                              \n    --input    Input parameters in key=value format (can be used multiple times)\n\n\n",
+      "stderr": "\n ERROR  Missing required positional argument: WORKFLOWID\n\n",
+      "exitCode": 1,
+      "error": "Command failed: node src/cli.mjs workflow run\n\n ERROR  Missing required positional argument: WORKFLOWID\n\n",
+      "duration": 968,
+      "timestamp": "2025-09-21T00:35:29.557Z"
+    },
+    {
+      "success": false,
+      "command": "workflow validate invalid-workflow",
+      "args": [
+        "workflow",
+        "validate",
+        "invalid-workflow"
+      ],
+      "stdout": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 13 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n🔍 Validating workflow: invalid-workflow\n[gitvan] 📋 Found 11 workflows\n",
+      "stderr": "(node:34662) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n❌ Validation failed: Workflow not found: invalid-workflow\n❌ Failed to validate workflow: Workflow not found: invalid-workflow\n",
+      "exitCode": 1,
+      "error": "Command failed: node src/cli.mjs workflow validate invalid-workflow\n(node:34662) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n❌ Validation failed: Workflow not found: invalid-workflow\n❌ Failed to validate workflow: Workflow not found: invalid-workflow\n",
+      "duration": 954,
+      "timestamp": "2025-09-21T00:35:30.511Z"
+    },
+    {
+      "success": true,
+      "command": "workflow create demo-interactive 'Demo Interactive'",
+      "args": [
+        "workflow",
+        "create",
+        "demo-interactive",
+        "'Demo",
+        "Interactive'"
+      ],
+      "stdout": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 13 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n📝 Creating workflow template: demo-interactive\n✅ Workflow template created: workflows/demo-interactive.ttl\n📝 Edit the template to customize your workflow\n",
+      "stderr": "(node:34683) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n",
+      "exitCode": 0,
+      "duration": 938,
+      "timestamp": "2025-09-21T00:35:31.450Z"
+    },
+    {
+      "success": false,
+      "command": "workflow validate invalid",
+      "args": [
+        "workflow",
+        "validate",
+        "invalid"
+      ],
+      "stdout": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 14 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n🔍 Validating workflow: invalid\n[gitvan] 📋 Found 12 workflows\n",
+      "stderr": "(node:34700) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n❌ Validation failed: Workflow not found: invalid\n❌ Failed to validate workflow: Workflow not found: invalid\n",
+      "exitCode": 1,
+      "error": "Command failed: node src/cli.mjs workflow validate invalid\n(node:34700) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n❌ Validation failed: Workflow not found: invalid\n❌ Failed to validate workflow: Workflow not found: invalid\n",
+      "duration": 1016,
+      "timestamp": "2025-09-21T00:35:32.466Z"
+    },
+    {
+      "success": true,
+      "command": "workflow list",
+      "args": [
+        "workflow",
+        "list"
+      ],
+      "stdout": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 14 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n📋 Available Workflows:\n──────────────────────────────────────────────────\n[gitvan] 📋 Found 12 workflows\n🔧 http://example.org/auto-template\n   Title: Auto Template\n   Pipelines: 0\n\n🔧 http://example.org/code-generation-workflow\n   Title: Code Generation Pipeline\n   Pipelines: 0\n\n🔧 http://example.org/data-processing-workflow\n   Title: Data Processing Pipeline\n   Pipelines: 0\n\n🔧 http://example.org/data-processing-workflow\n   Title: Data Processing Workflow\n   Pipelines: 0\n\n🔧 http://example.org/demo-interactive\n   Title: 'Demo\n   Pipelines: 0\n\n🔧 http://example.org/demo-template\n   Title: 'Demo\n   Pipelines: 0\n\n🔧 http://example.org/scrum-of-scrums-workflow\n   Title: Scrum of Scrums Multi-Team Coordination\n   Pipelines: 0\n\n🔧 http://example.org/scrum-sprint-workflow\n   Title: Scrum Team Sprint Workflow\n   Pipelines: 0\n\n🔧 http://example.org/scrum-team-setup-workflow\n   Title: Scrum Team Setup and Sprint Initialization\n   Pipelines: 0\n\n🔧 http://example.org/test-cursor-workflow-optimized\n   Title: Optimized Test Cursor Workflow\n   Pipelines: 0\n\n🔧 http://example.org/test-cursor-workflow\n   Title: Test Cursor Workflow\n   Pipelines: 0\n\n🔧 http://example.org/test-workflow\n   Title: Test Workflow\n   Pipelines: 0\n\n",
+      "stderr": "(node:34717) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n",
+      "exitCode": 0,
+      "duration": 953,
+      "timestamp": "2025-09-21T00:35:33.419Z"
+    },
+    {
+      "success": true,
+      "command": "workflow stats",
+      "args": [
+        "workflow",
+        "stats"
+      ],
+      "stdout": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 14 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n📊 Workflow Engine Statistics:\n────────────────────────────────────────\n[gitvan] 📋 Found 12 workflows\nTotal workflows: 12\nGraph directory: ./workflows\nEngine initialized: Yes\n\n📋 Workflow Summary:\n  1. http://example.org/auto-template - Auto Template\n  2. http://example.org/code-generation-workflow - Code Generation Pipeline\n  3. http://example.org/data-processing-workflow - Data Processing Pipeline\n  4. http://example.org/data-processing-workflow - Data Processing Workflow\n  5. http://example.org/demo-interactive - 'Demo\n  6. http://example.org/demo-template - 'Demo\n  7. http://example.org/scrum-of-scrums-workflow - Scrum of Scrums Multi-Team Coordination\n  8. http://example.org/scrum-sprint-workflow - Scrum Team Sprint Workflow\n  9. http://example.org/scrum-team-setup-workflow - Scrum Team Setup and Sprint Initialization\n  10. http://example.org/test-cursor-workflow-optimized - Optimized Test Cursor Workflow\n  11. http://example.org/test-cursor-workflow - Test Cursor Workflow\n  12. http://example.org/test-workflow - Test Workflow\n",
+      "stderr": "(node:34749) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n",
+      "exitCode": 0,
+      "duration": 964,
+      "timestamp": "2025-09-21T00:35:34.383Z"
+    },
+    {
+      "success": true,
+      "command": "workflow list",
+      "args": [
+        "workflow",
+        "list"
+      ],
+      "stdout": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 14 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n📋 Available Workflows:\n──────────────────────────────────────────────────\n[gitvan] 📋 Found 12 workflows\n🔧 http://example.org/auto-template\n   Title: Auto Template\n   Pipelines: 0\n\n🔧 http://example.org/code-generation-workflow\n   Title: Code Generation Pipeline\n   Pipelines: 0\n\n🔧 http://example.org/data-processing-workflow\n   Title: Data Processing Pipeline\n   Pipelines: 0\n\n🔧 http://example.org/data-processing-workflow\n   Title: Data Processing Workflow\n   Pipelines: 0\n\n🔧 http://example.org/demo-interactive\n   Title: 'Demo\n   Pipelines: 0\n\n🔧 http://example.org/demo-template\n   Title: 'Demo\n   Pipelines: 0\n\n🔧 http://example.org/scrum-of-scrums-workflow\n   Title: Scrum of Scrums Multi-Team Coordination\n   Pipelines: 0\n\n🔧 http://example.org/scrum-sprint-workflow\n   Title: Scrum Team Sprint Workflow\n   Pipelines: 0\n\n🔧 http://example.org/scrum-team-setup-workflow\n   Title: Scrum Team Setup and Sprint Initialization\n   Pipelines: 0\n\n🔧 http://example.org/test-cursor-workflow-optimized\n   Title: Optimized Test Cursor Workflow\n   Pipelines: 0\n\n🔧 http://example.org/test-cursor-workflow\n   Title: Test Cursor Workflow\n   Pipelines: 0\n\n🔧 http://example.org/test-workflow\n   Title: Test Workflow\n   Pipelines: 0\n\n",
+      "stderr": "(node:34770) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n",
+      "exitCode": 0,
+      "duration": 964,
+      "timestamp": "2025-09-21T00:35:35.347Z"
+    },
+    {
+      "success": true,
+      "command": "workflow list",
+      "args": [
+        "workflow",
+        "list"
+      ],
+      "stdout": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 14 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n📋 Available Workflows:\n──────────────────────────────────────────────────\n[gitvan] 📋 Found 12 workflows\n🔧 http://example.org/auto-template\n   Title: Auto Template\n   Pipelines: 0\n\n🔧 http://example.org/code-generation-workflow\n   Title: Code Generation Pipeline\n   Pipelines: 0\n\n🔧 http://example.org/data-processing-workflow\n   Title: Data Processing Pipeline\n   Pipelines: 0\n\n🔧 http://example.org/data-processing-workflow\n   Title: Data Processing Workflow\n   Pipelines: 0\n\n🔧 http://example.org/demo-interactive\n   Title: 'Demo\n   Pipelines: 0\n\n🔧 http://example.org/demo-template\n   Title: 'Demo\n   Pipelines: 0\n\n🔧 http://example.org/scrum-of-scrums-workflow\n   Title: Scrum of Scrums Multi-Team Coordination\n   Pipelines: 0\n\n🔧 http://example.org/scrum-sprint-workflow\n   Title: Scrum Team Sprint Workflow\n   Pipelines: 0\n\n🔧 http://example.org/scrum-team-setup-workflow\n   Title: Scrum Team Setup and Sprint Initialization\n   Pipelines: 0\n\n🔧 http://example.org/test-cursor-workflow-optimized\n   Title: Optimized Test Cursor Workflow\n   Pipelines: 0\n\n🔧 http://example.org/test-cursor-workflow\n   Title: Test Cursor Workflow\n   Pipelines: 0\n\n🔧 http://example.org/test-workflow\n   Title: Test Workflow\n   Pipelines: 0\n\n",
+      "stderr": "(node:34823) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n",
+      "exitCode": 0,
+      "duration": 1005,
+      "timestamp": "2025-09-21T00:35:36.352Z"
+    },
+    {
+      "success": true,
+      "command": "workflow stats",
+      "args": [
+        "workflow",
+        "stats"
+      ],
+      "stdout": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 14 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n📊 Workflow Engine Statistics:\n────────────────────────────────────────\n[gitvan] 📋 Found 12 workflows\nTotal workflows: 12\nGraph directory: ./workflows\nEngine initialized: Yes\n\n📋 Workflow Summary:\n  1. http://example.org/auto-template - Auto Template\n  2. http://example.org/code-generation-workflow - Code Generation Pipeline\n  3. http://example.org/data-processing-workflow - Data Processing Pipeline\n  4. http://example.org/data-processing-workflow - Data Processing Workflow\n  5. http://example.org/demo-interactive - 'Demo\n  6. http://example.org/demo-template - 'Demo\n  7. http://example.org/scrum-of-scrums-workflow - Scrum of Scrums Multi-Team Coordination\n  8. http://example.org/scrum-sprint-workflow - Scrum Team Sprint Workflow\n  9. http://example.org/scrum-team-setup-workflow - Scrum Team Setup and Sprint Initialization\n  10. http://example.org/test-cursor-workflow-optimized - Optimized Test Cursor Workflow\n  11. http://example.org/test-cursor-workflow - Test Cursor Workflow\n  12. http://example.org/test-workflow - Test Workflow\n",
+      "stderr": "(node:34840) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n",
+      "exitCode": 0,
+      "duration": 1037,
+      "timestamp": "2025-09-21T00:35:37.389Z"
+    },
+    {
+      "success": false,
+      "command": "workflow validate invalid",
+      "args": [
+        "workflow",
+        "validate",
+        "invalid"
+      ],
+      "stdout": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 14 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n🔍 Validating workflow: invalid\n[gitvan] 📋 Found 12 workflows\n",
+      "stderr": "(node:34858) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n❌ Validation failed: Workflow not found: invalid\n❌ Failed to validate workflow: Workflow not found: invalid\n",
+      "exitCode": 1,
+      "error": "Command failed: node src/cli.mjs workflow validate invalid\n(node:34858) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n❌ Validation failed: Workflow not found: invalid\n❌ Failed to validate workflow: Workflow not found: invalid\n",
+      "duration": 1005,
+      "timestamp": "2025-09-21T00:35:38.394Z"
+    }
+  ],
+  "testReport": {
+    "timestamp": "2025-09-21T00:35:38.394Z",
+    "summary": {
+      "totalCommands": 17,
+      "successfulCommands": 12,
+      "failedCommands": 5,
+      "successRate": "70.59",
+      "totalDuration": 17410,
+      "averageDuration": "1024.12"
+    },
+    "commands": [
+      {
+        "success": true,
+        "command": "--help",
+        "args": [
+          "--help"
+        ],
+        "stdout": "Git-native development automation platform (gitvan v3.0.0)\n\nUSAGE gitvan graph|daemon|event|cron|audit|hooks|workflow|jtbd|init|setup|save|ensure|pack|marketplace|scaffold|compose|chat\n\nCOMMANDS\n\n        graph    Graph persistence and operations for GitVan                                                 \n       daemon    Manage GitVan daemon (start, stop, status, restart)                                         \n        event    Manage GitVan events (simulate, test, list, trigger)                                        \n         cron    Manage GitVan cron jobs (list, start, dry-run, status)                                      \n        audit    Manage GitVan audit and verification (build, verify, list, show)                            \n        hooks    Manage GitVan Knowledge Hooks                                                               \n     workflow    Manage GitVan Workflows                                                                     \n         jtbd    Manage GitVan Jobs-to-be-Done (JTBD) Hooks                                                  \n         init    Initialize GitVan project with Knowledge Hook Engine support                                \n        setup    Complete autonomic setup: start daemon, install hooks, and auto-install packs (non-blocking)\n         save    Save changes with AI-generated commit message and automatic job execution                   \n       ensure    Ensure GitVan is properly configured in the repository                                      \n         pack    Manage GitVan packs                                                                         \n  marketplace    Browse and install packs from the GitVan marketplace                                        \n     scaffold    Run a pack scaffold to generate content                                                     \n      compose    Compose multiple packs together                                                             \n         chat    AI-powered chat interface for job generation                                                \n\nUse gitvan <command> --help for more information about a command.\n\n",
+        "stderr": "",
+        "exitCode": 0,
+        "duration": 1815,
+        "timestamp": "2025-09-21T00:35:22.797Z"
+      },
+      {
+        "success": true,
+        "command": "--help",
+        "args": [
+          "--help"
+        ],
+        "stdout": "Git-native development automation platform (gitvan v3.0.0)\n\nUSAGE gitvan graph|daemon|event|cron|audit|hooks|workflow|jtbd|init|setup|save|ensure|pack|marketplace|scaffold|compose|chat\n\nCOMMANDS\n\n        graph    Graph persistence and operations for GitVan                                                 \n       daemon    Manage GitVan daemon (start, stop, status, restart)                                         \n        event    Manage GitVan events (simulate, test, list, trigger)                                        \n         cron    Manage GitVan cron jobs (list, start, dry-run, status)                                      \n        audit    Manage GitVan audit and verification (build, verify, list, show)                            \n        hooks    Manage GitVan Knowledge Hooks                                                               \n     workflow    Manage GitVan Workflows                                                                     \n         jtbd    Manage GitVan Jobs-to-be-Done (JTBD) Hooks                                                  \n         init    Initialize GitVan project with Knowledge Hook Engine support                                \n        setup    Complete autonomic setup: start daemon, install hooks, and auto-install packs (non-blocking)\n         save    Save changes with AI-generated commit message and automatic job execution                   \n       ensure    Ensure GitVan is properly configured in the repository                                      \n         pack    Manage GitVan packs                                                                         \n  marketplace    Browse and install packs from the GitVan marketplace                                        \n     scaffold    Run a pack scaffold to generate content                                                     \n      compose    Compose multiple packs together                                                             \n         chat    AI-powered chat interface for job generation                                                \n\nUse gitvan <command> --help for more information about a command.\n\n",
+        "stderr": "",
+        "exitCode": 0,
+        "duration": 995,
+        "timestamp": "2025-09-21T00:35:23.793Z"
+      },
+      {
+        "success": true,
+        "command": "--version",
+        "args": [
+          "--version"
+        ],
+        "stdout": "3.0.0\n",
+        "stderr": "(node:34533) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n",
+        "exitCode": 0,
+        "duration": 930,
+        "timestamp": "2025-09-21T00:35:24.723Z"
+      },
+      {
+        "success": true,
+        "command": "workflow list",
+        "args": [
+          "workflow",
+          "list"
+        ],
+        "stdout": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 13 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n📋 Available Workflows:\n──────────────────────────────────────────────────\n[gitvan] 📋 Found 11 workflows\n🔧 http://example.org/auto-template\n   Title: Auto Template\n   Pipelines: 0\n\n🔧 http://example.org/code-generation-workflow\n   Title: Code Generation Pipeline\n   Pipelines: 0\n\n🔧 http://example.org/data-processing-workflow\n   Title: Data Processing Pipeline\n   Pipelines: 0\n\n🔧 http://example.org/data-processing-workflow\n   Title: Data Processing Workflow\n   Pipelines: 0\n\n🔧 http://example.org/demo-template\n   Title: 'Demo\n   Pipelines: 0\n\n🔧 http://example.org/scrum-of-scrums-workflow\n   Title: Scrum of Scrums Multi-Team Coordination\n   Pipelines: 0\n\n🔧 http://example.org/scrum-sprint-workflow\n   Title: Scrum Team Sprint Workflow\n   Pipelines: 0\n\n🔧 http://example.org/scrum-team-setup-workflow\n   Title: Scrum Team Setup and Sprint Initialization\n   Pipelines: 0\n\n🔧 http://example.org/test-cursor-workflow-optimized\n   Title: Optimized Test Cursor Workflow\n   Pipelines: 0\n\n🔧 http://example.org/test-cursor-workflow\n   Title: Test Cursor Workflow\n   Pipelines: 0\n\n🔧 http://example.org/test-workflow\n   Title: Test Workflow\n   Pipelines: 0\n\n",
+        "stderr": "(node:34561) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n",
+        "exitCode": 0,
+        "duration": 964,
+        "timestamp": "2025-09-21T00:35:25.687Z"
+      },
+      {
+        "success": true,
+        "command": "workflow list --verbose",
+        "args": [
+          "workflow",
+          "list",
+          "--verbose"
+        ],
+        "stdout": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 13 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n📋 Available Workflows:\n──────────────────────────────────────────────────\n[gitvan] 📋 Found 11 workflows\n🔧 http://example.org/auto-template\n   Title: Auto Template\n   Pipelines: 0\n\n🔧 http://example.org/code-generation-workflow\n   Title: Code Generation Pipeline\n   Pipelines: 0\n\n🔧 http://example.org/data-processing-workflow\n   Title: Data Processing Pipeline\n   Pipelines: 0\n\n🔧 http://example.org/data-processing-workflow\n   Title: Data Processing Workflow\n   Pipelines: 0\n\n🔧 http://example.org/demo-template\n   Title: 'Demo\n   Pipelines: 0\n\n🔧 http://example.org/scrum-of-scrums-workflow\n   Title: Scrum of Scrums Multi-Team Coordination\n   Pipelines: 0\n\n🔧 http://example.org/scrum-sprint-workflow\n   Title: Scrum Team Sprint Workflow\n   Pipelines: 0\n\n🔧 http://example.org/scrum-team-setup-workflow\n   Title: Scrum Team Setup and Sprint Initialization\n   Pipelines: 0\n\n🔧 http://example.org/test-cursor-workflow-optimized\n   Title: Optimized Test Cursor Workflow\n   Pipelines: 0\n\n🔧 http://example.org/test-cursor-workflow\n   Title: Test Cursor Workflow\n   Pipelines: 0\n\n🔧 http://example.org/test-workflow\n   Title: Test Workflow\n   Pipelines: 0\n\n",
+        "stderr": "(node:34579) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n",
+        "exitCode": 0,
+        "duration": 1005,
+        "timestamp": "2025-09-21T00:35:26.692Z"
+      },
+      {
+        "success": true,
+        "command": "workflow validate http://example.org/test-workflow",
+        "args": [
+          "workflow",
+          "validate",
+          "http://example.org/test-workflow"
+        ],
+        "stdout": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 13 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n🔍 Validating workflow: http://example.org/test-workflow\n[gitvan] 📋 Found 11 workflows\n✅ Workflow validation passed\n   Title: Test Workflow\n   Pipelines: 0\n   ID: http://example.org/test-workflow\n✅ Workflow structure is valid\n",
+        "stderr": "(node:34596) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n",
+        "exitCode": 0,
+        "duration": 954,
+        "timestamp": "2025-09-21T00:35:27.646Z"
+      },
+      {
+        "success": false,
+        "command": "unknown-command",
+        "args": [
+          "unknown-command"
+        ],
+        "stdout": "Git-native development automation platform (gitvan v3.0.0)\n\nUSAGE gitvan graph|daemon|event|cron|audit|hooks|workflow|jtbd|init|setup|save|ensure|pack|marketplace|scaffold|compose|chat\n\nCOMMANDS\n\n        graph    Graph persistence and operations for GitVan                                                 \n       daemon    Manage GitVan daemon (start, stop, status, restart)                                         \n        event    Manage GitVan events (simulate, test, list, trigger)                                        \n         cron    Manage GitVan cron jobs (list, start, dry-run, status)                                      \n        audit    Manage GitVan audit and verification (build, verify, list, show)                            \n        hooks    Manage GitVan Knowledge Hooks                                                               \n     workflow    Manage GitVan Workflows                                                                     \n         jtbd    Manage GitVan Jobs-to-be-Done (JTBD) Hooks                                                  \n         init    Initialize GitVan project with Knowledge Hook Engine support                                \n        setup    Complete autonomic setup: start daemon, install hooks, and auto-install packs (non-blocking)\n         save    Save changes with AI-generated commit message and automatic job execution                   \n       ensure    Ensure GitVan is properly configured in the repository                                      \n         pack    Manage GitVan packs                                                                         \n  marketplace    Browse and install packs from the GitVan marketplace                                        \n     scaffold    Run a pack scaffold to generate content                                                     \n      compose    Compose multiple packs together                                                             \n         chat    AI-powered chat interface for job generation                                                \n\nUse gitvan <command> --help for more information about a command.\n\n",
+        "stderr": "\n ERROR  Unknown command unknown-command\n\n",
+        "exitCode": 1,
+        "error": "Command failed: node src/cli.mjs unknown-command\n\n ERROR  Unknown command unknown-command\n\n",
+        "duration": 943,
+        "timestamp": "2025-09-21T00:35:28.589Z"
+      },
+      {
+        "success": false,
+        "command": "workflow run",
+        "args": [
+          "workflow",
+          "run"
+        ],
+        "stdout": "Execute a workflow (workflow run)\n\nUSAGE workflow run [OPTIONS] <WORKFLOWID>\n\nARGUMENTS\n\n  WORKFLOWID    Workflow ID to execute    \n\nOPTIONS\n\n  --dry-run    Show what would be executed without actually running             \n  --verbose    Show detailed execution information                              \n    --input    Input parameters in key=value format (can be used multiple times)\n\n\n",
+        "stderr": "\n ERROR  Missing required positional argument: WORKFLOWID\n\n",
+        "exitCode": 1,
+        "error": "Command failed: node src/cli.mjs workflow run\n\n ERROR  Missing required positional argument: WORKFLOWID\n\n",
+        "duration": 968,
+        "timestamp": "2025-09-21T00:35:29.557Z"
+      },
+      {
+        "success": false,
+        "command": "workflow validate invalid-workflow",
+        "args": [
+          "workflow",
+          "validate",
+          "invalid-workflow"
+        ],
+        "stdout": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 13 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n🔍 Validating workflow: invalid-workflow\n[gitvan] 📋 Found 11 workflows\n",
+        "stderr": "(node:34662) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n❌ Validation failed: Workflow not found: invalid-workflow\n❌ Failed to validate workflow: Workflow not found: invalid-workflow\n",
+        "exitCode": 1,
+        "error": "Command failed: node src/cli.mjs workflow validate invalid-workflow\n(node:34662) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n❌ Validation failed: Workflow not found: invalid-workflow\n❌ Failed to validate workflow: Workflow not found: invalid-workflow\n",
+        "duration": 954,
+        "timestamp": "2025-09-21T00:35:30.511Z"
+      },
+      {
+        "success": true,
+        "command": "workflow create demo-interactive 'Demo Interactive'",
+        "args": [
+          "workflow",
+          "create",
+          "demo-interactive",
+          "'Demo",
+          "Interactive'"
+        ],
+        "stdout": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 13 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n📝 Creating workflow template: demo-interactive\n✅ Workflow template created: workflows/demo-interactive.ttl\n📝 Edit the template to customize your workflow\n",
+        "stderr": "(node:34683) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n",
+        "exitCode": 0,
+        "duration": 938,
+        "timestamp": "2025-09-21T00:35:31.450Z"
+      },
+      {
+        "success": false,
+        "command": "workflow validate invalid",
+        "args": [
+          "workflow",
+          "validate",
+          "invalid"
+        ],
+        "stdout": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 14 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n🔍 Validating workflow: invalid\n[gitvan] 📋 Found 12 workflows\n",
+        "stderr": "(node:34700) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n❌ Validation failed: Workflow not found: invalid\n❌ Failed to validate workflow: Workflow not found: invalid\n",
+        "exitCode": 1,
+        "error": "Command failed: node src/cli.mjs workflow validate invalid\n(node:34700) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n❌ Validation failed: Workflow not found: invalid\n❌ Failed to validate workflow: Workflow not found: invalid\n",
+        "duration": 1016,
+        "timestamp": "2025-09-21T00:35:32.466Z"
+      },
+      {
+        "success": true,
+        "command": "workflow list",
+        "args": [
+          "workflow",
+          "list"
+        ],
+        "stdout": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 14 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n📋 Available Workflows:\n──────────────────────────────────────────────────\n[gitvan] 📋 Found 12 workflows\n🔧 http://example.org/auto-template\n   Title: Auto Template\n   Pipelines: 0\n\n🔧 http://example.org/code-generation-workflow\n   Title: Code Generation Pipeline\n   Pipelines: 0\n\n🔧 http://example.org/data-processing-workflow\n   Title: Data Processing Pipeline\n   Pipelines: 0\n\n🔧 http://example.org/data-processing-workflow\n   Title: Data Processing Workflow\n   Pipelines: 0\n\n🔧 http://example.org/demo-interactive\n   Title: 'Demo\n   Pipelines: 0\n\n🔧 http://example.org/demo-template\n   Title: 'Demo\n   Pipelines: 0\n\n🔧 http://example.org/scrum-of-scrums-workflow\n   Title: Scrum of Scrums Multi-Team Coordination\n   Pipelines: 0\n\n🔧 http://example.org/scrum-sprint-workflow\n   Title: Scrum Team Sprint Workflow\n   Pipelines: 0\n\n🔧 http://example.org/scrum-team-setup-workflow\n   Title: Scrum Team Setup and Sprint Initialization\n   Pipelines: 0\n\n🔧 http://example.org/test-cursor-workflow-optimized\n   Title: Optimized Test Cursor Workflow\n   Pipelines: 0\n\n🔧 http://example.org/test-cursor-workflow\n   Title: Test Cursor Workflow\n   Pipelines: 0\n\n🔧 http://example.org/test-workflow\n   Title: Test Workflow\n   Pipelines: 0\n\n",
+        "stderr": "(node:34717) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n",
+        "exitCode": 0,
+        "duration": 953,
+        "timestamp": "2025-09-21T00:35:33.419Z"
+      },
+      {
+        "success": true,
+        "command": "workflow stats",
+        "args": [
+          "workflow",
+          "stats"
+        ],
+        "stdout": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 14 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n📊 Workflow Engine Statistics:\n────────────────────────────────────────\n[gitvan] 📋 Found 12 workflows\nTotal workflows: 12\nGraph directory: ./workflows\nEngine initialized: Yes\n\n📋 Workflow Summary:\n  1. http://example.org/auto-template - Auto Template\n  2. http://example.org/code-generation-workflow - Code Generation Pipeline\n  3. http://example.org/data-processing-workflow - Data Processing Pipeline\n  4. http://example.org/data-processing-workflow - Data Processing Workflow\n  5. http://example.org/demo-interactive - 'Demo\n  6. http://example.org/demo-template - 'Demo\n  7. http://example.org/scrum-of-scrums-workflow - Scrum of Scrums Multi-Team Coordination\n  8. http://example.org/scrum-sprint-workflow - Scrum Team Sprint Workflow\n  9. http://example.org/scrum-team-setup-workflow - Scrum Team Setup and Sprint Initialization\n  10. http://example.org/test-cursor-workflow-optimized - Optimized Test Cursor Workflow\n  11. http://example.org/test-cursor-workflow - Test Cursor Workflow\n  12. http://example.org/test-workflow - Test Workflow\n",
+        "stderr": "(node:34749) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n",
+        "exitCode": 0,
+        "duration": 964,
+        "timestamp": "2025-09-21T00:35:34.383Z"
+      },
+      {
+        "success": true,
+        "command": "workflow list",
+        "args": [
+          "workflow",
+          "list"
+        ],
+        "stdout": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 14 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n📋 Available Workflows:\n──────────────────────────────────────────────────\n[gitvan] 📋 Found 12 workflows\n🔧 http://example.org/auto-template\n   Title: Auto Template\n   Pipelines: 0\n\n🔧 http://example.org/code-generation-workflow\n   Title: Code Generation Pipeline\n   Pipelines: 0\n\n🔧 http://example.org/data-processing-workflow\n   Title: Data Processing Pipeline\n   Pipelines: 0\n\n🔧 http://example.org/data-processing-workflow\n   Title: Data Processing Workflow\n   Pipelines: 0\n\n🔧 http://example.org/demo-interactive\n   Title: 'Demo\n   Pipelines: 0\n\n🔧 http://example.org/demo-template\n   Title: 'Demo\n   Pipelines: 0\n\n🔧 http://example.org/scrum-of-scrums-workflow\n   Title: Scrum of Scrums Multi-Team Coordination\n   Pipelines: 0\n\n🔧 http://example.org/scrum-sprint-workflow\n   Title: Scrum Team Sprint Workflow\n   Pipelines: 0\n\n🔧 http://example.org/scrum-team-setup-workflow\n   Title: Scrum Team Setup and Sprint Initialization\n   Pipelines: 0\n\n🔧 http://example.org/test-cursor-workflow-optimized\n   Title: Optimized Test Cursor Workflow\n   Pipelines: 0\n\n🔧 http://example.org/test-cursor-workflow\n   Title: Test Cursor Workflow\n   Pipelines: 0\n\n🔧 http://example.org/test-workflow\n   Title: Test Workflow\n   Pipelines: 0\n\n",
+        "stderr": "(node:34770) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n",
+        "exitCode": 0,
+        "duration": 964,
+        "timestamp": "2025-09-21T00:35:35.347Z"
+      },
+      {
+        "success": true,
+        "command": "workflow list",
+        "args": [
+          "workflow",
+          "list"
+        ],
+        "stdout": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 14 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n📋 Available Workflows:\n──────────────────────────────────────────────────\n[gitvan] 📋 Found 12 workflows\n🔧 http://example.org/auto-template\n   Title: Auto Template\n   Pipelines: 0\n\n🔧 http://example.org/code-generation-workflow\n   Title: Code Generation Pipeline\n   Pipelines: 0\n\n🔧 http://example.org/data-processing-workflow\n   Title: Data Processing Pipeline\n   Pipelines: 0\n\n🔧 http://example.org/data-processing-workflow\n   Title: Data Processing Workflow\n   Pipelines: 0\n\n🔧 http://example.org/demo-interactive\n   Title: 'Demo\n   Pipelines: 0\n\n🔧 http://example.org/demo-template\n   Title: 'Demo\n   Pipelines: 0\n\n🔧 http://example.org/scrum-of-scrums-workflow\n   Title: Scrum of Scrums Multi-Team Coordination\n   Pipelines: 0\n\n🔧 http://example.org/scrum-sprint-workflow\n   Title: Scrum Team Sprint Workflow\n   Pipelines: 0\n\n🔧 http://example.org/scrum-team-setup-workflow\n   Title: Scrum Team Setup and Sprint Initialization\n   Pipelines: 0\n\n🔧 http://example.org/test-cursor-workflow-optimized\n   Title: Optimized Test Cursor Workflow\n   Pipelines: 0\n\n🔧 http://example.org/test-cursor-workflow\n   Title: Test Cursor Workflow\n   Pipelines: 0\n\n🔧 http://example.org/test-workflow\n   Title: Test Workflow\n   Pipelines: 0\n\n",
+        "stderr": "(node:34823) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n",
+        "exitCode": 0,
+        "duration": 1005,
+        "timestamp": "2025-09-21T00:35:36.352Z"
+      },
+      {
+        "success": true,
+        "command": "workflow stats",
+        "args": [
+          "workflow",
+          "stats"
+        ],
+        "stdout": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 14 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n📊 Workflow Engine Statistics:\n────────────────────────────────────────\n[gitvan] 📋 Found 12 workflows\nTotal workflows: 12\nGraph directory: ./workflows\nEngine initialized: Yes\n\n📋 Workflow Summary:\n  1. http://example.org/auto-template - Auto Template\n  2. http://example.org/code-generation-workflow - Code Generation Pipeline\n  3. http://example.org/data-processing-workflow - Data Processing Pipeline\n  4. http://example.org/data-processing-workflow - Data Processing Workflow\n  5. http://example.org/demo-interactive - 'Demo\n  6. http://example.org/demo-template - 'Demo\n  7. http://example.org/scrum-of-scrums-workflow - Scrum of Scrums Multi-Team Coordination\n  8. http://example.org/scrum-sprint-workflow - Scrum Team Sprint Workflow\n  9. http://example.org/scrum-team-setup-workflow - Scrum Team Setup and Sprint Initialization\n  10. http://example.org/test-cursor-workflow-optimized - Optimized Test Cursor Workflow\n  11. http://example.org/test-cursor-workflow - Test Cursor Workflow\n  12. http://example.org/test-workflow - Test Workflow\n",
+        "stderr": "(node:34840) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n",
+        "exitCode": 0,
+        "duration": 1037,
+        "timestamp": "2025-09-21T00:35:37.389Z"
+      },
+      {
+        "success": false,
+        "command": "workflow validate invalid",
+        "args": [
+          "workflow",
+          "validate",
+          "invalid"
+        ],
+        "stdout": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 14 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n🔍 Validating workflow: invalid\n[gitvan] 📋 Found 12 workflows\n",
+        "stderr": "(node:34858) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n❌ Validation failed: Workflow not found: invalid\n❌ Failed to validate workflow: Workflow not found: invalid\n",
+        "exitCode": 1,
+        "error": "Command failed: node src/cli.mjs workflow validate invalid\n(node:34858) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n[gitvan] ⚠️ Failed to parse turtle file demo-workflow.ttl: Undefined prefix \"rdf:\" on line 5.\n❌ Validation failed: Workflow not found: invalid\n❌ Failed to validate workflow: Workflow not found: invalid\n",
+        "duration": 1005,
+        "timestamp": "2025-09-21T00:35:38.394Z"
+      }
+    ],
+    "context": {
+      "workingDirectory": "/Users/sac/gitvan",
+      "environmentVariables": 58,
+      "variables": 0
+    }
+  },
+  "insights": [
+    {
+      "type": "success",
+      "job": "Discover Available Commands",
+      "message": "All scenarios for Discover Available Commands passed successfully"
+    },
+    {
+      "type": "success",
+      "job": "Execute Commands Successfully",
+      "message": "All scenarios for Execute Commands Successfully passed successfully"
+    },
+    {
+      "type": "success",
+      "job": "Handle Errors Gracefully",
+      "message": "All scenarios for Handle Errors Gracefully passed successfully"
+    },
+    {
+      "type": "improvement",
+      "job": "Provide Interactive Experience",
+      "message": "1 scenarios failed for Provide Interactive Experience - needs attention"
+    },
+    {
+      "type": "success",
+      "job": "Maintain Consistency and Reliability",
+      "message": "All scenarios for Maintain Consistency and Reliability passed successfully"
+    },
+    {
+      "type": "success",
+      "job": "Provide Rich Output Formats",
+      "message": "All scenarios for Provide Rich Output Formats passed successfully"
+    },
+    {
+      "type": "overall",
+      "message": "Overall success rate: 94.12% (16/17 scenarios)"
+    },
+    {
+      "type": "performance",
+      "message": "Average command duration: 1024.12ms"
+    }
+  ]
+}

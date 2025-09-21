@@ -1,0 +1,176 @@
+{
+  "timestamp": "2025-09-20T23:31:29.244Z",
+  "title": "GitVan Workflow CLI JTBD BDD Demonstration Report",
+  "summary": {
+    "totalJobs": 6,
+    "totalScenarios": 12,
+    "passedScenarios": 4,
+    "failedScenarios": 8
+  },
+  "jobs": [
+    {
+      "name": "Discover Available Workflows",
+      "totalScenarios": 2,
+      "passedScenarios": 0,
+      "failedScenarios": 2,
+      "successRate": "0.00"
+    },
+    {
+      "name": "Validate Workflow Integrity",
+      "totalScenarios": 2,
+      "passedScenarios": 1,
+      "failedScenarios": 1,
+      "successRate": "50.00"
+    },
+    {
+      "name": "Execute Workflows Safely",
+      "totalScenarios": 2,
+      "passedScenarios": 0,
+      "failedScenarios": 2,
+      "successRate": "0.00"
+    },
+    {
+      "name": "Create New Workflow Templates",
+      "totalScenarios": 2,
+      "passedScenarios": 0,
+      "failedScenarios": 2,
+      "successRate": "0.00"
+    },
+    {
+      "name": "Get Help and Documentation",
+      "totalScenarios": 2,
+      "passedScenarios": 1,
+      "failedScenarios": 1,
+      "successRate": "50.00"
+    },
+    {
+      "name": "Handle Errors Gracefully",
+      "totalScenarios": 2,
+      "passedScenarios": 2,
+      "failedScenarios": 0,
+      "successRate": "100.00"
+    }
+  ],
+  "scenarios": [
+    {
+      "job": "Discover Available Workflows",
+      "scenario": "List all available workflows",
+      "success": false,
+      "error": "Command failed: node src/cli.mjs gitvan workflow list\n\n ERROR  Unknown command gitvan\n\n",
+      "output": "Git-native development automation platform (gitvan v3.0.0)\n\nUSAGE gitvan graph|daemon|event|cron|audit|hooks|workflow|jtbd|init|setup|save|ensure|pack|marketplace|scaffold|compose|chat\n\nCOMMANDS\n\n        graph    Graph persistence and operations for GitVan                                                 \n       daemon    Manage GitVan daemon (start, stop, status, restart)                                         \n        event    Manage GitVan events (simulate, test, list, trigger)                                        \n         cron    Manage GitVan cron jobs (list, start, dry-run, status)                                      \n        audit    Manage GitVan audit and verification (build, verify, list, show)                            \n        hooks    Manage GitVan Knowledge Hooks                                                               \n     workflow    Manage GitVan Workflows                                                                     \n         jtbd    Manage GitVan Jobs-to-be-Done (JTBD) Hooks                                                  \n         init    Initialize GitVan project with Knowledge Hook Engine support                                \n        setup    Complete autonomic setup: start daemon, install hooks, and auto-install packs (non-blocking)\n         save    Save changes with AI-generated commit message and automatic job execution                   \n       ensure    Ensure GitVan is properly configured in the repository                                      \n         pack    Manage GitVan packs                                                                         \n  marketplace    Browse and install packs from the GitVan marketplace                                        \n     scaffold    Run a pack scaffold to generate content                                                     \n      compose    Compose multiple packs together                                                             \n         chat    AI-powered chat interface for job generation                                                \n\nUse gitvan <command> --help for more information about a command.\n\n"
+    },
+    {
+      "job": "Discover Available Workflows",
+      "scenario": "Get workflow statistics",
+      "success": false,
+      "error": "Command failed: node src/cli.mjs gitvan workflow stats\n\n ERROR  Unknown command gitvan\n\n",
+      "output": "Git-native development automation platform (gitvan v3.0.0)\n\nUSAGE gitvan graph|daemon|event|cron|audit|hooks|workflow|jtbd|init|setup|save|ensure|pack|marketplace|scaffold|compose|chat\n\nCOMMANDS\n\n        graph    Graph persistence and operations for GitVan                                                 \n       daemon    Manage GitVan daemon (start, stop, status, restart)                                         \n        event    Manage GitVan events (simulate, test, list, trigger)                                        \n         cron    Manage GitVan cron jobs (list, start, dry-run, status)                                      \n        audit    Manage GitVan audit and verification (build, verify, list, show)                            \n        hooks    Manage GitVan Knowledge Hooks                                                               \n     workflow    Manage GitVan Workflows                                                                     \n         jtbd    Manage GitVan Jobs-to-be-Done (JTBD) Hooks                                                  \n         init    Initialize GitVan project with Knowledge Hook Engine support                                \n        setup    Complete autonomic setup: start daemon, install hooks, and auto-install packs (non-blocking)\n         save    Save changes with AI-generated commit message and automatic job execution                   \n       ensure    Ensure GitVan is properly configured in the repository                                      \n         pack    Manage GitVan packs                                                                         \n  marketplace    Browse and install packs from the GitVan marketplace                                        \n     scaffold    Run a pack scaffold to generate content                                                     \n      compose    Compose multiple packs together                                                             \n         chat    AI-powered chat interface for job generation                                                \n\nUse gitvan <command> --help for more information about a command.\n\n"
+    },
+    {
+      "job": "Validate Workflow Integrity",
+      "scenario": "Validate an existing workflow",
+      "success": false,
+      "error": "Command failed: node src/cli.mjs gitvan workflow validate http://example.org/test-workflow\n\n ERROR  Unknown command gitvan\n\n",
+      "output": "Git-native development automation platform (gitvan v3.0.0)\n\nUSAGE gitvan graph|daemon|event|cron|audit|hooks|workflow|jtbd|init|setup|save|ensure|pack|marketplace|scaffold|compose|chat\n\nCOMMANDS\n\n        graph    Graph persistence and operations for GitVan                                                 \n       daemon    Manage GitVan daemon (start, stop, status, restart)                                         \n        event    Manage GitVan events (simulate, test, list, trigger)                                        \n         cron    Manage GitVan cron jobs (list, start, dry-run, status)                                      \n        audit    Manage GitVan audit and verification (build, verify, list, show)                            \n        hooks    Manage GitVan Knowledge Hooks                                                               \n     workflow    Manage GitVan Workflows                                                                     \n         jtbd    Manage GitVan Jobs-to-be-Done (JTBD) Hooks                                                  \n         init    Initialize GitVan project with Knowledge Hook Engine support                                \n        setup    Complete autonomic setup: start daemon, install hooks, and auto-install packs (non-blocking)\n         save    Save changes with AI-generated commit message and automatic job execution                   \n       ensure    Ensure GitVan is properly configured in the repository                                      \n         pack    Manage GitVan packs                                                                         \n  marketplace    Browse and install packs from the GitVan marketplace                                        \n     scaffold    Run a pack scaffold to generate content                                                     \n      compose    Compose multiple packs together                                                             \n         chat    AI-powered chat interface for job generation                                                \n\nUse gitvan <command> --help for more information about a command.\n\n"
+    },
+    {
+      "job": "Validate Workflow Integrity",
+      "scenario": "Validate a non-existent workflow",
+      "success": true,
+      "error": null,
+      "output": "Git-native development automation platform (gitvan v3.0.0)\n\nUSAGE gitvan graph|daemon|event|cron|audit|hooks|workflow|jtbd|init|setup|save|ensure|pack|marketplace|scaffold|compose|chat\n\nCOMMANDS\n\n        graph    Graph persistence and operations for GitVan                                                 \n       daemon    Manage GitVan daemon (start, stop, status, restart)                                         \n        event    Manage GitVan events (simulate, test, list, trigger)                                        \n         cron    Manage GitVan cron jobs (list, start, dry-run, status)                                      \n        audit    Manage GitVan audit and verification (build, verify, list, show)                            \n        hooks    Manage GitVan Knowledge Hooks                                                               \n     workflow    Manage GitVan Workflows                                                                     \n         jtbd    Manage GitVan Jobs-to-be-Done (JTBD) Hooks                                                  \n         init    Initialize GitVan project with Knowledge Hook Engine support                                \n        setup    Complete autonomic setup: start daemon, install hooks, and auto-install packs (non-blocking)\n         save    Save changes with AI-generated commit message and automatic job execution                   \n       ensure    Ensure GitVan is properly configured in the repository                                      \n         pack    Manage GitVan packs                                                                         \n  marketplace    Browse and install packs from the GitVan marketplace                                        \n     scaffold    Run a pack scaffold to generate content                                                     \n      compose    Compose multiple packs together                                                             \n         chat    AI-powered chat interface for job generation                                                \n\nUse gitvan <command> --help for more information about a command.\n\n"
+    },
+    {
+      "job": "Execute Workflows Safely",
+      "scenario": "Execute workflow in dry-run mode",
+      "success": false,
+      "error": "Command failed: node src/cli.mjs gitvan workflow run http://example.org/test-workflow --dry-run\n\n ERROR  Unknown command gitvan\n\n",
+      "output": "Git-native development automation platform (gitvan v3.0.0)\n\nUSAGE gitvan graph|daemon|event|cron|audit|hooks|workflow|jtbd|init|setup|save|ensure|pack|marketplace|scaffold|compose|chat\n\nCOMMANDS\n\n        graph    Graph persistence and operations for GitVan                                                 \n       daemon    Manage GitVan daemon (start, stop, status, restart)                                         \n        event    Manage GitVan events (simulate, test, list, trigger)                                        \n         cron    Manage GitVan cron jobs (list, start, dry-run, status)                                      \n        audit    Manage GitVan audit and verification (build, verify, list, show)                            \n        hooks    Manage GitVan Knowledge Hooks                                                               \n     workflow    Manage GitVan Workflows                                                                     \n         jtbd    Manage GitVan Jobs-to-be-Done (JTBD) Hooks                                                  \n         init    Initialize GitVan project with Knowledge Hook Engine support                                \n        setup    Complete autonomic setup: start daemon, install hooks, and auto-install packs (non-blocking)\n         save    Save changes with AI-generated commit message and automatic job execution                   \n       ensure    Ensure GitVan is properly configured in the repository                                      \n         pack    Manage GitVan packs                                                                         \n  marketplace    Browse and install packs from the GitVan marketplace                                        \n     scaffold    Run a pack scaffold to generate content                                                     \n      compose    Compose multiple packs together                                                             \n         chat    AI-powered chat interface for job generation                                                \n\nUse gitvan <command> --help for more information about a command.\n\n"
+    },
+    {
+      "job": "Execute Workflows Safely",
+      "scenario": "Execute workflow with verbose output",
+      "success": false,
+      "error": "Command failed: node src/cli.mjs gitvan workflow run http://example.org/test-workflow --verbose\n\n ERROR  Unknown command gitvan\n\n",
+      "output": "Git-native development automation platform (gitvan v3.0.0)\n\nUSAGE gitvan graph|daemon|event|cron|audit|hooks|workflow|jtbd|init|setup|save|ensure|pack|marketplace|scaffold|compose|chat\n\nCOMMANDS\n\n        graph    Graph persistence and operations for GitVan                                                 \n       daemon    Manage GitVan daemon (start, stop, status, restart)                                         \n        event    Manage GitVan events (simulate, test, list, trigger)                                        \n         cron    Manage GitVan cron jobs (list, start, dry-run, status)                                      \n        audit    Manage GitVan audit and verification (build, verify, list, show)                            \n        hooks    Manage GitVan Knowledge Hooks                                                               \n     workflow    Manage GitVan Workflows                                                                     \n         jtbd    Manage GitVan Jobs-to-be-Done (JTBD) Hooks                                                  \n         init    Initialize GitVan project with Knowledge Hook Engine support                                \n        setup    Complete autonomic setup: start daemon, install hooks, and auto-install packs (non-blocking)\n         save    Save changes with AI-generated commit message and automatic job execution                   \n       ensure    Ensure GitVan is properly configured in the repository                                      \n         pack    Manage GitVan packs                                                                         \n  marketplace    Browse and install packs from the GitVan marketplace                                        \n     scaffold    Run a pack scaffold to generate content                                                     \n      compose    Compose multiple packs together                                                             \n         chat    AI-powered chat interface for job generation                                                \n\nUse gitvan <command> --help for more information about a command.\n\n"
+    },
+    {
+      "job": "Create New Workflow Templates",
+      "scenario": "Create a new workflow template",
+      "success": false,
+      "error": "Command failed: node src/cli.mjs gitvan workflow create demo-template 'Demo Template'\n\n ERROR  Unknown command gitvan\n\n",
+      "output": "Git-native development automation platform (gitvan v3.0.0)\n\nUSAGE gitvan graph|daemon|event|cron|audit|hooks|workflow|jtbd|init|setup|save|ensure|pack|marketplace|scaffold|compose|chat\n\nCOMMANDS\n\n        graph    Graph persistence and operations for GitVan                                                 \n       daemon    Manage GitVan daemon (start, stop, status, restart)                                         \n        event    Manage GitVan events (simulate, test, list, trigger)                                        \n         cron    Manage GitVan cron jobs (list, start, dry-run, status)                                      \n        audit    Manage GitVan audit and verification (build, verify, list, show)                            \n        hooks    Manage GitVan Knowledge Hooks                                                               \n     workflow    Manage GitVan Workflows                                                                     \n         jtbd    Manage GitVan Jobs-to-be-Done (JTBD) Hooks                                                  \n         init    Initialize GitVan project with Knowledge Hook Engine support                                \n        setup    Complete autonomic setup: start daemon, install hooks, and auto-install packs (non-blocking)\n         save    Save changes with AI-generated commit message and automatic job execution                   \n       ensure    Ensure GitVan is properly configured in the repository                                      \n         pack    Manage GitVan packs                                                                         \n  marketplace    Browse and install packs from the GitVan marketplace                                        \n     scaffold    Run a pack scaffold to generate content                                                     \n      compose    Compose multiple packs together                                                             \n         chat    AI-powered chat interface for job generation                                                \n\nUse gitvan <command> --help for more information about a command.\n\n"
+    },
+    {
+      "job": "Create New Workflow Templates",
+      "scenario": "Create workflow template without title",
+      "success": false,
+      "error": "Command failed: node src/cli.mjs gitvan workflow create auto-template\n\n ERROR  Unknown command gitvan\n\n",
+      "output": "Git-native development automation platform (gitvan v3.0.0)\n\nUSAGE gitvan graph|daemon|event|cron|audit|hooks|workflow|jtbd|init|setup|save|ensure|pack|marketplace|scaffold|compose|chat\n\nCOMMANDS\n\n        graph    Graph persistence and operations for GitVan                                                 \n       daemon    Manage GitVan daemon (start, stop, status, restart)                                         \n        event    Manage GitVan events (simulate, test, list, trigger)                                        \n         cron    Manage GitVan cron jobs (list, start, dry-run, status)                                      \n        audit    Manage GitVan audit and verification (build, verify, list, show)                            \n        hooks    Manage GitVan Knowledge Hooks                                                               \n     workflow    Manage GitVan Workflows                                                                     \n         jtbd    Manage GitVan Jobs-to-be-Done (JTBD) Hooks                                                  \n         init    Initialize GitVan project with Knowledge Hook Engine support                                \n        setup    Complete autonomic setup: start daemon, install hooks, and auto-install packs (non-blocking)\n         save    Save changes with AI-generated commit message and automatic job execution                   \n       ensure    Ensure GitVan is properly configured in the repository                                      \n         pack    Manage GitVan packs                                                                         \n  marketplace    Browse and install packs from the GitVan marketplace                                        \n     scaffold    Run a pack scaffold to generate content                                                     \n      compose    Compose multiple packs together                                                             \n         chat    AI-powered chat interface for job generation                                                \n\nUse gitvan <command> --help for more information about a command.\n\n"
+    },
+    {
+      "job": "Get Help and Documentation",
+      "scenario": "Show workflow command help",
+      "success": false,
+      "error": "Command failed: node src/cli.mjs gitvan workflow help\n\n ERROR  Unknown command gitvan\n\n",
+      "output": "Git-native development automation platform (gitvan v3.0.0)\n\nUSAGE gitvan graph|daemon|event|cron|audit|hooks|workflow|jtbd|init|setup|save|ensure|pack|marketplace|scaffold|compose|chat\n\nCOMMANDS\n\n        graph    Graph persistence and operations for GitVan                                                 \n       daemon    Manage GitVan daemon (start, stop, status, restart)                                         \n        event    Manage GitVan events (simulate, test, list, trigger)                                        \n         cron    Manage GitVan cron jobs (list, start, dry-run, status)                                      \n        audit    Manage GitVan audit and verification (build, verify, list, show)                            \n        hooks    Manage GitVan Knowledge Hooks                                                               \n     workflow    Manage GitVan Workflows                                                                     \n         jtbd    Manage GitVan Jobs-to-be-Done (JTBD) Hooks                                                  \n         init    Initialize GitVan project with Knowledge Hook Engine support                                \n        setup    Complete autonomic setup: start daemon, install hooks, and auto-install packs (non-blocking)\n         save    Save changes with AI-generated commit message and automatic job execution                   \n       ensure    Ensure GitVan is properly configured in the repository                                      \n         pack    Manage GitVan packs                                                                         \n  marketplace    Browse and install packs from the GitVan marketplace                                        \n     scaffold    Run a pack scaffold to generate content                                                     \n      compose    Compose multiple packs together                                                             \n         chat    AI-powered chat interface for job generation                                                \n\nUse gitvan <command> --help for more information about a command.\n\n"
+    },
+    {
+      "job": "Get Help and Documentation",
+      "scenario": "Show main CLI help with workflow command",
+      "success": true,
+      "error": null,
+      "output": "Git-native development automation platform (gitvan v3.0.0)\n\nUSAGE gitvan graph|daemon|event|cron|audit|hooks|workflow|jtbd|init|setup|save|ensure|pack|marketplace|scaffold|compose|chat\n\nCOMMANDS\n\n        graph    Graph persistence and operations for GitVan                                                 \n       daemon    Manage GitVan daemon (start, stop, status, restart)                                         \n        event    Manage GitVan events (simulate, test, list, trigger)                                        \n         cron    Manage GitVan cron jobs (list, start, dry-run, status)                                      \n        audit    Manage GitVan audit and verification (build, verify, list, show)                            \n        hooks    Manage GitVan Knowledge Hooks                                                               \n     workflow    Manage GitVan Workflows                                                                     \n         jtbd    Manage GitVan Jobs-to-be-Done (JTBD) Hooks                                                  \n         init    Initialize GitVan project with Knowledge Hook Engine support                                \n        setup    Complete autonomic setup: start daemon, install hooks, and auto-install packs (non-blocking)\n         save    Save changes with AI-generated commit message and automatic job execution                   \n       ensure    Ensure GitVan is properly configured in the repository                                      \n         pack    Manage GitVan packs                                                                         \n  marketplace    Browse and install packs from the GitVan marketplace                                        \n     scaffold    Run a pack scaffold to generate content                                                     \n      compose    Compose multiple packs together                                                             \n         chat    AI-powered chat interface for job generation                                                \n\nUse gitvan <command> --help for more information about a command.\n\n"
+    },
+    {
+      "job": "Handle Errors Gracefully",
+      "scenario": "Handle missing workflow ID for run command",
+      "success": true,
+      "error": null,
+      "output": "Git-native development automation platform (gitvan v3.0.0)\n\nUSAGE gitvan graph|daemon|event|cron|audit|hooks|workflow|jtbd|init|setup|save|ensure|pack|marketplace|scaffold|compose|chat\n\nCOMMANDS\n\n        graph    Graph persistence and operations for GitVan                                                 \n       daemon    Manage GitVan daemon (start, stop, status, restart)                                         \n        event    Manage GitVan events (simulate, test, list, trigger)                                        \n         cron    Manage GitVan cron jobs (list, start, dry-run, status)                                      \n        audit    Manage GitVan audit and verification (build, verify, list, show)                            \n        hooks    Manage GitVan Knowledge Hooks                                                               \n     workflow    Manage GitVan Workflows                                                                     \n         jtbd    Manage GitVan Jobs-to-be-Done (JTBD) Hooks                                                  \n         init    Initialize GitVan project with Knowledge Hook Engine support                                \n        setup    Complete autonomic setup: start daemon, install hooks, and auto-install packs (non-blocking)\n         save    Save changes with AI-generated commit message and automatic job execution                   \n       ensure    Ensure GitVan is properly configured in the repository                                      \n         pack    Manage GitVan packs                                                                         \n  marketplace    Browse and install packs from the GitVan marketplace                                        \n     scaffold    Run a pack scaffold to generate content                                                     \n      compose    Compose multiple packs together                                                             \n         chat    AI-powered chat interface for job generation                                                \n\nUse gitvan <command> --help for more information about a command.\n\n"
+    },
+    {
+      "job": "Handle Errors Gracefully",
+      "scenario": "Handle missing workflow ID for validate command",
+      "success": true,
+      "error": null,
+      "output": "Git-native development automation platform (gitvan v3.0.0)\n\nUSAGE gitvan graph|daemon|event|cron|audit|hooks|workflow|jtbd|init|setup|save|ensure|pack|marketplace|scaffold|compose|chat\n\nCOMMANDS\n\n        graph    Graph persistence and operations for GitVan                                                 \n       daemon    Manage GitVan daemon (start, stop, status, restart)                                         \n        event    Manage GitVan events (simulate, test, list, trigger)                                        \n         cron    Manage GitVan cron jobs (list, start, dry-run, status)                                      \n        audit    Manage GitVan audit and verification (build, verify, list, show)                            \n        hooks    Manage GitVan Knowledge Hooks                                                               \n     workflow    Manage GitVan Workflows                                                                     \n         jtbd    Manage GitVan Jobs-to-be-Done (JTBD) Hooks                                                  \n         init    Initialize GitVan project with Knowledge Hook Engine support                                \n        setup    Complete autonomic setup: start daemon, install hooks, and auto-install packs (non-blocking)\n         save    Save changes with AI-generated commit message and automatic job execution                   \n       ensure    Ensure GitVan is properly configured in the repository                                      \n         pack    Manage GitVan packs                                                                         \n  marketplace    Browse and install packs from the GitVan marketplace                                        \n     scaffold    Run a pack scaffold to generate content                                                     \n      compose    Compose multiple packs together                                                             \n         chat    AI-powered chat interface for job generation                                                \n\nUse gitvan <command> --help for more information about a command.\n\n"
+    }
+  ],
+  "insights": [
+    {
+      "type": "improvement",
+      "job": "Discover Available Workflows",
+      "message": "2 scenarios failed for Discover Available Workflows - needs attention"
+    },
+    {
+      "type": "improvement",
+      "job": "Validate Workflow Integrity",
+      "message": "1 scenarios failed for Validate Workflow Integrity - needs attention"
+    },
+    {
+      "type": "improvement",
+      "job": "Execute Workflows Safely",
+      "message": "2 scenarios failed for Execute Workflows Safely - needs attention"
+    },
+    {
+      "type": "improvement",
+      "job": "Create New Workflow Templates",
+      "message": "2 scenarios failed for Create New Workflow Templates - needs attention"
+    },
+    {
+      "type": "improvement",
+      "job": "Get Help and Documentation",
+      "message": "1 scenarios failed for Get Help and Documentation - needs attention"
+    },
+    {
+      "type": "success",
+      "job": "Handle Errors Gracefully",
+      "message": "All scenarios for Handle Errors Gracefully passed successfully"
+    },
+    {
+      "type": "overall",
+      "message": "Overall success rate: 33.33% (4/12 scenarios)"
+    }
+  ]
+}

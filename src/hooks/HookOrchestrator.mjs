@@ -146,6 +146,11 @@ export class HookOrchestrator {
 
     try {
       const hook = await this._parseHook(hookId);
+
+      if (!hook) {
+        throw new Error(`Hook ${hookId} not found or failed to parse`);
+      }
+
       const validation = await this._validateHookDefinition(hook);
 
       return {
@@ -568,16 +573,22 @@ export class HookOrchestrator {
    * @private
    */
   async _validateHookDefinition(hook) {
+    // Calculate total steps across all workflows
+    const totalSteps =
+      hook.workflows?.reduce((total, workflow) => {
+        return total + (workflow.steps?.length || 0);
+      }, 0) || 0;
+
     const validation = {
       predicateType: this._getPredicateType(hook),
-      workflowSteps: hook.steps?.length || 0,
+      workflowSteps: totalSteps,
       complexity: "low",
     };
 
     // Analyze complexity based on predicate and workflow
-    if (hook.steps && hook.steps.length > 5) {
+    if (totalSteps > 5) {
       validation.complexity = "high";
-    } else if (hook.steps && hook.steps.length > 2) {
+    } else if (totalSteps > 2) {
       validation.complexity = "medium";
     }
 

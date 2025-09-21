@@ -16,6 +16,10 @@ import { daemonCommand } from "./cli/commands/daemon.mjs";
 import { eventCommand } from "./cli/commands/event.mjs";
 import { cronCommand } from "./cli/commands/cron.mjs";
 import { auditCommand } from "./cli/commands/audit.mjs";
+import { hooksCommand } from "./cli/commands/hooks.mjs";
+import { workflowCommand } from "./cli/commands/workflow.mjs";
+import { jtbdCommand } from "./cli/commands/jtbd.mjs";
+import { cleanroomCommand } from "./cli/commands/cleanroom.mjs";
 
 // Import existing Citty commands that are already properly implemented
 import { setupCommand } from "./cli/setup.mjs";
@@ -52,6 +56,15 @@ export const cli = defineCommand({
       'gitvan event simulate commit --files "src/**"',
       "gitvan cron list --verbose",
       "gitvan audit build --output audit.json",
+      "gitvan hooks list",
+      "gitvan hooks evaluate --dry-run",
+      "gitvan jtbd list",
+      "gitvan jtbd evaluate --category core-development-lifecycle",
+      "gitvan cleanroom build",
+      "gitvan cleanroom test --suite core",
+      "gitvan workflow list",
+      "gitvan workflow run my-workflow --dry-run",
+      "gitvan workflow cursor my-workflow --interactive",
       "gitvan setup",
       "gitvan pack install react-pack",
       'gitvan marketplace search "react"',
@@ -69,6 +82,10 @@ export const cli = defineCommand({
     event: eventCommand,
     cron: cronCommand,
     audit: auditCommand,
+    hooks: hooksCommand,
+    workflow: workflowCommand,
+    jtbd: jtbdCommand,
+    cleanroom: cleanroomCommand,
 
     // Project management commands
     init: initCommand,
@@ -91,8 +108,6 @@ export const cli = defineCommand({
     // schedule: scheduleCommand, // Legacy handler
     // worktree: worktreeCommand, // Legacy handler
     // job: jobCommand,          // Legacy handler
-    // hooks: hooksCommand,      // Legacy handler
-    // workflow: workflowCommand, // Legacy handler
   },
 });
 

@@ -419,7 +419,7 @@ ex:version-change-predicate rdf:type gh:ResultDelta ;
 
 # Workflow Pipeline
 ex:version-change-pipeline rdf:type op:Pipeline ;
-    op:steps ex:notify-team, ex:update-changelog .
+    op:steps (ex:notify-team, ex:update-changelog) .
 
 # Step 1: Notify Team
 ex:notify-team rdf:type gv:TemplateStep ;
@@ -463,7 +463,7 @@ ex:critical-issues-predicate rdf:type gh:ASKPredicate ;
 
 # Workflow Pipeline
 ex:critical-issues-pipeline rdf:type op:Pipeline ;
-    op:steps ex:create-alert .
+    op:steps (ex:create-alert) .
 
 # Step 1: Create Alert
 ex:create-alert rdf:type gv:TemplateStep ;
@@ -554,7 +554,7 @@ ex:data-processing-predicate rdf:type gh:ResultDelta ;
 
 # Workflow Pipeline
 ex:data-processing-pipeline rdf:type op:Pipeline ;
-    op:steps ex:analyze-data, ex:generate-report .
+    op:steps (ex:analyze-data, ex:generate-report) .
 
 # Step 1: Analyze Data
 ex:analyze-data rdf:type gv:SparqlStep ;

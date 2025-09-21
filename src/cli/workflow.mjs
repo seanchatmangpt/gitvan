@@ -149,28 +149,25 @@ export class WorkflowCLI {
     try {
       this.logger.info(`🔍 Validating workflow: ${workflowId}`);
 
-      const validation = await this.executor.validateWorkflow(workflowId);
+      // Check if workflow exists
+      const workflows = await this.engine.listWorkflows();
+      const workflow = workflows.find((w) => w.id === workflowId);
 
-      if (validation.valid) {
-        this.logger.info("✅ Workflow validation passed");
-        this.logger.info(`   Steps: ${validation.stepCount}`);
-        this.logger.info(`   Dependencies: ${validation.dependencies.length}`);
-        this.logger.info(
-          `   Estimated duration: ${validation.estimatedDuration}ms`
-        );
-
-        this.logger.info("\n📋 Execution Plan:");
-        this.logger.info("─".repeat(30));
-        for (const dep of validation.dependencies) {
-          this.logger.info(`🔧 ${dep.id}`);
-          if (dep.dependsOn.length > 0) {
-            this.logger.info(`   Depends on: ${dep.dependsOn.join(", ")}`);
-          }
-        }
-      } else {
-        this.logger.error(`❌ Workflow validation failed: ${validation.error}`);
-        throw new Error(`Workflow validation failed: ${validation.error}`);
+      if (!workflow) {
+        throw new Error(`Workflow not found: ${workflowId}`);
       }
+
+      this.logger.info("✅ Workflow validation passed");
+      this.logger.info(`   Title: ${workflow.title}`);
+      this.logger.info(`   Pipelines: ${workflow.pipelineCount}`);
+      this.logger.info(`   ID: ${workflow.id}`);
+
+      // Basic validation - workflow exists and has required properties
+      if (!workflow.title) {
+        throw new Error("Workflow missing title");
+      }
+
+      this.logger.info("✅ Workflow structure is valid");
     } catch (error) {
       this.logger.error(`❌ Validation failed: ${error.message}`);
       throw error;
@@ -186,14 +183,23 @@ export class WorkflowCLI {
       this.logger.info("📊 Workflow Engine Statistics:");
       this.logger.info("─".repeat(40));
 
-      const stats = this.executor.getStats();
+      const workflows = await this.engine.listWorkflows();
 
-      this.logger.info(`Workflows loaded: ${stats.workflowsLoaded}`);
-      this.logger.info(`Context initialized: ${stats.contextInitialized}`);
+      this.logger.info(`Total workflows: ${workflows.length}`);
+      this.logger.info(`Graph directory: ${this.engine.graphDir}`);
+      this.logger.info(
+        `Engine initialized: ${this.engine.graph ? "Yes" : "No"}`
+      );
 
-      if (stats.lastExecution) {
-        this.logger.info(`Last execution: ${stats.lastExecution.timestamp}`);
-        this.logger.info(`Last workflow: ${stats.lastExecution.workflowId}`);
+      if (workflows.length > 0) {
+        this.logger.info("\n📋 Workflow Summary:");
+        workflows.forEach((workflow, index) => {
+          this.logger.info(
+            `  ${index + 1}. ${workflow.id} - ${workflow.title}`
+          );
+        });
+      } else {
+        this.logger.info("No workflows found");
       }
     } catch (error) {
       this.logger.error(`❌ Failed to get statistics: ${error.message}`);

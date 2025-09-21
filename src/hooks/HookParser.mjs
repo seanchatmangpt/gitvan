@@ -31,7 +31,12 @@ export class HookParser {
     try {
       // Find the hook definition
       const hooks = turtle.getHooks();
-      const hookDef = hooks.find((hook) => hook.id === hookId);
+
+      const hookDef = hooks.find((hook) => {
+        // Extract the local name from the URI (e.g., "test-validation-fixed" from "http://example.org/test-validation-fixed")
+        const localName = hook.id.split("/").pop();
+        return localName === hookId || hook.id === hookId;
+      });
 
       if (!hookDef) {
         if (options.verbose) {
@@ -214,6 +219,11 @@ export class HookParser {
 
     for (const pipelineNode of hookDef.pipelines) {
       const pipelineSteps = turtle.getPipelineSteps(pipelineNode);
+      if (!pipelineSteps || !Array.isArray(pipelineSteps)) {
+        this.logger.warn(`⚠️ Pipeline ${pipelineNode} has no steps`);
+        continue;
+      }
+
       const workflow = await this._parseWorkflow(turtle, pipelineSteps);
       if (workflow) {
         workflows.push(workflow);
@@ -228,6 +238,11 @@ export class HookParser {
    * @private
    */
   async _parseWorkflow(turtle, pipelineSteps) {
+    if (!pipelineSteps || !Array.isArray(pipelineSteps)) {
+      this.logger.warn("⚠️ Pipeline steps is not an array");
+      return null;
+    }
+
     const steps = [];
 
     for (const stepNode of pipelineSteps) {
@@ -412,6 +427,12 @@ export class HookParser {
    * @private
    */
   async _validateWorkflow(workflow) {
+    // Check if workflow has steps
+    if (!workflow || !workflow.steps || !Array.isArray(workflow.steps)) {
+      this.logger.warn("⚠️ Workflow has no steps to validate");
+      return;
+    }
+
     // Check for duplicate step IDs
     const stepIds = workflow.steps.map((step) => step.id);
     const uniqueIds = new Set(stepIds);

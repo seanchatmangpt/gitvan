@@ -1,0 +1,8 @@
+@prefix ex: <http://example.org/> .
+@prefix gv: <https://gitvan.dev/ontology#> .
+@prefix gh: <https://gitvan.dev/graph-hook#> .
+
+ex:demo-workflow rdf:type gh:Hook ;
+    gv:title "Demo Workflow" ;
+    gh:hasPredicate ex:demoworkflow ;
+    gh:orderedPipelines ex:demo-workflow-pipeline .

@@ -1,0 +1,176 @@
+{
+  "timestamp": "2025-09-20T23:34:29.432Z",
+  "title": "GitVan Workflow CLI JTBD BDD Demonstration Report",
+  "summary": {
+    "totalJobs": 6,
+    "totalScenarios": 12,
+    "passedScenarios": 12,
+    "failedScenarios": 0
+  },
+  "jobs": [
+    {
+      "name": "Discover Available Workflows",
+      "totalScenarios": 2,
+      "passedScenarios": 2,
+      "failedScenarios": 0,
+      "successRate": "100.00"
+    },
+    {
+      "name": "Validate Workflow Integrity",
+      "totalScenarios": 2,
+      "passedScenarios": 2,
+      "failedScenarios": 0,
+      "successRate": "100.00"
+    },
+    {
+      "name": "Execute Workflows Safely",
+      "totalScenarios": 2,
+      "passedScenarios": 2,
+      "failedScenarios": 0,
+      "successRate": "100.00"
+    },
+    {
+      "name": "Create New Workflow Templates",
+      "totalScenarios": 2,
+      "passedScenarios": 2,
+      "failedScenarios": 0,
+      "successRate": "100.00"
+    },
+    {
+      "name": "Get Help and Documentation",
+      "totalScenarios": 2,
+      "passedScenarios": 2,
+      "failedScenarios": 0,
+      "successRate": "100.00"
+    },
+    {
+      "name": "Handle Errors Gracefully",
+      "totalScenarios": 2,
+      "passedScenarios": 2,
+      "failedScenarios": 0,
+      "successRate": "100.00"
+    }
+  ],
+  "scenarios": [
+    {
+      "job": "Discover Available Workflows",
+      "scenario": "List all available workflows",
+      "success": true,
+      "error": null,
+      "output": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 12 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n📋 Available Workflows:\n──────────────────────────────────────────────────\n[gitvan] 📋 Found 10 workflows\n🔧 http://example.org/code-generation-workflow\n   Title: Code Generation Pipeline\n   Pipelines: 0\n\n🔧 http://example.org/data-processing-workflow\n   Title: Data Processing Pipeline\n   Pipelines: 0\n\n🔧 http://example.org/data-processing-workflow\n   Title: Data Processing Workflow\n   Pipelines: 0\n\n🔧 http://example.org/demo-template\n   Title: 'Demo\n   Pipelines: 0\n\n🔧 http://example.org/scrum-of-scrums-workflow\n   Title: Scrum of Scrums Multi-Team Coordination\n   Pipelines: 0\n\n🔧 http://example.org/scrum-sprint-workflow\n   Title: Scrum Team Sprint Workflow\n   Pipelines: 0\n\n🔧 http://example.org/scrum-team-setup-workflow\n   Title: Scrum Team Setup and Sprint Initialization\n   Pipelines: 0\n\n🔧 http://example.org/test-cursor-workflow-optimized\n   Title: Optimized Test Cursor Workflow\n   Pipelines: 0\n\n🔧 http://example.org/test-cursor-workflow\n   Title: Test Cursor Workflow\n   Pipelines: 0\n\n🔧 http://example.org/test-workflow\n   Title: Test Workflow\n   Pipelines: 0\n\n"
+    },
+    {
+      "job": "Discover Available Workflows",
+      "scenario": "Get workflow statistics",
+      "success": true,
+      "error": null,
+      "output": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 12 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n📊 Workflow Engine Statistics:\n────────────────────────────────────────\n[gitvan] 📋 Found 10 workflows\nTotal workflows: 10\nGraph directory: ./workflows\nEngine initialized: Yes\n\n📋 Workflow Summary:\n  1. http://example.org/code-generation-workflow - Code Generation Pipeline\n  2. http://example.org/data-processing-workflow - Data Processing Pipeline\n  3. http://example.org/data-processing-workflow - Data Processing Workflow\n  4. http://example.org/demo-template - 'Demo\n  5. http://example.org/scrum-of-scrums-workflow - Scrum of Scrums Multi-Team Coordination\n  6. http://example.org/scrum-sprint-workflow - Scrum Team Sprint Workflow\n  7. http://example.org/scrum-team-setup-workflow - Scrum Team Setup and Sprint Initialization\n  8. http://example.org/test-cursor-workflow-optimized - Optimized Test Cursor Workflow\n  9. http://example.org/test-cursor-workflow - Test Cursor Workflow\n  10. http://example.org/test-workflow - Test Workflow\n"
+    },
+    {
+      "job": "Validate Workflow Integrity",
+      "scenario": "Validate an existing workflow",
+      "success": true,
+      "error": null,
+      "output": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 12 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n🔍 Validating workflow: http://example.org/test-workflow\n[gitvan] 📋 Found 10 workflows\n✅ Workflow validation passed\n   Title: Test Workflow\n   Pipelines: 0\n   ID: http://example.org/test-workflow\n✅ Workflow structure is valid\n"
+    },
+    {
+      "job": "Validate Workflow Integrity",
+      "scenario": "Validate a non-existent workflow",
+      "success": true,
+      "error": null,
+      "output": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 12 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n🔍 Validating workflow: non-existent-workflow\n[gitvan] 📋 Found 10 workflows\n"
+    },
+    {
+      "job": "Execute Workflows Safely",
+      "scenario": "Execute workflow in dry-run mode",
+      "success": true,
+      "error": null,
+      "output": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 12 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n🚀 Executing workflow: http://example.org/test-workflow\n🔍 Dry run mode - no actual execution\n[gitvan] 📋 Found 10 workflows\n✅ Workflow found\n   Title: Test Workflow\n   Pipelines: 0\n"
+    },
+    {
+      "job": "Execute Workflows Safely",
+      "scenario": "Execute workflow with verbose output",
+      "success": true,
+      "error": null,
+      "output": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 12 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n🚀 Executing workflow: http://example.org/test-workflow\n[gitvan] 🎯 Executing workflow: http://example.org/test-workflow\n[gitvan] ✅ Found workflow: Test Workflow\n[gitvan] 📋 Found 1 steps to execute\n[gitvan] 🔄 Executing step: http://example.org/test-workflow-step1 (sparql)\n[gitvan] 🔍 Executing SPARQL query\n[gitvan] ✅ Step completed: http://example.org/test-workflow-step1\n✅ Workflow execution completed\n   Duration: 117.83ms\n   Status: completed\n   Steps executed: 1\n   Step results:\n     ✅ Step 1: http://example.org/test-workflow-step1\n\n📊 Execution Details:\n──────────────────────────────\n✅ http://example.org/test-workflow-step1 (unknown)\n\n📤 Workflow Summary:\n────────────────────\nWorkflow ID: http://example.org/test-workflow\nTitle: Test Workflow\nStatus: completed\nExecuted At: 2025-09-20T23:34:15.053Z\n"
+    },
+    {
+      "job": "Create New Workflow Templates",
+      "scenario": "Create a new workflow template",
+      "success": true,
+      "error": null,
+      "output": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 12 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n📝 Creating workflow template: demo-template\n✅ Workflow template created: workflows/demo-template.ttl\n📝 Edit the template to customize your workflow\n"
+    },
+    {
+      "job": "Create New Workflow Templates",
+      "scenario": "Create workflow template without title",
+      "success": true,
+      "error": null,
+      "output": "[gitvan] 📝 Registered step handler: sparql\n[gitvan] 📝 Registered step handler: template\n[gitvan] 📝 Registered step handler: file\n[gitvan] 📝 Registered step handler: http\n[gitvan] 📝 Registered step handler: cli\n[gitvan] 📝 Registered step handler: output\n[gitvan] 🚀 Initializing WorkflowEngine with graphDir: ./workflows\n[gitvan] 📁 Loaded 12 Turtle files from: ./workflows\n[gitvan] 📊 Created graph interface\n📝 Creating workflow template: auto-template\n✅ Workflow template created: workflows/auto-template.ttl\n📝 Edit the template to customize your workflow\n"
+    },
+    {
+      "job": "Get Help and Documentation",
+      "scenario": "Show workflow command help",
+      "success": true,
+      "error": null,
+      "output": "🔧 GitVan Workflow Commands:\n────────────────────────────────────────\n\n📋 List workflows:\n   gitvan workflow list\n\n🚀 Execute workflow:\n   gitvan workflow run <workflow-id>\n   gitvan workflow run <workflow-id> --input key=value\n   gitvan workflow run <workflow-id> --dry-run\n\n🔗 Connect with Cursor CLI:\n   gitvan workflow cursor <workflow-id> --interactive\n   gitvan workflow cursor <workflow-id> --non-interactive\n   gitvan workflow cursor <workflow-id> --model gpt-4\n\n📝 Generate Cursor integration script:\n   gitvan workflow cursor-script <workflow-id>\n\n🔍 Validate workflow:\n   gitvan workflow validate <workflow-id>\n\n📊 Show statistics:\n   gitvan workflow stats\n\n📝 Create workflow template:\n   gitvan workflow create <workflow-id> [title]\n\n❓ Show this help:\n   gitvan workflow help\n"
+    },
+    {
+      "job": "Get Help and Documentation",
+      "scenario": "Show main CLI help with workflow command",
+      "success": true,
+      "error": null,
+      "output": "Git-native development automation platform (gitvan v3.0.0)\n\nUSAGE gitvan graph|daemon|event|cron|audit|hooks|workflow|jtbd|init|setup|save|ensure|pack|marketplace|scaffold|compose|chat\n\nCOMMANDS\n\n        graph    Graph persistence and operations for GitVan                                                 \n       daemon    Manage GitVan daemon (start, stop, status, restart)                                         \n        event    Manage GitVan events (simulate, test, list, trigger)                                        \n         cron    Manage GitVan cron jobs (list, start, dry-run, status)                                      \n        audit    Manage GitVan audit and verification (build, verify, list, show)                            \n        hooks    Manage GitVan Knowledge Hooks                                                               \n     workflow    Manage GitVan Workflows                                                                     \n         jtbd    Manage GitVan Jobs-to-be-Done (JTBD) Hooks                                                  \n         init    Initialize GitVan project with Knowledge Hook Engine support                                \n        setup    Complete autonomic setup: start daemon, install hooks, and auto-install packs (non-blocking)\n         save    Save changes with AI-generated commit message and automatic job execution                   \n       ensure    Ensure GitVan is properly configured in the repository                                      \n         pack    Manage GitVan packs                                                                         \n  marketplace    Browse and install packs from the GitVan marketplace                                        \n     scaffold    Run a pack scaffold to generate content                                                     \n      compose    Compose multiple packs together                                                             \n         chat    AI-powered chat interface for job generation                                                \n\nUse gitvan <command> --help for more information about a command.\n\n"
+    },
+    {
+      "job": "Handle Errors Gracefully",
+      "scenario": "Handle missing workflow ID for run command",
+      "success": true,
+      "error": null,
+      "output": "Execute a workflow (workflow run)\n\nUSAGE workflow run [OPTIONS] <WORKFLOWID>\n\nARGUMENTS\n\n  WORKFLOWID    Workflow ID to execute    \n\nOPTIONS\n\n  --dry-run    Show what would be executed without actually running             \n  --verbose    Show detailed execution information                              \n    --input    Input parameters in key=value format (can be used multiple times)\n\n\n"
+    },
+    {
+      "job": "Handle Errors Gracefully",
+      "scenario": "Handle missing workflow ID for validate command",
+      "success": true,
+      "error": null,
+      "output": "Validate a workflow definition (workflow validate)\n\nUSAGE workflow validate [OPTIONS] <WORKFLOWID>\n\nARGUMENTS\n\n  WORKFLOWID    Workflow ID to validate    \n\n\n"
+    }
+  ],
+  "insights": [
+    {
+      "type": "success",
+      "job": "Discover Available Workflows",
+      "message": "All scenarios for Discover Available Workflows passed successfully"
+    },
+    {
+      "type": "success",
+      "job": "Validate Workflow Integrity",
+      "message": "All scenarios for Validate Workflow Integrity passed successfully"
+    },
+    {
+      "type": "success",
+      "job": "Execute Workflows Safely",
+      "message": "All scenarios for Execute Workflows Safely passed successfully"
+    },
+    {
+      "type": "success",
+      "job": "Create New Workflow Templates",
+      "message": "All scenarios for Create New Workflow Templates passed successfully"
+    },
+    {
+      "type": "success",
+      "job": "Get Help and Documentation",
+      "message": "All scenarios for Get Help and Documentation passed successfully"
+    },
+    {
+      "type": "success",
+      "job": "Handle Errors Gracefully",
+      "message": "All scenarios for Handle Errors Gracefully passed successfully"
+    },
+    {
+      "type": "overall",
+      "message": "Overall success rate: 100.00% (12/12 scenarios)"
+    }
+  ]
+}

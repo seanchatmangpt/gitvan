@@ -1,0 +1,36 @@
+{
+  "suite": "core",
+  "image": "gitvan-cleanroom-test",
+  "timestamp": "2025-09-21T00:39:20.255Z",
+  "tests": [
+    {
+      "name": "CLI Help Command",
+      "success": true,
+      "output": null,
+      "duration": 363
+    },
+    {
+      "name": "Project Initialization",
+      "success": true,
+      "output": null,
+      "duration": 362
+    },
+    {
+      "name": "Git Repository Setup",
+      "success": false,
+      "error": "Command failed: docker run --rm -v /Users/sac/gitvan/./cleanroom-test-output:/workspace -w /workspace gitvan-cleanroom-test bash -c git init && echo 'test content' > test.txt && git add test.txt && git commit -m 'Initial commit'",
+      "duration": 362
+    },
+    {
+      "name": "Configuration Loading",
+      "success": false,
+      "error": "Command failed: docker run --rm -v /Users/sac/gitvan/./cleanroom-test-output:/workspace -w /workspace gitvan-cleanroom-test bash -c test -f gitvan.config.js && test -f package.json",
+      "duration": 398
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 2,
+    "total": 4
+  }
+}

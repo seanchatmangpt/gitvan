@@ -34,6 +34,7 @@ export class HooksCLI {
     this.registry = new KnowledgeHookRegistry({
       hooksDir: "./hooks",
       logger: this.logger,
+      orchestrator: this.orchestrator, // Pass the orchestrator to the registry
     });
 
     await this.registry.initialize();
@@ -57,8 +58,10 @@ export class HooksCLI {
 
       for (const hook of hooks) {
         this.logger.info(`🔧 ${hook.id}`);
-        this.logger.info(`   Title: ${hook.metadata.title || 'N/A'}`);
-        this.logger.info(`   Predicate Type: ${hook.metadata.predicateType || 'N/A'}`);
+        this.logger.info(`   Title: ${hook.metadata.title || "N/A"}`);
+        this.logger.info(
+          `   Predicate Type: ${hook.metadata.predicateType || "N/A"}`
+        );
         this.logger.info(`   Category: ${hook.category}`);
         this.logger.info(`   Domain: ${hook.domain}`);
         this.logger.info(`   File: ${hook.relativePath}`);
@@ -84,19 +87,23 @@ export class HooksCLI {
 
       if (hooks.length === 0) {
         this.logger.info(`No hooks found in category '${category}'`);
-        this.logger.info(`Available categories: ${this.registry.getCategories().join(', ')}`);
+        this.logger.info(
+          `Available categories: ${this.registry.getCategories().join(", ")}`
+        );
         return;
       }
 
       for (const hook of hooks) {
         this.logger.info(`🔧 ${hook.id}`);
-        this.logger.info(`   Title: ${hook.metadata.title || 'N/A'}`);
+        this.logger.info(`   Title: ${hook.metadata.title || "N/A"}`);
         this.logger.info(`   Domain: ${hook.domain}`);
         this.logger.info(`   File: ${hook.relativePath}`);
         this.logger.info("");
       }
     } catch (error) {
-      this.logger.error(`❌ Failed to list hooks by category: ${error.message}`);
+      this.logger.error(
+        `❌ Failed to list hooks by category: ${error.message}`
+      );
       throw error;
     }
   }
@@ -115,13 +122,15 @@ export class HooksCLI {
 
       if (hooks.length === 0) {
         this.logger.info(`No hooks found in domain '${domain}'`);
-        this.logger.info(`Available domains: ${this.registry.getDomains().join(', ')}`);
+        this.logger.info(
+          `Available domains: ${this.registry.getDomains().join(", ")}`
+        );
         return;
       }
 
       for (const hook of hooks) {
         this.logger.info(`🔧 ${hook.id}`);
-        this.logger.info(`   Title: ${hook.metadata.title || 'N/A'}`);
+        this.logger.info(`   Title: ${hook.metadata.title || "N/A"}`);
         this.logger.info(`   Category: ${hook.category}`);
         this.logger.info(`   File: ${hook.relativePath}`);
         this.logger.info("");
@@ -285,12 +294,16 @@ export class HooksCLI {
    */
   async evaluateByCategory(category, options = {}) {
     try {
-      this.logger.info(`🧠 Evaluating Knowledge Hooks in category '${category}'`);
+      this.logger.info(
+        `🧠 Evaluating Knowledge Hooks in category '${category}'`
+      );
 
       if (options.dryRun) {
         this.logger.info("🔍 Dry run mode - no actual execution");
         const hooks = this.registry.getHooksByCategory(category);
-        this.logger.info(`Found ${hooks.length} hooks in category '${category}'`);
+        this.logger.info(
+          `Found ${hooks.length} hooks in category '${category}'`
+        );
         return;
       }
 
@@ -304,7 +317,9 @@ export class HooksCLI {
       this.logger.info(`   Hooks triggered: ${result.hooksTriggered}`);
       this.logger.info(`   Workflows executed: ${result.workflowsExecuted}`);
     } catch (error) {
-      this.logger.error(`❌ Failed to evaluate hooks by category: ${error.message}`);
+      this.logger.error(
+        `❌ Failed to evaluate hooks by category: ${error.message}`
+      );
       throw error;
     }
   }
@@ -336,26 +351,9 @@ export class HooksCLI {
       this.logger.info(`   Hooks triggered: ${result.hooksTriggered}`);
       this.logger.info(`   Workflows executed: ${result.workflowsExecuted}`);
     } catch (error) {
-      this.logger.error(`❌ Failed to evaluate hooks by domain: ${error.message}`);
-      throw error;
-    }
-  }
-  async stats() {
-    try {
-      this.logger.info("📊 Knowledge Hook Engine Statistics:");
-      this.logger.info("─".repeat(50));
-
-      const stats = this.orchestrator.getStats();
-
-      this.logger.info(`Hooks loaded: ${stats.hooksLoaded}`);
-      this.logger.info(`Context initialized: ${stats.contextInitialized}`);
-      this.logger.info(`Graph size: ${stats.graphSize} triples`);
-
-      if (stats.lastEvaluation) {
-        this.logger.info(`Last evaluation: ${stats.lastEvaluation.timestamp}`);
-      }
-    } catch (error) {
-      this.logger.error(`❌ Failed to get statistics: ${error.message}`);
+      this.logger.error(
+        `❌ Failed to evaluate hooks by domain: ${error.message}`
+      );
       throw error;
     }
   }
@@ -484,7 +482,7 @@ ex:${hookId} rdf:type gh:Hook ;
     }
 
     workflowTemplate = `ex:${hookId}-pipeline rdf:type op:Pipeline ;
-    op:steps ex:${hookId}-step1 .
+    op:steps (ex:${hookId}-step1) .
 
 ex:${hookId}-step1 rdf:type gv:TemplateStep ;
     gv:text "Hook ${hookId} triggered at {{ 'now' | date('YYYY-MM-DD HH:mm:ss') }}" ;

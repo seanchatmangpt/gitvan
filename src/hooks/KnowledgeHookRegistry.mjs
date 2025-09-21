@@ -1,6 +1,6 @@
 /**
  * GitVan Knowledge Hook Registry
- * 
+ *
  * Central registry for all Knowledge Hooks in the GitVan system.
  * Provides discovery, registration, and management of Knowledge Hooks
  * across different categories and domains.
@@ -12,7 +12,7 @@ import { HookOrchestrator } from "./HookOrchestrator.mjs";
 
 /**
  * Knowledge Hook Registry
- * 
+ *
  * Manages all Knowledge Hooks in the GitVan system:
  * - Discovers Knowledge Hook files (.ttl)
  * - Registers hooks by category and domain
@@ -23,13 +23,12 @@ export class KnowledgeHookRegistry {
   constructor(options = {}) {
     this.hooksDir = options.hooksDir || "./hooks";
     this.logger = options.logger || console;
-    this.orchestrator = null;
+    this.orchestrator = options.orchestrator || null; // Accept orchestrator from options
     this.hooks = new Map();
     this.categories = new Map();
     this.domains = new Map();
     
-    // Initialize registry
-    this.initialize();
+    // Don't auto-initialize - let the caller control when to initialize
   }
 
   /**
@@ -37,17 +36,21 @@ export class KnowledgeHookRegistry {
    */
   async initialize() {
     this.logger.info("🧠 Initializing Knowledge Hook Registry...");
-    
-    // Initialize HookOrchestrator
-    this.orchestrator = new HookOrchestrator({
-      graphDir: this.hooksDir,
-      logger: this.logger,
-    });
+
+    // Use provided orchestrator or create a new one
+    if (!this.orchestrator) {
+      this.orchestrator = new HookOrchestrator({
+        graphDir: this.hooksDir,
+        logger: this.logger,
+      });
+    }
 
     // Discover and register all Knowledge Hooks
     await this.discoverKnowledgeHooks();
-    
-    this.logger.info(`✅ Knowledge Hook Registry initialized with ${this.hooks.size} hooks`);
+
+    this.logger.info(
+      `✅ Knowledge Hook Registry initialized with ${this.hooks.size} hooks`
+    );
   }
 
   /**
@@ -55,7 +58,7 @@ export class KnowledgeHookRegistry {
    */
   async discoverKnowledgeHooks() {
     this.logger.info(`🔍 Discovering Knowledge Hooks in ${this.hooksDir}...`);
-    
+
     if (!existsSync(this.hooksDir)) {
       this.logger.warn(`⚠️ Hooks directory not found: ${this.hooksDir}`);
       return;
@@ -68,7 +71,10 @@ export class KnowledgeHookRegistry {
       try {
         await this.registerHookFile(file);
       } catch (error) {
-        this.logger.error(`❌ Failed to register hook file ${file}:`, error.message);
+        this.logger.error(
+          `❌ Failed to register hook file ${file}:`,
+          error.message
+        );
       }
     }
   }
@@ -78,24 +84,24 @@ export class KnowledgeHookRegistry {
    */
   findHookFiles(dir) {
     const files = [];
-    
+
     const scanDirectory = (currentDir) => {
       if (!existsSync(currentDir)) return;
-      
+
       const entries = readdirSync(currentDir);
-      
+
       for (const entry of entries) {
         const fullPath = join(currentDir, entry);
         const stat = statSync(fullPath);
-        
+
         if (stat.isDirectory()) {
           scanDirectory(fullPath);
-        } else if (extname(entry) === '.ttl') {
+        } else if (extname(entry) === ".ttl") {
           files.push(fullPath);
         }
       }
     };
-    
+
     scanDirectory(dir);
     return files;
   }
@@ -105,16 +111,19 @@ export class KnowledgeHookRegistry {
    */
   async registerHookFile(filePath) {
     try {
-      const content = readFileSync(filePath, 'utf8');
+      const content = readFileSync(filePath, "utf8");
       const hookInfo = this.parseHookFile(filePath, content);
-      
+
       if (hookInfo) {
         this.hooks.set(hookInfo.id, hookInfo);
         this.categorizeHook(hookInfo);
         this.logger.info(`✅ Registered Knowledge Hook: ${hookInfo.id}`);
       }
     } catch (error) {
-      this.logger.error(`❌ Failed to parse hook file ${filePath}:`, error.message);
+      this.logger.error(
+        `❌ Failed to parse hook file ${filePath}:`,
+        error.message
+      );
     }
   }
 
@@ -123,12 +132,12 @@ export class KnowledgeHookRegistry {
    */
   parseHookFile(filePath, content) {
     // Extract hook ID from file path
-    const relativePath = filePath.replace(this.hooksDir + '/', '');
-    const hookId = relativePath.replace('.ttl', '').replace(/\//g, ':');
-    
+    const relativePath = filePath.replace(this.hooksDir + "/", "");
+    const hookId = relativePath.replace(".ttl", "").replace(/\//g, ":");
+
     // Extract basic metadata from Turtle content
     const metadata = this.extractMetadata(content);
-    
+
     return {
       id: hookId,
       filePath: filePath,
@@ -145,25 +154,25 @@ export class KnowledgeHookRegistry {
    */
   extractMetadata(content) {
     const metadata = {};
-    
+
     // Extract title
     const titleMatch = content.match(/gv:title\s+"([^"]+)"/);
     if (titleMatch) {
       metadata.title = titleMatch[1];
     }
-    
+
     // Extract description
     const descMatch = content.match(/gh:description\s+"([^"]+)"/);
     if (descMatch) {
       metadata.description = descMatch[1];
     }
-    
+
     // Extract predicate type
     const predicateMatch = content.match(/rdf:type\s+gh:(\w+Predicate)/);
     if (predicateMatch) {
       metadata.predicateType = predicateMatch[1];
     }
-    
+
     return metadata;
   }
 
@@ -171,25 +180,28 @@ export class KnowledgeHookRegistry {
    * Determine hook category from file path
    */
   determineCategory(relativePath) {
-    if (relativePath.includes('developer-workflow')) return 'developer-workflow';
-    if (relativePath.includes('jtbd-hooks')) return 'jtbd';
-    if (relativePath.includes('knowledge-hooks-suite')) return 'git-lifecycle';
-    if (relativePath.includes('scrum-at-scale')) return 'scrum-at-scale';
-    return 'general';
+    if (relativePath.includes("developer-workflow"))
+      return "developer-workflow";
+    if (relativePath.includes("jtbd-hooks")) return "jtbd";
+    if (relativePath.includes("knowledge-hooks-suite")) return "git-lifecycle";
+    if (relativePath.includes("scrum-at-scale")) return "scrum-at-scale";
+    return "general";
   }
 
   /**
    * Determine hook domain from file path
    */
   determineDomain(relativePath) {
-    if (relativePath.includes('core-development-lifecycle')) return 'core-development';
-    if (relativePath.includes('security-compliance')) return 'security';
-    if (relativePath.includes('infrastructure-devops')) return 'infrastructure';
-    if (relativePath.includes('start-of-day')) return 'developer-workflow';
-    if (relativePath.includes('end-of-day')) return 'developer-workflow';
-    if (relativePath.includes('file-saving')) return 'developer-workflow';
-    if (relativePath.includes('definition-of-done')) return 'developer-workflow';
-    return 'general';
+    if (relativePath.includes("core-development-lifecycle"))
+      return "core-development";
+    if (relativePath.includes("security-compliance")) return "security";
+    if (relativePath.includes("infrastructure-devops")) return "infrastructure";
+    if (relativePath.includes("start-of-day")) return "developer-workflow";
+    if (relativePath.includes("end-of-day")) return "developer-workflow";
+    if (relativePath.includes("file-saving")) return "developer-workflow";
+    if (relativePath.includes("definition-of-done"))
+      return "developer-workflow";
+    return "general";
   }
 
   /**
@@ -244,7 +256,7 @@ export class KnowledgeHookRegistry {
     if (!this.orchestrator) {
       throw new Error("Knowledge Hook Registry not initialized");
     }
-    
+
     return await this.orchestrator.evaluate(options);
   }
 
@@ -261,7 +273,7 @@ export class KnowledgeHookRegistry {
     // Filter orchestrator to only evaluate hooks in this category
     const filteredOptions = {
       ...options,
-      hookFilter: (hook) => categoryHooks.some(ch => ch.id === hook.id),
+      hookFilter: (hook) => categoryHooks.some((ch) => ch.id === hook.id),
     };
 
     return await this.orchestrator.evaluate(filteredOptions);
@@ -280,7 +292,7 @@ export class KnowledgeHookRegistry {
     // Filter orchestrator to only evaluate hooks in this domain
     const filteredOptions = {
       ...options,
-      hookFilter: (hook) => domainHooks.some(dh => dh.id === hook.id),
+      hookFilter: (hook) => domainHooks.some((dh) => dh.id === hook.id),
     };
 
     return await this.orchestrator.evaluate(filteredOptions);
@@ -293,10 +305,16 @@ export class KnowledgeHookRegistry {
     return {
       totalHooks: this.hooks.size,
       categories: Object.fromEntries(
-        Array.from(this.categories.entries()).map(([cat, hooks]) => [cat, hooks.length])
+        Array.from(this.categories.entries()).map(([cat, hooks]) => [
+          cat,
+          hooks.length,
+        ])
       ),
       domains: Object.fromEntries(
-        Array.from(this.domains.entries()).map(([domain, hooks]) => [domain, hooks.length])
+        Array.from(this.domains.entries()).map(([domain, hooks]) => [
+          domain,
+          hooks.length,
+        ])
       ),
       predicateTypes: this.getPredicateTypeStats(),
     };
@@ -308,7 +326,7 @@ export class KnowledgeHookRegistry {
   getPredicateTypeStats() {
     const stats = {};
     for (const hook of this.hooks.values()) {
-      const type = hook.metadata.predicateType || 'unknown';
+      const type = hook.metadata.predicateType || "unknown";
       stats[type] = (stats[type] || 0) + 1;
     }
     return stats;
@@ -333,15 +351,15 @@ export class KnowledgeHookRegistry {
    */
   async refresh() {
     this.logger.info("🔄 Refreshing Knowledge Hook Registry...");
-    
+
     // Clear existing data
     this.hooks.clear();
     this.categories.clear();
     this.domains.clear();
-    
+
     // Re-discover hooks
     await this.discoverKnowledgeHooks();
-    
+
     this.logger.info(`✅ Registry refreshed with ${this.hooks.size} hooks`);
   }
 }

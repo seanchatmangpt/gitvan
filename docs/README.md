@@ -53,6 +53,16 @@ Welcome to the comprehensive documentation for GitVan v2, the UnJS-powered Git w
 - **[Commands Reference](./reference/commands.md)** - Complete command reference
 - **[Configuration Reference](./reference/configuration.md)** - Configuration options and schemas
 
+### 🧠 Validation & Autonomic Intelligence
+- **[🚀 ESSENTIALS](./validation/ESSENTIALS.md)** - **START HERE!** (5-min read, 80/20 guide)
+- **[Quick Reference](./validation/QUICK_REFERENCE.md)** - Command cheat sheet
+- **[Validation Overview](./validation/README.md)** - Full documentation index
+- **[Hive Mind Usage](./validation/HIVE_MIND_USAGE_GUIDE.md)** - Multi-agent swarms (54 agent types)
+- **[Autonomic Patterns](./validation/AUTONOMIC_PATTERNS_GUIDE.md)** - Self-healing code (5 patterns)
+- **[Synthesis Report](./validation/HIVE_QUEEN_SYNTHESIS_REPORT.md)** - 142-issue analysis
+- **[Security Audit](./validation/SECURITY_AUDIT_REPORT.md)** - 7 CRITICAL CVEs
+- **[Production Tests](./validation/PRODUCTION_READINESS_REPORT.md)** - 21 validation tests
+
 ### 🧪 Testing
 - **[Testing Overview](./testing/)** - Testing strategies and tools
 - **[Documentation Testing Plan](./testing/documentation-testing-plan.md)** - Testing documentation
@@ -173,6 +183,7 @@ Welcome to the comprehensive documentation for GitVan v2, the UnJS-powered Git w
 - **Beginner**: [Getting Started](./getting-started.md) → [Basic Job Setup](./cookbook/foundation/basic-job-setup.md) → [Composables Quick Reference](./api/composables-quick-reference.md)
 
 ### By Use Case
+- **Validation & Quality**: [Validation Overview](./validation/README.md) → [Hive Mind Usage](./validation/HIVE_MIND_USAGE_GUIDE.md) → [Autonomic Patterns](./validation/AUTONOMIC_PATTERNS_GUIDE.md)
 - **Pack Development**: [Pack Authoring Guide](./guides/pack-authoring.md) → [Pack API](./composables/pack-api.md) → [Pack CLI Integration](./composables/pack-cli-integration.md)
 - **AI Integration**: [AI Overview](./ai/README.md) → [Chat Workflows](./ai/chat-workflows.md) → [AI Recipes](./cookbook/ai-recipes.md)
 - **Documentation**: [Changelog Generation](./cookbook/documentation/changelog-generation.md) → [Template System](./cookbook/foundation/template-system.md)

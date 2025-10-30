@@ -11,6 +11,7 @@
  * - RDF term to JavaScript value conversion
  * - Cardinality-aware field creation
  * - Type-safe RDF data processing
+ * - unrdf integration for enhanced RDF processing
  *
  * @version 2.0.0
  * @author GitVan Team
@@ -19,6 +20,7 @@
 
 import { z } from "zod";
 import pkg from "n3";
+import { RdfEngine } from "../engines/RdfEngine.mjs";
 const { N3 } = pkg;
 
 /**
@@ -27,6 +29,9 @@ const { N3 } = pkg;
  * Converts RDF/SPARQL query results into strongly-typed TypeScript objects using Zod schemas.
  * This class provides methods for querying RDF data, generating Zod schemas from RDF class
  * definitions, and validating RDF data against schemas.
+ *
+ * Uses unrdf for enhanced RDF processing capabilities including better SPARQL support,
+ * improved serialization, and advanced RDF operations.
  *
  * @class RDFToZodConverter
  * @description Converts RDF/SPARQL query results into Zod-validated objects
@@ -38,6 +43,8 @@ export class RDFToZodConverter {
    * @constructor
    * @param {Object} [options={}] - Configuration options
    * @param {Object} [options.namespaces] - Additional RDF namespaces
+   * @param {RdfEngine} [options.rdfEngine] - RdfEngine instance (with unrdf support)
+   * @param {Object} [options.logger] - Logger instance
    */
   constructor(options = {}) {
     this.namespaces = {
@@ -50,45 +57,51 @@ export class RDFToZodConverter {
       op: "https://gitvan.dev/op#",
       ...options.namespaces,
     };
+
+    // Use provided RdfEngine or create new instance with unrdf support
+    this.rdfEngine = options.rdfEngine || new RdfEngine({
+      logger: options.logger || console,
+      useUnrdf: options.useUnrdf !== false,
+    });
+
+    this.logger = options.logger || console;
   }
 
   /**
    * Convert SPARQL query results to Zod-validated objects
+   * Uses RdfEngine with unrdf support for enhanced query execution
    */
   async queryToZod(query, store, schema) {
-    const { QueryEngine } = await import("@comunica/query-sparql");
-    const engine = new QueryEngine();
+    try {
+      // Use RdfEngine's query method (which now supports unrdf)
+      const result = await this.rdfEngine.query(store, query);
 
-    const results = await engine.queryBindings(query, {
-      sources: [store],
-    });
-
-    const bindings = [];
-    await results.forEach((binding) => {
-      const obj = {};
-      for (const [key, value] of binding) {
-        obj[key] = this.rdfTermToValue(value);
+      if (result.type !== 'select') {
+        this.logger.warn(`Query type ${result.type} not supported for Zod conversion`);
+        return [];
       }
-      bindings.push(obj);
-    });
 
-    // Validate each binding individually with Zod schema
-    const validatedBindings = [];
-    for (const binding of bindings) {
-      try {
-        const validated = schema.parse(binding);
-        validatedBindings.push(validated);
-      } catch (error) {
-        console.warn(`Failed to validate binding:`, error.message);
-        // Include original binding with validation error
-        validatedBindings.push({
-          ...binding,
-          _validationError: error.message,
-        });
+      // Validate each result with Zod schema
+      const validatedBindings = [];
+      for (const binding of result.results) {
+        try {
+          const validated = schema.parse(binding);
+          validatedBindings.push(validated);
+        } catch (error) {
+          this.logger.warn(`Failed to validate binding:`, error.message);
+          // Include original binding with validation error
+          validatedBindings.push({
+            ...binding,
+            _validationError: error.message,
+          });
+        }
       }
+
+      return validatedBindings;
+    } catch (error) {
+      this.logger.error('Query to Zod conversion failed:', error);
+      throw new Error(`Query to Zod conversion failed: ${error.message}`);
     }
-
-    return validatedBindings;
   }
 
   /**

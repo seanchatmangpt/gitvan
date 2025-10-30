@@ -1,8 +1,8 @@
 // src/engines/RdfEngine.mjs
-// Production-grade RDF engine for JavaScript.
+// Production-grade RDF engine for JavaScript using unrdf.
 
+import { createDarkMatterCore } from "unrdf";
 import { Parser, Store, Writer, DataFactory } from "n3";
-import { QueryEngine } from "@comunica/query-sparql";
 import rdf from "rdf-ext";
 import SHACLValidator from "rdf-validate-shacl";
 import rdfCanonize from "rdf-canonize";
@@ -21,6 +21,7 @@ export class RdfEngine {
    * @param {number} [options.timeoutMs=30000]
    * @param {(m:{event:string;data?:any;durMs?:number})=>void} [options.onMetric]
    * @param {{debug:Function,info:Function,warn:Function,error:Function}} [options.logger=console]
+   * @param {boolean} [options.useUnrdf=true] - Use unrdf core for enhanced RDF operations
    */
   constructor(options = {}) {
     this.baseIRI = options.baseIRI || "http://example.org/";
@@ -31,7 +32,21 @@ export class RdfEngine {
     this.onMetric =
       typeof options.onMetric === "function" ? options.onMetric : null;
     this.log = options.logger || console;
-    this.engine = new QueryEngine();
+
+    // Initialize unrdf Dark Matter Core for advanced RDF operations
+    this.useUnrdf = options.useUnrdf !== false;
+    if (this.useUnrdf) {
+      try {
+        this.darkMatter = createDarkMatterCore();
+        this.log.info("✅ unrdf Dark Matter Core initialized");
+      } catch (error) {
+        this.log.warn("⚠️ Failed to initialize unrdf, falling back to N3:", error.message);
+        this.useUnrdf = false;
+      }
+    }
+
+    // Keep legacy QueryEngine for backward compatibility
+    this.engine = this.darkMatter?.queryEngine || null;
 
     // Use @zazuko/env which comes bundled with clownface
     this.$rdf = $rdf;
@@ -60,6 +75,21 @@ export class RdfEngine {
   parseTurtle(ttl, options = {}) {
     if (typeof ttl !== "string" || !ttl.length)
       throw new Error("parseTurtle: non-empty string required");
+
+    // Use unrdf parser if available for enhanced parsing capabilities
+    if (this.useUnrdf && this.darkMatter?.parser) {
+      try {
+        const parsed = this.darkMatter.parser.parse(ttl, {
+          format: 'text/turtle',
+          baseIRI: options.baseIRI || this.baseIRI
+        });
+        return new Store(parsed);
+      } catch (error) {
+        this.log.warn("⚠️ unrdf parser failed, falling back to N3:", error.message);
+      }
+    }
+
+    // Fallback to N3 parser
     const parser = new Parser({ baseIRI: options.baseIRI || this.baseIRI });
     return new Store(parser.parse(ttl));
   }
@@ -74,12 +104,26 @@ export class RdfEngine {
   async serializeTurtle(store, options = {}) {
     // Extract prefixes from the store if not provided
     const prefixes = options.prefixes || this._extractPrefixes(store);
+    const quads = this._maybeSort([...store]);
 
+    // Use unrdf serializer if available for enhanced serialization
+    if (this.useUnrdf && this.darkMatter?.serializer) {
+      try {
+        const serialized = await this.darkMatter.serializer.serialize(quads, {
+          format: 'text/turtle',
+          prefixes
+        });
+        return serialized;
+      } catch (error) {
+        this.log.warn("⚠️ unrdf serializer failed, falling back to N3:", error.message);
+      }
+    }
+
+    // Fallback to N3 writer
     const writer = new Writer({
       format: "Turtle",
       prefixes,
     });
-    const quads = this._maybeSort([...store]);
     writer.addQuads(quads);
     return new Promise((resolve, reject) =>
       writer.end((e, out) => (e ? reject(e) : resolve(out)))
@@ -179,23 +223,32 @@ export class RdfEngine {
     const run = async () => {
       if (!kind) throw new Error("query: unknown query type");
 
+      // Use unrdf query engine if available
+      const queryEngine = (this.useUnrdf && this.darkMatter?.queryEngine)
+        ? this.darkMatter.queryEngine
+        : this.engine;
+
+      if (!queryEngine) {
+        throw new Error("No query engine available. Please initialize unrdf or Comunica.");
+      }
+
       // SPARQL UPDATE
       if (
         /^(WITH|INSERT|DELETE|LOAD|CREATE|DROP|CLEAR|MOVE|COPY|ADD)$/i.test(
           kind
         )
       ) {
-        await this.engine.queryVoid(q, { ...ctx, destination: store });
+        await queryEngine.queryVoid(q, { ...ctx, destination: store });
         return { type: "update", ok: true };
       }
 
       if (kind === "ASK") {
-        const boolean = await this.engine.queryBoolean(q, ctx);
+        const boolean = await queryEngine.queryBoolean(q, ctx);
         return { type: "ask", boolean };
       }
 
       if (kind === "CONSTRUCT" || kind === "DESCRIBE") {
-        const quadStream = await this.engine.queryQuads(q, ctx);
+        const quadStream = await queryEngine.queryQuads(q, ctx);
         const out = new Store();
         for await (const qq of quadStream) out.add(qq);
         const quads = deterministic ? this._maybeSort([...out]) : [...out];
@@ -203,7 +256,7 @@ export class RdfEngine {
       }
 
       // SELECT
-      const bindings = await this.engine.queryBindings(q, ctx);
+      const bindings = await queryEngine.queryBindings(q, ctx);
       const rows = [];
       const varSet = new Set();
       for await (const b of bindings) {

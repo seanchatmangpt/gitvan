@@ -126,6 +126,7 @@
     "@vitest/runner": "^3.2.4",
     "eslint": "^9.35.0",
     "eslint-config-unjs": "^0.5.0",
+    "typescript": "^5.9.3",
     "unbuild": "^3.6.1",
     "vitest": "^1.0.0"
   },
@@ -133,7 +134,7 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "build": "gitvan build",
+    "build": "unbuild",
     "dev": "gitvan daemon",
     "test": "vitest",
     "test:watch": "vitest --watch",
@@ -157,6 +158,9 @@
     "test:validation": "vitest run tests/validation/",
     "test:validation:watch": "vitest --watch tests/validation/",
     "test:validation:coverage": "vitest run tests/validation/ --coverage",
+    "test:unrdf": "vitest run tests/unrdf/",
+    "test:unrdf:watch": "vitest --watch tests/unrdf/",
+    "test:unrdf:coverage": "vitest run tests/unrdf/ --coverage",
     "demo:workflow:jtbd": "node demo-workflow-cli-jtbd-bdd.mjs",
     "demo:citty:bdd": "node demo-citty-cli-bdd.mjs",
     "lint": "eslint .",

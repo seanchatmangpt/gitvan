@@ -111,4 +111,5 @@ Thumbs.db
 yarn.lock
 package-lock.json
 
-.lh/
+.lh/.telemetry/
+hooks-test/

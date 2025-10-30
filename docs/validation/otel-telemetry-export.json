@@ -1,0 +1,13 @@
+{
+  "metadata": {
+    "generatedAt": "2025-10-30T04:06:07.374Z",
+    "serviceName": "gitvan",
+    "serviceVersion": "2.1.0",
+    "environment": "test"
+  },
+  "summary": {
+    "totalTests": 34,
+    "passedTests": 34,
+    "failedTests": 0
+  }
+}

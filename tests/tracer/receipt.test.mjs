@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtemp, writeFile, readFile, mkdir, rm } from 'fs/promises';
+import { mkdtemp, writeFile, readFile, mkdir, rm, readdir } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { createHash } from 'crypto';
@@ -537,9 +537,14 @@ function generateReceipt(job, result, options = {}) {
 async function writeReceipt(receipt, outputDir, pattern) {
   await mkdir(outputDir, { recursive: true });
 
+  // Format timestamp as YYYYMMDDTHHMMSSZ (e.g., 20240115T103045Z)
+  const timestamp = receipt.meta.timestamp.toISOString()
+    .replace(/[-:]/g, '')  // Remove dashes and colons
+    .replace(/\.\d{3}Z$/, 'Z');  // Remove milliseconds, keep Z
+
   const filename = pattern
-    .replace('{timestamp}', receipt.meta.timestamp.toISOString().replace(/[:.]/g, '').slice(0, 15) + 'Z')
-    .replace('{id}', receipt.meta.id)
+    .replace('{timestamp}', timestamp)
+    .replace('{id}', receipt.meta.id.replace(/[/:<>*|"?\\]/g, '_'))  // Sanitize invalid filename chars
     .replace('{jobName}', (receipt.execution?.job?.meta?.name || 'unknown').replace(/[^a-zA-Z0-9]/g, '_'))
     .replace('{kind}', receipt.execution?.job?.meta?.kind || 'unknown');
 
@@ -592,28 +597,36 @@ async function cleanupReceipts(receiptsDir, retentionPolicy) {
   // Sort by timestamp (newest first)
   receipts.sort((a, b) => new Date(b.receipt.meta.timestamp) - new Date(a.receipt.meta.timestamp));
 
-  // Remove old files beyond maxCount
+  // Track files to be removed
+  const filesToRemove = new Set();
+
+  // Mark old files beyond maxCount for removal
   if (receipts.length > retentionPolicy.maxCount) {
     const toRemove = receipts.slice(retentionPolicy.maxCount);
     for (const { filePath } of toRemove) {
-      await unlink(filePath);
+      filesToRemove.add(filePath);
     }
   }
 
-  // Remove files older than maxAge
+  // Mark files older than maxAge for removal
   const maxAgeMs = retentionPolicy.maxAge * 24 * 60 * 60 * 1000;
   const cutoffDate = new Date(Date.now() - maxAgeMs);
 
   for (const { receipt, filePath } of receipts) {
     if (new Date(receipt.meta.timestamp) < cutoffDate) {
-      await unlink(filePath);
+      filesToRemove.add(filePath);
     }
+  }
+
+  // Remove all marked files (avoiding double deletion)
+  for (const filePath of filesToRemove) {
+    await unlink(filePath);
   }
 }
 
 async function searchReceipts(receiptsDir, criteria) {
-  const { readdir } = await import('fs/promises');
-  const files = await readdir(receiptsDir);
+  const { readdir: readDirectory } = await import('fs/promises');
+  const files = await readDirectory(receiptsDir);
   const results = [];
 
   for (const file of files) {

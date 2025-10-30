@@ -1,0 +1,577 @@
+{
+  "researchMetadata": {
+    "timestamp": "2025-10-29T03:58:00Z",
+    "agent": "researcher",
+    "swarmId": "swarm-1761796469624-3ygg1wlai",
+    "scope": "README.md capabilities analysis",
+    "version": "2.1.0"
+  },
+  "capabilityAnalysis": {
+    "cliCommands": {
+      "category": "Core User Interface",
+      "foundational": true,
+      "usageFrequency": "very-high",
+      "capabilities": [
+        {
+          "name": "gitvan init",
+          "purpose": "Initialize new project with GitVan",
+          "criticality": "CRITICAL",
+          "priority": 1,
+          "reason": "Entry point for all users - validates basic setup"
+        },
+        {
+          "name": "gitvan setup",
+          "purpose": "Complete GitVan configuration",
+          "criticality": "CRITICAL",
+          "priority": 2,
+          "reason": "Required for system initialization - validates autonomic system"
+        },
+        {
+          "name": "gitvan hooks list",
+          "purpose": "List available knowledge hooks",
+          "criticality": "HIGH",
+          "priority": 3,
+          "reason": "Validates hook discovery and basic hook engine functionality"
+        },
+        {
+          "name": "gitvan hooks evaluate",
+          "purpose": "Execute all hooks and check predicates",
+          "criticality": "CRITICAL",
+          "priority": 4,
+          "reason": "Core hook engine validation - tests SPARQL predicates"
+        },
+        {
+          "name": "gitvan workflow list",
+          "purpose": "List available workflows",
+          "criticality": "HIGH",
+          "priority": 5,
+          "reason": "Validates workflow discovery"
+        },
+        {
+          "name": "gitvan workflow run",
+          "purpose": "Execute workflow by name",
+          "criticality": "CRITICAL",
+          "priority": 6,
+          "reason": "Core workflow engine validation - tests DAG execution"
+        },
+        {
+          "name": "gitvan workflow validate",
+          "purpose": "Validate workflow before execution",
+          "criticality": "MEDIUM",
+          "priority": 8,
+          "reason": "Quality gate - prevents execution errors"
+        },
+        {
+          "name": "gitvan pack install",
+          "purpose": "Install Next.js packs",
+          "criticality": "MEDIUM",
+          "priority": 10,
+          "reason": "Validates pack system integration"
+        }
+      ],
+      "critical20percent": [
+        "gitvan init",
+        "gitvan setup",
+        "gitvan hooks evaluate",
+        "gitvan workflow run"
+      ]
+    },
+    "knowledgeHookEngine": {
+      "category": "Intelligent Automation",
+      "foundational": true,
+      "usageFrequency": "high",
+      "capabilities": [
+        {
+          "name": "ResultDelta Predicates",
+          "purpose": "Detect state changes in knowledge graph",
+          "criticality": "CRITICAL",
+          "priority": 7,
+          "reason": "Core autonomic intelligence feature - most complex predicate type",
+          "example": "Detect version changes in project metadata"
+        },
+        {
+          "name": "ASK Predicates",
+          "purpose": "Boolean condition checking",
+          "criticality": "HIGH",
+          "priority": 9,
+          "reason": "Simple but widely used for triggers",
+          "example": "Check if critical issues exist"
+        },
+        {
+          "name": "SELECTThreshold Predicates",
+          "purpose": "Monitor metrics against thresholds",
+          "criticality": "MEDIUM",
+          "priority": 12,
+          "reason": "Advanced monitoring capability",
+          "example": "Alert when bug count exceeds threshold"
+        },
+        {
+          "name": "SHACL Validation",
+          "purpose": "Shape-based validation triggers",
+          "criticality": "MEDIUM",
+          "priority": 15,
+          "reason": "Schema validation use cases",
+          "example": "Validate project structure compliance"
+        },
+        {
+          "name": "Autonomous Hook Execution",
+          "purpose": "Automatic predicate evaluation",
+          "criticality": "CRITICAL",
+          "priority": 11,
+          "reason": "Validates autonomic behavior without user intervention"
+        }
+      ],
+      "critical20percent": [
+        "ResultDelta Predicates",
+        "ASK Predicates",
+        "Autonomous Hook Execution"
+      ]
+    },
+    "workflowEngine": {
+      "category": "Orchestration & Execution",
+      "foundational": true,
+      "usageFrequency": "high",
+      "capabilities": [
+        {
+          "name": "DAG Execution",
+          "purpose": "Dependency-ordered step execution",
+          "criticality": "CRITICAL",
+          "priority": 13,
+          "reason": "Core workflow execution model - validates topology sorting"
+        },
+        {
+          "name": "SPARQL Step",
+          "purpose": "Query knowledge graph in workflow",
+          "criticality": "CRITICAL",
+          "priority": 14,
+          "reason": "Validates integration between workflow and knowledge engine"
+        },
+        {
+          "name": "Template Step",
+          "purpose": "Generate content with Nunjucks",
+          "criticality": "HIGH",
+          "priority": 16,
+          "reason": "Common content generation use case"
+        },
+        {
+          "name": "File Step",
+          "purpose": "File system operations",
+          "criticality": "HIGH",
+          "priority": 17,
+          "reason": "Essential for workflow outputs"
+        },
+        {
+          "name": "HTTP Step",
+          "purpose": "External API integration",
+          "criticality": "MEDIUM",
+          "priority": 20,
+          "reason": "Enables external system integration"
+        },
+        {
+          "name": "CLI Step",
+          "purpose": "Execute shell commands",
+          "criticality": "MEDIUM",
+          "priority": 21,
+          "reason": "Enables arbitrary command execution"
+        },
+        {
+          "name": "Context Passing",
+          "purpose": "Share data between workflow steps",
+          "criticality": "CRITICAL",
+          "priority": 18,
+          "reason": "Core coordination mechanism"
+        },
+        {
+          "name": "Error Handling",
+          "purpose": "Graceful failure management",
+          "criticality": "HIGH",
+          "priority": 19,
+          "reason": "Production reliability requirement"
+        }
+      ],
+      "critical20percent": [
+        "DAG Execution",
+        "SPARQL Step",
+        "Template Step",
+        "Context Passing"
+      ]
+    },
+    "gitNativeIO": {
+      "category": "Persistence & State Management",
+      "foundational": true,
+      "usageFrequency": "medium",
+      "capabilities": [
+        {
+          "name": "Atomic Operations",
+          "purpose": "All-or-nothing Git commits",
+          "criticality": "HIGH",
+          "priority": 22,
+          "reason": "Data integrity guarantee"
+        },
+        {
+          "name": "Lock Manager",
+          "purpose": "Distributed locking for concurrency",
+          "criticality": "HIGH",
+          "priority": 23,
+          "reason": "Prevents race conditions"
+        },
+        {
+          "name": "Queue Manager",
+          "purpose": "Operation queuing and priorities",
+          "criticality": "MEDIUM",
+          "priority": 25,
+          "reason": "Performance optimization"
+        },
+        {
+          "name": "Snapshot Store",
+          "purpose": "State tracking and rollback",
+          "criticality": "MEDIUM",
+          "priority": 26,
+          "reason": "Recovery capability"
+        },
+        {
+          "name": "Receipt System",
+          "purpose": "Operation logging and audit trail",
+          "criticality": "MEDIUM",
+          "priority": 27,
+          "reason": "Debugging and compliance"
+        },
+        {
+          "name": "Worker Threads",
+          "purpose": "Non-blocking Git operations",
+          "criticality": "LOW",
+          "priority": 30,
+          "reason": "Performance optimization for large repos"
+        }
+      ],
+      "critical20percent": [
+        "Atomic Operations",
+        "Lock Manager"
+      ]
+    },
+    "nextjsPacks": {
+      "category": "Application Templates",
+      "foundational": false,
+      "usageFrequency": "low",
+      "capabilities": [
+        {
+          "name": "Dashboard Pack",
+          "purpose": "Enterprise dashboard generation",
+          "criticality": "MEDIUM",
+          "priority": 24,
+          "reason": "Showcase feature - validates pack system"
+        },
+        {
+          "name": "CMS Pack",
+          "purpose": "Static CMS with MDX",
+          "criticality": "LOW",
+          "priority": 28,
+          "reason": "Secondary use case"
+        },
+        {
+          "name": "Docker Compose Integration",
+          "purpose": "Live development environment",
+          "criticality": "LOW",
+          "priority": 29,
+          "reason": "Development convenience"
+        }
+      ],
+      "critical20percent": [
+        "Dashboard Pack"
+      ]
+    },
+    "jtbdHooks": {
+      "category": "Business Use Cases",
+      "foundational": false,
+      "usageFrequency": "low",
+      "capabilities": [
+        {
+          "name": "Code Quality Gatekeeper",
+          "purpose": "Enforce coding standards",
+          "criticality": "MEDIUM",
+          "priority": 31,
+          "reason": "Common development use case"
+        },
+        {
+          "name": "Test Coverage Enforcer",
+          "purpose": "Maintain test coverage thresholds",
+          "criticality": "MEDIUM",
+          "priority": 32,
+          "reason": "Quality assurance"
+        },
+        {
+          "name": "Market Intelligence Analyzer",
+          "purpose": "Track competitor analysis",
+          "criticality": "LOW",
+          "priority": 35,
+          "reason": "Specialized business intelligence"
+        }
+      ],
+      "critical20percent": []
+    }
+  },
+  "critical20PercentSummary": {
+    "totalCapabilities": 35,
+    "critical20PercentCount": 14,
+    "percentage": 40,
+    "justification": "Identified 14 capabilities (40% by count) that deliver 80% of value through foundational system validation",
+    "prioritizedList": [
+      {
+        "rank": 1,
+        "capability": "gitvan init",
+        "category": "CLI",
+        "validates": "System initialization and basic setup"
+      },
+      {
+        "rank": 2,
+        "capability": "gitvan setup",
+        "category": "CLI",
+        "validates": "Complete configuration and autonomic system startup"
+      },
+      {
+        "rank": 3,
+        "capability": "gitvan hooks list",
+        "category": "CLI",
+        "validates": "Hook discovery mechanism"
+      },
+      {
+        "rank": 4,
+        "capability": "gitvan hooks evaluate",
+        "category": "CLI + Knowledge Engine",
+        "validates": "SPARQL predicate execution and autonomic intelligence"
+      },
+      {
+        "rank": 5,
+        "capability": "gitvan workflow list",
+        "category": "CLI",
+        "validates": "Workflow discovery mechanism"
+      },
+      {
+        "rank": 6,
+        "capability": "gitvan workflow run",
+        "category": "CLI + Workflow Engine",
+        "validates": "End-to-end workflow execution with DAG"
+      },
+      {
+        "rank": 7,
+        "capability": "ResultDelta Predicates",
+        "category": "Knowledge Engine",
+        "validates": "State change detection - most advanced predicate type"
+      },
+      {
+        "rank": 8,
+        "capability": "ASK Predicates",
+        "category": "Knowledge Engine",
+        "validates": "Boolean condition checking"
+      },
+      {
+        "rank": 9,
+        "capability": "Autonomous Hook Execution",
+        "category": "Knowledge Engine",
+        "validates": "Automatic predicate evaluation without user intervention"
+      },
+      {
+        "rank": 10,
+        "capability": "DAG Execution",
+        "category": "Workflow Engine",
+        "validates": "Dependency-ordered step execution"
+      },
+      {
+        "rank": 11,
+        "capability": "SPARQL Step",
+        "category": "Workflow Engine",
+        "validates": "Integration between workflow and knowledge graph"
+      },
+      {
+        "rank": 12,
+        "capability": "Template Step",
+        "category": "Workflow Engine",
+        "validates": "Content generation with Nunjucks"
+      },
+      {
+        "rank": 13,
+        "capability": "Context Passing",
+        "category": "Workflow Engine",
+        "validates": "Data flow between workflow steps"
+      },
+      {
+        "rank": 14,
+        "capability": "Atomic Operations",
+        "category": "Git Native I/O",
+        "validates": "Data integrity and persistence"
+      }
+    ]
+  },
+  "foundationalFeatures": {
+    "description": "Features that must work for anything else to work",
+    "list": [
+      "gitvan init - Entry point",
+      "gitvan setup - System initialization",
+      "Knowledge Hook Engine - Autonomous intelligence core",
+      "Workflow Engine - Orchestration core",
+      "Git Native I/O - Persistence layer"
+    ]
+  },
+  "endToEndValidation": {
+    "description": "Critical paths that validate the system works end-to-end",
+    "scenarios": [
+      {
+        "name": "Basic Initialization Flow",
+        "steps": [
+          "gitvan init",
+          "gitvan setup",
+          "gitvan hooks list (validates discovery)",
+          "gitvan workflow list (validates discovery)"
+        ],
+        "validates": "System can be installed and configured"
+      },
+      {
+        "name": "Knowledge Hook Flow",
+        "steps": [
+          "Create hook with ASK predicate",
+          "gitvan hooks evaluate",
+          "Verify hook triggered based on predicate",
+          "Check action executed"
+        ],
+        "validates": "Autonomous intelligence works"
+      },
+      {
+        "name": "Workflow Execution Flow",
+        "steps": [
+          "Create workflow with SPARQL step",
+          "Add template step with dependency",
+          "Add file step with dependency",
+          "gitvan workflow run <workflow-name>",
+          "Verify outputs in correct order"
+        ],
+        "validates": "Orchestration engine works with dependencies"
+      },
+      {
+        "name": "Integration Flow",
+        "steps": [
+          "Create hook with ResultDelta predicate",
+          "Hook triggers workflow execution",
+          "Workflow queries knowledge graph (SPARQL)",
+          "Workflow generates output (template)",
+          "Workflow persists to Git (file + commit)"
+        ],
+        "validates": "All systems integrated end-to-end"
+      }
+    ]
+  },
+  "usageFrequencyAnalysis": {
+    "veryHigh": [
+      "gitvan init",
+      "gitvan setup",
+      "gitvan hooks evaluate",
+      "gitvan workflow run"
+    ],
+    "high": [
+      "gitvan hooks list",
+      "gitvan workflow list",
+      "ASK predicates",
+      "Template steps"
+    ],
+    "medium": [
+      "gitvan workflow validate",
+      "ResultDelta predicates",
+      "File steps",
+      "Dashboard Pack"
+    ],
+    "low": [
+      "SHACL validation",
+      "HTTP steps",
+      "CLI steps",
+      "CMS Pack",
+      "JTBD hooks"
+    ]
+  },
+  "implementationComplexity": {
+    "description": "Complexity analysis for test implementation",
+    "highComplexity": [
+      {
+        "feature": "ResultDelta Predicates",
+        "reason": "Requires knowledge graph state management and diff detection"
+      },
+      {
+        "feature": "DAG Execution",
+        "reason": "Requires topological sorting and dependency resolution"
+      },
+      {
+        "feature": "Autonomous Hook Execution",
+        "reason": "Requires background process management"
+      }
+    ],
+    "mediumComplexity": [
+      {
+        "feature": "SPARQL Steps",
+        "reason": "Requires RDF store and query execution"
+      },
+      {
+        "feature": "Context Passing",
+        "reason": "Requires state management between steps"
+      },
+      {
+        "feature": "Atomic Operations",
+        "reason": "Requires transaction management"
+      }
+    ],
+    "lowComplexity": [
+      {
+        "feature": "gitvan init",
+        "reason": "Simple CLI command"
+      },
+      {
+        "feature": "gitvan hooks list",
+        "reason": "Simple file discovery"
+      },
+      {
+        "feature": "ASK Predicates",
+        "reason": "Simple boolean queries"
+      }
+    ]
+  },
+  "dependencies": {
+    "description": "Feature dependencies showing what must work first",
+    "graph": {
+      "gitvan init": [],
+      "gitvan setup": ["gitvan init"],
+      "gitvan hooks list": ["gitvan setup"],
+      "gitvan hooks evaluate": ["gitvan hooks list", "SPARQL engine"],
+      "ASK Predicates": ["SPARQL engine"],
+      "ResultDelta Predicates": ["SPARQL engine", "State management"],
+      "gitvan workflow list": ["gitvan setup"],
+      "gitvan workflow run": ["gitvan workflow list", "Workflow parser"],
+      "DAG Execution": ["gitvan workflow run"],
+      "SPARQL Step": ["DAG Execution", "SPARQL engine"],
+      "Template Step": ["DAG Execution", "Nunjucks"],
+      "Context Passing": ["DAG Execution"]
+    }
+  },
+  "recommendations": {
+    "phaseOneTests": [
+      "CLI: gitvan init (validates installation)",
+      "CLI: gitvan setup (validates configuration)",
+      "CLI: gitvan hooks list (validates discovery)",
+      "CLI: gitvan workflow list (validates discovery)"
+    ],
+    "phaseTwoTests": [
+      "Knowledge Engine: ASK predicates (simple boolean)",
+      "Knowledge Engine: gitvan hooks evaluate (execute predicates)",
+      "Workflow Engine: gitvan workflow run (basic execution)",
+      "Workflow Engine: DAG execution (dependency ordering)"
+    ],
+    "phaseThreeTests": [
+      "Knowledge Engine: ResultDelta predicates (state changes)",
+      "Workflow Engine: SPARQL steps (integration)",
+      "Workflow Engine: Template steps (content generation)",
+      "Workflow Engine: Context passing (data flow)"
+    ],
+    "phaseFourTests": [
+      "Git Native I/O: Atomic operations (persistence)",
+      "Integration: Hook triggers workflow",
+      "Integration: Workflow queries knowledge graph",
+      "Integration: End-to-end automation"
+    ]
+  }
+}

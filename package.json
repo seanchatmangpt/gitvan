@@ -1,6 +1,6 @@
 {
   "name": "gitvan",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "Git-native development automation platform with AI-powered workflows",
   "type": "module",
   "main": "dist/cli.mjs",

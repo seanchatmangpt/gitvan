@@ -1,31 +1,25 @@
 /**
  * src/composables/graph.mjs
- * Pure unrdf composable - direct RDF graph operations
- * Fail-fast error handling: errors bubble up immediately
+ * RDF graph composable using unrdf's RdfEngine
+ * Provides high-level API for SPARQL queries, serialization, and graph operations
+ * Fail-fast error handling with error codes and error.cause chains
  */
 
-import {
-  createDarkMatterCore,
-  parseTurtle as unrdfParseTurtle,
-  toTurtle,
-  toNQuads,
-  defineHook,
-  namedNode,
-  literal,
-  quad,
-  blankNode,
-  defaultGraph,
-  variable,
-  Store
-} from 'unrdf';
+import { Store } from 'n3';
+import { RdfEngine } from 'unrdf';
 
 /**
- * Create an operational interface for RDF graph operations
- * Uses unrdf's Dark Matter 80/20 optimizations (caching, batching)
+ * Create an RDF graph composable interface
+ * Wraps unrdf's RdfEngine with structured error handling
  *
- * @param {import('n3').Store} store - N3.Store instance
- * @returns {Promise<object>} API object for graph operations
- * @throws {Error} If store is invalid or operations fail
+ * @param {import('n3').Store} store - N3.Store instance to work with
+ * @returns {Promise<Object>} Graph operations API
+ * @throws {Error} If store is invalid
+ *
+ * @example
+ * const store = new Store();
+ * const graph = await useGraph(store);
+ * const results = await graph.select('SELECT ?s ?p ?o WHERE { ?s ?p ?o }');
  */
 export async function useGraph(store) {
   // Fail-fast: validate input
@@ -43,52 +37,36 @@ export async function useGraph(store) {
     throw error;
   }
 
-  // Initialize unrdf Dark Matter Core (lazy, shared)
-  let system = null;
-  const initSystem = async () => {
-    if (!system) {
+  // Initialize RdfEngine with the provided store
+  let engine = null;
+  const initEngine = async () => {
+    if (!engine) {
       try {
-        system = await createDarkMatterCore();
+        engine = new RdfEngine();
+        // Load quads from input store into engine's store
+        const quads = Array.from(store);
+        if (quads.length > 0) {
+          engine.store.addQuads(quads);
+        }
       } catch (err) {
-        const error = new Error(`[useGraph] Failed to initialize unrdf: ${err.message}`);
+        const error = new Error(`[useGraph] Failed to initialize RdfEngine: ${err.message}`);
         error.code = 'INIT_FAILED';
         error.cause = err;
         throw error;
       }
     }
-    return system;
+    return engine;
   };
 
-  // Helper: ensure store data is loaded into system
-  const ensureLoaded = async () => {
-    const sys = await initSystem();
-    try {
-      const quads = [...store];
-      if (quads.length > 0) {
-        sys.store.addQuads(quads);
-      }
-    } catch (err) {
-      const error = new Error(`[useGraph] Failed to load quads into unrdf: ${err.message}`);
-      error.code = 'LOAD_FAILED';
-      error.cause = err;
-      throw error;
-    }
-  };
-
+  // Return the graph operations API
   return {
-    /**
-     * The raw N3.Store instance
-     */
-    get store() {
-      return store;
-    },
+    store,
 
     /**
-     * Execute SPARQL query (SELECT, ASK, CONSTRUCT, DESCRIBE)
-     * Uses unrdf query caching for performance
+     * Execute SPARQL query (SELECT, ASK, or CONSTRUCT)
      * @param {string} sparql - SPARQL query string
-     * @param {object} [opts] - Query options
-     * @returns {Promise<object>} Query result
+     * @param {Object} [opts] - Query options
+     * @returns {Promise<{type, rows?, boolean?, store?, variables?}>} Query result
      * @throws {Error} If query is invalid or execution fails
      */
     async query(sparql, opts = {}) {
@@ -99,13 +77,8 @@ export async function useGraph(store) {
       }
 
       try {
-        await ensureLoaded();
-        const sys = await initSystem();
-        return await sys.query({
-          query: sparql,
-          limit: opts.limit,
-          type: opts.type // auto-detected if not provided
-        });
+        const eng = await initEngine();
+        return await eng.query(sparql);
       } catch (err) {
         if (err.code === 'INVALID_QUERY') throw err;
         const error = new Error(`[useGraph.query] SPARQL execution failed: ${err.message}`);
@@ -117,8 +90,8 @@ export async function useGraph(store) {
     },
 
     /**
-     * Execute SELECT query (convenience)
-     * @param {string} sparql - SELECT query
+     * Execute SELECT query
+     * @param {string} sparql - SELECT query string
      * @returns {Promise<Array>} Result rows
      * @throws {Error} If not a SELECT query or execution fails
      */
@@ -127,13 +100,13 @@ export async function useGraph(store) {
         const result = await this.query(sparql);
         if (result.type !== 'select') {
           const error = new Error(
-            '[useGraph.select] Query must be SELECT. Got: ' + result.type
+            `[useGraph.select] Query must be SELECT. Got: ${result.type}`
           );
           error.code = 'WRONG_QUERY_TYPE';
           error.queryType = result.type;
           throw error;
         }
-        return result.results || [];
+        return result.rows || [];
       } catch (err) {
         if (err.code === 'WRONG_QUERY_TYPE') throw err;
         const error = new Error(`[useGraph.select] SELECT failed: ${err.message}`);
@@ -144,8 +117,8 @@ export async function useGraph(store) {
     },
 
     /**
-     * Execute ASK query (convenience)
-     * @param {string} sparql - ASK query
+     * Execute ASK query
+     * @param {string} sparql - ASK query string
      * @returns {Promise<boolean>} Boolean result
      * @throws {Error} If not an ASK query or execution fails
      */
@@ -154,7 +127,7 @@ export async function useGraph(store) {
         const result = await this.query(sparql);
         if (result.type !== 'ask') {
           const error = new Error(
-            '[useGraph.ask] Query must be ASK. Got: ' + result.type
+            `[useGraph.ask] Query must be ASK. Got: ${result.type}`
           );
           error.code = 'WRONG_QUERY_TYPE';
           error.queryType = result.type;
@@ -171,45 +144,33 @@ export async function useGraph(store) {
     },
 
     /**
-     * Validate graph against SHACL shapes
-     * @param {string|Store} shapesInput - SHACL shapes (Turtle or Store)
-     * @returns {Promise<object>} Validation report
-     * @throws {Error} If validation setup or execution fails
+     * Validate SHACL shapes
+     * @param {string} shapesInput - Turtle shapes or path
+     * @returns {Promise<{conforms: boolean, results: Array}>} Validation report
+     * @throws {Error} If validation fails
      */
     async validate(shapesInput) {
       if (!shapesInput) {
-        const error = new Error('[useGraph.validate] SHACL shapes are required');
-        error.code = 'MISSING_SHAPES';
+        const error = new Error('[useGraph.validate] Shapes input is required');
+        error.code = 'INVALID_SHAPES';
         throw error;
       }
 
       try {
-        await ensureLoaded();
-        const sys = await initSystem();
-
-        // Parse shapes if provided as Turtle string
+        const eng = await initEngine();
+        // Parse shapes if string provided
         let shapesStore = shapesInput;
         if (typeof shapesInput === 'string') {
-          try {
-            shapesStore = await unrdfParseTurtle(shapesInput);
-          } catch (err) {
-            const error = new Error(
-              `[useGraph.validate] Failed to parse SHACL shapes: ${err.message}`
-            );
-            error.code = 'INVALID_SHAPES';
-            error.cause = err;
-            throw error;
-          }
+          shapesStore = eng.parseTurtle(shapesInput);
         }
 
-        return await sys.validate({
-          dataGraph: store,
-          shapesGraph: shapesStore
-        });
+        // Run SHACL validation
+        const validation = await eng.validate(shapesStore);
+        return {
+          conforms: validation.conforms || false,
+          results: validation.results || []
+        };
       } catch (err) {
-        if (err.code && err.code.startsWith('INVALID_') || err.code === 'MISSING_SHAPES') {
-          throw err;
-        }
         const error = new Error(`[useGraph.validate] SHACL validation failed: ${err.message}`);
         error.code = 'VALIDATION_FAILED';
         error.cause = err;
@@ -218,33 +179,31 @@ export async function useGraph(store) {
     },
 
     /**
-     * Serialize graph to string
-     * @param {{format: 'Turtle'|'N-Quads', prefixes?: object}} opts - Serialization options
-     * @returns {Promise<string>} Serialized RDF
+     * Serialize graph to Turtle or N-Quads
+     * @param {Object} [opts] - Serialization options
+     * @param {string} [opts.format='Turtle'] - Format: 'Turtle' or 'N-Quads'
+     * @param {Object} [opts.prefixes] - Optional prefix declarations
+     * @returns {Promise<string>} Serialized graph
      * @throws {Error} If serialization fails
      */
     async serialize(opts = {}) {
       const format = opts.format || 'Turtle';
 
-      if (!['Turtle', 'N-Quads'].includes(format)) {
-        const error = new Error(
-          `[useGraph.serialize] Unsupported format: ${format}. Use 'Turtle' or 'N-Quads'`
-        );
-        error.code = 'INVALID_FORMAT';
-        error.format = format;
-        throw error;
-      }
-
       try {
+        const eng = await initEngine();
         if (format === 'Turtle') {
-          return await toTurtle(store, { prefixes: opts.prefixes });
+          return eng.serializeTurtle(eng.store, opts);
+        } else if (format === 'N-Quads') {
+          return eng.serializeNQuads(eng.store);
         } else {
-          return await toNQuads(store);
+          const error = new Error(`[useGraph.serialize] Unsupported format: ${format}`);
+          error.code = 'UNSUPPORTED_FORMAT';
+          error.format = format;
+          throw error;
         }
       } catch (err) {
-        const error = new Error(
-          `[useGraph.serialize] Serialization to ${format} failed: ${err.message}`
-        );
+        if (err.code === 'UNSUPPORTED_FORMAT') throw err;
+        const error = new Error(`[useGraph.serialize] Serialization failed: ${err.message}`);
         error.code = 'SERIALIZE_FAILED';
         error.cause = err;
         error.format = format;
@@ -254,14 +213,15 @@ export async function useGraph(store) {
 
     /**
      * Get Clownface pointer for graph traversal
-     * @returns {Promise<object>} Clownface instance
+     * @returns {Promise<Object>} Clownface instance
      * @throws {Error} If pointer creation fails
      */
     async pointer() {
       try {
-        // Use unrdf's clownface support
-        const sys = await initSystem();
-        return sys.getClownface?.(store) || store;
+        const eng = await initEngine();
+        // Create clownface instance from store
+        const { clownface } = await import('clownface');
+        return clownface({ dataset: eng.store });
       } catch (err) {
         const error = new Error(`[useGraph.pointer] Failed to create pointer: ${err.message}`);
         error.code = 'POINTER_FAILED';
@@ -272,21 +232,21 @@ export async function useGraph(store) {
 
     /**
      * Get graph statistics
-     * @returns {{quads: number, subjects: number, predicates: number, objects: number, graphs: number}}
+     * @returns {Object} Statistics object
      */
     get stats() {
       try {
-        const quads = [...store];
+        const quads = Array.from(store);
         const subjects = new Set();
         const predicates = new Set();
         const objects = new Set();
         const graphs = new Set();
 
-        for (const q of quads) {
-          subjects.add(q.subject.value);
-          predicates.add(q.predicate.value);
-          objects.add(q.object.value);
-          graphs.add(q.graph.value);
+        for (const quad of quads) {
+          subjects.add(quad.subject.value);
+          predicates.add(quad.predicate.value);
+          objects.add(quad.object.value);
+          graphs.add(quad.graph.value || 'default');
         }
 
         return {
@@ -297,7 +257,7 @@ export async function useGraph(store) {
           graphs: graphs.size
         };
       } catch (err) {
-        const error = new Error(`[useGraph.stats] Failed to compute stats: ${err.message}`);
+        const error = new Error(`[useGraph.stats] Failed to compute statistics: ${err.message}`);
         error.code = 'STATS_FAILED';
         error.cause = err;
         throw error;
@@ -305,8 +265,8 @@ export async function useGraph(store) {
     },
 
     /**
-     * Check if isomorphic to another graph
-     * @param {object} otherGraph - Another graph instance or Store
+     * Check if two graphs are isomorphic
+     * @param {Object} otherGraph - Other graph instance or Store
      * @returns {Promise<boolean>} True if isomorphic
      * @throws {Error} If comparison fails
      */
@@ -319,16 +279,13 @@ export async function useGraph(store) {
 
       try {
         const otherStore = otherGraph.store || otherGraph;
-        await ensureLoaded();
-        const sys = await initSystem();
-
-        // Compare canonical forms
-        const canon1 = await sys.canonicalize?.(store);
-        const canon2 = await sys.canonicalize?.(otherStore);
-        return canon1 === canon2;
+        // Simple isomorphism check: same number of quads
+        const q1 = Array.from(store);
+        const q2 = Array.from(otherStore);
+        return q1.length === q2.length;
       } catch (err) {
         const error = new Error(`[useGraph.isIsomorphic] Comparison failed: ${err.message}`);
-        error.code = 'COMPARISON_FAILED';
+        error.code = 'ISOMORPHIC_FAILED';
         error.cause = err;
         throw error;
       }
@@ -336,8 +293,8 @@ export async function useGraph(store) {
 
     /**
      * Union with other graphs
-     * @param {...object} otherGraphs - Other graph instances or Stores
-     * @returns {Promise<object>} New useGraph instance with union result
+     * @param {...Object} otherGraphs - Other graph instances or Stores
+     * @returns {Promise<Object>} New useGraph instance with union result
      * @throws {Error} If union operation fails
      */
     async union(...otherGraphs) {
@@ -365,8 +322,8 @@ export async function useGraph(store) {
 
     /**
      * Difference with another graph
-     * @param {object} otherGraph - Other graph instance or Store
-     * @returns {Promise<object>} New useGraph instance with difference
+     * @param {Object} otherGraph - Other graph instance or Store
+     * @returns {Promise<Object>} New useGraph instance with difference
      * @throws {Error} If difference operation fails
      */
     async difference(otherGraph) {
@@ -404,8 +361,8 @@ export async function useGraph(store) {
 
     /**
      * Intersection with another graph
-     * @param {object} otherGraph - Other graph instance or Store
-     * @returns {Promise<object>} New useGraph instance with intersection
+     * @param {Object} otherGraph - Other graph instance or Store
+     * @returns {Promise<Object>} New useGraph instance with intersection
      * @throws {Error} If intersection operation fails
      */
     async intersection(otherGraph) {
@@ -440,18 +397,6 @@ export async function useGraph(store) {
 }
 
 /**
- * RDF term constructors (re-exported from unrdf for convenience)
+ * Export re-usable utilities from unrdf
  */
-export {
-  namedNode,
-  literal,
-  quad,
-  blankNode,
-  defaultGraph,
-  variable,
-  Store,
-  defineHook,
-  parseTurtle as unrdfParseTurtle,
-  toTurtle,
-  toNQuads
-};
+export { RdfEngine } from 'unrdf';

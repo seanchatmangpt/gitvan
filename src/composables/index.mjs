@@ -15,6 +15,10 @@ export { useTemplate } from "./template.mjs";
 export { useNotes } from "./notes.mjs";
 export { useUnrouting } from "./unrouting.mjs";
 
+// RDF composables (pure unrdf)
+export { useGraph } from "./graph.mjs";
+export { useTurtle } from "./turtle.mjs";
+
 // Job & Event composables
 export { useJob } from "./job.mjs";
 export { useEvent } from "./event.mjs";

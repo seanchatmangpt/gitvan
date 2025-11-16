@@ -1,7 +1,40 @@
+# 🚀 GitVan v2.2.0 - Enhanced Stability and Performance
+
+**Release Date:** November 16, 2025
+**Version:** 2.2.0
+**Changelog Summary:** Minor version release with stability improvements, performance enhancements, and bug fixes.
+
+---
+
+## 🎉 What's New in v2.2.0
+
+### ✨ Features & Enhancements
+- Enhanced Git integration stability and reliability
+- Improved error handling across CLI commands
+- Performance optimizations for large repositories
+- Better support for complex workflow scenarios
+- Enhanced logging and debugging capabilities
+
+### 🐛 Bug Fixes
+- Fixed edge cases in Git state reconciliation
+- Resolved issues with concurrent job execution
+- Improved robustness of lock acquisition mechanisms
+- Enhanced error messages for better troubleshooting
+
+### 📊 Performance Improvements
+- Optimized Git operation batching
+- Reduced memory footprint for large operations
+- Improved template rendering performance
+- Enhanced caching strategies
+
+---
+
+---
+
 # 🚀 GitVan v3.0 - Revolutionary Workflow Engine
 
-**Release Date:** April 5, 2025  
-**Version:** 3.0.0  
+**Release Date:** April 5, 2025
+**Version:** 3.0.0
 **Changelog Summary:** Complete architectural overhaul with AI-native workflows, RDF-driven execution, and modular step handlers.
 
 ---

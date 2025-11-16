@@ -67,7 +67,6 @@
   "dependencies": {
     "@babel/parser": "^7.28.4",
     "@babel/traverse": "^7.28.4",
-    "@comunica/query-sparql": "^4.4.0",
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/auto-instrumentations-node": "^0.66.0",
     "@opentelemetry/exporter-metrics-otlp-http": "^0.207.0",
@@ -77,15 +76,12 @@
     "@opentelemetry/sdk-node": "^0.207.0",
     "@opentelemetry/sdk-trace-base": "^2.2.0",
     "@opentelemetry/semantic-conventions": "^1.37.0",
-    "@rdfjs/types": "^2.0.1",
-    "@zazuko/env": "^3.0.1",
     "ai": "^5.0.47",
     "c12": "^3.3.0",
     "cacache": "^20.0.1",
     "citty": "^0.1.6",
     "consola": "^3.4.2",
     "defu": "^6.1.4",
-    "eyereasoner": "^18.20.0",
     "fuse.js": "^7.1.0",
     "giget": "^1.2.1",
     "gray-matter": "^4.0.3",
@@ -94,22 +90,17 @@
     "isomorphic-git": "^1.33.1",
     "js-yaml": "^4.1.0",
     "json5": "^2.2.3",
-    "jsonld": "^8.3.3",
     "klona": "^2.0.6",
     "lru-cache": "^11.2.1",
     "memfs": "^4.43.0",
     "minimatch": "^10.0.3",
     "msw": "^2.11.3",
-    "n3": "^1.26.0",
     "node-cron": "^4.2.1",
     "nunjucks": "^3.2.4",
     "ollama-ai-provider-v2": "^1.3.1",
     "p-queue": "^8.1.1",
     "pathe": "^2.0.3",
     "prompts": "^2.4.2",
-    "rdf-canonize": "^4.0.1",
-    "rdf-ext": "^2.6.0",
-    "rdf-validate-shacl": "^0.6.5",
     "semver": "^7.7.2",
     "tinyglobby": "^0.2.15",
     "toml": "^3.0.0",
@@ -189,10 +180,6 @@
     "access": "public"
   },
   "pnpm": {
-    "peerDependencyRules": {
-      "allowedVersions": {
-        "@rdfjs/types": "*"
-      }
-    }
+    "peerDependencyRules": {}
   }
 }

@@ -4,7 +4,6 @@
  * with the AI Template Loop Enhancement system
  */
 
-import { useGraph } from "../composables/graph.mjs";
 import { aiTemplateLoop } from "./template-loop-enhancement.mjs";
 import { createLogger } from "../utils/logger.mjs";
 import { useGitVan } from "../core/context.mjs";
@@ -233,29 +232,7 @@ The template should include:
 - **Rendering**: Use render() with Nunjucks filters
 - **Snapshots**: Use snapshotJSON(), snapshotText(), receipt()
 
-## Example Pattern
-\`\`\`javascript
-import { defineJob, useGit } from 'file:///Users/sac/gitvan/src/index.mjs'
-import { useGraph } from '../composables/graph.mjs'
-
-export default defineJob({
-  meta: { name: 'graph-report' },
-  hooks: ['post-commit'],
-  async run() {
-    const g = await useGraph({ baseIRI: 'https://example.org/' })
-    await g.addFile('data/ontology.ttl')
-    await g.addFile('data/facts.csv')
-    await g.setShapes('shapes/validation.shacl.ttl')
-    await g.setQuery('queries/analysis.sparql')
-    await g.setTemplate('templates/report.md')
-    const out = await g.run()
-    await useGit().writeFile('REPORT.md', out)
-    return { ok: true, artifacts: ['REPORT.md'] }
-  }
-})
-\`\`\`
-
-Generate a complete GitVan template with graph capabilities:
+Generate a complete GitVan template:
 `;
 
     try {

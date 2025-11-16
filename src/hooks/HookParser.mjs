@@ -2,8 +2,6 @@
 // Parser and validator for hook definitions in Turtle format
 // Loads hook definitions and validates their structure
 
-import { useGraph } from "../composables/graph.mjs";
-
 /**
  * Hook parser that loads and validates Turtle hook definitions
  */

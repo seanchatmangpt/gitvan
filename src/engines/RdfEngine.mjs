@@ -1,9 +1,9 @@
 // src/engines/RdfEngine.mjs
-// DEPRECATED: Use unrdf-compat instead
-// This is a backward-compatibility wrapper around unrdf
+// Backward-compatibility wrapper around unrdf package
+// Provides transparent access to unrdf Dark Matter 80/20 optimizations
 
 import {
-  DarkMatterCore,
+  createDarkMatterCore,
   parseTurtle as unrdfParseTurtle,
   toTurtle as unrdfToTurtle,
   toNQuads as unrdfToNQuads,
@@ -14,7 +14,7 @@ import {
   defaultGraph,
   variable,
   Store
-} from "../unrdf-compat/index.mjs";
+} from "unrdf";
 
 import rdfCanonize from "rdf-canonize";
 import jsonld from "jsonld";
@@ -40,7 +40,7 @@ export class RdfEngine {
       typeof options.onMetric === "function" ? options.onMetric : null;
     this.log = options.logger || console;
 
-    // Use unrdf-compat Dark Matter Core
+    // Use unrdf Dark Matter Core (lazy initialization)
     this.core = null;
     this.initialized = false;
 
@@ -49,11 +49,11 @@ export class RdfEngine {
   }
 
   /**
-   * Lazy initialization of Dark Matter Core
+   * Lazy initialization of unrdf Dark Matter Core
    */
   async _init() {
     if (!this.initialized) {
-      this.core = await DarkMatterCore.create({
+      this.core = await createDarkMatterCore({
         baseIRI: this.baseIRI,
         timeoutMs: this.timeoutMs
       });

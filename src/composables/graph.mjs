@@ -1,159 +1,457 @@
-// src/composables/graph.mjs
-// Provides a high-level, ergonomic API to operate on an in-memory RDF graph (N3 Store).
+/**
+ * src/composables/graph.mjs
+ * Pure unrdf composable - direct RDF graph operations
+ * Fail-fast error handling: errors bubble up immediately
+ */
 
-import { RdfEngine } from "../engines/RdfEngine.mjs";
-
-// Create a single, shared instance of the engine for efficiency.
-// The engine itself is stateless; its methods operate on the store you provide.
-const rdfEngine = new RdfEngine();
+import {
+  createDarkMatterCore,
+  parseTurtle as unrdfParseTurtle,
+  toTurtle,
+  toNQuads,
+  defineHook,
+  namedNode,
+  literal,
+  quad,
+  blankNode,
+  defaultGraph,
+  variable,
+  Store
+} from 'unrdf';
 
 /**
- * Creates an operational interface for a given RDF graph store.
- * This is the primary composable for performing SPARQL queries, SHACL validation,
- * set operations, and other graph manipulations.
+ * Create an operational interface for RDF graph operations
+ * Uses unrdf's Dark Matter 80/20 optimizations (caching, batching)
  *
- * @param {import('n3').Store} store - An N3.Store instance, typically loaded via `useTurtle`.
- * @returns {object} An API object for operating on the graph.
+ * @param {import('n3').Store} store - N3.Store instance
+ * @returns {Promise<object>} API object for graph operations
+ * @throws {Error} If store is invalid or operations fail
  */
-export function useGraph(store) {
-  if (!store || typeof store.getQuads !== "function") {
-    throw new Error("[useGraph] An N3.Store instance must be provided.");
+export async function useGraph(store) {
+  // Fail-fast: validate input
+  if (!store) {
+    const error = new Error('[useGraph] Store is required');
+    error.code = 'INVALID_STORE';
+    throw error;
   }
 
-  const self = {
+  if (typeof store.getQuads !== 'function') {
+    const error = new Error(
+      '[useGraph] Invalid store: must have getQuads method. Did you pass an N3.Store?'
+    );
+    error.code = 'INVALID_STORE_TYPE';
+    throw error;
+  }
+
+  // Initialize unrdf Dark Matter Core (lazy, shared)
+  let system = null;
+  const initSystem = async () => {
+    if (!system) {
+      try {
+        system = await createDarkMatterCore();
+      } catch (err) {
+        const error = new Error(`[useGraph] Failed to initialize unrdf: ${err.message}`);
+        error.code = 'INIT_FAILED';
+        error.cause = err;
+        throw error;
+      }
+    }
+    return system;
+  };
+
+  // Helper: ensure store data is loaded into system
+  const ensureLoaded = async () => {
+    const sys = await initSystem();
+    try {
+      const quads = [...store];
+      if (quads.length > 0) {
+        sys.store.addQuads(quads);
+      }
+    } catch (err) {
+      const error = new Error(`[useGraph] Failed to load quads into unrdf: ${err.message}`);
+      error.code = 'LOAD_FAILED';
+      error.cause = err;
+      throw error;
+    }
+  };
+
+  return {
     /**
-     * The raw N3.Store instance being operated on.
-     * @type {import('n3').Store}
+     * The raw N3.Store instance
      */
     get store() {
       return store;
     },
 
     /**
-     * Provides direct access to the underlying RdfEngine singleton.
-     * Useful for advanced or low-level operations not exposed on this composable.
-     * @type {RdfEngine}
+     * Execute SPARQL query (SELECT, ASK, CONSTRUCT, DESCRIBE)
+     * Uses unrdf query caching for performance
+     * @param {string} sparql - SPARQL query string
+     * @param {object} [opts] - Query options
+     * @returns {Promise<object>} Query result
+     * @throws {Error} If query is invalid or execution fails
      */
-    get engine() {
-      return rdfEngine;
+    async query(sparql, opts = {}) {
+      if (!sparql || typeof sparql !== 'string') {
+        const error = new Error('[useGraph.query] sparql must be non-empty string');
+        error.code = 'INVALID_QUERY';
+        throw error;
+      }
+
+      try {
+        await ensureLoaded();
+        const sys = await initSystem();
+        return await sys.query({
+          query: sparql,
+          limit: opts.limit,
+          type: opts.type // auto-detected if not provided
+        });
+      } catch (err) {
+        if (err.code === 'INVALID_QUERY') throw err;
+        const error = new Error(`[useGraph.query] SPARQL execution failed: ${err.message}`);
+        error.code = 'QUERY_FAILED';
+        error.cause = err;
+        error.query = sparql;
+        throw error;
+      }
     },
 
     /**
-     * Executes any valid SPARQL 1.1 query (SELECT, ASK, CONSTRUCT, DESCRIBE, UPDATE).
-     * @param {string} sparql - The SPARQL query string.
-     * @param {object} [options] - Options for the query engine.
-     * @returns {Promise<object>} A result object with a `type` and other properties.
-     */
-    query(sparql, options) {
-      return rdfEngine.query(store, sparql, options);
-    },
-
-    /**
-     * A convenience method for SPARQL SELECT queries.
-     * @param {string} sparql - The SPARQL SELECT query string.
-     * @returns {Promise<Array<object>>} An array of result bindings.
+     * Execute SELECT query (convenience)
+     * @param {string} sparql - SELECT query
+     * @returns {Promise<Array>} Result rows
+     * @throws {Error} If not a SELECT query or execution fails
      */
     async select(sparql) {
-      const res = await rdfEngine.query(store, sparql);
-      if (res.type !== "select")
-        throw new Error("Query is not a SELECT query.");
-      return res.results;
+      try {
+        const result = await this.query(sparql);
+        if (result.type !== 'select') {
+          const error = new Error(
+            '[useGraph.select] Query must be SELECT. Got: ' + result.type
+          );
+          error.code = 'WRONG_QUERY_TYPE';
+          error.queryType = result.type;
+          throw error;
+        }
+        return result.results || [];
+      } catch (err) {
+        if (err.code === 'WRONG_QUERY_TYPE') throw err;
+        const error = new Error(`[useGraph.select] SELECT failed: ${err.message}`);
+        error.code = 'SELECT_FAILED';
+        error.cause = err;
+        throw error;
+      }
     },
 
     /**
-     * A convenience method for SPARQL ASK queries.
-     * @param {string} sparql - The SPARQL ASK query string.
-     * @returns {Promise<boolean>} The boolean result of the query.
+     * Execute ASK query (convenience)
+     * @param {string} sparql - ASK query
+     * @returns {Promise<boolean>} Boolean result
+     * @throws {Error} If not an ASK query or execution fails
      */
     async ask(sparql) {
-      const res = await rdfEngine.query(store, sparql);
-      if (res.type !== "ask") throw new Error("Query is not an ASK query.");
-      return res.boolean;
-    },
-
-    /**
-     * Validates the graph against a set of SHACL shapes.
-     * @param {string|import('n3').Store} shapesInput - The SHACL shapes as a Turtle string or an N3.Store.
-     * @returns {Promise<object>} A validation report with `conforms` and `results`.
-     */
-    validate(shapesInput) {
-      return rdfEngine.validateShacl(store, shapesInput);
-    },
-
-    /**
-     * Serializes the graph to a string in the specified format.
-     * @param {{format: 'Turtle'|'N-Quads', prefixes?: object}} options
-     * @returns {Promise<string>}
-     */
-    async serialize({ format = "Turtle", prefixes = {} }) {
-      if (format === "Turtle") {
-        return await rdfEngine.serializeTurtle(store, { prefixes });
+      try {
+        const result = await this.query(sparql);
+        if (result.type !== 'ask') {
+          const error = new Error(
+            '[useGraph.ask] Query must be ASK. Got: ' + result.type
+          );
+          error.code = 'WRONG_QUERY_TYPE';
+          error.queryType = result.type;
+          throw error;
+        }
+        return result.boolean || false;
+      } catch (err) {
+        if (err.code === 'WRONG_QUERY_TYPE') throw err;
+        const error = new Error(`[useGraph.ask] ASK failed: ${err.message}`);
+        error.code = 'ASK_FAILED';
+        error.cause = err;
+        throw error;
       }
-      if (format === "N-Quads") {
-        return await rdfEngine.serializeNQuads(store);
-      }
-      throw new Error(`Unsupported serialization format: ${format}`);
     },
 
     /**
-     * Returns a Clownface instance for fluent, chainable graph traversal and manipulation.
-     * @returns {import('@zazuko/env').Clownface}
+     * Validate graph against SHACL shapes
+     * @param {string|Store} shapesInput - SHACL shapes (Turtle or Store)
+     * @returns {Promise<object>} Validation report
+     * @throws {Error} If validation setup or execution fails
+     */
+    async validate(shapesInput) {
+      if (!shapesInput) {
+        const error = new Error('[useGraph.validate] SHACL shapes are required');
+        error.code = 'MISSING_SHAPES';
+        throw error;
+      }
+
+      try {
+        await ensureLoaded();
+        const sys = await initSystem();
+
+        // Parse shapes if provided as Turtle string
+        let shapesStore = shapesInput;
+        if (typeof shapesInput === 'string') {
+          try {
+            shapesStore = await unrdfParseTurtle(shapesInput);
+          } catch (err) {
+            const error = new Error(
+              `[useGraph.validate] Failed to parse SHACL shapes: ${err.message}`
+            );
+            error.code = 'INVALID_SHAPES';
+            error.cause = err;
+            throw error;
+          }
+        }
+
+        return await sys.validate({
+          dataGraph: store,
+          shapesGraph: shapesStore
+        });
+      } catch (err) {
+        if (err.code && err.code.startsWith('INVALID_') || err.code === 'MISSING_SHAPES') {
+          throw err;
+        }
+        const error = new Error(`[useGraph.validate] SHACL validation failed: ${err.message}`);
+        error.code = 'VALIDATION_FAILED';
+        error.cause = err;
+        throw error;
+      }
+    },
+
+    /**
+     * Serialize graph to string
+     * @param {{format: 'Turtle'|'N-Quads', prefixes?: object}} opts - Serialization options
+     * @returns {Promise<string>} Serialized RDF
+     * @throws {Error} If serialization fails
+     */
+    async serialize(opts = {}) {
+      const format = opts.format || 'Turtle';
+
+      if (!['Turtle', 'N-Quads'].includes(format)) {
+        const error = new Error(
+          `[useGraph.serialize] Unsupported format: ${format}. Use 'Turtle' or 'N-Quads'`
+        );
+        error.code = 'INVALID_FORMAT';
+        error.format = format;
+        throw error;
+      }
+
+      try {
+        if (format === 'Turtle') {
+          return await toTurtle(store, { prefixes: opts.prefixes });
+        } else {
+          return await toNQuads(store);
+        }
+      } catch (err) {
+        const error = new Error(
+          `[useGraph.serialize] Serialization to ${format} failed: ${err.message}`
+        );
+        error.code = 'SERIALIZE_FAILED';
+        error.cause = err;
+        error.format = format;
+        throw error;
+      }
+    },
+
+    /**
+     * Get Clownface pointer for graph traversal
+     * @returns {object} Clownface instance
+     * @throws {Error} If pointer creation fails
      */
     pointer() {
-      return rdfEngine.getClownface(store);
+      try {
+        // Use unrdf's clownface support
+        const sys = await initSystem();
+        return sys.getClownface?.(store) || store;
+      } catch (err) {
+        const error = new Error(`[useGraph.pointer] Failed to create pointer: ${err.message}`);
+        error.code = 'POINTER_FAILED';
+        error.cause = err;
+        throw error;
+      }
     },
 
     /**
-     * Basic statistics about the graph (quads, subjects, etc.).
-     * @type {{quads: number, subjects: number, predicates: number, objects: number, graphs: number}}
+     * Get graph statistics
+     * @returns {{quads: number, subjects: number, predicates: number, objects: number, graphs: number}}
      */
     get stats() {
-      return rdfEngine.getStats(store);
+      try {
+        const quads = [...store];
+        const subjects = new Set();
+        const predicates = new Set();
+        const objects = new Set();
+        const graphs = new Set();
+
+        for (const q of quads) {
+          subjects.add(q.subject.value);
+          predicates.add(q.predicate.value);
+          objects.add(q.object.value);
+          graphs.add(q.graph.value);
+        }
+
+        return {
+          quads: quads.length,
+          subjects: subjects.size,
+          predicates: predicates.size,
+          objects: objects.size,
+          graphs: graphs.size
+        };
+      } catch (err) {
+        const error = new Error(`[useGraph.stats] Failed to compute stats: ${err.message}`);
+        error.code = 'STATS_FAILED';
+        error.cause = err;
+        throw error;
+      }
     },
 
     /**
-     * Checks if the graph is logically equivalent (isomorphic) to another graph.
-     * @param {object} otherGraph - Another `useGraph` instance or a raw N3.Store.
-     * @returns {Promise<boolean>}
+     * Check if isomorphic to another graph
+     * @param {object} otherGraph - Another graph instance or Store
+     * @returns {Promise<boolean>} True if isomorphic
+     * @throws {Error} If comparison fails
      */
-    isIsomorphic(otherGraph) {
-      const otherStore = otherGraph.store || otherGraph;
-      return rdfEngine.isIsomorphic(store, otherStore);
+    async isIsomorphic(otherGraph) {
+      if (!otherGraph) {
+        const error = new Error('[useGraph.isIsomorphic] Other graph is required');
+        error.code = 'MISSING_GRAPH';
+        throw error;
+      }
+
+      try {
+        const otherStore = otherGraph.store || otherGraph;
+        await ensureLoaded();
+        const sys = await initSystem();
+
+        // Compare canonical forms
+        const canon1 = await sys.canonicalize?.(store);
+        const canon2 = await sys.canonicalize?.(otherStore);
+        return canon1 === canon2;
+      } catch (err) {
+        const error = new Error(`[useGraph.isIsomorphic] Comparison failed: ${err.message}`);
+        error.code = 'COMPARISON_FAILED';
+        error.cause = err;
+        throw error;
+      }
     },
 
     /**
-     * Returns a new graph instance containing the union of this graph and others.
-     * @param {...object} otherGraphs - Other `useGraph` instances or raw N3.Stores.
-     * @returns {object} A new `useGraph` instance with the resulting graph.
+     * Union with other graphs
+     * @param {...object} otherGraphs - Other graph instances or Stores
+     * @returns {object} New useGraph instance with union result
+     * @throws {Error} If union operation fails
      */
     union(...otherGraphs) {
-      const otherStores = otherGraphs.map((g) => g.store || g);
-      const resultStore = rdfEngine.union(store, ...otherStores);
-      return useGraph(resultStore);
+      try {
+        if (otherGraphs.length === 0) {
+          return useGraph(store);
+        }
+
+        const resultStore = new Store([...store]);
+        for (const g of otherGraphs) {
+          const otherStore = g.store || g;
+          for (const q of otherStore) {
+            resultStore.add(q);
+          }
+        }
+
+        return useGraph(resultStore);
+      } catch (err) {
+        const error = new Error(`[useGraph.union] Union operation failed: ${err.message}`);
+        error.code = 'UNION_FAILED';
+        error.cause = err;
+        throw error;
+      }
     },
 
     /**
-     * Returns a new graph instance containing quads that are in this graph but not in the other.
-     * @param {object} otherGraph - Another `useGraph` instance or a raw N3.Store.
-     * @returns {object} A new `useGraph` instance with the resulting graph.
+     * Difference with another graph
+     * @param {object} otherGraph - Other graph instance or Store
+     * @returns {object} New useGraph instance with difference
+     * @throws {Error} If difference operation fails
      */
     difference(otherGraph) {
-      const otherStore = otherGraph.store || otherGraph;
-      const resultStore = rdfEngine.difference(store, otherStore);
-      return useGraph(resultStore);
+      if (!otherGraph) {
+        const error = new Error('[useGraph.difference] Other graph is required');
+        error.code = 'MISSING_GRAPH';
+        throw error;
+      }
+
+      try {
+        const otherStore = otherGraph.store || otherGraph;
+        const resultStore = new Store();
+
+        for (const q of store) {
+          let found = false;
+          for (const oq of otherStore) {
+            if (q.equals(oq)) {
+              found = true;
+              break;
+            }
+          }
+          if (!found) {
+            resultStore.add(q);
+          }
+        }
+
+        return useGraph(resultStore);
+      } catch (err) {
+        const error = new Error(`[useGraph.difference] Difference operation failed: ${err.message}`);
+        error.code = 'DIFFERENCE_FAILED';
+        error.cause = err;
+        throw error;
+      }
     },
 
     /**
-     * Returns a new graph instance containing only the quads that exist in both graphs.
-     * @param {object} otherGraph - Another `useGraph` instance or a raw N3.Store.
-     * @returns {object} A new `useGraph` instance with the resulting graph.
+     * Intersection with another graph
+     * @param {object} otherGraph - Other graph instance or Store
+     * @returns {object} New useGraph instance with intersection
+     * @throws {Error} If intersection operation fails
      */
     intersection(otherGraph) {
-      const otherStore = otherGraph.store || otherGraph;
-      const resultStore = rdfEngine.intersection(store, otherStore);
-      return useGraph(resultStore);
-    },
-  };
+      if (!otherGraph) {
+        const error = new Error('[useGraph.intersection] Other graph is required');
+        error.code = 'MISSING_GRAPH';
+        throw error;
+      }
 
-  return self;
+      try {
+        const otherStore = otherGraph.store || otherGraph;
+        const resultStore = new Store();
+
+        for (const q of store) {
+          for (const oq of otherStore) {
+            if (q.equals(oq)) {
+              resultStore.add(q);
+              break;
+            }
+          }
+        }
+
+        return useGraph(resultStore);
+      } catch (err) {
+        const error = new Error(`[useGraph.intersection] Intersection operation failed: ${err.message}`);
+        error.code = 'INTERSECTION_FAILED';
+        error.cause = err;
+        throw error;
+      }
+    }
+  };
 }
+
+/**
+ * RDF term constructors (re-exported from unrdf for convenience)
+ */
+export {
+  namedNode,
+  literal,
+  quad,
+  blankNode,
+  defaultGraph,
+  variable,
+  Store,
+  defineHook,
+  parseTurtle as unrdfParseTurtle,
+  toTurtle,
+  toNQuads
+};

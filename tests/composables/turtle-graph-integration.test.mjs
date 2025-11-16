@@ -1,6 +1,6 @@
 /**
- * Integration test for turtle.mjs, graph.mjs, and RdfEngine.mjs
- * Tests the complete pipeline from Turtle file loading to SPARQL querying
+ * Integration test for turtle.mjs and graph.mjs
+ * Tests the complete pipeline from Turtle file loading to SPARQL querying using pure unrdf
  */
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
@@ -9,7 +9,6 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { useTurtle } from "../../src/composables/turtle.mjs";
 import { useGraph } from "../../src/composables/graph.mjs";
-import { RdfEngine } from "../../src/engines/RdfEngine.mjs";
 
 describe("Turtle-Graph-RdfEngine Integration", () => {
   let testDir;
@@ -78,16 +77,15 @@ ex:project2 rdf:type ex:Project ;
 
   it("should integrate useTurtle with useGraph", async () => {
     const turtle = await useTurtle({ graphDir });
-    const graph = useGraph(turtle.store);
+    const graph = await useGraph(turtle.store);
 
     expect(graph.store).toBe(turtle.store);
-    expect(graph.engine).toBeInstanceOf(RdfEngine);
     expect(graph.stats.quads).toBeGreaterThan(0);
   });
 
   it("should execute SPARQL SELECT queries", async () => {
     const turtle = await useTurtle({ graphDir });
-    const graph = useGraph(turtle.store);
+    const graph = await useGraph(turtle.store);
 
     const sparql = `PREFIX ex: <http://example.org/>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
@@ -108,7 +106,7 @@ SELECT ?name ?age ?city WHERE {
 
   it("should execute SPARQL ASK queries", async () => {
     const turtle = await useTurtle({ graphDir });
-    const graph = useGraph(turtle.store);
+    const graph = await useGraph(turtle.store);
 
     const askQuery = `PREFIX ex: <http://example.org/>
 ASK WHERE {
@@ -123,7 +121,7 @@ ASK WHERE {
 
   it("should execute SPARQL CONSTRUCT queries", async () => {
     const turtle = await useTurtle({ graphDir });
-    const graph = useGraph(turtle.store);
+    const graph = await useGraph(turtle.store);
 
     const constructQuery = `PREFIX ex: <http://example.org/>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
@@ -146,7 +144,7 @@ CONSTRUCT {
 
   it("should perform graph set operations", async () => {
     const turtle = await useTurtle({ graphDir });
-    const graph = useGraph(turtle.store);
+    const graph = await useGraph(turtle.store);
 
     // Create a subset graph with only people
     const peopleQuery = `PREFIX ex: <http://example.org/>
@@ -159,7 +157,7 @@ CONSTRUCT {
 }`;
 
     const peopleResult = await graph.query(peopleQuery);
-    const peopleGraph = useGraph(peopleResult.store);
+    const peopleGraph = await useGraph(peopleResult.store);
 
     // Test union - should contain all quads from both graphs
     const unionGraph = graph.union(peopleGraph);
@@ -176,7 +174,7 @@ CONSTRUCT {
 
   it("should serialize graphs to Turtle format", async () => {
     const turtle = await useTurtle({ graphDir });
-    const graph = useGraph(turtle.store);
+    const graph = await useGraph(turtle.store);
 
     const serialized = await graph.serialize({
       format: "Turtle",
@@ -194,7 +192,7 @@ CONSTRUCT {
 
   it("should validate SHACL shapes", async () => {
     const turtle = await useTurtle({ graphDir });
-    const graph = useGraph(turtle.store);
+    const graph = await useGraph(turtle.store);
 
     const shapes = `@prefix ex: <http://example.org/> .
 @prefix sh: <http://www.w3.org/ns/shacl#> .
@@ -219,7 +217,7 @@ ex:PersonShape rdf:type sh:NodeShape ;
 
   it("should use Clownface for graph traversal", async () => {
     const turtle = await useTurtle({ graphDir });
-    const graph = useGraph(turtle.store);
+    const graph = await useGraph(turtle.store);
 
     const pointer = graph.pointer();
 
@@ -308,7 +306,7 @@ ex:person1 rdf:type ex:Person ;
 
   it("should provide comprehensive statistics", async () => {
     const turtle = await useTurtle({ graphDir });
-    const graph = useGraph(turtle.store);
+    const graph = await useGraph(turtle.store);
 
     const stats = graph.stats;
 

@@ -5,12 +5,10 @@
 
 import { OllamaRDF } from "./OllamaRDF.mjs";
 import { useGitVan } from "../core/context.mjs";
-import { useTurtle } from "../composables/turtle.mjs";
 import { z } from "zod";
 
 export async function useOllamaRDF(options = {}) {
   const context = useGitVan();
-  const turtle = await useTurtle(options);
 
   const ollamaRDF = new OllamaRDF({
     model: options.model || "qwen3-coder",
@@ -29,7 +27,6 @@ export async function useOllamaRDF(options = {}) {
 
   return {
     ollamaRDF,
-    turtle,
     context,
 
     /**

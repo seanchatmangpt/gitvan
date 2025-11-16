@@ -8,7 +8,6 @@ import { generateText, generateObject, streamText } from "ai";
 import { z } from "zod";
 import { RDFToZodConverter } from "./RDFToZodConverter.mjs";
 import { useGitVan } from "../core/context.mjs";
-import { useTurtle } from "../composables/turtle.mjs";
 
 export class OllamaRDF {
   constructor(options = {}) {

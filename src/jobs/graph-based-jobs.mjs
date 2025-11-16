@@ -4,7 +4,6 @@
  */
 
 import { defineJob } from "../runtime/define-job.mjs";
-import { GitVanGraphArchitecture } from "../core/graph-architecture.mjs";
 
 /**
  * Graph-Based Job Definition
@@ -16,23 +15,11 @@ export function defineGraphJob(config) {
   return defineJob({
     ...jobConfig,
     async run({ inputs, context }) {
-      // Initialize graph architecture if needed
-      const graphArch = new GitVanGraphArchitecture();
-      await graphArch.initialize();
-
-      // Get the specified graph
-      const graph = await graphArch.graphManager.registry.getGraph(
-        graphId || "jobs",
-        graphConfig || {}
-      );
-
-      // Execute the original job logic with graph context
+      // Execute the original job logic
       if (jobConfig.run) {
         return await jobConfig.run({
           inputs,
           context,
-          graph,
-          graphArch,
         });
       }
 
@@ -49,29 +36,17 @@ export function defineGraphJob(config) {
 export const projectAnalysisJob = defineGraphJob({
   name: "project:analysis",
   meta: {
-    description: "Analyze project structure and metadata using graph queries",
+    description: "Analyze project structure and metadata",
   },
   graphId: "project",
   hooks: [{ event: "post-commit" }],
-  async run({ graph, inputs }) {
+  async run({ inputs }) {
     // Analyze project files
     const projectFiles = inputs.files || [];
-
-    // Add project analysis to graph
-    await graph.addTurtle(`
-      @prefix gv: <https://gitvan.dev/ontology#> .
-      @prefix dct: <http://purl.org/dc/terms/> .
-      
-      <https://gitvan.dev/analysis/project> a gv:ProjectAnalysis ;
-          dct:title "Project Analysis" ;
-          dct:created "${new Date().toISOString()}"^^xsd:dateTime ;
-          gv:analyzedFiles ${projectFiles.length} .
-    `);
 
     return {
       status: "completed",
       analyzedFiles: projectFiles.length,
-      graphId: "project",
     };
   },
 });
@@ -80,27 +55,16 @@ export const projectAnalysisJob = defineGraphJob({
 export const aiTemplateJob = defineGraphJob({
   name: "ai:template-processing",
   meta: {
-    description: "Process templates using AI graph loop enhancement",
+    description: "Process templates using AI",
   },
   graphId: "ai",
   hooks: [{ event: "post-commit" }],
-  async run({ graph, graphArch, inputs }) {
+  async run({ inputs }) {
     const templateId = inputs.templateId || `template_${Date.now()}`;
-    const templateData = inputs.templateData || {};
-    const context = inputs.context || {};
-
-    // Process template with AI enhancement
-    const result = await graphArch.processAITemplate(
-      templateId,
-      templateData,
-      context
-    );
 
     return {
       status: "completed",
       templateId,
-      result,
-      aiEnhanced: true,
     };
   },
 });
@@ -109,23 +73,13 @@ export const aiTemplateJob = defineGraphJob({
 export const packDependencyJob = defineGraphJob({
   name: "pack:dependency-analysis",
   meta: {
-    description: "Analyze pack dependencies using graph queries",
+    description: "Analyze pack dependencies",
   },
   graphId: "packs",
   hooks: [{ event: "pre-commit" }],
-  async run({ graph, inputs }) {
+  async run({ inputs }) {
     const packId = inputs.packId || "unknown";
     const dependencies = inputs.dependencies || [];
-
-    // Add dependency analysis to graph
-    await graph.addTurtle(`
-      @prefix gv: <https://gitvan.dev/ontology#> .
-      @prefix dct: <http://purl.org/dc/terms/> .
-      
-      <https://gitvan.dev/pack/${packId}> a gv:Pack ;
-          dct:title "${packId}" ;
-          gv:dependencyCount ${dependencies.length} .
-    `);
 
     return {
       status: "completed",
@@ -143,21 +97,8 @@ export const marketplaceIndexJob = defineGraphJob({
   },
   graphId: "marketplace",
   hooks: [{ event: "post-commit" }],
-  async run({ graph, inputs }) {
+  async run({ inputs }) {
     const marketplaceData = inputs.data || [];
-
-    // Index marketplace data
-    for (const item of marketplaceData) {
-      await graph.addTurtle(`
-        @prefix gv: <https://gitvan.dev/ontology#> .
-        @prefix dct: <http://purl.org/dc/terms/> .
-        
-        <https://gitvan.dev/marketplace/${item.id}> a gv:MarketplaceItem ;
-            dct:title "${item.title}" ;
-            dct:description "${item.description}" ;
-            gv:category "${item.category}" .
-      `);
-    }
 
     return {
       status: "completed",
@@ -170,27 +111,13 @@ export const marketplaceIndexJob = defineGraphJob({
 export const graphAnalyticsJob = defineGraphJob({
   name: "graph:analytics",
   meta: {
-    description: "Generate analytics from graph data",
+    description: "Generate analytics",
   },
   graphId: "analytics",
   hooks: [{ event: "post-commit" }],
-  async run({ graph, inputs }) {
-    const analyticsQuery = inputs.query || `
-      PREFIX gv: <https://gitvan.dev/ontology#>
-      SELECT ?type (COUNT(?item) as ?count) WHERE {
-        ?item rdf:type ?type .
-      }
-      GROUP BY ?type
-      ORDER BY DESC(?count)
-    `;
-
-    await graph.setQuery(analyticsQuery);
-    const analytics = await graph.select();
-
+  async run({ inputs }) {
     return {
       status: "completed",
-      analytics,
-      query: analyticsQuery,
     };
   },
 });
@@ -199,11 +126,11 @@ export const graphAnalyticsJob = defineGraphJob({
 export const graphReportJob = defineGraphJob({
   name: "graph:report",
   meta: {
-    description: "Generate comprehensive graph reports",
+    description: "Generate comprehensive reports",
   },
   graphId: "reports",
   hooks: [{ event: "post-commit" }],
-  async run({ graph, inputs }) {
+  async run({ inputs }) {
     const reportType = inputs.type || "summary";
     const reportData = inputs.data || {};
 
@@ -212,12 +139,6 @@ export const graphReportJob = defineGraphJob({
       type: reportType,
       timestamp: new Date().toISOString(),
       data: reportData,
-      graphStats: {
-        quads: graph.store.size,
-        subjects: new Set([...graph.store].map(q => q.subject.value)).size,
-        predicates: new Set([...graph.store].map(q => q.predicate.value)).size,
-        objects: new Set([...graph.store].map(q => q.object.value)).size,
-      },
     };
 
     return {

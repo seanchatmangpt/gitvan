@@ -6,7 +6,6 @@
  */
 
 import { defineCommand } from "citty";
-import { useTurtle } from "../../composables/turtle.mjs";
 import { withGitVan } from "../../composables/ctx.mjs";
 import { join } from "pathe";
 

@@ -2,8 +2,6 @@
 // Parser and validator for workflow definitions in Turtle format
 // Loads workflow definitions and validates their structure
 
-import { useGraph } from "../composables/graph.mjs";
-
 /**
  * Workflow parser that loads and validates Turtle workflow definitions
  */

@@ -5,12 +5,10 @@
 
 import { RDFToZodConverter } from "./RDFToZodConverter.mjs";
 import { useGitVan } from "../core/context.mjs";
-import { useTurtle } from "../composables/turtle.mjs";
 import { z } from "zod";
 
 export async function useRDFToZod(options = {}) {
   const context = useGitVan();
-  const turtle = await useTurtle(options);
 
   const converter = new RDFToZodConverter({
     namespaces: {
@@ -27,21 +25,20 @@ export async function useRDFToZod(options = {}) {
 
   return {
     converter,
-    turtle,
     context,
 
     /**
      * Query with Zod validation
      */
-    async queryWithValidation(query, schema) {
-      return await converter.queryToZod(query, turtle.store, schema);
+    async queryWithValidation(query, store, schema) {
+      return await converter.queryToZod(query, store, schema);
     },
 
     /**
      * Generate schema from RDF class
      */
-    async generateSchemaFromClass(classUri) {
-      return converter.generateSchemaFromClass(classUri, turtle.store);
+    async generateSchemaFromClass(classUri, store) {
+      return converter.generateSchemaFromClass(classUri, store);
     },
 
     /**

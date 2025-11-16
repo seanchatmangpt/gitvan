@@ -2,8 +2,6 @@
 // The "brain" of the Knowledge Hook Engine
 // Executes SPARQL queries to determine if a hook's logical condition has been met
 
-import { useGraph } from "../composables/graph.mjs";
-
 /**
  * Predicate evaluator that determines if hook conditions are met
  * This is the core intelligence of the Knowledge Hook Engine

@@ -3,9 +3,7 @@
  * CLI interface for the graph architecture
  */
 
-import { GitVanGraphArchitecture } from "../core/graph-architecture.mjs";
 import { graphJobs } from "../jobs/graph-based-jobs.mjs";
-import { useTurtle } from "../composables/turtle.mjs";
 import { withGitVan } from "../composables/ctx.mjs";
 import { join } from "pathe";
 

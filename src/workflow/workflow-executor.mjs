@@ -6,7 +6,6 @@ import { WorkflowParser } from "./workflow-parser.mjs";
 import { DAGPlanner } from "./dag-planner.mjs";
 import { StepRunner } from "./step-runner.mjs";
 import { ContextManager } from "./context-manager.mjs";
-import { useGraph } from "../composables/graph.mjs";
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
 import pkg from "n3";

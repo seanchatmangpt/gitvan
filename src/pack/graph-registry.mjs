@@ -3,7 +3,6 @@
  * Modern implementation using useGraph with best practices
  */
 
-import { useGraph } from '../composables/graph.mjs'
 import { withGitVan } from '../composables/ctx.mjs'
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'

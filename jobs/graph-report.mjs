@@ -4,7 +4,6 @@
  */
 
 import { defineJob, useGit } from "file:///Users/sac/gitvan/src/index.mjs";
-import { useGraph } from "../composables/graph.mjs";
 import { HookOrchestrator } from "../src/hooks/HookOrchestrator.mjs";
 
 export default defineJob({

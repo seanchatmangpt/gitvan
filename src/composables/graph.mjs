@@ -254,10 +254,10 @@ export async function useGraph(store) {
 
     /**
      * Get Clownface pointer for graph traversal
-     * @returns {object} Clownface instance
+     * @returns {Promise<object>} Clownface instance
      * @throws {Error} If pointer creation fails
      */
-    pointer() {
+    async pointer() {
       try {
         // Use unrdf's clownface support
         const sys = await initSystem();
@@ -337,13 +337,13 @@ export async function useGraph(store) {
     /**
      * Union with other graphs
      * @param {...object} otherGraphs - Other graph instances or Stores
-     * @returns {object} New useGraph instance with union result
+     * @returns {Promise<object>} New useGraph instance with union result
      * @throws {Error} If union operation fails
      */
-    union(...otherGraphs) {
+    async union(...otherGraphs) {
       try {
         if (otherGraphs.length === 0) {
-          return useGraph(store);
+          return await useGraph(store);
         }
 
         const resultStore = new Store([...store]);
@@ -354,7 +354,7 @@ export async function useGraph(store) {
           }
         }
 
-        return useGraph(resultStore);
+        return await useGraph(resultStore);
       } catch (err) {
         const error = new Error(`[useGraph.union] Union operation failed: ${err.message}`);
         error.code = 'UNION_FAILED';
@@ -366,10 +366,10 @@ export async function useGraph(store) {
     /**
      * Difference with another graph
      * @param {object} otherGraph - Other graph instance or Store
-     * @returns {object} New useGraph instance with difference
+     * @returns {Promise<object>} New useGraph instance with difference
      * @throws {Error} If difference operation fails
      */
-    difference(otherGraph) {
+    async difference(otherGraph) {
       if (!otherGraph) {
         const error = new Error('[useGraph.difference] Other graph is required');
         error.code = 'MISSING_GRAPH';
@@ -393,7 +393,7 @@ export async function useGraph(store) {
           }
         }
 
-        return useGraph(resultStore);
+        return await useGraph(resultStore);
       } catch (err) {
         const error = new Error(`[useGraph.difference] Difference operation failed: ${err.message}`);
         error.code = 'DIFFERENCE_FAILED';
@@ -405,10 +405,10 @@ export async function useGraph(store) {
     /**
      * Intersection with another graph
      * @param {object} otherGraph - Other graph instance or Store
-     * @returns {object} New useGraph instance with intersection
+     * @returns {Promise<object>} New useGraph instance with intersection
      * @throws {Error} If intersection operation fails
      */
-    intersection(otherGraph) {
+    async intersection(otherGraph) {
       if (!otherGraph) {
         const error = new Error('[useGraph.intersection] Other graph is required');
         error.code = 'MISSING_GRAPH';
@@ -428,7 +428,7 @@ export async function useGraph(store) {
           }
         }
 
-        return useGraph(resultStore);
+        return await useGraph(resultStore);
       } catch (err) {
         const error = new Error(`[useGraph.intersection] Intersection operation failed: ${err.message}`);
         error.code = 'INTERSECTION_FAILED';

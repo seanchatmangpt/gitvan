@@ -160,15 +160,15 @@ CONSTRUCT {
     const peopleGraph = await useGraph(peopleResult.store);
 
     // Test union - should contain all quads from both graphs
-    const unionGraph = graph.union(peopleGraph);
+    const unionGraph = await graph.union(peopleGraph);
     expect(unionGraph.store.size).toBeGreaterThanOrEqual(graph.store.size);
 
     // Test intersection - should contain quads that exist in both graphs
-    const intersectionGraph = graph.intersection(peopleGraph);
+    const intersectionGraph = await graph.intersection(peopleGraph);
     expect(intersectionGraph.store.size).toBeGreaterThanOrEqual(0);
 
     // Test difference - should contain quads in graph but not in peopleGraph
-    const differenceGraph = graph.difference(peopleGraph);
+    const differenceGraph = await graph.difference(peopleGraph);
     expect(differenceGraph.store.size).toBeGreaterThanOrEqual(0);
   });
 
@@ -219,7 +219,7 @@ ex:PersonShape rdf:type sh:NodeShape ;
     const turtle = await useTurtle({ graphDir });
     const graph = await useGraph(turtle.store);
 
-    const pointer = graph.pointer();
+    const pointer = await graph.pointer();
 
     // Test that Clownface is working by checking the dataset
     const dataset = pointer._context[0].dataset;

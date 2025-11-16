@@ -8,6 +8,7 @@ import { useGit } from "../composables/git/index.mjs";
 import { useTemplate } from "../composables/template.mjs";
 import { useNotes } from "../composables/notes.mjs";
 import { withGitVan } from "../composables/ctx.mjs";
+import { Store } from 'n3';
 
 /**
  * GitVan Graph Registry
@@ -25,21 +26,25 @@ export class GitVanGraphRegistry {
    * Register a new graph instance
    */
   async registerGraph(graphId, config = {}) {
-    const graph = await useGraph({
-      baseIRI: config.baseIRI || `https://gitvan.dev/graph/${graphId}/`,
-      snapshotsDir:
-        config.snapshotsDir || `.gitvan/graphs/${graphId}/snapshots`,
-      ...config,
-    });
+    // Create an empty RDF store for this graph
+    const store = new Store();
 
-    this.graphs.set(graphId, graph);
-    this.graphMetadata.set(graphId, {
+    // Initialize with unrdf pure graph composable
+    const graph = await useGraph(store);
+
+    // Store metadata separately since useGraph doesn't support config
+    const metadata = {
       id: graphId,
       createdAt: new Date().toISOString(),
       lastAccessed: new Date().toISOString(),
+      baseIRI: config.baseIRI || `https://gitvan.dev/graph/${graphId}/`,
+      snapshotsDir: config.snapshotsDir || `.gitvan/graphs/${graphId}/snapshots`,
       config,
       status: "active",
-    });
+    };
+
+    this.graphs.set(graphId, graph);
+    this.graphMetadata.set(graphId, metadata);
 
     return graph;
   }

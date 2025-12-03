@@ -40,7 +40,7 @@ export class AIEngineSelector {
     // Initialize engines based on config
     if (config.type === 'anthropic' || config.type === 'auto') {
       try {
-        this.claudeEngine = new AIAssistantEngine(config.anthropicKey);
+        this.claudeEngine = new AIAssistantEngine();
       } catch (error) {
         console.warn('Failed to initialize Anthropic engine:', error);
       }

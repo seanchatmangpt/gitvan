@@ -1,11 +1,17 @@
 /**
  * AI Assistant Engine
  *
- * LLM-powered semantic analysis for code intelligence, recommendations, and insights.
- * Integrates with Anthropic Claude API for advanced natural language understanding.
+ * Wrapper around AIEngineSelector that provides semantic analysis with automatic
+ * fallback between Claude and Ollama based on availability and configuration.
+ *
+ * Features:
+ * - Intelligent engine selection (Claude or Ollama)
+ * - Automatic fallback on engine failure
+ * - Privacy-preserving local inference option
+ * - Type-safe responses with Zod validation
  */
 
-import Anthropic from "@anthropic-ai/sdk";
+import { aiEngineSelector } from './ai-engine-selector';
 
 export interface CodeAnalysis {
   complexity: "low" | "medium" | "high" | "critical";
@@ -60,36 +66,13 @@ export interface Commit {
 }
 
 export class AIAssistantEngine {
-  private client: Anthropic;
-  private model: string = "claude-3-5-sonnet-20241022";
-
-  constructor(apiKey?: string) {
-    this.client = new Anthropic({
-      apiKey: apiKey || process.env.ANTHROPIC_API_KEY,
-    });
-  }
-
   /**
    * Generate semantic commit message from diff
+   * Uses aiEngineSelector for automatic Claude/Ollama switching
    */
   async generateCommitMessage(diff: string): Promise<string> {
     try {
-      const message = await this.client.messages.create({
-        model: this.model,
-        max_tokens: 256,
-        messages: [
-          {
-            role: "user",
-            content: `Generate a concise semantic commit message following conventional commits format (feat:, fix:, refactor:, etc.) for this diff:\n\n${diff}\n\nRespond with ONLY the commit message, no explanation.`,
-          },
-        ],
-      });
-
-      const textContent = message.content.find((c) => c.type === "text");
-      if (textContent && textContent.type === "text") {
-        return textContent.text.trim();
-      }
-      return "feat: update implementation";
+      return await aiEngineSelector.generateCommitMessage(diff);
     } catch (error) {
       console.error("Failed to generate commit message:", error);
       return "feat: update implementation";
@@ -101,32 +84,22 @@ export class AIAssistantEngine {
    */
   async analyzeCodeQuality(code: string): Promise<CodeAnalysis> {
     try {
-      const message = await this.client.messages.create({
-        model: this.model,
-        max_tokens: 1024,
-        messages: [
-          {
-            role: "user",
-            content: `Analyze this code for quality issues, complexity, and maintainability:\n\n${code}\n\nRespond in JSON format with fields: complexity (low/medium/high/critical), maintainability (0-100), issues (array with type, severity, description, suggestion), suggestions (array of strings), riskScore (0-100).`,
-          },
-        ],
-      });
-
-      const textContent = message.content.find((c) => c.type === "text");
-      if (textContent && textContent.type === "text") {
-        const jsonMatch = textContent.text.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          return JSON.parse(jsonMatch[0]);
+      const analysis = await aiEngineSelector.analyzeCodeQuality(code);
+      // Parse response if needed
+      if (typeof analysis === 'string') {
+        try {
+          return JSON.parse(analysis);
+        } catch {
+          return {
+            complexity: "medium",
+            maintainability: 70,
+            issues: [],
+            suggestions: [analysis],
+            riskScore: 30,
+          };
         }
       }
-
-      return {
-        complexity: "medium",
-        maintainability: 70,
-        issues: [],
-        suggestions: ["Code analysis complete"],
-        riskScore: 30,
-      };
+      return analysis as CodeAnalysis;
     } catch (error) {
       console.error("Failed to analyze code:", error);
       return {
@@ -144,34 +117,23 @@ export class AIAssistantEngine {
    */
   async suggestOptimizations(code: string): Promise<Suggestion[]> {
     try {
-      const message = await this.client.messages.create({
-        model: this.model,
-        max_tokens: 1024,
-        messages: [
-          {
-            role: "user",
-            content: `Suggest 3-5 optimizations for this code:\n\n${code}\n\nRespond in JSON format as array of objects with fields: title, description, priority (low/medium/high/critical), effort (low/medium/high), expectedBenefit, implementation (optional code example).`,
-          },
-        ],
-      });
-
-      const textContent = message.content.find((c) => c.type === "text");
-      if (textContent && textContent.type === "text") {
-        const jsonMatch = textContent.text.match(/\[[\s\S]*\]/);
-        if (jsonMatch) {
-          return JSON.parse(jsonMatch[0]);
+      const suggestions = await aiEngineSelector.suggestOptimizations(code);
+      if (typeof suggestions === 'string') {
+        try {
+          return JSON.parse(suggestions);
+        } catch {
+          return [
+            {
+              title: "Code Review",
+              description: suggestions,
+              priority: "medium",
+              effort: "low",
+              expectedBenefit: "Better code quality",
+            },
+          ];
         }
       }
-
-      return [
-        {
-          title: "Code Review",
-          description: "Review code for potential improvements",
-          priority: "medium",
-          effort: "low",
-          expectedBenefit: "Better code quality",
-        },
-      ];
+      return suggestions as Suggestion[];
     } catch (error) {
       console.error("Failed to suggest optimizations:", error);
       return [];
@@ -183,30 +145,17 @@ export class AIAssistantEngine {
    */
   async explainChanges(commit: Commit): Promise<Explanation> {
     try {
-      const message = await this.client.messages.create({
-        model: this.model,
-        max_tokens: 1024,
-        messages: [
-          {
-            role: "user",
-            content: `Explain the changes in this commit in simple terms:\n\nMessage: ${commit.message}\nFiles: ${commit.files.join(", ")}\nAdditions: ${commit.additions}, Deletions: ${commit.deletions}\n${commit.diff ? `Diff: ${commit.diff}` : ""}\n\nRespond in JSON format with fields: summary (2-3 sentences), keyChanges (array of strings), impact (description), risks (array of potential risks), recommendations (array of follow-up actions).`,
-          },
-        ],
-      });
-
-      const textContent = message.content.find((c) => c.type === "text");
-      if (textContent && textContent.type === "text") {
-        const jsonMatch = textContent.text.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          return JSON.parse(jsonMatch[0]);
-        }
+      const explanation = await aiEngineSelector.explainChanges(
+        `${commit.message}\n\nFiles: ${commit.files.join(", ")}\nChanges: +${commit.additions}/-${commit.deletions}`
+      );
+      if (typeof explanation === 'string') {
+        return {
+          summary: explanation,
+          keyChanges: commit.files,
+          impact: `${commit.additions} additions, ${commit.deletions} deletions`,
+        };
       }
-
-      return {
-        summary: "Code changes have been made",
-        keyChanges: commit.files,
-        impact: `${commit.additions} additions, ${commit.deletions} deletions`,
-      };
+      return explanation as Explanation;
     } catch (error) {
       console.error("Failed to explain changes:", error);
       return {
@@ -222,34 +171,22 @@ export class AIAssistantEngine {
    */
   async recommendPatterns(events: any[]): Promise<Pattern[]> {
     try {
-      const eventSummary = JSON.stringify(events, null, 2);
-      const message = await this.client.messages.create({
-        model: this.model,
-        max_tokens: 1024,
-        messages: [
-          {
-            role: "user",
-            content: `Based on these git events, recommend 3-5 development patterns or practices that would improve the workflow:\n\n${eventSummary}\n\nRespond in JSON format as array of objects with fields: name, description, benefit, complexity (low/medium/high), example.`,
-          },
-        ],
-      });
-
-      const textContent = message.content.find((c) => c.type === "text");
-      if (textContent && textContent.type === "text") {
-        const jsonMatch = textContent.text.match(/\[[\s\S]*\]/);
-        if (jsonMatch) {
-          return JSON.parse(jsonMatch[0]);
+      const patterns = await aiEngineSelector.recommendPatterns(events);
+      if (typeof patterns === 'string') {
+        try {
+          return JSON.parse(patterns);
+        } catch {
+          return [
+            {
+              name: "Semantic Commits",
+              description: patterns,
+              benefit: "Better changelog generation",
+              complexity: "low",
+            },
+          ];
         }
       }
-
-      return [
-        {
-          name: "Semantic Commits",
-          description: "Use semantic versioning in commit messages",
-          benefit: "Better changelog generation and tooling",
-          complexity: "low",
-        },
-      ];
+      return patterns as Pattern[];
     } catch (error) {
       console.error("Failed to recommend patterns:", error);
       return [];
@@ -261,28 +198,8 @@ export class AIAssistantEngine {
    */
   async askAssistant(question: string, context?: string): Promise<string> {
     try {
-      const systemPrompt =
-        context ||
-        "You are a helpful assistant for git automation and development workflow optimization. Provide concise, practical advice.";
-
-      const message = await this.client.messages.create({
-        model: this.model,
-        max_tokens: 512,
-        system: systemPrompt,
-        messages: [
-          {
-            role: "user",
-            content: question,
-          },
-        ],
-      });
-
-      const textContent = message.content.find((c) => c.type === "text");
-      if (textContent && textContent.type === "text") {
-        return textContent.text;
-      }
-
-      return "Unable to process question";
+      const prompt = context ? `${context}\n\nQuestion: ${question}` : question;
+      return await aiEngineSelector.ask(prompt);
     } catch (error) {
       console.error("Failed to process question:", error);
       return "Error processing question. Please try again.";
@@ -294,26 +211,15 @@ export class AIAssistantEngine {
    */
   async generateTestCases(code: string): Promise<string[]> {
     try {
-      const message = await this.client.messages.create({
-        model: this.model,
-        max_tokens: 1024,
-        messages: [
-          {
-            role: "user",
-            content: `Generate 5-10 comprehensive test cases for this code:\n\n${code}\n\nRespond in JSON format as array of strings, each being a test case description.`,
-          },
-        ],
-      });
-
-      const textContent = message.content.find((c) => c.type === "text");
-      if (textContent && textContent.type === "text") {
-        const jsonMatch = textContent.text.match(/\[[\s\S]*\]/);
-        if (jsonMatch) {
-          return JSON.parse(jsonMatch[0]);
+      const testCases = await aiEngineSelector.generateTestCases(code);
+      if (typeof testCases === 'string') {
+        try {
+          return JSON.parse(testCases);
+        } catch {
+          return testCases.split('\n').filter((line) => line.trim());
         }
       }
-
-      return ["Test case 1", "Test case 2"];
+      return testCases as string[];
     } catch (error) {
       console.error("Failed to generate test cases:", error);
       return [];
@@ -325,26 +231,22 @@ export class AIAssistantEngine {
    */
   async analyzeSecurityRisks(code: string): Promise<CodeIssue[]> {
     try {
-      const message = await this.client.messages.create({
-        model: this.model,
-        max_tokens: 1024,
-        messages: [
-          {
-            role: "user",
-            content: `Analyze this code for security vulnerabilities and risks:\n\n${code}\n\nRespond in JSON format as array of objects with fields: type, severity (low/medium/high/critical), description, location (optional), suggestion.`,
-          },
-        ],
-      });
-
-      const textContent = message.content.find((c) => c.type === "text");
-      if (textContent && textContent.type === "text") {
-        const jsonMatch = textContent.text.match(/\[[\s\S]*\]/);
-        if (jsonMatch) {
-          return JSON.parse(jsonMatch[0]);
+      const risks = await aiEngineSelector.analyzeSecurityRisks(code);
+      if (typeof risks === 'string') {
+        try {
+          return JSON.parse(risks);
+        } catch {
+          return [
+            {
+              type: "Security Analysis",
+              severity: "medium",
+              description: risks,
+              suggestion: "Review code for security vulnerabilities",
+            },
+          ];
         }
       }
-
-      return [];
+      return risks as CodeIssue[];
     } catch (error) {
       console.error("Failed to analyze security:", error);
       return [];
@@ -356,23 +258,7 @@ export class AIAssistantEngine {
    */
   async generateDocumentation(code: string, language: string = "markdown"): Promise<string> {
     try {
-      const message = await this.client.messages.create({
-        model: this.model,
-        max_tokens: 1024,
-        messages: [
-          {
-            role: "user",
-            content: `Generate comprehensive ${language} documentation for this code:\n\n${code}\n\nInclude: function signatures, parameters, return types, usage examples, edge cases.`,
-          },
-        ],
-      });
-
-      const textContent = message.content.find((c) => c.type === "text");
-      if (textContent && textContent.type === "text") {
-        return textContent.text;
-      }
-
-      return "# Documentation\n\nUnable to generate documentation.";
+      return await aiEngineSelector.generateDocumentation(code);
     } catch (error) {
       console.error("Failed to generate documentation:", error);
       return "# Documentation\n\nGeneration failed.";

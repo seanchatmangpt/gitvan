@@ -117,3 +117,9 @@ hooks-test/
 docs/UNRDF_MIGRATION.md
 docs/unrdf-migration-strategy.md
 tests/unrdf/
+output/
+cleanroom-test-output/
+demo-outputs/
+test-git-native-*
+*.tgz
+.telemetry/

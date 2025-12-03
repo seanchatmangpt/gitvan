@@ -1,29 +1,20 @@
 /**
- * @fileoverview GitVan v2 — Turtle/RDF Composable
+ * @fileoverview GitVan v3 — Turtle/RDF Composable
  *
  * This module provides Turtle/RDF file loading, parsing, and querying capabilities
  * within the GitVan context. It handles loading .ttl files from directories,
- * parsing them into N3 stores, and providing methods to query and extract
+ * parsing them into stores, and providing methods to query and extract
  * knowledge hooks and RDF data.
  *
- * Key Features:
- * - Turtle (.ttl) file loading and parsing
- * - N3 store integration for RDF operations
- * - Knowledge hook extraction from RDF data
- * - SPARQL query execution
- * - Namespace management for RDF vocabularies
- * - RDF list traversal utilities
- *
- * @version 2.0.0
+ * @version 3.0.0
  * @author GitVan Team
  * @license Apache-2.0
  */
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
-import N3 from "n3";
+import { createKnowledgeSubstrateCore, parseTurtle, toTurtle, getStoreStats } from "unrdf";
 import { useGitVan, tryUseGitVan } from "../core/context.mjs";
 import { loadOptions } from "../config/loader.mjs";
-import { createPersistenceHelper } from "../utils/persistence-helper.mjs";
 
 // Namespace constants for RDF vocabularies
 const RDF = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
@@ -86,7 +77,7 @@ async function bindContext(opts = {}) {
  * Turtle/RDF operations composable
  *
  * Provides Turtle file loading, parsing, and querying capabilities within the GitVan context.
- * This function loads all .ttl files from a directory, parses them into an N3 store,
+ * This function loads all .ttl files from a directory, parses them into a store,
  * and provides methods to query the RDF data and extract knowledge hooks.
  *
  * @async
@@ -94,40 +85,11 @@ async function bindContext(opts = {}) {
  * @param {Object} [options={}] - Turtle options
  * @param {string} [options.graphDir] - Directory containing Turtle files
  * @returns {Promise<Object>} Turtle operations interface
- * @returns {Function} returns.loadFiles - Load Turtle files from directory
- * @returns {Function} returns.getHooks - Get knowledge hooks from loaded data
- * @returns {Function} returns.query - Query the loaded RDF store
- * @returns {Function} returns.store - Access to the N3 store
- * @returns {Function} returns.parser - Access to the N3 parser
- *
- * @example
- * ```javascript
- * const turtle = await useTurtle({ graphDir: './knowledge' });
- *
- * // Load files
- * await turtle.loadFiles();
- *
- * // Get knowledge hooks
- * const hooks = turtle.getHooks();
- *
- * // Query RDF data
- * const results = turtle.query(`
- *   PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
- *   SELECT ?s ?p ?o WHERE { ?s ?p ?o }
- * `);
- * ```
  */
 export async function useTurtle(options = {}) {
   const { root, graphDir, uriRoots, config } = await bindContext(options);
 
-  // Create persistence helper for this instance
-  const persistence = createPersistenceHelper({
-    logger: options.logger || console,
-    atomicWrites: options.atomicWrites !== false,
-    rdfEngine: options.rdfEngine,
-  });
-
-  // --- Internal loader ---
+  // --- Internal loader using KnowledgeSubstrateCore ---
   const load = async () => {
     try {
       const fileNames = (await readdir(graphDir)).filter((f) =>
@@ -139,11 +101,21 @@ export async function useTurtle(options = {}) {
           content: await readFile(join(graphDir, name), "utf8"),
         }))
       );
-      const store = new N3.Store();
-      const parser = new N3.Parser();
+
+      // Create KnowledgeSubstrateCore - handles store, transactions, hooks, observability
+      const core = await createKnowledgeSubstrateCore({
+        enableObservability: true,
+        enableKnowledgeHookManager: true,
+        enableTransactionManager: true,
+      });
+
+      // Load turtle files into the core's internal store
       for (const file of files) {
         try {
-          store.addQuads(parser.parse(file.content));
+          const fileStore = parseTurtle(file.content);
+          for (const quad of fileStore) {
+            core.store.add(quad);
+          }
         } catch (error) {
           // Skip malformed turtle files gracefully
           console.warn(
@@ -151,24 +123,31 @@ export async function useTurtle(options = {}) {
           );
         }
       }
-      return { store, files };
+      return { core, store: core.store, files };
     } catch (error) {
-      // If directory doesn't exist or can't be read, return empty store
+      // If directory doesn't exist or can't be read, return empty core
       if (error.code === "ENOENT") {
         console.log(
           `Graph directory ${graphDir} doesn't exist yet, starting with empty store`
         );
-        return { store: new N3.Store(), files: [] };
+        const core = await createKnowledgeSubstrateCore({
+          enableObservability: true,
+          enableKnowledgeHookManager: true,
+          enableTransactionManager: true,
+        });
+        return { core, store: core.store, files: [] };
       }
       throw error;
     }
   };
 
-  const { store, files } = await load();
+  const { core, store, files } = await load();
 
   // --- Public API ---
   return {
-    /** The raw N3.Store instance. */
+    /** The KnowledgeSubstrateCore instance (provides OTEL, transactions, hooks). */
+    core,
+    /** The Store instance (for backward compatibility). */
     store,
     /** An array of the raw file contents that were loaded. */
     files,
@@ -254,7 +233,6 @@ export async function useTurtle(options = {}) {
 
     /** Extracts template text from a template node in the graph. */
     async getTemplateText(templateNode) {
-      // This logic is identical to getQueryText, can be merged later if desired
       const inlineText = this.getOne(templateNode, GV + "text");
       if (inlineText) return asStr(inlineText);
       const path = this.getOne(templateNode, GV + "path");
@@ -291,28 +269,22 @@ export async function useTurtle(options = {}) {
      * @returns {Promise<{path: string, bytes: number}>} Save result
      */
     async saveGraph(fileName, options = {}) {
-      const { validate = true, createBackup = false, prefixes } = options;
+      const { promises: fs } = await import("node:fs");
+      const { prefixes } = options;
       const filePath = join(graphDir, `${fileName}.ttl`);
 
       try {
-        const turtleContent = await persistence.serializeStore(store, {
-          prefixes,
-        });
-        const result = await persistence.writeTurtleFile(
-          filePath,
-          turtleContent,
-          {
-            validate,
-            createBackup,
-          }
-        );
+        const turtleContent = await toTurtle(store, { prefixes });
+        await fs.mkdir(graphDir, { recursive: true });
+        await fs.writeFile(filePath, turtleContent, "utf8");
+        const stats = await fs.stat(filePath);
 
         console.log(
-          `✅ Graph saved to: ${result.path} (${result.bytes} bytes)`
+          `Graph saved to: ${filePath} (${stats.size} bytes)`
         );
-        return result;
+        return { path: filePath, bytes: stats.size };
       } catch (error) {
-        console.error(`❌ Failed to save graph to ${fileName}:`, error.message);
+        console.error(`Failed to save graph to ${fileName}:`, error.message);
         throw error;
       }
     },
@@ -324,20 +296,12 @@ export async function useTurtle(options = {}) {
      * @returns {Promise<{path: string, quads: number}>} Load result
      */
     async loadGraph(fileName, options = {}) {
-      const { validate = true, merge = true } = options;
+      const { merge = true } = options;
       const filePath = join(graphDir, `${fileName}.ttl`);
 
       try {
-        const turtleContent = await persistence.readTurtleFile(filePath, {
-          validate,
-        });
-        if (!turtleContent) {
-          throw new Error(`File not found: ${fileName}.ttl`);
-        }
-
-        const loadedStore = persistence.parseTurtle(turtleContent, {
-          baseIRI: options.baseIRI || config.graph.baseIRI,
-        });
+        const turtleContent = await readFile(filePath, "utf8");
+        const loadedStore = parseTurtle(turtleContent);
 
         if (merge) {
           // Merge with existing store
@@ -353,156 +317,13 @@ export async function useTurtle(options = {}) {
         }
 
         const quads = store.size;
-        console.log(`✅ Graph loaded from: ${filePath} (${quads} quads)`);
+        console.log(`Graph loaded from: ${filePath} (${quads} quads)`);
         return { path: filePath, quads };
       } catch (error) {
         console.error(
-          `❌ Failed to load graph from ${fileName}:`,
+          `Failed to load graph from ${fileName}:`,
           error.message
         );
-        throw error;
-      }
-    },
-
-    /**
-     * Save the current store to the default.ttl file
-     * @param {object} options - Save options
-     * @returns {Promise<{path: string, bytes: number}>} Save result
-     */
-    async saveDefaultGraph(options = {}) {
-      const { validate = true, createBackup = true, prefixes } = options;
-
-      try {
-        const turtleContent = await persistence.serializeStore(store, {
-          prefixes,
-        });
-        const result = await persistence.writeDefaultGraph(
-          graphDir,
-          turtleContent,
-          {
-            validate,
-            createBackup,
-          }
-        );
-
-        console.log(
-          `✅ Default graph saved to: ${result.path} (${result.bytes} bytes)`
-        );
-        return result;
-      } catch (error) {
-        console.error(`❌ Failed to save default graph:`, error.message);
-        throw error;
-      }
-    },
-
-    /**
-     * Load the default.ttl file into the current store
-     * @param {object} options - Load options
-     * @returns {Promise<{path: string, quads: number}|null>} Load result or null if not found
-     */
-    async loadDefaultGraph(options = {}) {
-      const { validate = true, merge = true } = options;
-
-      try {
-        const turtleContent = await persistence.readDefaultGraph(graphDir, {
-          validate,
-        });
-        if (!turtleContent) {
-          console.log(`ℹ️  No default.ttl file found in ${graphDir}`);
-          return null;
-        }
-
-        const loadedStore = persistence.parseTurtle(turtleContent, {
-          baseIRI: options.baseIRI || config.graph.baseIRI,
-        });
-
-        if (merge) {
-          // Merge with existing store
-          for (const quad of loadedStore) {
-            store.add(quad);
-          }
-        } else {
-          // Replace existing store
-          store.removeQuads([...store]);
-          for (const quad of loadedStore) {
-            store.add(quad);
-          }
-        }
-
-        const quads = store.size;
-        const defaultPath = join(graphDir, "default.ttl");
-        console.log(
-          `✅ Default graph loaded from: ${defaultPath} (${quads} quads)`
-        );
-        return { path: defaultPath, quads };
-      } catch (error) {
-        console.error(`❌ Failed to load default graph:`, error.message);
-        throw error;
-      }
-    },
-
-    /**
-     * Initialize default graph with template content if it doesn't exist
-     * @param {object} options - Initialization options
-     * @returns {Promise<{path: string, bytes: number, created: boolean}>} Initialization result
-     */
-    async initializeDefaultGraph(options = {}) {
-      const { templatePath, validate = true } = options;
-
-      try {
-        // Check if default.ttl already exists
-        const defaultPath = join(graphDir, "default.ttl");
-        const exists = await persistence.fileExists(defaultPath);
-
-        if (exists) {
-          console.log(`ℹ️  Default graph already exists: ${defaultPath}`);
-          const stats = await persistence.getFileStats(defaultPath);
-          return { path: defaultPath, bytes: stats.size, created: false };
-        }
-
-        // Create default.ttl from template
-        let templateContent;
-        if (templatePath) {
-          templateContent = await readFile(templatePath, "utf8");
-        } else {
-          // Use built-in default template
-          templateContent = `# GitVan Default Graph
-@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-@prefix dct: <http://purl.org/dc/terms/> .
-@prefix gv: <https://gitvan.dev/ontology#> .
-
-<https://gitvan.dev/project/> a gv:Project ;
-    dct:title "GitVan Project" ;
-    dct:description "A GitVan-powered development automation project" ;
-    dct:created "${new Date().toISOString()}"^^xsd:dateTime ;
-    gv:version "1.0.0" ;
-    gv:status gv:Active .
-
-<https://gitvan.dev/graph/default/> a gv:Graph ;
-    dct:title "Default Graph" ;
-    dct:description "Default graph location for GitVan operations" ;
-    gv:graphType gv:DefaultGraph ;
-    gv:baseIRI "https://gitvan.dev/graph/default/" ;
-    gv:persistenceEnabled true ;
-    gv:autoSave true .`;
-        }
-
-        const result = await persistence.writeDefaultGraph(
-          graphDir,
-          templateContent,
-          {
-            validate,
-          }
-        );
-
-        console.log(
-          `✅ Default graph initialized: ${result.path} (${result.bytes} bytes)`
-        );
-        return { ...result, created: true };
-      } catch (error) {
-        console.error(`❌ Failed to initialize default graph:`, error.message);
         throw error;
       }
     },
@@ -513,11 +334,12 @@ export async function useTurtle(options = {}) {
      */
     async listGraphFiles() {
       try {
-        const files = await persistence.listTurtleFiles(graphDir);
-        console.log(`📁 Found ${files.length} Turtle files in ${graphDir}`);
-        return files;
+        const allFiles = await readdir(graphDir);
+        const turtleFiles = allFiles.filter((file) => file.endsWith(".ttl"));
+        console.log(`Found ${turtleFiles.length} Turtle files in ${graphDir}`);
+        return turtleFiles;
       } catch (error) {
-        console.error(`❌ Failed to list graph files:`, error.message);
+        console.error(`Failed to list graph files:`, error.message);
         throw error;
       }
     },
@@ -527,15 +349,7 @@ export async function useTurtle(options = {}) {
      * @returns {object} Store statistics
      */
     getStoreStats() {
-      return persistence.rdfEngine.getStats(store);
-    },
-
-    /**
-     * Get the persistence helper instance
-     * @returns {PersistenceHelper} Persistence helper
-     */
-    getPersistenceHelper() {
-      return persistence;
+      return getStoreStats(store);
     },
   };
 }

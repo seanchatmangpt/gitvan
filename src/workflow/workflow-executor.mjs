@@ -6,14 +6,19 @@ import { WorkflowParser } from "./workflow-parser.mjs";
 import { DAGPlanner } from "./dag-planner.mjs";
 import { StepRunner } from "./step-runner.mjs";
 import { ContextManager } from "./context-manager.mjs";
-import { useGraph } from "../composables/graph.mjs";
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
-import pkg from "n3";
-const { Store, Parser } = pkg;
+import { createKnowledgeSubstrateCore, parseTurtle } from "unrdf";
 
 /**
  * Main workflow executor that orchestrates the entire workflow lifecycle
+ *
+ * Uses KnowledgeSubstrateCore for:
+ * - Transaction-based workflow changes
+ * - OTEL observability on all operations
+ * - Knowledge hooks for reactive behavior
+ * - Federated queries across workflow definitions
+ * - SHACL validation of workflow schemas
  */
 export class WorkflowExecutor {
   /**
@@ -35,8 +40,8 @@ export class WorkflowExecutor {
     this.runner = new StepRunner({ logger: this.logger });
     this.contextManager = new ContextManager({ logger: this.logger });
 
-    // Initialize RDF components
-    this.graph = null;
+    // Initialize knowledge core (high-level abstraction)
+    this.core = null;
   }
 
   /**
@@ -116,20 +121,18 @@ export class WorkflowExecutor {
   }
 
   /**
-   * Initialize RDF components by loading workflow data directly as JavaScript
+   * Initialize KnowledgeSubstrateCore with full capabilities
    * @private
    */
   async _initializeRDFComponents() {
-    if (!this.graph) {
-      // Use only useGraph composable
-      const { useGraph } = await import("../composables/graph.mjs");
-
-      // Create a simple store for the graph
-      const { Store } = await import("n3");
-      const store = new Store();
-
-      this.graph = await useGraph(store);
-      this.logger.info(`📊 Initialized graph with useGraph`);
+    if (!this.core) {
+      // Create KnowledgeSubstrateCore - handles store, transactions, hooks, observability
+      this.core = await createKnowledgeSubstrateCore({
+        enableObservability: true,
+        enableKnowledgeHookManager: true,
+        enableTransactionManager: true,
+      });
+      this.logger.info(`📊 Initialized KnowledgeSubstrateCore`);
     }
   }
 
@@ -215,7 +218,8 @@ export class WorkflowExecutor {
   async _parseWorkflow(workflowId) {
     this.logger.info(`📖 Parsing workflow: ${workflowId}`);
 
-    const workflow = await this.parser.parseWorkflow(this.graph, workflowId);
+    // Use core.store for parser compatibility
+    const workflow = await this.parser.parseWorkflow(this.core.store, workflowId);
 
     if (!workflow) {
       throw new Error(`Workflow not found: ${workflowId}`);
@@ -234,7 +238,8 @@ export class WorkflowExecutor {
       `📋 Creating execution plan for ${workflow.steps.length} steps`
     );
 
-    const plan = await this.planner.createPlan(workflow.steps, this.graph);
+    // Use core.store for planner compatibility
+    const plan = await this.planner.createPlan(workflow.steps, this.core.store);
 
     this.logger.info(`📋 Created execution plan with ${plan.length} steps`);
     return plan;
@@ -268,11 +273,12 @@ export class WorkflowExecutor {
       this.logger.info(`⚡ Executing step ${i + 1}/${plan.length}: ${step.id}`);
 
       try {
+        // Pass core for full capabilities (OTEL, transactions, hooks)
         const stepResult = await this.runner.executeStep(
           step,
           this.contextManager,
-          this.graph,
-          this.turtle
+          this.core,
+          null
         );
 
         results.push(stepResult);
@@ -358,10 +364,27 @@ export class WorkflowExecutor {
    * @returns {object} Execution statistics
    */
   getStats() {
+    // Use core's built-in metrics when available
+    const coreMetrics = this.core?.getMetrics?.() || {};
+    const coreStatus = this.core?.getStatus?.() || {};
+
     return {
-      workflowsLoaded: this.turtle ? this.turtle.files.length : 0,
+      storeSize: this.core?.store?.size || 0,
       contextInitialized: !!this.contextManager,
       lastExecution: this.contextManager?.getLastExecution() || null,
+      coreInitialized: coreStatus.initialized || false,
+      components: coreStatus.components || {},
+      metrics: coreMetrics,
     };
+  }
+
+  /**
+   * Cleanup executor resources
+   */
+  async cleanup() {
+    if (this.core) {
+      await this.core.cleanup?.();
+      this.core = null;
+    }
   }
 }

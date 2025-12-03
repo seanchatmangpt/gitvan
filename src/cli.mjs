@@ -11,7 +11,6 @@
 import { defineCommand, runMain } from "citty";
 
 // Import all Citty-based commands
-import { graphCommand } from "./cli/commands/graph.mjs";
 import { daemonCommand } from "./cli/commands/daemon.mjs";
 import { eventCommand } from "./cli/commands/event.mjs";
 import { cronCommand } from "./cli/commands/cron.mjs";
@@ -46,12 +45,11 @@ import { chatCommand } from "./cli/chat.mjs";
 export const cli = defineCommand({
   meta: {
     name: "gitvan",
-    version: "3.0.0",
+    version: "3.1.0",
     description: "Git-native development automation platform",
     usage: "gitvan <command> [options]",
     examples: [
       "gitvan init",
-      "gitvan graph save my-data --backup true",
       "gitvan daemon start --worktrees all",
       'gitvan event simulate commit --files "src/**"',
       "gitvan cron list --verbose",
@@ -77,7 +75,6 @@ export const cli = defineCommand({
   },
   subCommands: {
     // Core GitVan commands (properly implemented with Citty)
-    graph: graphCommand,
     daemon: daemonCommand,
     event: eventCommand,
     cron: cronCommand,

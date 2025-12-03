@@ -18,8 +18,7 @@
  */
 
 import { z } from "zod";
-import pkg from "n3";
-const { N3 } = pkg;
+// Note: N3 types are now provided by unrdf
 
 /**
  * RDF to Zod Converter

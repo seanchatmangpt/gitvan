@@ -3,13 +3,12 @@
  * Handles file system operations for graph persistence
  *
  * This module provides the persistence layer for the GitVan graph architecture,
- * implementing the "default graph location with save/load" feature as described
- * in the C4 model.
+ * implementing the "default graph location with save/load" feature.
  */
 
 import { promises as fs } from "node:fs";
 import { join, dirname } from "pathe";
-import { RdfEngine } from "../engines/RdfEngine.mjs";
+import { parseTurtle, toTurtle } from "unrdf";
 
 /**
  * Persistence Helper Class
@@ -22,7 +21,6 @@ import { RdfEngine } from "../engines/RdfEngine.mjs";
  */
 export class PersistenceHelper {
   constructor(options = {}) {
-    this.rdfEngine = new RdfEngine(options.rdfEngine || {});
     this.logger = options.logger || console;
     this.atomicWrites = options.atomicWrites !== false;
   }
@@ -215,22 +213,22 @@ export class PersistenceHelper {
    */
   async validateTurtleContent(content) {
     try {
-      // Use RdfEngine to parse and validate
-      this.rdfEngine.parseTurtle(content);
+      // Use unrdf's parseTurtle to validate
+      parseTurtle(content);
     } catch (error) {
       throw new Error(`Invalid Turtle content: ${error.message}`);
     }
   }
 
   /**
-   * Serialize N3 Store to Turtle string
-   * @param {import('n3').Store} store - N3 Store to serialize
+   * Serialize Store to Turtle string
+   * @param {Store} store - Store to serialize
    * @param {object} options - Serialization options
    * @returns {Promise<string>} Turtle string
    */
   async serializeStore(store, options = {}) {
     try {
-      return await this.rdfEngine.serializeTurtle(store, options);
+      return await toTurtle(store, options);
     } catch (error) {
       this.logger.error("Failed to serialize store to Turtle:", error);
       throw new Error(`Failed to serialize store to Turtle: ${error.message}`);
@@ -238,14 +236,14 @@ export class PersistenceHelper {
   }
 
   /**
-   * Parse Turtle string to N3 Store
+   * Parse Turtle string to Store
    * @param {string} turtle - Turtle string to parse
    * @param {object} options - Parse options
-   * @returns {import('n3').Store} N3 Store
+   * @returns {Store} Store
    */
   parseTurtle(turtle, options = {}) {
     try {
-      return this.rdfEngine.parseTurtle(turtle, options);
+      return parseTurtle(turtle, options);
     } catch (error) {
       this.logger.error("Failed to parse Turtle to store:", error);
       throw new Error(`Failed to parse Turtle to store: ${error.message}`);

@@ -240,13 +240,12 @@ export const graphMigrationJob = defineGraphJob({
     const targetFormat = inputs.targetFormat || "nquads";
     const migrationData = inputs.data || "";
 
-    // Perform migration
+    // Perform migration using unrdf
     let migratedData;
     if (sourceFormat === "turtle" && targetFormat === "nquads") {
-      const parser = new (await import("n3")).Parser();
-      const quads = parser.parse(migrationData);
-      const writer = new (await import("n3")).Writer({ format: "N-Quads" });
-      migratedData = writer.quadsToString(quads);
+      const { parseTurtle, toNQuads } = await import("unrdf");
+      const store = parseTurtle(migrationData);
+      migratedData = toNQuads(store);
     } else {
       migratedData = migrationData; // No conversion needed
     }

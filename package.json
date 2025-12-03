@@ -1,7 +1,7 @@
 {
   "name": "gitvan",
-  "version": "3.0.1",
-  "description": "Git-native development automation built on unrdf knowledge graphs",
+  "version": "3.1.0",
+  "description": "Git-native development automation platform",
   "author": "GitVan Team",
   "license": "MIT",
   "type": "module",
@@ -37,7 +37,6 @@
     "@opentelemetry/sdk-node": "^0.208.0",
     "@opentelemetry/sdk-trace-base": "^2.2.0",
     "@opentelemetry/semantic-conventions": "^1.38.0",
-    "@zazuko/env": "^2.2.0",
     "ai": "^3.0.0",
     "c12": "^1.11.0",
     "cacache": "^20.0.3",
@@ -50,11 +49,9 @@
     "hookable": "^5.5.3",
     "inflection": "^3.0.0",
     "js-yaml": "^4.1.0",
-    "jsonld": "^8.3.2",
     "klona": "^2.0.6",
     "lru-cache": "^11.0.2",
     "memfs": "^4.14.0",
-    "n3": "^1.17.0",
     "node-cron": "^3.0.3",
     "nunjucks": "^3.2.4",
     "ollama": "^0.5.11",
@@ -84,11 +81,9 @@
   "keywords": [
     "git",
     "automation",
-    "rdf",
-    "sparql",
-    "knowledge-graph",
     "hooks",
     "workflow",
-    "cli"
+    "cli",
+    "development"
   ]
 }

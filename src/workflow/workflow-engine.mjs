@@ -1,24 +1,29 @@
-import { useGraph } from "../composables/graph.mjs";
-import { useTurtle } from "../composables/turtle.mjs";
+import { createKnowledgeSubstrateCore, parseTurtle } from "unrdf";
 import { useLog } from "../composables/log.mjs";
 import { StepRunner } from "./step-runner.mjs";
 import { ContextManager } from "./context-manager.mjs";
 
 /**
- * WorkflowEngine - Simple engine that loads Turtle files using useGraph
+ * WorkflowEngine - Loads and executes workflows defined in Turtle files
+ *
+ * Uses unrdf's KnowledgeSubstrateCore for:
+ * - Federated queries across all workflow definitions
+ * - SHACL validation of workflow schemas
+ * - Knowledge hooks for reactive workflow management
+ * - Built-in OTEL observability
+ * - Transaction-based changes with audit receipts
  */
 export class WorkflowEngine {
   constructor(options = {}) {
     this.graphDir = options.graphDir || "./workflows";
     this.logger = useLog();
-    this.graph = null;
-    this.turtle = null;
+    this.core = null;
     this.stepRunner = new StepRunner({ logger: this.logger });
     this.contextManager = new ContextManager();
   }
 
   /**
-   * Initialize the engine by loading Turtle files
+   * Initialize the engine by loading Turtle files into KnowledgeSubstrateCore
    */
   async initialize() {
     try {
@@ -26,10 +31,15 @@ export class WorkflowEngine {
         `🚀 Initializing WorkflowEngine with graphDir: ${this.graphDir}`
       );
 
-      // Load Turtle files directly from the specified directory
+      // Create KnowledgeSubstrateCore - handles store, transactions, hooks, observability
+      this.core = await createKnowledgeSubstrateCore({
+        enableObservability: true,
+        enableKnowledgeHookManager: true,
+        enableTransactionManager: true,
+      });
+
       const { readdir, readFile } = await import("node:fs/promises");
       const { join } = await import("node:path");
-      const N3 = await import("n3");
 
       const fileNames = (await readdir(this.graphDir)).filter((f) =>
         f.endsWith(".ttl")
@@ -41,14 +51,16 @@ export class WorkflowEngine {
         }))
       );
 
-      const store = new N3.Store();
-      const parser = new N3.Parser();
+      // Load turtle files into the core's internal store
       for (const file of files) {
         try {
-          store.addQuads(parser.parse(file.content));
+          const fileStore = await parseTurtle(file.content);
+          for (const quad of fileStore) {
+            this.core.store.add(quad);
+          }
         } catch (error) {
           this.logger.warn(
-            `⚠️ Failed to parse turtle file ${file.name}: ${error.message}`
+            `⚠️ Failed to parse ${file.name}: ${error.message}`
           );
         }
       }
@@ -56,10 +68,7 @@ export class WorkflowEngine {
       this.logger.info(
         `📁 Loaded ${files.length} Turtle files from: ${this.graphDir}`
       );
-
-      // Create graph interface using the store
-      this.graph = await useGraph(store);
-      this.logger.info(`📊 Created graph interface`);
+      this.logger.info(`📊 Knowledge graph initialized with ${this.core.store.size} quads`);
 
       return this;
     } catch (error) {
@@ -72,13 +81,13 @@ export class WorkflowEngine {
    * List all workflows found in Turtle files
    */
   async listWorkflows() {
-    if (!this.graph) {
+    if (!this.core) {
       await this.initialize();
     }
 
     try {
-      // Query for all hooks using SPARQL
-      const query = `
+      // Query for all hooks using SPARQL via KnowledgeSubstrateCore
+      const sparql = `
         PREFIX gh: <http://example.org/git-hooks#>
         PREFIX gh2: <https://gitvan.dev/graph-hook#>
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -94,12 +103,13 @@ export class WorkflowEngine {
         }
       `;
 
-      const results = await this.graph.query(query);
-      this.logger.info(`📋 Found ${results.results?.length || 0} workflows`);
+      // Use core.query() - includes OTEL spans automatically
+      const results = await this.core.query({ query: sparql });
+      this.logger.info(`📋 Found ${results.length} workflows`);
 
-      return (results.results || []).map((result) => ({
-        id: result.workflow.value,
-        title: result.title.value,
+      return results.map((result) => ({
+        id: result.workflow,
+        title: result.title,
         predicate: null,
         pipelineCount: 0,
       }));
@@ -113,15 +123,15 @@ export class WorkflowEngine {
    * Execute a workflow by ID
    */
   async executeWorkflow(workflowId) {
-    if (!this.graph) {
+    if (!this.core) {
       await this.initialize();
     }
 
     try {
       this.logger.info(`🎯 Executing workflow: ${workflowId}`);
 
-      // Find the workflow hook using SPARQL
-      const query = `
+      // Find the workflow hook using SPARQL via core
+      const sparql = `
         PREFIX gh: <http://example.org/git-hooks#>
         PREFIX gh2: <https://gitvan.dev/graph-hook#>
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -143,14 +153,14 @@ export class WorkflowEngine {
         }
       `;
 
-      const results = await this.graph.query(query);
+      const results = await this.core.query({ query: sparql });
 
-      if (!results.results || results.results.length === 0) {
+      if (!results || results.length === 0) {
         throw new Error(`Workflow not found: ${workflowId}`);
       }
 
-      const workflowTitle = results.results[0].title.value;
-      const pipelineId = results.results[0].pipeline.value;
+      const workflowTitle = results[0].title;
+      const pipelineId = results[0].pipeline;
       this.logger.info(`✅ Found workflow: ${workflowTitle}`);
 
       // Parse workflow steps from the pipeline
@@ -166,8 +176,8 @@ export class WorkflowEngine {
           const result = await this.stepRunner.executeStep(
             step,
             this.contextManager,
-            this.graph,
-            null, // No turtle needed since we have graph
+            this.core, // Pass core instead of raw store
+            null,
             {}
           );
 
@@ -203,8 +213,8 @@ export class WorkflowEngine {
    */
   async _parseWorkflowSteps(pipelineId) {
     try {
-      // Query for all steps in the pipeline
-      const query = `
+      // Query for all steps in the pipeline via core
+      const sparql = `
         PREFIX op: <http://example.org/operations#>
         PREFIX op2: <https://gitvan.dev/op#>
         PREFIX gv: <http://example.org/gitvan#>
@@ -229,13 +239,13 @@ export class WorkflowEngine {
         }
       `;
 
-      const results = await this.graph.query(query);
+      const results = await this.core.query({ query: sparql });
       const stepMap = new Map();
 
       // Group results by step
-      for (const result of results.results) {
-        const stepId = result.step.value;
-        const stepType = result.stepType.value;
+      for (const result of results) {
+        const stepId = result.step;
+        const stepType = result.stepType;
 
         if (!stepMap.has(stepId)) {
           // Extract step type (e.g., gv:FileStep -> file)
@@ -257,14 +267,14 @@ export class WorkflowEngine {
         // Add configuration properties
         if (result.configProp && result.configValue) {
           let prop;
-          if (result.configProp.value.includes("#")) {
+          if (result.configProp.includes("#")) {
             // Handle full URIs like http://example.org/gitvan#template
-            prop = result.configProp.value.split("#")[1];
+            prop = result.configProp.split("#")[1];
           } else {
             // Handle prefixed names like gv:template
-            prop = result.configProp.value.split(":")[1];
+            prop = result.configProp.split(":")[1];
           }
-          const value = result.configValue.value;
+          const value = result.configValue;
 
           // Map property names to expected step handler properties
           const mappedProp = this._mapPropertyName(
@@ -317,39 +327,87 @@ export class WorkflowEngine {
     return mappings[stepType]?.[turtleProp] || turtleProp;
   }
 
-  async query(sparqlQuery) {
-    if (!this.graph) {
+  /**
+   * Execute a custom query against the knowledge graph
+   */
+  async runQuery(sparqlQuery) {
+    if (!this.core) {
       await this.initialize();
     }
 
     try {
-      this.logger.info(`🔍 Executing SPARQL query`);
-      const results = await this.graph.query(sparqlQuery);
+      this.logger.info(`🔍 Executing query`);
+      const results = await this.core.query({ query: sparqlQuery });
       this.logger.info(
-        `✅ Query completed, ${results.results?.length || 0} results`
+        `✅ Query completed, ${Array.isArray(results) ? results.length : 1} results`
       );
       return results;
     } catch (error) {
-      this.logger.error(`❌ SPARQL query failed:`, error);
+      this.logger.error(`❌ Query failed:`, error);
       throw error;
     }
   }
 
   /**
-   * Get graph statistics
+   * Validate workflow definitions against SHACL shapes
+   * @param {string} shapesGraph - SHACL shapes as Turtle string
    */
-  async getStats() {
-    if (!this.graph) {
+  async validate(shapesGraph) {
+    if (!this.core) {
       await this.initialize();
     }
 
     try {
-      const stats = await this.graph.getStats();
-      this.logger.info(`📊 Graph stats: ${stats.tripleCount} triples`);
+      this.logger.info(`🔍 Validating workflow definitions`);
+      const report = await this.core.validate({
+        dataGraph: this.core.store,
+        shapesGraph,
+      });
+      this.logger.info(
+        `✅ Validation ${report.conforms ? "passed" : "failed"}`
+      );
+      return report;
+    } catch (error) {
+      this.logger.error(`❌ Validation failed:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get knowledge graph statistics and metrics
+   */
+  async getStats() {
+    if (!this.core) {
+      await this.initialize();
+    }
+
+    try {
+      // Get both store stats and core metrics
+      const coreStatus = this.core.getStatus();
+      const coreMetrics = this.core.getMetrics();
+
+      const stats = {
+        quadCount: this.core.store.size,
+        initialized: coreStatus.initialized,
+        components: coreStatus.components,
+        metrics: coreMetrics,
+      };
+
+      this.logger.info(`📊 Knowledge graph: ${stats.quadCount} quads`);
       return stats;
     } catch (error) {
-      this.logger.error(`❌ Failed to get graph stats:`, error);
+      this.logger.error(`❌ Failed to get stats:`, error);
       throw error;
+    }
+  }
+
+  /**
+   * Cleanup engine resources
+   */
+  async cleanup() {
+    if (this.core) {
+      await this.core.cleanup();
+      this.core = null;
     }
   }
 }

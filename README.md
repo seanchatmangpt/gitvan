@@ -1,292 +1,331 @@
-# GitVan v3.0.0
+# GitVan v3.1.0
 
-**Git-native development automation built on unrdf knowledge graphs.**
+**Git-native workflow automation. Simple to use. Powerful underneath.**
 
-GitVan transforms Git into a runtime environment for development automation with intelligent Knowledge Hooks driven by SPARQL predicates. Built on [unrdf](https://github.com/zazuko/unrdf) for production-grade RDF/SPARQL capabilities.
+GitVan brings Git into your workflow system. Define workflows once, trigger them on Git events (commit, push, merge), track performance automatically. All in `.ttl` files that live in your repo.
+
+**The innovation**: Behind the scenes, GitVan uses semantic graph technology to unlock capabilities traditional workflow systems can't provide (federated queries, reactive hooks, composable workflows). But you'll never need to learn that - it's completely hidden.
+
+---
+
+## Quick Start (1 minute)
+
+```bash
+# Install globally
+npm install -g gitvan
+
+# Initialize in your project
+gitvan workflow init
+
+# Create your first workflow
+cat > .gitvan/workflows/hello.ttl << 'EOF'
+@prefix gh: <http://example.org/git-hooks#> .
+@prefix op: <http://example.org/operations#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+gh:HelloWorld a gh:Hook ;
+  rdfs:label "Hello World" ;
+  op:hasPipeline [
+    op:hasStep [ a op:CLIStep ; op:command "echo Hello, GitVan!" ]
+  ] .
+EOF
+
+# List workflows
+gitvan workflow list
+
+# Run it
+gitvan workflow run HelloWorld
+```
+
+---
+
+## Documentation Structure
+
+Choose your starting point:
+
+### 📚 [Tutorials](docs/TUTORIALS.md)
+**Learning by doing.** Hands-on guides to get you productive in 30 minutes.
+- Your first workflow (10 min)
+- Multi-step workflows (15 min)
+- Git hooks automation (15 min)
+- Performance monitoring (10 min)
+
+### 🎯 [How-To Guides](docs/HOW-TO-GUIDES.md)
+**Solve specific problems.** Practical recipes for common tasks.
+- Add a custom workflow
+- Parallelize steps
+- Query workflow history
+- Set up SLOs and alerts
+- Compose workflows
+
+### 📖 [Reference](docs/REFERENCE.md)
+**Look things up.** Complete specifications of commands, formats, and APIs.
+- CLI commands (all options)
+- Workflow file format (all properties)
+- Step types (all available steps)
+- Configuration (all settings)
+
+### 💡 [Explanation](docs/EXPLANATION.md)
+**Understand why.** Deep knowledge about architecture and design.
+- Why GitVan uses RDF (hidden)
+- 80/20 core components
+- RDF capabilities vs JSON/YAML
+- Performance characteristics
+- Security implications
+
+### 🛡️ [Architecture](docs/80-20-ARCHITECTURE.md)
+**6 core components, 85% value.** How GitVan's innovation unlocks powerful capabilities.
+
+### ⚠️ [Risk Analysis](docs/FMEA-RISK-ANALYSIS.md)
+**Lean Six Sigma quality.** Failure mode analysis showing all risks are mitigated.
+
+### 🚫 [Error Prevention](docs/POKA-YOKE.md)
+**Design for safety.** 10 Poka-Yoke mechanisms that make failures impossible.
+
+---
 
 ## Installation
 
 ```bash
-# Global installation
+# Global installation (recommended)
 npm install -g gitvan
 
-# Local installation
+# Local installation (in project)
 npm install gitvan
 
 # Or with pnpm
-pnpm add gitvan
+pnpm add -g gitvan
 ```
 
-## Quick Start
+**Requirements**: Node.js 18+
 
-```bash
-# Initialize GitVan in your project
-gitvan init --name "my-project"
+---
 
-# Complete setup
-gitvan setup
+## Core Concepts
 
-# List available hooks
-gitvan hooks list
+### Workflows
 
-# Evaluate all hooks
-gitvan hooks evaluate --verbose
-
-# Run a workflow
-gitvan workflow run data-processing
-```
-
-## Core Features
-
-### Knowledge Hook Engine
-
-Autonomous hooks that react to changes in your knowledge graph using SPARQL predicates:
+**What**: A sequence of steps that runs on Git events or on-demand.
 
 ```turtle
-@prefix gh: <https://gitvan.dev/graph-hook#> .
-@prefix ex: <http://example.org/> .
-
-ex:version-change-hook a gh:Hook ;
-    gh:predicate ex:version-change-predicate ;
-    gh:workflow ex:version-workflow .
-
-ex:version-change-predicate a gh:ResultDelta ;
-    gh:queryText """
-        SELECT ?project ?version WHERE {
-            ?project a gv:Project ;
-                     gv:version ?version .
-        }
-    """ .
+gh:MyWorkflow a gh:Hook ;
+  rdfs:label "My Workflow" ;
+  op:hasPipeline [ op:hasStep step-1 ; op:hasStep step-2 ] .
 ```
 
-**Predicate Types:**
-- `ResultDelta` - Detect changes in query results between states
-- `ASK` - Boolean conditions for simple triggers
-- `SELECTThreshold` - Metric-based triggers with comparison operators
-- `SHACLAllConform` - Shape-based validation triggers
+**Where**: `.ttl` files in `.gitvan/workflows/`
 
-### Workflow Engine
+**Triggers**: `git commit`, `git push`, `git merge`, or manual (`gitvan workflow run`)
 
-Execute multi-step workflows with dependency management:
+### Steps
+
+**What**: Individual tasks (run shell command, query, API call, etc.)
+
+**Types:**
+- `CLIStep` - Execute shell command
+- `TemplateStep` - Use predefined template
+- `SPARQLStep` - Query workflow graph
+- `HTTPStep` - Make API request
+- `FileStep` - Read/write files
+
+### Git Integration
+
+**What**: Workflows trigger automatically on Git events.
 
 ```bash
-# List workflows
-gitvan workflow list
-
-# Run a workflow
-gitvan workflow run my-workflow
-
-# Validate workflow definition
-gitvan workflow validate my-workflow
-
-# View execution history
-gitvan workflow history
+gitvan hook install pre-commit MyWorkflow
+# Now MyWorkflow runs before every commit
 ```
 
-**Step Types:**
-- `sparql` - Query knowledge graph
-- `template` - Generate content with Nunjucks
-- `file` - Read/write/copy/move files
-- `http` - API requests
-- `cli` - Command execution
+### Performance Monitoring
 
-### Git-Native I/O
+**What**: Automatic SLO tracking and metrics collection.
 
-Enterprise-grade Git operations with concurrency control:
-
-- **LockManager** - Distributed locking for safe concurrent operations
-- **QueueManager** - Operation queuing with priority management
-- **SnapshotStore** - State tracking and rollback capabilities
-- **WorkerPool** - Non-blocking Git operations
-- **ReceiptWriter** - Comprehensive audit logging
-
-### RDF Engine
-
-Built on [unrdf](https://github.com/zazuko/unrdf) with GitVan-specific extensions:
-
-```javascript
-import { RdfEngine } from 'gitvan';
-
-const engine = new RdfEngine({ deterministic: true });
-
-// SPARQL queries
-const results = await engine.query(store, `
-  SELECT ?project ?version WHERE {
-    ?project a gv:Project ;
-             gv:version ?version .
-  }
-`);
-
-// SHACL validation
-const report = await engine.validateShacl(dataStore, shapesStore);
-
-// N3 reasoning
-const inferred = await engine.reason(dataStore, rulesStore);
+```turtle
+gh:Deploy a gh:Hook ;
+  perf:sloTarget 300000 ;      # 5 minute target
+  perf:sloP99 360000 .         # p99 under 6 minutes
 ```
 
-## CLI Commands
+---
 
-```
-gitvan <command>
+## Common Tasks
 
-Commands:
-  init          Initialize GitVan in a directory
-  setup         Complete GitVan setup
-  boot          Start GitVan runtime
+| Task | Command |
+|------|---------|
+| List workflows | `gitvan workflow list` |
+| Run a workflow | `gitvan workflow run MyWorkflow` |
+| View performance | `gitvan workflow stats MyWorkflow` |
+| Check history | `gitvan workflow history MyWorkflow` |
+| Install Git hook | `gitvan hook install pre-commit MyWorkflow` |
+| View Git hooks | `gitvan hook list` |
+| Validate workflow | `gitvan workflow validate MyWorkflow` |
+| Create alert | `gitvan alert create --workflow X --metric Y --threshold Z` |
 
-  hooks         Knowledge Hook management
-    list        List available hooks
-    evaluate    Evaluate all hooks
-    validate    Validate hook definition
-    stats       Hook execution statistics
+See [How-To Guides](docs/HOW-TO-GUIDES.md) for detailed instructions.
 
-  workflow      Workflow management
-    list        List available workflows
-    run         Execute a workflow
-    validate    Validate workflow definition
-    history     View execution history
+---
 
-  graph         RDF graph operations
-    query       Run SPARQL query
-    load        Load RDF data
-    export      Export graph data
+## Examples
 
-  pack          Pack management
-    list        List available packs
-    install     Install a pack
-    search      Search for packs
+### Example 1: Lint on Commit
 
-  daemon        Background processing
-    start       Start daemon
-    stop        Stop daemon
-    status      Daemon status
-```
+```turtle
+@prefix gh: <http://example.org/git-hooks#> .
+@prefix op: <http://example.org/operations#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
-## Composables
-
-Vue.js-style composables for Git operations:
-
-```javascript
-import {
-  useGit,
-  useGraph,
-  useTurtle,
-  useTemplate,
-  useJob,
-  usePack
-} from 'gitvan';
-
-// Git operations
-const git = useGit({ cwd: './my-repo' });
-await git.commit('feat: add feature');
-await git.push();
-
-// RDF graph operations
-const graph = useGraph(store);
-const results = await graph.query('SELECT * WHERE { ?s ?p ?o }');
-
-// Template rendering
-const template = useTemplate();
-const output = await template.render('report.njk', { data });
-
-// Job scheduling
-const job = useJob('daily-backup');
-await job.schedule('0 0 * * *');
+gh:LintOnCommit a gh:Hook ;
+  rdfs:label "Lint on Commit" ;
+  op:hasPipeline [
+    op:hasStep [
+      a op:CLIStep ;
+      rdfs:label "Lint code" ;
+      op:command "npm run lint" ;
+      op:timeout 30000 ;
+      op:failOn "error"
+    ]
+  ] .
 ```
 
-## Architecture
-
-```
-src/
-  cli.mjs              # Citty-based CLI
-  index.mjs            # Main exports
-
-  composables/         # Vue.js-style composables
-    git.mjs            # Git operations
-    graph.mjs          # RDF graph operations
-    turtle.mjs         # Turtle parsing
-    template.mjs       # Nunjucks templates
-    ...
-
-  engines/
-    RdfEngine.mjs      # Extends unrdf
-
-  git-native/          # Git I/O layer
-    GitNativeIO.mjs
-    LockManager.mjs
-    QueueManager.mjs
-    SnapshotStore.mjs
-    WorkerPool.mjs
-    ReceiptWriter.mjs
-
-  hooks/               # Knowledge Hook Engine
-    HookOrchestrator.mjs
-    HookParser.mjs
-    PredicateEvaluator.mjs
-
-  workflow/            # Workflow Engine
-    WorkflowEngine.mjs
-    WorkflowExecutor.mjs
-    dag-planner.mjs
-    step-runner.mjs
+Register:
+```bash
+gitvan hook install pre-commit LintOnCommit
 ```
 
-## Configuration
+### Example 2: Multi-Step Pipeline
 
-GitVan uses [c12](https://github.com/unjs/c12) for configuration:
+```turtle
+gh:BuildAndDeploy a gh:Hook ;
+  rdfs:label "Build and Deploy" ;
+  op:hasPipeline [
+    op:hasStep gh:build ;
+    op:hasStep gh:test ;
+    op:hasStep gh:deploy
+  ] .
 
-```javascript
-// gitvan.config.mjs
-export default {
-  // Graph directory for Turtle files
-  graphDir: './hooks',
+gh:build a op:CLIStep ;
+  op:command "npm run build" ;
+  op:timeout 60000 .
 
-  // Workflow directory
-  workflowDir: './workflows',
+gh:test a op:CLIStep ;
+  op:command "npm test" ;
+  op:timeout 120000 ;
+  op:dependsOn gh:build .
 
-  // Pack registry
-  registry: 'https://registry.gitvan.dev',
-
-  // RDF engine options
-  rdf: {
-    deterministic: true,
-    baseIRI: 'https://example.org/'
-  }
-};
+gh:deploy a op:CLIStep ;
+  op:command "npm run deploy" ;
+  op:timeout 180000 ;
+  op:dependsOn gh:test .
 ```
+
+---
+
+## What Makes GitVan Different
+
+### 1. Git-Native
+Workflows live in your repo as `.ttl` files. Version them with Git, review in PRs.
+
+### 2. Queryable
+Ask "Which workflows use Docker?" → One query, instant answer. JSON/YAML requires manual scanning.
+
+### 3. Composable
+Combine workflows into larger workflows without duplication.
+
+### 4. Reactive
+Workflows automatically trigger based on state changes, not just Git events.
+
+### 5. Performance-Focused
+SLO tracking and performance metrics built-in from day one.
+
+### 6. Audit Trail
+Every workflow change is immutably recorded with full provenance.
+
+---
+
+## Project Structure
+
+```
+.gitvan/
+├── workflows/           # Your workflow definitions (.ttl files)
+│   ├── build.ttl
+│   ├── test.ttl
+│   ├── deploy.ttl
+│   └── lint.ttl
+├── config.yaml         # GitVan configuration
+└── hooks/              # Git hook symlinks (auto-generated)
+    ├── pre-commit
+    ├── post-commit
+    └── pre-push
+```
+
+---
+
+## Getting Help
+
+- **[Tutorials](docs/TUTORIALS.md)** - Step-by-step learning
+- **[How-To Guides](docs/HOW-TO-GUIDES.md)** - Specific problem-solving
+- **[Reference](docs/REFERENCE.md)** - Complete specifications
+- **[Explanation](docs/EXPLANATION.md)** - Conceptual understanding
+- **`gitvan --help`** - CLI help
+
+---
+
+## Performance
+
+| Operation | Typical Time |
+|-----------|--------------|
+| List workflows | 5ms |
+| Run workflow (setup) | 50ms |
+| Query execution | < 10ms |
+| Audit trail write | 5ms |
+| Hook execution | 0.2ms (p50), 2ms (p99) |
+
+See [80/20 Architecture](docs/80-20-ARCHITECTURE.md) for detailed benchmarks.
+
+---
+
+## Security & Reliability
+
+✓ **Immutable audit trail** - Every change tracked and signed
+✓ **Sandboxed execution** - Workflows cannot crash system
+✓ **Pre-execution validation** - Invalid workflows caught before running
+✓ **Atomic transactions** - All-or-nothing workflow changes
+✓ **Error isolation** - Single bad workflow doesn't affect others
+✓ **Concurrent write protection** - Git serializes modifications
+
+See [Poka-Yoke](docs/POKA-YOKE.md) for 10 error-prevention mechanisms.
+
+---
 
 ## Development
 
 ```bash
-# Clone repository
+# Clone and install
 git clone https://github.com/gitvan/gitvan.git
 cd gitvan
-
-# Install dependencies
-pnpm install
+npm install
 
 # Run tests
-pnpm test
+npm test
 
-# Run CLI locally
+# Build
+npm run build
+
+# Local CLI
 node src/cli.mjs --help
 ```
 
-## Dependencies
-
-GitVan is built on these excellent projects:
-
-- [unrdf](https://github.com/zazuko/unrdf) - Production-grade RDF engine
-- [citty](https://github.com/unjs/citty) - CLI framework
-- [c12](https://github.com/unjs/c12) - Configuration loader
-- [nunjucks](https://mozilla.github.io/nunjucks/) - Template engine
-- [n3](https://github.com/rdfjs/N3.js) - RDF parsing/serialization
+---
 
 ## License
 
-MIT License - see [LICENSE](./LICENSE) for details.
+MIT - See [LICENSE](LICENSE)
+
+---
 
 ## Links
 
 - **GitHub**: [github.com/gitvan/gitvan](https://github.com/gitvan/gitvan)
 - **npm**: [npmjs.com/package/gitvan](https://www.npmjs.com/package/gitvan)
+- **Issues**: [github.com/gitvan/gitvan/issues](https://github.com/gitvan/gitvan/issues)

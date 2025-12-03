@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+#
+# GitVan v3.2.0 — Post-Checkout Hook
+#
+# This hook is invoked after git-checkout when you have checked out a new branch
+# or switched between branches, or after git-clone.
+#
+# Arguments:
+# - $1: Ref of the previous HEAD
+# - $2: Ref of the new HEAD
+# - $3: Flag indicating whether the checkout was a branch checkout (1) or file checkout (0)
+#
+# Use cases:
+# - Environment setup for specific branches
+# - Dependency updates after branch switch
+# - Cleanup of build artifacts
+# - Workspace configuration
+# - Branch-specific notifications
+#
+# Exit codes:
+# - 0: Success
+# - Non-zero: Error (doesn't affect checkout)
+#
+
+set -e
+
+# Configuration
+GITVAN_CLI="${GITVAN_CLI:-gitvan}"
+HOOK_NAME="post-checkout"
+VERBOSE="${GITVAN_VERBOSE:-0}"
+
+# Hook arguments
+PREV_HEAD="$1"
+NEW_HEAD="$2"
+BRANCH_CHECKOUT="$3"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Helper functions
+log_info() {
+  if [ "$VERBOSE" -eq 1 ]; then
+    echo -e "${GREEN}[${HOOK_NAME}]${NC} $1"
+  fi
+}
+
+log_warn() {
+  echo -e "${YELLOW}[${HOOK_NAME}]${NC} $1" >&2
+}
+
+log_error() {
+  echo -e "${RED}[${HOOK_NAME}]${NC} $1" >&2
+}
+
+# Get git information
+get_git_info() {
+  CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+  PREV_BRANCH=$(git name-rev --name-only "$PREV_HEAD" 2>/dev/null || echo "unknown")
+  CHECKOUT_TYPE=$( [ "$BRANCH_CHECKOUT" -eq 1 ] && echo "branch" || echo "file" )
+
+  log_info "Previous: $PREV_BRANCH ($PREV_HEAD)"
+  log_info "Current: $CURRENT_BRANCH ($NEW_HEAD)"
+  log_info "Type: $CHECKOUT_TYPE"
+}
+
+# Main execution
+main() {
+  log_info "Post-checkout hook starting..."
+
+  # Get git information
+  get_git_info
+
+  # Check if GitVan CLI is available
+  if ! command -v "$GITVAN_CLI" &> /dev/null; then
+    log_warn "GitVan CLI not found, skipping knowledge hook evaluation"
+    exit 0
+  fi
+
+  # Capture post-checkout event and evaluate knowledge hooks
+  log_info "Evaluating knowledge hooks..."
+
+  # Create event data JSON
+  EVENT_DATA=$(cat <<EOF
+{
+  "branchName": "$CURRENT_BRANCH",
+  "previousBranch": "$PREV_BRANCH",
+  "previousHead": "$PREV_HEAD",
+  "newHead": "$NEW_HEAD",
+  "checkoutType": "$CHECKOUT_TYPE",
+  "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+}
+EOF
+)
+
+  # Call GitVan CLI to handle the event
+  if ! echo "$EVENT_DATA" | "$GITVAN_CLI" hooks handle-event "$HOOK_NAME" --stdin; then
+    log_warn "Knowledge hook evaluation failed (non-fatal)"
+  fi
+
+  log_info "Post-checkout hook completed"
+  exit 0
+}
+
+# Run main function
+main "$@"

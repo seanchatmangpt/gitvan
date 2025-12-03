@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+#
+# GitVan v3.2.0 — Pre-Push Hook
+#
+# This hook is invoked by git-push before any objects are transferred.
+# It can prevent the push by exiting with a non-zero status.
+#
+# Arguments:
+# - $1: Remote name (e.g., origin)
+# - $2: Remote URL
+#
+# Standard input: Lines of the form:
+# <local ref> <local sha> <remote ref> <remote sha>
+#
+# Use cases:
+# - Running full test suite before push
+# - Build verification
+# - Security scanning
+# - Protected branch validation
+# - Force-push prevention
+#
+# Exit codes:
+# - 0: Allow push
+# - 1: Block push
+#
+
+set -e
+
+# Configuration
+GITVAN_CLI="${GITVAN_CLI:-gitvan}"
+HOOK_NAME="pre-push"
+VERBOSE="${GITVAN_VERBOSE:-0}"
+
+# Hook arguments
+REMOTE_NAME="$1"
+REMOTE_URL="$2"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Helper functions
+log_info() {
+  if [ "$VERBOSE" -eq 1 ]; then
+    echo -e "${GREEN}[${HOOK_NAME}]${NC} $1"
+  fi
+}
+
+log_warn() {
+  echo -e "${YELLOW}[${HOOK_NAME}]${NC} $1" >&2
+}
+
+log_error() {
+  echo -e "${RED}[${HOOK_NAME}]${NC} $1" >&2
+}
+
+# Get git information
+get_git_info() {
+  CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+
+  # Read refs being pushed from stdin
+  PUSHED_REFS=()
+  while read -r local_ref local_sha remote_ref remote_sha; do
+    if [ -n "$local_ref" ]; then
+      PUSHED_REFS+=("$local_ref:$remote_ref")
+    fi
+  done
+
+  log_info "Remote: $REMOTE_NAME ($REMOTE_URL)"
+  log_info "Branch: $CURRENT_BRANCH"
+  log_info "Pushing ${#PUSHED_REFS[@]} ref(s)"
+}
+
+# Main execution
+main() {
+  log_info "Pre-push hook starting..."
+
+  # Get git information
+  get_git_info
+
+  # Check if GitVan CLI is available
+  if ! command -v "$GITVAN_CLI" &> /dev/null; then
+    log_warn "GitVan CLI not found, skipping knowledge hook evaluation"
+    exit 0
+  fi
+
+  # Capture pre-push event and evaluate knowledge hooks
+  log_info "Evaluating knowledge hooks..."
+
+  # Create JSON array of pushed refs
+  PUSHED_REFS_JSON=$(printf '%s\n' "${PUSHED_REFS[@]}" | jq -R . | jq -s .)
+
+  # Create event data JSON
+  EVENT_DATA=$(cat <<EOF
+{
+  "remoteName": "$REMOTE_NAME",
+  "remoteUrl": "$REMOTE_URL",
+  "branchName": "$CURRENT_BRANCH",
+  "pushedRefs": $PUSHED_REFS_JSON,
+  "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+}
+EOF
+)
+
+  # Call GitVan CLI to handle the event
+  if ! echo "$EVENT_DATA" | "$GITVAN_CLI" hooks handle-event "$HOOK_NAME" --stdin; then
+    log_error "Knowledge hook evaluation failed - push blocked"
+    exit 1
+  fi
+
+  log_info "Pre-push hook completed successfully"
+  exit 0
+}
+
+# Run main function
+main "$@"

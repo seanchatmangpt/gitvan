@@ -7,7 +7,7 @@ import {
   statSync,
 } from "node:fs";
 import { join, dirname } from "pathe";
-import { LRUCache } from "lru-cache";
+import LRUCache from "lru-cache";
 import * as cacache from "cacache";
 import { gzip, gunzip } from "node:zlib";
 import cron from "node-cron";

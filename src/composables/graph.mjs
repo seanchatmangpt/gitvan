@@ -126,9 +126,9 @@ export function useGraph(store) {
      * @param {...object} otherGraphs - Other `useGraph` instances or raw N3.Stores.
      * @returns {object} A new `useGraph` instance with the resulting graph.
      */
-    union(...otherGraphs) {
+    async union(...otherGraphs) {
       const otherStores = otherGraphs.map((g) => g.store || g);
-      const resultStore = rdfEngine.union(store, ...otherStores);
+      const resultStore = await rdfEngine.union(store, ...otherStores);
       return useGraph(resultStore);
     },
 
@@ -137,9 +137,9 @@ export function useGraph(store) {
      * @param {object} otherGraph - Another `useGraph` instance or a raw N3.Store.
      * @returns {object} A new `useGraph` instance with the resulting graph.
      */
-    difference(otherGraph) {
+    async difference(otherGraph) {
       const otherStore = otherGraph.store || otherGraph;
-      const resultStore = rdfEngine.difference(store, otherStore);
+      const resultStore = await rdfEngine.difference(store, otherStore);
       return useGraph(resultStore);
     },
 
@@ -148,9 +148,9 @@ export function useGraph(store) {
      * @param {object} otherGraph - Another `useGraph` instance or a raw N3.Store.
      * @returns {object} A new `useGraph` instance with the resulting graph.
      */
-    intersection(otherGraph) {
+    async intersection(otherGraph) {
       const otherStore = otherGraph.store || otherGraph;
-      const resultStore = rdfEngine.intersection(store, otherStore);
+      const resultStore = await rdfEngine.intersection(store, otherStore);
       return useGraph(resultStore);
     },
   };

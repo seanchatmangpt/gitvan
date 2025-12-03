@@ -1,19 +1,26 @@
 // src/engines/RdfEngine.mjs
-// Production-grade RDF engine for JavaScript.
+// Production-grade RDF engine for JavaScript - GitVan Edition
+// Built on unrdf's RdfEngine with GitVan-specific extensions
 
-import { Parser, Store, Writer, DataFactory } from "n3";
-import { QueryEngine } from "@comunica/query-sparql";
-import rdf from "rdf-ext";
-import SHACLValidator from "rdf-validate-shacl";
-import rdfCanonize from "rdf-canonize";
-import jsonld from "jsonld";
-import { n3reasoner } from "eyereasoner";
+import { RdfEngine as UnrdfEngine } from "unrdf";
+import { DataFactory } from "n3";
 import $rdf from "@zazuko/env";
 
 const { namedNode, literal, quad, blankNode, defaultGraph, variable } =
   DataFactory;
 
-export class RdfEngine {
+/**
+ * GitVan RDF Engine - extends unrdf's RdfEngine with GitVan-specific features
+ *
+ * This class wraps unrdf's production-ready RdfEngine and adds:
+ * - Clownface graph traversal integration
+ * - Prefix extraction from stores
+ * - GitVan-specific metrics and logging
+ * - Deterministic operations for testing
+ *
+ * @extends {UnrdfEngine}
+ */
+export class RdfEngine extends UnrdfEngine {
   /**
    * @param {object} [options]
    * @param {string} [options.baseIRI='http://example.org/']
@@ -23,7 +30,10 @@ export class RdfEngine {
    * @param {{debug:Function,info:Function,warn:Function,error:Function}} [options.logger=console]
    */
   constructor(options = {}) {
-    this.baseIRI = options.baseIRI || "http://example.org/";
+    // Pass baseIRI to unrdf's RdfEngine
+    super({ baseIRI: options.baseIRI || "http://example.org/" });
+
+    // GitVan-specific options
     this.deterministic = options.deterministic !== false;
     this.timeoutMs = Number.isFinite(options.timeoutMs)
       ? options.timeoutMs
@@ -31,115 +41,126 @@ export class RdfEngine {
     this.onMetric =
       typeof options.onMetric === "function" ? options.onMetric : null;
     this.log = options.logger || console;
-    this.engine = new QueryEngine();
 
     // Use @zazuko/env which comes bundled with clownface
     this.$rdf = $rdf;
   }
 
-  // ============== Terms & Store ==============
+  // ============== Terms & Store (inherited from unrdf) ==============
+  // These methods are already available from UnrdfEngine:
+  // - namedNode(value)
+  // - literal(value, languageOrDatatype)
+  // - blankNode(value)
+  // - quad(s, p, o, g)
+  // - parseTurtle(ttl)
+  // - serializeTurtle(store, options)
+  // - serializeNQuads(store)
+  // - query(sparql)
+
+  // ============== Additional Store Creation (for compatibility) ==============
 
   createStore(quads = []) {
-    return new Store(quads);
-  }
-  namedNode(value) {
-    return namedNode(value);
-  }
-  literal(value, languageOrDatatype) {
-    return literal(value, languageOrDatatype);
-  }
-  blankNode(value) {
-    return blankNode(value);
-  }
-  quad(s, p, o, g = defaultGraph()) {
-    return quad(s, p, o, g);
+    if (!quads || quads.length === 0) {
+      return this.getStore();
+    }
+    const store = this.getStore();
+    store.addQuads(quads);
+    return store;
   }
 
-  // ============== Parse & Serialize (deterministic) ==============
+  // ============== Parse & Serialize (override for deterministic support) ==============
 
+  /**
+   * Parse Turtle with deterministic output support
+   * @param {string} ttl - Turtle string
+   * @param {object} [options]
+   * @param {string} [options.baseIRI] - Base IRI override
+   * @returns {import('n3').Store}
+   */
   parseTurtle(ttl, options = {}) {
     if (typeof ttl !== "string" || !ttl.length)
       throw new Error("parseTurtle: non-empty string required");
-    const parser = new Parser({ baseIRI: options.baseIRI || this.baseIRI });
-    return new Store(parser.parse(ttl));
+
+    // Use parent's parseTurtle which already handles baseIRI
+    const store = super.parseTurtle(ttl);
+
+    // Return deterministic if needed
+    if (this.deterministic) {
+      const sorted = this._maybeSort([...store]);
+      const newStore = this.getStore();
+      newStore.addQuads(sorted);
+      return newStore;
+    }
+
+    return store;
   }
 
-  parseNQuads(nq) {
+  async parseNQuads(nq) {
     if (typeof nq !== "string" || !nq.length)
       throw new Error("parseNQuads: non-empty string required");
+
+    const { Parser } = await import("n3");
     const parser = new Parser({ format: "N-Quads" });
-    return new Store(parser.parse(nq));
+    const quads = parser.parse(nq);
+
+    const store = this.getStore();
+    store.addQuads(this._maybeSort(quads));
+    return store;
   }
 
   async serializeTurtle(store, options = {}) {
     // Extract prefixes from the store if not provided
     const prefixes = options.prefixes || this._extractPrefixes(store);
 
-    const writer = new Writer({
-      format: "Turtle",
-      prefixes,
-    });
-    const quads = this._maybeSort([...store]);
-    writer.addQuads(quads);
-    return new Promise((resolve, reject) =>
-      writer.end((e, out) => (e ? reject(e) : resolve(out)))
-    );
+    // Use parent's serialize with prefixes
+    return super.serializeTurtle(store, { ...options, prefixes });
   }
 
   async serializeNQuads(store) {
-    const writer = new Writer({ format: "N-Quads" });
-    const quads = this._maybeSort([...store]);
-    writer.addQuads(quads);
-    return new Promise((resolve, reject) =>
-      writer.end((e, out) => (e ? reject(e) : resolve(out)))
-    );
+    return super.serializeNQuads(store);
   }
 
-  // ============== Canonicalization & Isomorphism ==============
+  // ============== Canonicalization & Isomorphism (use unrdf's canonicalize) ==============
 
   async canonicalize(store) {
-    const nquads = await this.serializeNQuads(store);
-    return rdfCanonize.canonize(nquads, {
-      algorithm: "URDNA2015",
-      format: "application/n-quads",
-    });
+    const { canonicalize } = await import("unrdf");
+    return canonicalize(store);
   }
 
   async isIsomorphic(a, b) {
     const t0 = performance.now();
-    const [ca, cb] = await Promise.all([
-      this.canonicalize(a),
-      this.canonicalize(b),
-    ]);
+    const { isIsomorphic } = await import("unrdf");
+    const result = await isIsomorphic(a, b);
     this._metric("isomorphic.check", performance.now() - t0);
-    return ca === cb;
+    return result;
   }
 
-  // ============== SHACL Validation ==============
+  // ============== SHACL Validation (use unrdf's validate) ==============
 
   async validateShacl(dataStore, shapesInput) {
+    const { validateShacl } = await import("unrdf");
+
     const shapesStore =
       typeof shapesInput === "string"
         ? this.parseTurtle(shapesInput)
         : shapesInput;
-    const dataDataset = rdf.dataset([...dataStore]);
-    const shapesDataset = rdf.dataset([...shapesStore]);
-    const validator = new SHACLValidator(shapesDataset);
+
     const report = await this._withTimeout(
-      () => validator.validate(dataDataset),
+      () => validateShacl(dataStore, shapesStore),
       this.timeoutMs,
       "shacl.validate"
     );
+
     return {
       conforms: report.conforms,
-      results: report.results.map((r) => ({
+      results: report.results?.map((r) => ({
         focusNode: r.focusNode?.value || null,
         path: r.path?.value || null,
         message: r.message?.[0]?.value || null,
         severity: r.severity?.value || null,
         sourceShape: r.sourceShape?.value || null,
         value: r.value?.value || null,
-      })),
+      })) || [],
     };
   }
 
@@ -154,10 +175,10 @@ export class RdfEngine {
     return rep;
   }
 
-  // ============== SPARQL Query & Update ==============
+  // ============== SPARQL Query & Update (override for compatibility) ==============
 
   /**
-   * Query with streaming, paging, and timeout.
+   * Query with streaming, paging, and timeout - GitVan compatibility wrapper
    * @param {Store} store
    * @param {string} sparql
    * @param {{limit?:number,signal?:AbortSignal,deterministic?:boolean}} [opts]
@@ -165,67 +186,70 @@ export class RdfEngine {
   async query(store, sparql, opts = {}) {
     if (typeof sparql !== "string" || !sparql.trim())
       throw new Error("query: non-empty SPARQL required");
+
     const q = sparql.trim();
     const limit = Number.isFinite(opts.limit) ? opts.limit : Infinity;
     const deterministic = opts.deterministic ?? this.deterministic;
 
-    const ctx = { sources: [store] };
-    const kind = q
-      .toUpperCase()
-      .match(
-        /\b(SELECT|ASK|CONSTRUCT|DESCRIBE|WITH|INSERT|DELETE|LOAD|CREATE|DROP|CLEAR|MOVE|COPY|ADD)\b/
-      )?.[1];
+    // Save current store and temporarily use the provided store
+    const originalStore = this.getStore();
+    this.clearStore();
+    this.store.addQuads([...store]);
 
-    const run = async () => {
-      if (!kind) throw new Error("query: unknown query type");
+    try {
+      const result = await this._withTimeout(
+        () => super.query(q),
+        this.timeoutMs,
+        "sparql.query",
+        opts.signal
+      );
 
-      // SPARQL UPDATE
-      if (
-        /^(WITH|INSERT|DELETE|LOAD|CREATE|DROP|CLEAR|MOVE|COPY|ADD)$/i.test(
-          kind
-        )
-      ) {
-        await this.engine.queryVoid(q, { ...ctx, destination: store });
-        return { type: "update", ok: true };
-      }
+      // Process results based on type
+      if (result.type === "select") {
+        let rows = result.rows || [];
 
-      if (kind === "ASK") {
-        const boolean = await this.engine.queryBoolean(q, ctx);
-        return { type: "ask", boolean };
-      }
-
-      if (kind === "CONSTRUCT" || kind === "DESCRIBE") {
-        const quadStream = await this.engine.queryQuads(q, ctx);
-        const out = new Store();
-        for await (const qq of quadStream) out.add(qq);
-        const quads = deterministic ? this._maybeSort([...out]) : [...out];
-        return { type: kind.toLowerCase(), store: new Store(quads), quads };
-      }
-
-      // SELECT
-      const bindings = await this.engine.queryBindings(q, ctx);
-      const rows = [];
-      const varSet = new Set();
-      for await (const b of bindings) {
-        for (const k of b.keys()) varSet.add(k.value);
-        const row = {};
-        for (const v of varSet) {
-          const term = b.get(variable(v));
-          row[v] = this._termToJSON(term);
+        // Apply limit
+        if (rows.length > limit) {
+          rows = rows.slice(0, limit);
         }
-        rows.push(row);
-        if (rows.length >= limit) break;
-      }
-      const variables = [...varSet].sort();
-      const results = deterministic
-        ? rows.sort((a, b) =>
-            JSON.stringify(a).localeCompare(JSON.stringify(b))
-          )
-        : rows;
-      return { type: "select", variables, results };
-    };
 
-    return this._withTimeout(run, this.timeoutMs, "sparql.query", opts.signal);
+        // Apply deterministic sorting
+        if (deterministic) {
+          rows = rows.sort((a, b) =>
+            JSON.stringify(a).localeCompare(JSON.stringify(b))
+          );
+        }
+
+        return {
+          type: "select",
+          variables: result.variables || [],
+          results: rows,
+        };
+      }
+
+      if (result.type === "ask") {
+        return { type: "ask", boolean: result.boolean || false };
+      }
+
+      if (result.type === "construct" || result.type === "describe") {
+        const quads = deterministic
+          ? this._maybeSort([...result.store])
+          : [...result.store];
+        const { Store } = await import("n3");
+        return {
+          type: result.type,
+          store: new Store(quads),
+          quads,
+        };
+      }
+
+      // UPDATE operations
+      return { type: "update", ok: true };
+    } finally {
+      // Restore original store
+      this.clearStore();
+      this.store.addQuads([...originalStore]);
+    }
   }
 
   // ============== Graph Manipulation ==============
@@ -258,7 +282,7 @@ export class RdfEngine {
     return this.$rdf.clownface({ dataset });
   }
 
-  // ============== Reasoning ==============
+  // ============== Reasoning (use unrdf's reason) ==============
 
   /**
    * N3 reasoning with timeout. Returns a new store.
@@ -266,16 +290,16 @@ export class RdfEngine {
    * @param {Store} rulesStore
    */
   async reason(dataStore, rulesStore) {
+    const { reason } = await import("unrdf");
+
     const run = async () => {
-      const dataN3 = await this.serializeTurtle(dataStore);
-      const rulesN3 = await this.serializeTurtle(rulesStore);
-      const out = await n3reasoner(dataN3, rulesN3);
-      return this.parseTurtle(out);
+      return reason(dataStore, rulesStore);
     };
+
     return this._withTimeout(run, this.timeoutMs, "reasoning.n3");
   }
 
-  // ============== JSON-LD I/O ==============
+  // ============== JSON-LD I/O (use unrdf's toJsonLd/parseJsonLd) ==============
 
   /**
    * Store -> JSON-LD (compact or framed).
@@ -283,15 +307,23 @@ export class RdfEngine {
    * @param {{context?:object, frame?:object}} [opts]
    */
   async toJSONLD(store, opts = {}) {
-    const nquads = await this.serializeNQuads(store);
-    const doc = await jsonld.fromRDF(nquads, { format: "application/n-quads" });
-    if (opts.frame) return jsonld.frame(doc, opts.frame, { omitGraph: false });
+    const { toJsonLd } = await import("unrdf");
+    const jsonld = await import("jsonld");
+
+    const doc = await toJsonLd(store);
+
+    if (opts.frame) {
+      return jsonld.frame(doc, opts.frame, { omitGraph: false });
+    }
+
     const context = opts.context || {};
     const compacted = await jsonld.compact(doc, context);
+
     // Ensure @context is present
     if (!compacted["@context"]) {
       compacted["@context"] = context;
     }
+
     return compacted;
   }
 
@@ -300,25 +332,28 @@ export class RdfEngine {
    * @param {object} jsonldDoc
    */
   async fromJSONLD(jsonldDoc) {
-    const nquads = await jsonld.toRDF(jsonldDoc, {
-      format: "application/n-quads",
-    });
-    return this.parseNQuads(nquads);
+    const { parseJsonLd } = await import("unrdf");
+    return parseJsonLd(jsonldDoc);
   }
 
   // ============== Set Ops & Utilities ==============
 
-  union(...stores) {
+  async union(...stores) {
+    const { Store } = await import("n3");
     const out = new Store();
     for (const s of stores) for (const q of s) out.add(q);
     return out;
   }
-  difference(a, b) {
+
+  async difference(a, b) {
+    const { Store } = await import("n3");
     const out = new Store();
     for (const q of a) if (!b.has(q)) out.add(q);
     return out;
   }
-  intersection(a, b) {
+
+  async intersection(a, b) {
+    const { Store } = await import("n3");
     const out = new Store();
     for (const q of a) if (b.has(q)) out.add(q);
     return out;
@@ -329,7 +364,8 @@ export class RdfEngine {
    * @param {Store} store
    * @param {string} [baseIRI='http://example.org/.well-known/genid/']
    */
-  skolemize(store, baseIRI = "http://example.org/.well-known/genid/") {
+  async skolemize(store, baseIRI = "http://example.org/.well-known/genid/") {
+    const { Store } = await import("n3");
     const out = new Store();
     const map = new Map();
     let i = 0;

@@ -1,9 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { useState } from 'react';
 
 interface GeneratedHook {
   name: string;
@@ -72,14 +69,13 @@ export function WorkflowGenerator() {
   const handleExecuteHook = async (hook: GeneratedHook) => {
     setExecuting(true);
     try {
-      const response = await fetch('/api/gitvan/workflows/execute', {
+      const response = await fetch('/api/gitvan/workflows', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ hook }),
       });
       if (response.ok) {
-        const data = await response.json();
-        alert(`Hook executed: ${data.message}`);
+        alert('Hook executed successfully');
       }
     } catch (error) {
       console.error('Failed to execute hook:', error);
@@ -90,150 +86,137 @@ export function WorkflowGenerator() {
   };
 
   return (
-    <div className="space-y-8 p-8">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Autonomic Workflow Generator</h1>
-        <p className="text-gray-600">
-          Automatically detect patterns and generate hooks from your git events
+    <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+      <h1>Autonomic Workflow Generator</h1>
+      <p>Automatically detect patterns and generate hooks from your git events</p>
+
+      <div style={{ marginTop: '20px', padding: '15px', border: '1px solid #ddd', borderRadius: '8px' }}>
+        <h2>Workflow Generation Pipeline</h2>
+        <p>Two-step process to detect patterns and create hooks</p>
+        <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+          <button
+            onClick={handleDetectPatterns}
+            disabled={loading}
+            style={{
+              flex: 1,
+              padding: '10px',
+              backgroundColor: '#007bff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.6 : 1,
+            }}
+          >
+            {loading ? 'Detecting...' : '1. Detect Patterns'}
+          </button>
+          <button
+            onClick={handleGenerateHooks}
+            disabled={loading || patterns.length === 0}
+            style={{
+              flex: 1,
+              padding: '10px',
+              backgroundColor: '#28a745',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: loading || patterns.length === 0 ? 'not-allowed' : 'pointer',
+              opacity: loading || patterns.length === 0 ? 0.6 : 1,
+            }}
+          >
+            {loading ? 'Generating...' : '2. Generate Hooks'}
+          </button>
+        </div>
+        <p style={{ marginTop: '10px', fontSize: '12px' }}>
+          {patterns.length > 0 && `${patterns.length} patterns detected`}
+          {hooks.length > 0 && ` → ${hooks.length} hooks generated`}
         </p>
       </div>
 
-      {/* Detection and Generation Controls */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Workflow Generation Pipeline</CardTitle>
-          <CardDescription>Three-step process to detect patterns and create hooks</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-4">
-            <Button
-              onClick={handleDetectPatterns}
-              disabled={loading}
-              className="flex-1"
-            >
-              {loading ? 'Detecting...' : '1. Detect Patterns'}
-            </Button>
-            <Button
-              onClick={handleGenerateHooks}
-              disabled={loading || patterns.length === 0}
-              className="flex-1"
-            >
-              {loading ? 'Generating...' : '2. Generate Hooks'}
-            </Button>
-          </div>
-          <div className="text-sm text-gray-600">
-            {patterns.length > 0 && `${patterns.length} patterns detected`}
-            {hooks.length > 0 && ` → ${hooks.length} hooks generated`}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Detected Patterns */}
       {patterns.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Detected Patterns</CardTitle>
-            <CardDescription>{patterns.length} patterns identified in your git workflow</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {patterns.map((pattern, idx) => (
-                <div
-                  key={idx}
-                  className="p-4 border rounded-lg space-y-2 hover:bg-gray-50 transition"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-semibold">{pattern.type}</h3>
-                      <p className="text-sm text-gray-600">{pattern.description}</p>
-                    </div>
-                    <Badge variant="secondary">
-                      {(pattern.confidence * 100).toFixed(0)}% confidence
-                    </Badge>
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    Suggested Hook: {pattern.suggestedHook}
-                  </div>
-                </div>
-              ))}
+        <div style={{ marginTop: '20px', padding: '15px', border: '1px solid #ddd', borderRadius: '8px' }}>
+          <h2>Detected Patterns ({patterns.length})</h2>
+          {patterns.map((pattern, idx) => (
+            <div key={idx} style={{ marginTop: '10px', padding: '10px', border: '1px solid #eee', borderRadius: '4px' }}>
+              <h3>{pattern.type} - {(pattern.confidence * 100).toFixed(0)}% confidence</h3>
+              <p>{pattern.description}</p>
+              <p style={{ fontSize: '12px', color: '#666' }}>Suggested Hook: {pattern.suggestedHook}</p>
             </div>
-          </CardContent>
-        </Card>
+          ))}
+        </div>
       )}
 
-      {/* Generated Hooks */}
       {hooks.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Generated Hooks</CardTitle>
-            <CardDescription>{hooks.length} hooks ready for execution</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {hooks.map((hook, idx) => (
-              <div
-                key={idx}
-                className="p-4 border rounded-lg space-y-3 hover:bg-gray-50 transition cursor-pointer"
-                onClick={() => setSelectedHook(hook)}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-semibold">{hook.name}</h3>
-                    <div className="flex gap-2 mt-1">
-                      <Badge variant="outline">Priority: {hook.priority}</Badge>
-                      {hook.autoExecute && (
-                        <Badge className="bg-green-100 text-green-800">Auto Execute</Badge>
-                      )}
-                    </div>
-                  </div>
-                  <Button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleExecuteHook(hook);
-                    }}
-                    disabled={executing}
-                    size="sm"
-                  >
-                    {executing ? 'Executing...' : 'Execute'}
-                  </Button>
+        <div style={{ marginTop: '20px', padding: '15px', border: '1px solid #ddd', borderRadius: '8px' }}>
+          <h2>Generated Hooks ({hooks.length})</h2>
+          {hooks.map((hook, idx) => (
+            <div
+              key={idx}
+              style={{
+                marginTop: '10px',
+                padding: '10px',
+                border: '1px solid #eee',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                backgroundColor: selectedHook === hook ? '#f0f0f0' : 'white',
+              }}
+              onClick={() => setSelectedHook(hook)}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h3>{hook.name}</h3>
+                  <p style={{ fontSize: '12px', color: '#666' }}>Priority: {hook.priority} {hook.autoExecute && '| Auto Execute'}</p>
                 </div>
-                <div className="text-sm text-gray-600 space-y-1">
-                  <div>Trigger: {hook.trigger}</div>
-                  <div>Condition: {hook.condition}</div>
-                  <div>Action: {hook.action}</div>
-                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleExecuteHook(hook);
+                  }}
+                  disabled={executing}
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: '#007bff',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: executing ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {executing ? 'Executing...' : 'Execute'}
+                </button>
               </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Hook Preview */}
-      {selectedHook && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Hook TTL Preview</CardTitle>
-            <CardDescription>RDF/Turtle representation of generated hook</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <pre className="bg-gray-100 p-4 rounded-lg overflow-auto text-sm max-h-96">
-              {selectedHook.ttl}
-            </pre>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Empty State */}
-      {patterns.length === 0 && hooks.length === 0 && (
-        <Card>
-          <CardContent className="pt-12 pb-12 text-center">
-            <div className="text-gray-500">
-              <p className="text-lg mb-2">No patterns detected yet</p>
-              <p className="text-sm">
-                Click "Detect Patterns" to analyze your git history and find automation opportunities
+              <p style={{ fontSize: '12px', marginTop: '8px' }}>
+                Trigger: {hook.trigger} | Condition: {hook.condition} | Action: {hook.action}
               </p>
             </div>
-          </CardContent>
-        </Card>
+          ))}
+        </div>
+      )}
+
+      {selectedHook && (
+        <div style={{ marginTop: '20px', padding: '15px', border: '1px solid #ddd', borderRadius: '8px' }}>
+          <h2>Hook TTL Preview</h2>
+          <p>RDF/Turtle representation of generated hook</p>
+          <pre
+            style={{
+              backgroundColor: '#f5f5f5',
+              padding: '10px',
+              borderRadius: '4px',
+              overflow: 'auto',
+              maxHeight: '400px',
+              fontSize: '12px',
+            }}
+          >
+            {selectedHook.ttl}
+          </pre>
+        </div>
+      )}
+
+      {patterns.length === 0 && hooks.length === 0 && (
+        <div style={{ marginTop: '20px', padding: '40px', textAlign: 'center', color: '#666' }}>
+          <p>No patterns detected yet</p>
+          <p>Click "Detect Patterns" to analyze your git history and find automation opportunities</p>
+        </div>
       )}
     </div>
   );

@@ -1,38 +1,31 @@
 // src/composables/graph.mjs
 // Provides a high-level, ergonomic API to operate on an in-memory RDF graph using unrdf.
+// Adapted for unrdf 4.2.3+ composable API
 
-import {
-  Store,
-  Parser,
-  Writer,
-  DataFactory,
-  query,
-  validateShacl,
-  isIsomorphic,
-  canonicalize,
-  reason,
-  toJsonLd,
-  parseJsonLd,
-  parseTurtle,
-  toTurtle,
-  toNQuads,
-  getStoreStats,
-  mergeStores,
-  differenceStores,
-  intersectStores,
-} from "unrdf";
+import { useGraph as unrdfUseGraph } from "unrdf";
+import { useTurtle } from "unrdf";
 
 /**
  * Creates an operational interface for a given RDF graph store.
  * This is the primary composable for performing SPARQL queries, SHACL validation,
  * set operations, and other graph manipulations.
  *
- * @param {Store} store - An unrdf Store instance, typically loaded via `useTurtle`.
+ * @param {string|Store} input - A Turtle string or a Store instance
  * @returns {object} An API object for operating on the graph.
  */
-export function useGraph(store) {
-  if (!store || typeof store.getQuads !== "function") {
-    throw new Error("[useGraph] A Store instance must be provided.");
+export async function useGraph(input) {
+  let store;
+
+  // Handle both Turtle strings and raw Store instances
+  if (typeof input === "string") {
+    const turtleGraph = await useTurtle(input);
+    store = turtleGraph.store;
+  } else {
+    store = input;
+  }
+
+  if (!store) {
+    throw new Error("[useGraph] Unable to create or access store from input.");
   }
 
   const self = {
@@ -51,7 +44,8 @@ export function useGraph(store) {
      * @returns {Promise<object>} A result object with a `type` and other properties.
      */
     async query(sparql, options = {}) {
-      return query(store, sparql, options);
+      const graph = unrdfUseGraph(store);
+      return graph.query(sparql, options);
     },
 
     /**
@@ -60,10 +54,8 @@ export function useGraph(store) {
      * @returns {Promise<Array<object>>} An array of result bindings.
      */
     async select(sparql) {
-      const res = await query(store, sparql);
-      if (res.type !== "select")
-        throw new Error("Query is not a SELECT query.");
-      return res.results || res.rows || [];
+      const graph = unrdfUseGraph(store);
+      return graph.select(sparql);
     },
 
     /**
@@ -72,9 +64,8 @@ export function useGraph(store) {
      * @returns {Promise<boolean>} The boolean result of the query.
      */
     async ask(sparql) {
-      const res = await query(store, sparql);
-      if (res.type !== "ask") throw new Error("Query is not an ASK query.");
-      return res.boolean;
+      const graph = unrdfUseGraph(store);
+      return graph.ask(sparql);
     },
 
     /**
@@ -83,11 +74,8 @@ export function useGraph(store) {
      * @returns {Promise<object>} A validation report with `conforms` and `results`.
      */
     async validate(shapesInput) {
-      const shapesStore =
-        typeof shapesInput === "string"
-          ? parseTurtle(shapesInput)
-          : shapesInput;
-      return validateShacl(store, shapesStore);
+      const graph = unrdfUseGraph(store);
+      return graph.validate(shapesInput);
     },
 
     /**
@@ -96,13 +84,8 @@ export function useGraph(store) {
      * @returns {Promise<string>}
      */
     async serialize({ format = "Turtle", prefixes = {} } = {}) {
-      if (format === "Turtle") {
-        return toTurtle(store, { prefixes });
-      }
-      if (format === "N-Quads") {
-        return toNQuads(store);
-      }
-      throw new Error(`Unsupported serialization format: ${format}`);
+      const graph = unrdfUseGraph(store);
+      return graph.serialize({ format, prefixes });
     },
 
     /**
@@ -110,7 +93,8 @@ export function useGraph(store) {
      * @type {{quads: number, subjects: number, predicates: number, objects: number, graphs: number}}
      */
     get stats() {
-      return getStoreStats(store);
+      const graph = unrdfUseGraph(store);
+      return graph.stats;
     },
 
     /**
@@ -119,8 +103,9 @@ export function useGraph(store) {
      * @returns {Promise<boolean>}
      */
     async isIsomorphic(otherGraph) {
-      const otherStore = otherGraph.store || otherGraph;
-      return isIsomorphic(store, otherStore);
+      const graph = unrdfUseGraph(store);
+      const otherStore = otherGraph?.store || otherGraph;
+      return graph.isIsomorphic(otherStore);
     },
 
     /**
@@ -129,9 +114,10 @@ export function useGraph(store) {
      * @returns {Promise<object>} A new `useGraph` instance with the resulting graph.
      */
     async union(...otherGraphs) {
+      const graph = unrdfUseGraph(store);
       const otherStores = otherGraphs.map((g) => g.store || g);
-      const resultStore = mergeStores(store, ...otherStores);
-      return useGraph(resultStore);
+      const resultGraph = await graph.union(...otherStores);
+      return useGraph(resultGraph.store);
     },
 
     /**
@@ -140,9 +126,10 @@ export function useGraph(store) {
      * @returns {Promise<object>} A new `useGraph` instance with the resulting graph.
      */
     async difference(otherGraph) {
+      const graph = unrdfUseGraph(store);
       const otherStore = otherGraph.store || otherGraph;
-      const resultStore = differenceStores(store, otherStore);
-      return useGraph(resultStore);
+      const resultGraph = await graph.difference(otherStore);
+      return useGraph(resultGraph.store);
     },
 
     /**
@@ -151,9 +138,10 @@ export function useGraph(store) {
      * @returns {Promise<object>} A new `useGraph` instance with the resulting graph.
      */
     async intersection(otherGraph) {
+      const graph = unrdfUseGraph(store);
       const otherStore = otherGraph.store || otherGraph;
-      const resultStore = intersectStores(store, otherStore);
-      return useGraph(resultStore);
+      const resultGraph = await graph.intersection(otherStore);
+      return useGraph(resultGraph.store);
     },
 
     /**
@@ -161,17 +149,19 @@ export function useGraph(store) {
      * @returns {Promise<object>} JSON-LD document
      */
     async toJsonLd() {
-      return toJsonLd(store);
+      const graph = unrdfUseGraph(store);
+      return graph.toJsonLd();
     },
 
     /**
      * Applies N3 reasoning rules to the graph.
-     * @param {Store} rulesStore - Store containing N3 rules
+     * @param {Store|string} rulesInput - Store containing N3 rules or Turtle string
      * @returns {Promise<object>} A new useGraph instance with inferred triples
      */
-    async reason(rulesStore) {
-      const inferredStore = await reason(store, rulesStore);
-      return useGraph(inferredStore);
+    async reason(rulesInput) {
+      const graph = unrdfUseGraph(store);
+      const inferredGraph = await graph.reason(rulesInput);
+      return useGraph(inferredGraph.store);
     },
 
     /**
@@ -179,7 +169,8 @@ export function useGraph(store) {
      * @returns {Promise<string>} Canonical N-Quads string
      */
     async canonicalize() {
-      return canonicalize(store);
+      const graph = unrdfUseGraph(store);
+      return graph.canonicalize();
     },
   };
 

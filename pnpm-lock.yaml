@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  '@types/semver': 7.5.8
+
 importers:
 
   .:
@@ -2814,8 +2817,8 @@ packages:
   '@types/resolve@1.20.2':
     resolution: {integrity: sha512-60BCwRFOZCQhDncwQdxxeOEEkbc5dIMccYLwbxsS4TUNeVECQ/pBJ0j09mrHOl/JJvpRPGwO9SvE4nR2Nb/a4Q==}
 
-  '@types/semver@7.7.1':
-    resolution: {integrity: sha512-FmgJfu+MOcQ370SD0ev7EI8TlCAfKYU+B4m5T3yXc1CiRN94g/SZPtsCkk506aUDtlMnFZvasDwHHUcZUEaYuA==}
+  '@types/semver@7.5.8':
+    resolution: {integrity: sha512-I8EUhyrgfLrcTkzV3TSsGyl1tSuPrEDzr0yd5m90UgNxQkyDXULk3b6MlQqTCpZpNtWe1K0hzclnZkTcLBe2UQ==}
 
   '@types/send@1.2.1':
     resolution: {integrity: sha512-arsCikDvlU99zl1g69TcAB3mzZPpxgw0UQnaHeC1Nwb015xp8bknZv5rIfri9xTOcMuaVgvabfIRA7PSZVuZIQ==}
@@ -9503,7 +9506,7 @@ snapshots:
 
   '@types/resolve@1.20.2': {}
 
-  '@types/semver@7.7.1': {}
+  '@types/semver@7.5.8': {}
 
   '@types/send@1.2.1':
     dependencies:
@@ -9933,7 +9936,7 @@ snapshots:
       '@rdfjs/types': 2.0.1
       '@types/minimist': 1.2.5
       '@types/node': 18.19.130
-      '@types/semver': 7.7.1
+      '@types/semver': 7.5.8
       jsonld-context-parser: 3.0.0
       minimist: 1.2.8
       rdf-data-factory: 1.1.3

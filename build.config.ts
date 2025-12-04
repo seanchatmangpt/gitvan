@@ -8,7 +8,7 @@ export default defineBuildConfig({
   outDir: "dist",
 
   // Generate TypeScript declarations
-  declaration: "compatible",
+  declaration: false,
 
   // Clean output directory before build
   clean: true,
@@ -75,6 +75,9 @@ export default defineBuildConfig({
       "semver",
       "@babel/parser",
       "@babel/traverse",
+      // Type definitions (exclude from build)
+      "@types/semver",
+      "@types/node",
       // AI and additional dependencies
       "@ai-sdk/anthropic",
       "ollama",

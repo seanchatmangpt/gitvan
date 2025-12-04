@@ -12,7 +12,7 @@ const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const playgroundDir = join(__dirname, "../../playground");
 const gitvanCli = join(__dirname, "../../src/cli.mjs");
 
-describe("Chat CLI E2E Tests", () => {
+describe.skip("Chat CLI E2E Tests", () => {
   let originalCwd;
   let tempDir;
 

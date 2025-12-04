@@ -33,11 +33,19 @@ export default function StudioHome() {
       status: 'ready',
     },
     {
-      id: 'hooks',
-      title: 'Git Hooks',
-      description: 'Define and validate git hooks with pattern enforcement',
+      id: 'knowledge-hooks',
+      title: 'Knowledge Hooks',
+      description: 'Manage GitVan knowledge hooks and JTBD scenario definitions',
       href: '/studio/hooks',
-      icon: '🪝',
+      icon: '🧠',
+      status: 'ready',
+    },
+    {
+      id: 'automation',
+      title: 'Automation Hooks',
+      description: 'Configure workflow triggers and continuous automation',
+      href: '/studio/automation',
+      icon: '⚡',
       status: 'ready',
     },
     {

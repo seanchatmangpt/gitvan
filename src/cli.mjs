@@ -33,6 +33,9 @@ import { initCommand } from "./cli/init.mjs";
 // Import legacy commands that need to be migrated (temporary)
 import { chatCommand } from "./cli/chat.mjs";
 
+// Import Studio command for NextJS integration
+import { studioCommand } from "./cli/commands/studio.mjs";
+
 /**
  * Main GitVan CLI using Citty framework
  *
@@ -98,6 +101,9 @@ export const cli = defineCommand({
 
     // AI and automation commands
     chat: chatCommand,
+
+    // Studio and NextJS integration
+    studio: studioCommand,
 
     // TODO: Migrate these legacy commands to Citty
     // run: runCommand,           // Legacy handler

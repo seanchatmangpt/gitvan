@@ -12,6 +12,7 @@ import { loadOptions } from "../../config/loader.mjs";
 import { createLogger } from "../../utils/logger.mjs";
 import { Receipt, ReceiptQuery } from "../../schemas/receipt.zod.mjs";
 import consola from "consola";
+import YAML from "js-yaml";
 
 const logger = createLogger("audit-cli");
 
@@ -426,8 +427,9 @@ const showSubcommand = defineCommand({
       }
 
       if (args.format === "yaml") {
-        // TODO: Implement YAML output
-        console.log("YAML format not implemented");
+        // YAML output format
+        const yamlOutput = YAML.dump(receipt, { lineWidth: -1 });
+        console.log(yamlOutput);
         return;
       }
 

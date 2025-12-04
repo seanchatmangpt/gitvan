@@ -137,6 +137,7 @@ export default function AutomationPage() {
                     cursor: 'pointer',
                     transition: 'all 0.2s ease',
                   }}
+                  data-testid={`trigger-item-${trigger.id}`}
                 >
                   <div
                     style={{
@@ -177,6 +178,7 @@ export default function AutomationPage() {
                           cursor: 'pointer',
                           fontWeight: '600',
                         }}
+                        data-testid={`test-trigger-${trigger.id}`}
                       >
                         Test
                       </button>
@@ -195,6 +197,7 @@ export default function AutomationPage() {
                           cursor: 'pointer',
                           fontWeight: '600',
                         }}
+                        data-testid={`toggle-trigger-${trigger.id}`}
                       >
                         {trigger.enabled ? 'Enabled' : 'Disabled'}
                       </button>
@@ -242,25 +245,25 @@ export default function AutomationPage() {
         {/* Right Panel: Status & Results */}
         <div>
           {/* System Status */}
-          <div style={{ marginBottom: '24px' }}>
+          <div style={{ marginBottom: '24px' }} data-testid="automation-system-status">
             <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px' }}>
               System Status
             </h2>
             {automationStatus ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ padding: '12px', backgroundColor: '#f9fafb', borderRadius: '6px' }}>
+                <div style={{ padding: '12px', backgroundColor: '#f9fafb', borderRadius: '6px' }} data-testid="status-studio">
                   <div style={{ fontSize: '12px', color: '#666' }}>Studio</div>
                   <div style={{ fontSize: '14px', fontWeight: '600', marginTop: '4px' }}>
                     {automationStatus.studio}
                   </div>
                 </div>
-                <div style={{ padding: '12px', backgroundColor: '#f9fafb', borderRadius: '6px' }}>
+                <div style={{ padding: '12px', backgroundColor: '#f9fafb', borderRadius: '6px' }} data-testid="status-hooks">
                   <div style={{ fontSize: '12px', color: '#666' }}>Hooks</div>
                   <div style={{ fontSize: '14px', fontWeight: '600', marginTop: '4px' }}>
                     {automationStatus.hooks}
                   </div>
                 </div>
-                <div style={{ padding: '12px', backgroundColor: '#f9fafb', borderRadius: '6px' }}>
+                <div style={{ padding: '12px', backgroundColor: '#f9fafb', borderRadius: '6px' }} data-testid="status-workflows">
                   <div style={{ fontSize: '12px', color: '#666' }}>Workflows</div>
                   <div style={{ fontSize: '14px', fontWeight: '600', marginTop: '4px' }}>
                     {automationStatus.workflows}
@@ -283,6 +286,7 @@ export default function AutomationPage() {
                   : '1px solid #86efac',
                 borderRadius: '8px',
               }}
+              data-testid="trigger-test-result"
             >
               <h3 style={{ fontSize: '14px', fontWeight: '600', margin: '0 0 12px 0' }}>
                 {testResult.error ? '❌ Test Failed' : '✅ Test Passed'}

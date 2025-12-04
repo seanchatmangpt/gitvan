@@ -58,6 +58,7 @@ export default function EnterprisePage() {
           borderBottom: '2px solid #e5e7eb',
           overflowX: 'auto',
         }}
+        data-testid="enterprise-tabs-navigation"
       >
         {tabs.map((tab) => (
           <button
@@ -75,6 +76,7 @@ export default function EnterprisePage() {
               marginBottom: '-2px',
               whiteSpace: 'nowrap',
             }}
+            data-testid={`enterprise-tab-${tab.id}`}
           >
             {tab.icon} {tab.label}
           </button>
@@ -128,24 +130,25 @@ function TeamTab({ teamData, loading }: any) {
           border: '1px solid #e5e7eb',
           borderRadius: '8px',
         }}
+        data-testid="team-information-panel"
       >
         <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px' }}>
           Team Information
         </h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div>
+          <div data-testid="team-name-info">
             <div style={{ fontSize: '12px', color: '#666' }}>Team Name</div>
             <div style={{ fontSize: '14px', fontWeight: '600', marginTop: '4px' }}>
               {teamData?.name || 'Loading...'}
             </div>
           </div>
-          <div>
+          <div data-testid="team-plan-info">
             <div style={{ fontSize: '12px', color: '#666' }}>Plan</div>
             <div style={{ fontSize: '14px', fontWeight: '600', marginTop: '4px' }}>
               {teamData?.plan || 'Enterprise'}
             </div>
           </div>
-          <div>
+          <div data-testid="team-created-info">
             <div style={{ fontSize: '12px', color: '#666' }}>Created</div>
             <div style={{ fontSize: '14px', fontWeight: '600', marginTop: '4px' }}>
               {teamData?.createdAt ? new Date(teamData.createdAt).toLocaleDateString() : 'N/A'}
@@ -162,6 +165,7 @@ function TeamTab({ teamData, loading }: any) {
           border: '1px solid #e5e7eb',
           borderRadius: '8px',
         }}
+        data-testid="team-members-panel"
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <h2 style={{ fontSize: '16px', fontWeight: '600' }}>Team Members ({members.length})</h2>
@@ -176,6 +180,7 @@ function TeamTab({ teamData, loading }: any) {
               cursor: 'pointer',
               fontWeight: '600',
             }}
+            data-testid="invite-member-button"
           >
             Invite Member
           </button>
@@ -192,6 +197,7 @@ function TeamTab({ teamData, loading }: any) {
                 justifyContent: 'space-between',
                 alignItems: 'center',
               }}
+              data-testid={`team-member-${member.id}`}
             >
               <div>
                 <div style={{ fontSize: '14px', fontWeight: '600' }}>{member.name}</div>
@@ -236,7 +242,7 @@ function ApiKeysTab() {
   const [showNew, setShowNew] = useState(false);
 
   return (
-    <div>
+    <div data-testid="enterprise-apikeys-tab">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <h2 style={{ fontSize: '18px', fontWeight: '600' }}>API Keys</h2>
         <button
@@ -250,6 +256,7 @@ function ApiKeysTab() {
             cursor: 'pointer',
             fontWeight: '600',
           }}
+          data-testid="new-api-key-button"
         >
           + New API Key
         </button>
@@ -340,7 +347,7 @@ function ApiKeysTab() {
  */
 function WebhooksTab() {
   return (
-    <div>
+    <div data-testid="enterprise-webhooks-tab">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <h2 style={{ fontSize: '18px', fontWeight: '600' }}>Webhooks</h2>
         <button
@@ -353,6 +360,7 @@ function WebhooksTab() {
             cursor: 'pointer',
             fontWeight: '600',
           }}
+          data-testid="new-webhook-button"
         >
           + New Webhook
         </button>
@@ -371,6 +379,7 @@ function WebhooksTab() {
               justifyContent: 'space-between',
               alignItems: 'center',
             }}
+            data-testid={`webhook-item-${idx}`}
           >
             <div>
               <div style={{ fontSize: '14px', fontWeight: '600' }}>{name}</div>
@@ -418,7 +427,7 @@ function WebhooksTab() {
  */
 function SchedulesTab() {
   return (
-    <div>
+    <div data-testid="enterprise-schedules-tab">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <h2 style={{ fontSize: '18px', fontWeight: '600' }}>Scheduled Workflows</h2>
         <button
@@ -431,6 +440,7 @@ function SchedulesTab() {
             cursor: 'pointer',
             fontWeight: '600',
           }}
+          data-testid="new-schedule-button"
         >
           + New Schedule
         </button>
@@ -449,6 +459,7 @@ function SchedulesTab() {
               border: '1px solid #e5e7eb',
               borderRadius: '8px',
             }}
+            data-testid={`schedule-item-${idx}`}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
               <div>
@@ -491,7 +502,7 @@ function QuotasTab() {
   ];
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }} data-testid="enterprise-quotas-tab">
       {quotas.map((quota) => {
         const percentage = (quota.used / quota.limit) * 100;
         return (
@@ -503,6 +514,7 @@ function QuotasTab() {
               border: '1px solid #e5e7eb',
               borderRadius: '8px',
             }}
+            data-testid={`quota-item-${quota.name.toLowerCase().replace(/\s+/g, '-')}`}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
               <div style={{ fontSize: '14px', fontWeight: '600' }}>{quota.name}</div>
@@ -554,6 +566,7 @@ function AuditTab() {
         border: '1px solid #e5e7eb',
         borderRadius: '8px',
       }}
+      data-testid="enterprise-audit-tab"
     >
       <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px' }}>
         Audit Log
@@ -576,6 +589,7 @@ function AuditTab() {
               justifyContent: 'space-between',
               alignItems: 'center',
             }}
+            data-testid={`audit-entry-${idx}`}
           >
             <div>
               <div style={{ fontSize: '14px', fontWeight: '600' }}>{entry.action}</div>

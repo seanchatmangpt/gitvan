@@ -120,7 +120,7 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "failed",
-                      "duration": 6736,
+                      "duration": 6771,
                       "error": {
                         "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('h1')\nExpected substring: \u001b[32m\"Release Management\"\u001b[39m\nReceived string:    \u001b[31m\"404\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('h1')\u001b[22m\n\u001b[2m    9 × locator resolved to <h1 class=\"next-error-h1\">404</h1>\u001b[22m\n\u001b[2m      - unexpected value \"404\"\u001b[22m\n",
                         "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('h1')\nExpected substring: \u001b[32m\"Release Management\"\u001b[39m\nReceived string:    \u001b[31m\"404\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('h1')\u001b[22m\n\u001b[2m    9 × locator resolved to <h1 class=\"next-error-h1\">404</h1>\u001b[22m\n\u001b[2m      - unexpected value \"404\"\u001b[22m\n\n    at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-deployment-automation.spec.ts:20:38",
@@ -144,7 +144,7 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-12-04T00:55:31.083Z",
+                      "startTime": "2025-12-04T04:13:41.349Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -194,7 +194,7 @@
                       "workerIndex": 1,
                       "parallelIndex": 1,
                       "status": "timedOut",
-                      "duration": 31130,
+                      "duration": 32428,
                       "error": {
                         "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m",
                         "stack": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
@@ -215,7 +215,7 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-12-04T00:55:31.086Z",
+                      "startTime": "2025-12-04T04:13:41.351Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -260,7 +260,7 @@
                       "workerIndex": 2,
                       "parallelIndex": 2,
                       "status": "timedOut",
-                      "duration": 31148,
+                      "duration": 32588,
                       "error": {
                         "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m",
                         "stack": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
@@ -281,7 +281,7 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-12-04T00:55:31.087Z",
+                      "startTime": "2025-12-04T04:13:41.349Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -326,7 +326,7 @@
                       "workerIndex": 3,
                       "parallelIndex": 3,
                       "status": "failed",
-                      "duration": 6690,
+                      "duration": 6791,
                       "error": {
                         "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid=\"active-deployment\"]')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid=\"active-deployment\"]')\u001b[22m\n",
                         "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid=\"active-deployment\"]')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid=\"active-deployment\"]')\u001b[22m\n\n    at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-deployment-automation.spec.ts:126:7",
@@ -350,7 +350,7 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-12-04T00:55:31.088Z",
+                      "startTime": "2025-12-04T04:13:41.346Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -400,7 +400,7 @@
                       "workerIndex": 4,
                       "parallelIndex": 4,
                       "status": "failed",
-                      "duration": 6716,
+                      "duration": 6792,
                       "error": {
                         "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid=\"deployment-metrics\"]')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid=\"deployment-metrics\"]')\u001b[22m\n",
                         "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid=\"deployment-metrics\"]')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid=\"deployment-metrics\"]')\u001b[22m\n\n    at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-deployment-automation.spec.ts:160:7",
@@ -424,7 +424,7 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-12-04T00:55:31.083Z",
+                      "startTime": "2025-12-04T04:13:41.346Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -491,7 +491,7 @@
                       "workerIndex": 5,
                       "parallelIndex": 5,
                       "status": "failed",
-                      "duration": 6755,
+                      "duration": 6798,
                       "error": {
                         "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('h1')\nExpected substring: \u001b[32m\"GitVan Studio\"\u001b[39m\nReceived string:    \u001b[31m\"Workflow Builder\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('h1')\u001b[22m\n\u001b[2m    9 × locator resolved to <h1>Workflow Builder</h1>\u001b[22m\n\u001b[2m      - unexpected value \"Workflow Builder\"\u001b[22m\n",
                         "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('h1')\nExpected substring: \u001b[32m\"GitVan Studio\"\u001b[39m\nReceived string:    \u001b[31m\"Workflow Builder\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('h1')\u001b[22m\n\u001b[2m    9 × locator resolved to <h1>Workflow Builder</h1>\u001b[22m\n\u001b[2m      - unexpected value \"Workflow Builder\"\u001b[22m\n\n    at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-developer-workflow.spec.ts:20:38",
@@ -515,7 +515,7 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-12-04T00:55:31.082Z",
+                      "startTime": "2025-12-04T04:13:41.346Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -565,7 +565,7 @@
                       "workerIndex": 6,
                       "parallelIndex": 6,
                       "status": "timedOut",
-                      "duration": 30941,
+                      "duration": 31902,
                       "error": {
                         "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m",
                         "stack": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
@@ -586,7 +586,7 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-12-04T00:55:31.088Z",
+                      "startTime": "2025-12-04T04:13:41.347Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -631,7 +631,7 @@
                       "workerIndex": 7,
                       "parallelIndex": 7,
                       "status": "timedOut",
-                      "duration": 31129,
+                      "duration": 32564,
                       "error": {
                         "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m",
                         "stack": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
@@ -652,7 +652,7 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-12-04T00:55:31.084Z",
+                      "startTime": "2025-12-04T04:13:41.345Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -697,7 +697,7 @@
                       "workerIndex": 8,
                       "parallelIndex": 0,
                       "status": "failed",
-                      "duration": 5865,
+                      "duration": 5997,
                       "error": {
                         "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid=\"metrics-dashboard\"]')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid=\"metrics-dashboard\"]')\u001b[22m\n",
                         "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid=\"metrics-dashboard\"]')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid=\"metrics-dashboard\"]')\u001b[22m\n\n    at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-developer-workflow.spec.ts:132:69",
@@ -721,7 +721,7 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-12-04T00:55:38.664Z",
+                      "startTime": "2025-12-04T04:13:49.283Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -786,9 +786,9 @@
                   "results": [
                     {
                       "workerIndex": 9,
-                      "parallelIndex": 3,
+                      "parallelIndex": 4,
                       "status": "failed",
-                      "duration": 5868,
+                      "duration": 5944,
                       "error": {
                         "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('h1')\nExpected substring: \u001b[32m\"Code Review\"\u001b[39m\nReceived string:    \u001b[31m\"404\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('h1')\u001b[22m\n\u001b[2m    9 × locator resolved to <h1 class=\"next-error-h1\">404</h1>\u001b[22m\n\u001b[2m      - unexpected value \"404\"\u001b[22m\n",
                         "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('h1')\nExpected substring: \u001b[32m\"Code Review\"\u001b[39m\nReceived string:    \u001b[31m\"404\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('h1')\u001b[22m\n\u001b[2m    9 × locator resolved to <h1 class=\"next-error-h1\">404</h1>\u001b[22m\n\u001b[2m      - unexpected value \"404\"\u001b[22m\n\n    at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-team-collaboration.spec.ts:20:38",
@@ -812,7 +812,7 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-12-04T00:55:38.652Z",
+                      "startTime": "2025-12-04T04:13:49.287Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -860,9 +860,9 @@
                   "results": [
                     {
                       "workerIndex": 10,
-                      "parallelIndex": 5,
+                      "parallelIndex": 3,
                       "status": "failed",
-                      "duration": 5912,
+                      "duration": 6028,
                       "error": {
                         "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid=\"active-standards\"]')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid=\"active-standards\"]')\u001b[22m\n",
                         "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid=\"active-standards\"]')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid=\"active-standards\"]')\u001b[22m\n\n    at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-team-collaboration.spec.ts:60:7",
@@ -886,7 +886,7 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-12-04T00:55:38.668Z",
+                      "startTime": "2025-12-04T04:13:49.290Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -934,9 +934,9 @@
                   "results": [
                     {
                       "workerIndex": 11,
-                      "parallelIndex": 4,
+                      "parallelIndex": 5,
                       "status": "failed",
-                      "duration": 5870,
+                      "duration": 6019,
                       "error": {
                         "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid=\"team-dashboard\"]')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid=\"team-dashboard\"]')\u001b[22m\n",
                         "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid=\"team-dashboard\"]')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid=\"team-dashboard\"]')\u001b[22m\n\n    at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-team-collaboration.spec.ts:91:7",
@@ -960,7 +960,7 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-12-04T00:55:38.651Z",
+                      "startTime": "2025-12-04T04:13:49.304Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1008,9 +1008,9 @@
                   "results": [
                     {
                       "workerIndex": 12,
-                      "parallelIndex": 0,
+                      "parallelIndex": 4,
                       "status": "timedOut",
-                      "duration": 31178,
+                      "duration": 32487,
                       "error": {
                         "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m",
                         "stack": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
@@ -1031,7 +1031,7 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-12-04T00:55:45.149Z",
+                      "startTime": "2025-12-04T04:13:56.129Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1067,8 +1067,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-12-04T00:55:29.713Z",
-    "duration": 46777.963,
+    "startTime": "2025-12-04T04:13:40.029Z",
+    "duration": 67747.613,
     "expected": 0,
     "skipped": 0,
     "unexpected": 13,

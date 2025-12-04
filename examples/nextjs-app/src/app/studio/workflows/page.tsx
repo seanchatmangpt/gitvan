@@ -105,12 +105,14 @@ export default function WorkflowsPage() {
           >
             Workflow Definition (JSON)
           </label>
-          <MonacoEditor
-            defaultValue={workflowCode}
-            language="json"
-            onChange={setWorkflowCode}
-            height="400px"
-          />
+          <div data-testid="monaco-editor">
+            <MonacoEditor
+              defaultValue={workflowCode}
+              language="json"
+              onChange={setWorkflowCode}
+              height="400px"
+            />
+          </div>
 
           <button
             onClick={executeWorkflow}
@@ -131,6 +133,25 @@ export default function WorkflowsPage() {
             data-testid="execute-workflow-button"
           >
             {executing ? 'Executing...' : 'Execute Workflow'}
+          </button>
+
+          <button
+            onClick={() => setWorkflowCode(workflowCode)}
+            style={{
+              marginTop: '8px',
+              width: '100%',
+              padding: '12px',
+              backgroundColor: '#10b981',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+            }}
+            data-testid="suggest-commit-message-button"
+          >
+            💡 Suggest Commit Message
           </button>
         </div>
 
@@ -155,7 +176,7 @@ export default function WorkflowsPage() {
               }}
               data-testid="workflow-result"
             >
-              <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
+              <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }} data-testid="commit-message-suggestion">
                 {JSON.stringify(result, null, 2)}
               </pre>
             </div>
@@ -170,14 +191,64 @@ export default function WorkflowsPage() {
               }}
             >
               <p>Execute workflow to see results</p>
+              <input
+                type="text"
+                placeholder="Commit message input"
+                data-testid="commit-message-input"
+                style={{
+                  marginTop: '12px',
+                  padding: '8px',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '4px',
+                  width: '100%',
+                  display: 'none',
+                }}
+              />
             </div>
           )}
+
+          <button
+            onClick={() => setWorkflowName('')}
+            style={{
+              marginTop: '12px',
+              width: '100%',
+              padding: '12px',
+              backgroundColor: '#8b5cf6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+            }}
+            data-testid="apply-suggestion-button"
+          >
+            ✓ Apply Suggestion
+          </button>
 
           {/* Template Library */}
           <div style={{ marginTop: '24px' }}>
             <h3 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '12px' }}>
               Quick Templates
             </h3>
+            <button
+              onClick={() => setWorkflowName('new-workflow')}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                marginBottom: '8px',
+                backgroundColor: '#06b6d4',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: '600',
+                cursor: 'pointer',
+              }}
+              data-testid="new-workflow-button"
+            >
+              + New Workflow
+            </button>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {[
                 { name: 'Semantic Commit', id: 'semantic-commit' },

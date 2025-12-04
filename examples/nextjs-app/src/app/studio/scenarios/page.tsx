@@ -251,6 +251,7 @@ export default function ScenariosPage() {
 
                   {/* Progress bar */}
                   <div
+                    data-testid="progress-indicator"
                     style={{
                       width: '100%',
                       height: '6px',

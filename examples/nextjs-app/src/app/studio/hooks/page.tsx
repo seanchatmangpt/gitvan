@@ -157,7 +157,7 @@ export default function HooksPage() {
             </div>
           </div>
 
-          <div>
+          <div data-testid="hook-validation-status">
             <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>
               Registered Hooks
             </h2>
@@ -167,6 +167,7 @@ export default function HooksPage() {
                   <div
                     key={hook}
                     onClick={() => setSelectedHook(hook)}
+                    data-testid="hook-definition"
                     style={{
                       padding: '12px 16px',
                       backgroundColor:
@@ -194,6 +195,7 @@ export default function HooksPage() {
                         executeHook(hook);
                       }}
                       disabled={executing}
+                      data-testid="hook-enforce-commit"
                       style={{
                         padding: '6px 12px',
                         backgroundColor: '#3b82f6',
@@ -232,8 +234,44 @@ export default function HooksPage() {
             Hook Execution Results
           </h2>
 
+          <button
+            onClick={() => {
+              if (selectedHook) executeHook(selectedHook);
+            }}
+            style={{
+              width: '100%',
+              padding: '12px',
+              marginBottom: '16px',
+              backgroundColor: '#f59e0b',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+            }}
+            data-testid="test-hook-button"
+          >
+            🧪 Test Hook
+          </button>
+
+          <input
+            type="text"
+            placeholder="Test commit message"
+            data-testid="test-commit-input"
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              marginBottom: '16px',
+              border: '1px solid #e5e7eb',
+              borderRadius: '6px',
+              fontSize: '14px',
+            }}
+          />
+
           {result ? (
             <div
+              data-testid="hook-test-result"
               style={{
                 padding: '16px',
                 backgroundColor: result.error ? '#fef2f2' : '#f0fdf4',

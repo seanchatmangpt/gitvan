@@ -5,6 +5,8 @@ const nextConfig = {
   experimental: {
     esmExternals: true,
   },
+  // Disable static generation for dynamic pages
+  staticPageGenerationTimeout: undefined,
 };
 
-module.exports = nextConfig;
+export default nextConfig;

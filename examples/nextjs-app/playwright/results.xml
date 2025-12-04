@@ -1,0 +1,587 @@
+<testsuites id="" name="" tests="13" failures="13" skipped="0" errors="0" time="46.77796300000001">
+<testsuite name="jtbd-deployment-automation.spec.ts" timestamp="2025-12-04T00:55:30.576Z" hostname="chromium" tests="5" failures="5" skipped="0" time="82.42" errors="0">
+<testcase name="JTBD: Deployment Automation &amp; Release Management › should automatically generate changelog from commits" classname="jtbd-deployment-automation.spec.ts" time="6.736">
+<failure message="jtbd-deployment-automation.spec.ts:15:3 should automatically generate changelog from commits" type="FAILURE">
+<![CDATA[  [chromium] › jtbd-deployment-automation.spec.ts:15:3 › JTBD: Deployment Automation & Release Management › should automatically generate changelog from commits 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('h1')
+    Expected substring: "Release Management"
+    Received string:    "404"
+    Timeout: 5000ms
+
+    Call log:
+      - Expect "toContainText" with timeout 5000ms
+      - waiting for locator('h1')
+        9 × locator resolved to <h1 class="next-error-h1">404</h1>
+          - unexpected value "404"
+
+
+      18 |     // Step 1: Navigate to release management
+      19 |     await page.goto('/studio/releases');
+    > 20 |     await expect(page.locator('h1')).toContainText('Release Management');
+         |                                      ^
+      21 |
+      22 |     // Step 2: Prepare new release
+      23 |     await page.click('[data-testid="new-release-button"]');
+        at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-deployment-automation.spec.ts:20:38
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/jtbd-deployment-automation-3e8e4-rate-changelog-from-commits-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/jtbd-deployment-automation-3e8e4-rate-changelog-from-commits-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/jtbd-deployment-automation-3e8e4-rate-changelog-from-commits-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|../test-results/jtbd-deployment-automation-3e8e4-rate-changelog-from-commits-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|../test-results/jtbd-deployment-automation-3e8e4-rate-changelog-from-commits-chromium/video.webm]]
+
+[[ATTACHMENT|../test-results/jtbd-deployment-automation-3e8e4-rate-changelog-from-commits-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="JTBD: Deployment Automation &amp; Release Management › should validate release readiness before deployment" classname="jtbd-deployment-automation.spec.ts" time="31.13">
+<failure message="jtbd-deployment-automation.spec.ts:53:3 should validate release readiness before deployment" type="FAILURE">
+<![CDATA[  [chromium] › jtbd-deployment-automation.spec.ts:53:3 › JTBD: Deployment Automation & Release Management › should validate release readiness before deployment 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('[data-testid="release-item"]')
+
+
+      58 |
+      59 |     // Step 2: Select release for validation
+    > 60 |     await page.click('[data-testid="release-item"]');
+         |                ^
+      61 |     await expect(
+      62 |       page.locator('[data-testid="release-details"]')
+      63 |     ).toBeVisible();
+        at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-deployment-automation.spec.ts:60:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/jtbd-deployment-automation-7c3b6-readiness-before-deployment-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/jtbd-deployment-automation-7c3b6-readiness-before-deployment-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/jtbd-deployment-automation-7c3b6-readiness-before-deployment-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|../test-results/jtbd-deployment-automation-7c3b6-readiness-before-deployment-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|../test-results/jtbd-deployment-automation-7c3b6-readiness-before-deployment-chromium/video.webm]]
+
+[[ATTACHMENT|../test-results/jtbd-deployment-automation-7c3b6-readiness-before-deployment-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="JTBD: Deployment Automation &amp; Release Management › should execute deployment workflow with hooks" classname="jtbd-deployment-automation.spec.ts" time="31.148">
+<failure message="jtbd-deployment-automation.spec.ts:85:3 should execute deployment workflow with hooks" type="FAILURE">
+<![CDATA[  [chromium] › jtbd-deployment-automation.spec.ts:85:3 › JTBD: Deployment Automation & Release Management › should execute deployment workflow with hooks 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('[data-testid="deploy-button"]')
+
+
+      88 |
+      89 |     // Step 2: Select release to deploy
+    > 90 |     await page.click('[data-testid="deploy-button"]');
+         |                ^
+      91 |
+      92 |     // Step 3: Confirm deployment target
+      93 |     await page.selectOption('[data-testid="deployment-target"]', 'production');
+        at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-deployment-automation.spec.ts:90:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/jtbd-deployment-automation-bfd75-loyment-workflow-with-hooks-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/jtbd-deployment-automation-bfd75-loyment-workflow-with-hooks-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/jtbd-deployment-automation-bfd75-loyment-workflow-with-hooks-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|../test-results/jtbd-deployment-automation-bfd75-loyment-workflow-with-hooks-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|../test-results/jtbd-deployment-automation-bfd75-loyment-workflow-with-hooks-chromium/video.webm]]
+
+[[ATTACHMENT|../test-results/jtbd-deployment-automation-bfd75-loyment-workflow-with-hooks-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="JTBD: Deployment Automation &amp; Release Management › should provide deployment rollback capability" classname="jtbd-deployment-automation.spec.ts" time="6.69">
+<failure message="jtbd-deployment-automation.spec.ts:119:3 should provide deployment rollback capability" type="FAILURE">
+<![CDATA[  [chromium] › jtbd-deployment-automation.spec.ts:119:3 › JTBD: Deployment Automation & Release Management › should provide deployment rollback capability 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: locator('[data-testid="active-deployment"]')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for locator('[data-testid="active-deployment"]')
+
+
+      124 |     await expect(
+      125 |       page.locator('[data-testid="active-deployment"]')
+    > 126 |     ).toBeVisible();
+          |       ^
+      127 |
+      128 |     // Step 3: Verify rollback option is available
+      129 |     await page.click('[data-testid="deployment-menu"]');
+        at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-deployment-automation.spec.ts:126:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/jtbd-deployment-automation-e23da-loyment-rollback-capability-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/jtbd-deployment-automation-e23da-loyment-rollback-capability-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/jtbd-deployment-automation-e23da-loyment-rollback-capability-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|../test-results/jtbd-deployment-automation-e23da-loyment-rollback-capability-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|../test-results/jtbd-deployment-automation-e23da-loyment-rollback-capability-chromium/video.webm]]
+
+[[ATTACHMENT|../test-results/jtbd-deployment-automation-e23da-loyment-rollback-capability-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="JTBD: Deployment Automation &amp; Release Management › should track deployment metrics and history" classname="jtbd-deployment-automation.spec.ts" time="6.716">
+<failure message="jtbd-deployment-automation.spec.ts:153:3 should track deployment metrics and history" type="FAILURE">
+<![CDATA[  [chromium] › jtbd-deployment-automation.spec.ts:153:3 › JTBD: Deployment Automation & Release Management › should track deployment metrics and history 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: locator('[data-testid="deployment-metrics"]')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for locator('[data-testid="deployment-metrics"]')
+
+
+      158 |     await expect(
+      159 |       page.locator('[data-testid="deployment-metrics"]')
+    > 160 |     ).toBeVisible();
+          |       ^
+      161 |
+      162 |     // Step 3: Check deployment frequency
+      163 |     await expect(
+        at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-deployment-automation.spec.ts:160:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/jtbd-deployment-automation-5b21b-loyment-metrics-and-history-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/jtbd-deployment-automation-5b21b-loyment-metrics-and-history-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/jtbd-deployment-automation-5b21b-loyment-metrics-and-history-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|../test-results/jtbd-deployment-automation-5b21b-loyment-metrics-and-history-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|../test-results/jtbd-deployment-automation-5b21b-loyment-metrics-and-history-chromium/video.webm]]
+
+[[ATTACHMENT|../test-results/jtbd-deployment-automation-5b21b-loyment-metrics-and-history-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="jtbd-developer-workflow.spec.ts" timestamp="2025-12-04T00:55:30.576Z" hostname="chromium" tests="4" failures="4" skipped="0" time="74.69" errors="0">
+<testcase name="JTBD: Developer Semantic Commit Workflow › should suggest semantic commit message from diff" classname="jtbd-developer-workflow.spec.ts" time="6.755">
+<failure message="jtbd-developer-workflow.spec.ts:15:3 should suggest semantic commit message from diff" type="FAILURE">
+<![CDATA[  [chromium] › jtbd-developer-workflow.spec.ts:15:3 › JTBD: Developer Semantic Commit Workflow › should suggest semantic commit message from diff 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('h1')
+    Expected substring: "GitVan Studio"
+    Received string:    "Workflow Builder"
+    Timeout: 5000ms
+
+    Call log:
+      - Expect "toContainText" with timeout 5000ms
+      - waiting for locator('h1')
+        9 × locator resolved to <h1>Workflow Builder</h1>
+          - unexpected value "Workflow Builder"
+
+
+      18 |     // Step 1: Navigate to Studio
+      19 |     await page.goto('/studio/workflows');
+    > 20 |     await expect(page.locator('h1')).toContainText('GitVan Studio');
+         |                                      ^
+      21 |
+      22 |     // Step 2: Open code editor with a diff
+      23 |     await page.click('[data-testid="new-workflow-button"]');
+        at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-developer-workflow.spec.ts:20:38
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/jtbd-developer-workflow-JT-eee00-ic-commit-message-from-diff-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/jtbd-developer-workflow-JT-eee00-ic-commit-message-from-diff-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/jtbd-developer-workflow-JT-eee00-ic-commit-message-from-diff-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|../test-results/jtbd-developer-workflow-JT-eee00-ic-commit-message-from-diff-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|../test-results/jtbd-developer-workflow-JT-eee00-ic-commit-message-from-diff-chromium/video.webm]]
+
+[[ATTACHMENT|../test-results/jtbd-developer-workflow-JT-eee00-ic-commit-message-from-diff-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="JTBD: Developer Semantic Commit Workflow › should enforce commit message patterns with hooks" classname="jtbd-developer-workflow.spec.ts" time="30.941">
+<failure message="jtbd-developer-workflow.spec.ts:63:3 should enforce commit message patterns with hooks" type="FAILURE">
+<![CDATA[  [chromium] › jtbd-developer-workflow.spec.ts:63:3 › JTBD: Developer Semantic Commit Workflow › should enforce commit message patterns with hooks 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('[data-testid="hook-enforce-commit"]')
+
+
+      68 |
+      69 |     // Step 2: View enforce-commit-message hook
+    > 70 |     await page.click('[data-testid="hook-enforce-commit"]');
+         |                ^
+      71 |     await expect(
+      72 |       page.locator('[data-testid="hook-definition"]')
+      73 |     ).toContainText('Enforce Commit Message');
+        at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-developer-workflow.spec.ts:70:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/jtbd-developer-workflow-JT-9cbab-message-patterns-with-hooks-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/jtbd-developer-workflow-JT-9cbab-message-patterns-with-hooks-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/jtbd-developer-workflow-JT-9cbab-message-patterns-with-hooks-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|../test-results/jtbd-developer-workflow-JT-9cbab-message-patterns-with-hooks-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|../test-results/jtbd-developer-workflow-JT-9cbab-message-patterns-with-hooks-chromium/video.webm]]
+
+[[ATTACHMENT|../test-results/jtbd-developer-workflow-JT-9cbab-message-patterns-with-hooks-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="JTBD: Developer Semantic Commit Workflow › should integrate with AI engine for quality analysis" classname="jtbd-developer-workflow.spec.ts" time="31.129">
+<failure message="jtbd-developer-workflow.spec.ts:90:3 should integrate with AI engine for quality analysis" type="FAILURE">
+<![CDATA[  [chromium] › jtbd-developer-workflow.spec.ts:90:3 › JTBD: Developer Semantic Commit Workflow › should integrate with AI engine for quality analysis 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('[data-testid="code-input"]')
+
+
+      104 |       }
+      105 |     `;
+    > 106 |     await page.fill('[data-testid="code-input"]', sampleCode);
+          |                ^
+      107 |
+      108 |     // Step 3: Request analysis
+      109 |     await page.click('[data-testid="analyze-button"]');
+        at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-developer-workflow.spec.ts:106:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/jtbd-developer-workflow-JT-d918e-engine-for-quality-analysis-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/jtbd-developer-workflow-JT-d918e-engine-for-quality-analysis-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/jtbd-developer-workflow-JT-d918e-engine-for-quality-analysis-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|../test-results/jtbd-developer-workflow-JT-d918e-engine-for-quality-analysis-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|../test-results/jtbd-developer-workflow-JT-d918e-engine-for-quality-analysis-chromium/video.webm]]
+
+[[ATTACHMENT|../test-results/jtbd-developer-workflow-JT-d918e-engine-for-quality-analysis-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="JTBD: Developer Semantic Commit Workflow › should track developer workflow metrics" classname="jtbd-developer-workflow.spec.ts" time="5.865">
+<failure message="jtbd-developer-workflow.spec.ts:127:3 should track developer workflow metrics" type="FAILURE">
+<![CDATA[  [chromium] › jtbd-developer-workflow.spec.ts:127:3 › JTBD: Developer Semantic Commit Workflow › should track developer workflow metrics 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: locator('[data-testid="metrics-dashboard"]')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for locator('[data-testid="metrics-dashboard"]')
+
+
+      130 |
+      131 |     // Step 2: Verify dashboard is loaded
+    > 132 |     await expect(page.locator('[data-testid="metrics-dashboard"]')).toBeVisible();
+          |                                                                     ^
+      133 |
+      134 |     // Step 3: Check key metrics are displayed
+      135 |     await expect(
+        at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-developer-workflow.spec.ts:132:69
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/jtbd-developer-workflow-JT-08b03--developer-workflow-metrics-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/jtbd-developer-workflow-JT-08b03--developer-workflow-metrics-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/jtbd-developer-workflow-JT-08b03--developer-workflow-metrics-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|../test-results/jtbd-developer-workflow-JT-08b03--developer-workflow-metrics-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|../test-results/jtbd-developer-workflow-JT-08b03--developer-workflow-metrics-chromium/video.webm]]
+
+[[ATTACHMENT|../test-results/jtbd-developer-workflow-JT-08b03--developer-workflow-metrics-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="jtbd-team-collaboration.spec.ts" timestamp="2025-12-04T00:55:30.576Z" hostname="chromium" tests="4" failures="4" skipped="0" time="48.828" errors="0">
+<testcase name="JTBD: Team Collaboration &amp; Code Review › should provide AI-powered code review suggestions" classname="jtbd-team-collaboration.spec.ts" time="5.868">
+<failure message="jtbd-team-collaboration.spec.ts:15:3 should provide AI-powered code review suggestions" type="FAILURE">
+<![CDATA[  [chromium] › jtbd-team-collaboration.spec.ts:15:3 › JTBD: Team Collaboration & Code Review › should provide AI-powered code review suggestions 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('h1')
+    Expected substring: "Code Review"
+    Received string:    "404"
+    Timeout: 5000ms
+
+    Call log:
+      - Expect "toContainText" with timeout 5000ms
+      - waiting for locator('h1')
+        9 × locator resolved to <h1 class="next-error-h1">404</h1>
+          - unexpected value "404"
+
+
+      18 |     // Step 1: Navigate to code review interface
+      19 |     await page.goto('/studio/review');
+    > 20 |     await expect(page.locator('h1')).toContainText('Code Review');
+         |                                      ^
+      21 |
+      22 |     // Step 2: Submit code for review
+      23 |     await page.click('[data-testid="submit-for-review-button"]');
+        at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-team-collaboration.spec.ts:20:38
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/jtbd-team-collaboration-JT-67fda-red-code-review-suggestions-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/jtbd-team-collaboration-JT-67fda-red-code-review-suggestions-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/jtbd-team-collaboration-JT-67fda-red-code-review-suggestions-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|../test-results/jtbd-team-collaboration-JT-67fda-red-code-review-suggestions-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|../test-results/jtbd-team-collaboration-JT-67fda-red-code-review-suggestions-chromium/video.webm]]
+
+[[ATTACHMENT|../test-results/jtbd-team-collaboration-JT-67fda-red-code-review-suggestions-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="JTBD: Team Collaboration &amp; Code Review › should enforce team coding standards with custom hooks" classname="jtbd-team-collaboration.spec.ts" time="5.912">
+<failure message="jtbd-team-collaboration.spec.ts:51:3 should enforce team coding standards with custom hooks" type="FAILURE">
+<![CDATA[  [chromium] › jtbd-team-collaboration.spec.ts:51:3 › JTBD: Team Collaboration & Code Review › should enforce team coding standards with custom hooks 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: locator('[data-testid="active-standards"]')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for locator('[data-testid="active-standards"]')
+
+
+      58 |     await expect(
+      59 |       page.locator('[data-testid="active-standards"]')
+    > 60 |     ).toBeVisible();
+         |       ^
+      61 |
+      62 |     // Step 3: Enable specific standards
+      63 |     const standardsCheckboxes = await page
+        at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-team-collaboration.spec.ts:60:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/jtbd-team-collaboration-JT-1402a-standards-with-custom-hooks-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/jtbd-team-collaboration-JT-1402a-standards-with-custom-hooks-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/jtbd-team-collaboration-JT-1402a-standards-with-custom-hooks-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|../test-results/jtbd-team-collaboration-JT-1402a-standards-with-custom-hooks-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|../test-results/jtbd-team-collaboration-JT-1402a-standards-with-custom-hooks-chromium/video.webm]]
+
+[[ATTACHMENT|../test-results/jtbd-team-collaboration-JT-1402a-standards-with-custom-hooks-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="JTBD: Team Collaboration &amp; Code Review › should track team collaboration metrics" classname="jtbd-team-collaboration.spec.ts" time="5.87">
+<failure message="jtbd-team-collaboration.spec.ts:84:3 should track team collaboration metrics" type="FAILURE">
+<![CDATA[  [chromium] › jtbd-team-collaboration.spec.ts:84:3 › JTBD: Team Collaboration & Code Review › should track team collaboration metrics 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: locator('[data-testid="team-dashboard"]')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for locator('[data-testid="team-dashboard"]')
+
+
+      89 |     await expect(
+      90 |       page.locator('[data-testid="team-dashboard"]')
+    > 91 |     ).toBeVisible();
+         |       ^
+      92 |
+      93 |     // Step 3: Check review metrics
+      94 |     await expect(
+        at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-team-collaboration.spec.ts:91:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/jtbd-team-collaboration-JT-2f69f--team-collaboration-metrics-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/jtbd-team-collaboration-JT-2f69f--team-collaboration-metrics-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/jtbd-team-collaboration-JT-2f69f--team-collaboration-metrics-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|../test-results/jtbd-team-collaboration-JT-2f69f--team-collaboration-metrics-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|../test-results/jtbd-team-collaboration-JT-2f69f--team-collaboration-metrics-chromium/video.webm]]
+
+[[ATTACHMENT|../test-results/jtbd-team-collaboration-JT-2f69f--team-collaboration-metrics-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="JTBD: Team Collaboration &amp; Code Review › should enable asynchronous code discussions" classname="jtbd-team-collaboration.spec.ts" time="31.178">
+<failure message="jtbd-team-collaboration.spec.ts:114:3 should enable asynchronous code discussions" type="FAILURE">
+<![CDATA[  [chromium] › jtbd-team-collaboration.spec.ts:114:3 › JTBD: Team Collaboration & Code Review › should enable asynchronous code discussions 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('[data-testid="new-discussion-button"]')
+
+
+      117 |
+      118 |     // Step 2: Create new discussion
+    > 119 |     await page.click('[data-testid="new-discussion-button"]');
+          |                ^
+      120 |     await page.fill('[data-testid="discussion-title"]', 'Optimize database query');
+      121 |     await page.fill(
+      122 |       '[data-testid="discussion-code"]',
+        at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-team-collaboration.spec.ts:119:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/jtbd-team-collaboration-JT-16340-ynchronous-code-discussions-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/jtbd-team-collaboration-JT-16340-ynchronous-code-discussions-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/jtbd-team-collaboration-JT-16340-ynchronous-code-discussions-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|../test-results/jtbd-team-collaboration-JT-16340-ynchronous-code-discussions-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|../test-results/jtbd-team-collaboration-JT-16340-ynchronous-code-discussions-chromium/video.webm]]
+
+[[ATTACHMENT|../test-results/jtbd-team-collaboration-JT-16340-ynchronous-code-discussions-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+</testsuites>

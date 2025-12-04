@@ -1,0 +1,1077 @@
+{
+  "config": {
+    "configFile": "/Users/sac/gitvan/examples/nextjs-app/playwright.config.ts",
+    "rootDir": "/Users/sac/gitvan/examples/nextjs-app/playwright/tests",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 8
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        {
+          "outputFolder": "playwright/report"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "playwright/results.json"
+        }
+      ],
+      [
+        "junit",
+        {
+          "outputFile": "playwright/results.xml"
+        }
+      ],
+      [
+        "list",
+        null
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/Users/sac/gitvan/examples/nextjs-app/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 8
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Users/sac/gitvan/examples/nextjs-app/playwright/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.spec.ts"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/sac/gitvan/examples/nextjs-app/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 8
+        },
+        "id": "firefox",
+        "name": "firefox",
+        "testDir": "/Users/sac/gitvan/examples/nextjs-app/playwright/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.spec.ts"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.57.0",
+    "workers": 8,
+    "webServer": {
+      "command": "npm run dev",
+      "url": "http://localhost:3000",
+      "reuseExistingServer": true,
+      "timeout": 120000
+    }
+  },
+  "suites": [
+    {
+      "title": "jtbd-deployment-automation.spec.ts",
+      "file": "jtbd-deployment-automation.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "JTBD: Deployment Automation & Release Management",
+          "file": "jtbd-deployment-automation.spec.ts",
+          "line": 14,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should automatically generate changelog from commits",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 6736,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('h1')\nExpected substring: \u001b[32m\"Release Management\"\u001b[39m\nReceived string:    \u001b[31m\"404\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('h1')\u001b[22m\n\u001b[2m    9 × locator resolved to <h1 class=\"next-error-h1\">404</h1>\u001b[22m\n\u001b[2m      - unexpected value \"404\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('h1')\nExpected substring: \u001b[32m\"Release Management\"\u001b[39m\nReceived string:    \u001b[31m\"404\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('h1')\u001b[22m\n\u001b[2m    9 × locator resolved to <h1 class=\"next-error-h1\">404</h1>\u001b[22m\n\u001b[2m      - unexpected value \"404\"\u001b[22m\n\n    at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-deployment-automation.spec.ts:20:38",
+                        "location": {
+                          "file": "/Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-deployment-automation.spec.ts",
+                          "column": 38,
+                          "line": 20
+                        },
+                        "snippet": "  18 |     // Step 1: Navigate to release management\n  19 |     await page.goto('/studio/releases');\n> 20 |     await expect(page.locator('h1')).toContainText('Release Management');\n     |                                      ^\n  21 |\n  22 |     // Step 2: Prepare new release\n  23 |     await page.click('[data-testid=\"new-release-button\"]');"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-deployment-automation.spec.ts",
+                            "column": 38,
+                            "line": 20
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('h1')\nExpected substring: \u001b[32m\"Release Management\"\u001b[39m\nReceived string:    \u001b[31m\"404\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('h1')\u001b[22m\n\u001b[2m    9 × locator resolved to <h1 class=\"next-error-h1\">404</h1>\u001b[22m\n\u001b[2m      - unexpected value \"404\"\u001b[22m\n\n\n  18 |     // Step 1: Navigate to release management\n  19 |     await page.goto('/studio/releases');\n> 20 |     await expect(page.locator('h1')).toContainText('Release Management');\n     |                                      ^\n  21 |\n  22 |     // Step 2: Prepare new release\n  23 |     await page.click('[data-testid=\"new-release-button\"]');\n    at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-deployment-automation.spec.ts:20:38"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-04T00:55:31.083Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-deployment-automation-3e8e4-rate-changelog-from-commits-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-deployment-automation-3e8e4-rate-changelog-from-commits-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-deployment-automation-3e8e4-rate-changelog-from-commits-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-deployment-automation.spec.ts",
+                        "column": 38,
+                        "line": 20
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "5fc03cbe311c873cb14a-4ffe0b4ebe49e24bfbaf",
+              "file": "jtbd-deployment-automation.spec.ts",
+              "line": 15,
+              "column": 3
+            },
+            {
+              "title": "should validate release readiness before deployment",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "timedOut",
+                      "duration": 31130,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-deployment-automation.spec.ts",
+                            "column": 16,
+                            "line": 60
+                          },
+                          "message": "Error: page.click: Test timeout of 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"release-item\"]')\u001b[22m\n\n\n  58 |\n  59 |     // Step 2: Select release for validation\n> 60 |     await page.click('[data-testid=\"release-item\"]');\n     |                ^\n  61 |     await expect(\n  62 |       page.locator('[data-testid=\"release-details\"]')\n  63 |     ).toBeVisible();\n    at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-deployment-automation.spec.ts:60:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-04T00:55:31.086Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-deployment-automation-7c3b6-readiness-before-deployment-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-deployment-automation-7c3b6-readiness-before-deployment-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-deployment-automation-7c3b6-readiness-before-deployment-chromium/error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "5fc03cbe311c873cb14a-ce28153f80f571cb6d42",
+              "file": "jtbd-deployment-automation.spec.ts",
+              "line": 53,
+              "column": 3
+            },
+            {
+              "title": "should execute deployment workflow with hooks",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "timedOut",
+                      "duration": 31148,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-deployment-automation.spec.ts",
+                            "column": 16,
+                            "line": 90
+                          },
+                          "message": "Error: page.click: Test timeout of 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"deploy-button\"]')\u001b[22m\n\n\n  88 |\n  89 |     // Step 2: Select release to deploy\n> 90 |     await page.click('[data-testid=\"deploy-button\"]');\n     |                ^\n  91 |\n  92 |     // Step 3: Confirm deployment target\n  93 |     await page.selectOption('[data-testid=\"deployment-target\"]', 'production');\n    at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-deployment-automation.spec.ts:90:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-04T00:55:31.087Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-deployment-automation-bfd75-loyment-workflow-with-hooks-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-deployment-automation-bfd75-loyment-workflow-with-hooks-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-deployment-automation-bfd75-loyment-workflow-with-hooks-chromium/error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "5fc03cbe311c873cb14a-f9fbf226b8eaa6c6fa71",
+              "file": "jtbd-deployment-automation.spec.ts",
+              "line": 85,
+              "column": 3
+            },
+            {
+              "title": "should provide deployment rollback capability",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "failed",
+                      "duration": 6690,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid=\"active-deployment\"]')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid=\"active-deployment\"]')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid=\"active-deployment\"]')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid=\"active-deployment\"]')\u001b[22m\n\n    at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-deployment-automation.spec.ts:126:7",
+                        "location": {
+                          "file": "/Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-deployment-automation.spec.ts",
+                          "column": 7,
+                          "line": 126
+                        },
+                        "snippet": "  124 |     await expect(\n  125 |       page.locator('[data-testid=\"active-deployment\"]')\n> 126 |     ).toBeVisible();\n      |       ^\n  127 |\n  128 |     // Step 3: Verify rollback option is available\n  129 |     await page.click('[data-testid=\"deployment-menu\"]');"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-deployment-automation.spec.ts",
+                            "column": 7,
+                            "line": 126
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid=\"active-deployment\"]')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid=\"active-deployment\"]')\u001b[22m\n\n\n  124 |     await expect(\n  125 |       page.locator('[data-testid=\"active-deployment\"]')\n> 126 |     ).toBeVisible();\n      |       ^\n  127 |\n  128 |     // Step 3: Verify rollback option is available\n  129 |     await page.click('[data-testid=\"deployment-menu\"]');\n    at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-deployment-automation.spec.ts:126:7"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-04T00:55:31.088Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-deployment-automation-e23da-loyment-rollback-capability-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-deployment-automation-e23da-loyment-rollback-capability-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-deployment-automation-e23da-loyment-rollback-capability-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-deployment-automation.spec.ts",
+                        "column": 7,
+                        "line": 126
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "5fc03cbe311c873cb14a-7314894f9a6f5b12b302",
+              "file": "jtbd-deployment-automation.spec.ts",
+              "line": 119,
+              "column": 3
+            },
+            {
+              "title": "should track deployment metrics and history",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 4,
+                      "status": "failed",
+                      "duration": 6716,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid=\"deployment-metrics\"]')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid=\"deployment-metrics\"]')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid=\"deployment-metrics\"]')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid=\"deployment-metrics\"]')\u001b[22m\n\n    at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-deployment-automation.spec.ts:160:7",
+                        "location": {
+                          "file": "/Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-deployment-automation.spec.ts",
+                          "column": 7,
+                          "line": 160
+                        },
+                        "snippet": "  158 |     await expect(\n  159 |       page.locator('[data-testid=\"deployment-metrics\"]')\n> 160 |     ).toBeVisible();\n      |       ^\n  161 |\n  162 |     // Step 3: Check deployment frequency\n  163 |     await expect("
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-deployment-automation.spec.ts",
+                            "column": 7,
+                            "line": 160
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid=\"deployment-metrics\"]')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid=\"deployment-metrics\"]')\u001b[22m\n\n\n  158 |     await expect(\n  159 |       page.locator('[data-testid=\"deployment-metrics\"]')\n> 160 |     ).toBeVisible();\n      |       ^\n  161 |\n  162 |     // Step 3: Check deployment frequency\n  163 |     await expect(\n    at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-deployment-automation.spec.ts:160:7"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-04T00:55:31.083Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-deployment-automation-5b21b-loyment-metrics-and-history-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-deployment-automation-5b21b-loyment-metrics-and-history-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-deployment-automation-5b21b-loyment-metrics-and-history-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-deployment-automation.spec.ts",
+                        "column": 7,
+                        "line": 160
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "5fc03cbe311c873cb14a-2f8dd800b2efc7d0bca4",
+              "file": "jtbd-deployment-automation.spec.ts",
+              "line": 153,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "jtbd-developer-workflow.spec.ts",
+      "file": "jtbd-developer-workflow.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "JTBD: Developer Semantic Commit Workflow",
+          "file": "jtbd-developer-workflow.spec.ts",
+          "line": 14,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should suggest semantic commit message from diff",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 5,
+                      "status": "failed",
+                      "duration": 6755,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('h1')\nExpected substring: \u001b[32m\"GitVan Studio\"\u001b[39m\nReceived string:    \u001b[31m\"Workflow Builder\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('h1')\u001b[22m\n\u001b[2m    9 × locator resolved to <h1>Workflow Builder</h1>\u001b[22m\n\u001b[2m      - unexpected value \"Workflow Builder\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('h1')\nExpected substring: \u001b[32m\"GitVan Studio\"\u001b[39m\nReceived string:    \u001b[31m\"Workflow Builder\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('h1')\u001b[22m\n\u001b[2m    9 × locator resolved to <h1>Workflow Builder</h1>\u001b[22m\n\u001b[2m      - unexpected value \"Workflow Builder\"\u001b[22m\n\n    at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-developer-workflow.spec.ts:20:38",
+                        "location": {
+                          "file": "/Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-developer-workflow.spec.ts",
+                          "column": 38,
+                          "line": 20
+                        },
+                        "snippet": "  18 |     // Step 1: Navigate to Studio\n  19 |     await page.goto('/studio/workflows');\n> 20 |     await expect(page.locator('h1')).toContainText('GitVan Studio');\n     |                                      ^\n  21 |\n  22 |     // Step 2: Open code editor with a diff\n  23 |     await page.click('[data-testid=\"new-workflow-button\"]');"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-developer-workflow.spec.ts",
+                            "column": 38,
+                            "line": 20
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('h1')\nExpected substring: \u001b[32m\"GitVan Studio\"\u001b[39m\nReceived string:    \u001b[31m\"Workflow Builder\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('h1')\u001b[22m\n\u001b[2m    9 × locator resolved to <h1>Workflow Builder</h1>\u001b[22m\n\u001b[2m      - unexpected value \"Workflow Builder\"\u001b[22m\n\n\n  18 |     // Step 1: Navigate to Studio\n  19 |     await page.goto('/studio/workflows');\n> 20 |     await expect(page.locator('h1')).toContainText('GitVan Studio');\n     |                                      ^\n  21 |\n  22 |     // Step 2: Open code editor with a diff\n  23 |     await page.click('[data-testid=\"new-workflow-button\"]');\n    at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-developer-workflow.spec.ts:20:38"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-04T00:55:31.082Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-developer-workflow-JT-eee00-ic-commit-message-from-diff-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-developer-workflow-JT-eee00-ic-commit-message-from-diff-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-developer-workflow-JT-eee00-ic-commit-message-from-diff-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-developer-workflow.spec.ts",
+                        "column": 38,
+                        "line": 20
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "8504c507fa6753990f5d-8f212c5cac25f483d5e0",
+              "file": "jtbd-developer-workflow.spec.ts",
+              "line": 15,
+              "column": 3
+            },
+            {
+              "title": "should enforce commit message patterns with hooks",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 6,
+                      "status": "timedOut",
+                      "duration": 30941,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-developer-workflow.spec.ts",
+                            "column": 16,
+                            "line": 70
+                          },
+                          "message": "Error: page.click: Test timeout of 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"hook-enforce-commit\"]')\u001b[22m\n\n\n  68 |\n  69 |     // Step 2: View enforce-commit-message hook\n> 70 |     await page.click('[data-testid=\"hook-enforce-commit\"]');\n     |                ^\n  71 |     await expect(\n  72 |       page.locator('[data-testid=\"hook-definition\"]')\n  73 |     ).toContainText('Enforce Commit Message');\n    at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-developer-workflow.spec.ts:70:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-04T00:55:31.088Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-developer-workflow-JT-9cbab-message-patterns-with-hooks-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-developer-workflow-JT-9cbab-message-patterns-with-hooks-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-developer-workflow-JT-9cbab-message-patterns-with-hooks-chromium/error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "8504c507fa6753990f5d-a8306a22e1741a07108b",
+              "file": "jtbd-developer-workflow.spec.ts",
+              "line": 63,
+              "column": 3
+            },
+            {
+              "title": "should integrate with AI engine for quality analysis",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 7,
+                      "status": "timedOut",
+                      "duration": 31129,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-developer-workflow.spec.ts",
+                            "column": 16,
+                            "line": 106
+                          },
+                          "message": "Error: page.fill: Test timeout of 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"code-input\"]')\u001b[22m\n\n\n  104 |       }\n  105 |     `;\n> 106 |     await page.fill('[data-testid=\"code-input\"]', sampleCode);\n      |                ^\n  107 |\n  108 |     // Step 3: Request analysis\n  109 |     await page.click('[data-testid=\"analyze-button\"]');\n    at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-developer-workflow.spec.ts:106:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-04T00:55:31.084Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-developer-workflow-JT-d918e-engine-for-quality-analysis-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-developer-workflow-JT-d918e-engine-for-quality-analysis-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-developer-workflow-JT-d918e-engine-for-quality-analysis-chromium/error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "8504c507fa6753990f5d-fab1a7d40a0e00b0eb6b",
+              "file": "jtbd-developer-workflow.spec.ts",
+              "line": 90,
+              "column": 3
+            },
+            {
+              "title": "should track developer workflow metrics",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 5865,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid=\"metrics-dashboard\"]')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid=\"metrics-dashboard\"]')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid=\"metrics-dashboard\"]')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid=\"metrics-dashboard\"]')\u001b[22m\n\n    at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-developer-workflow.spec.ts:132:69",
+                        "location": {
+                          "file": "/Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-developer-workflow.spec.ts",
+                          "column": 69,
+                          "line": 132
+                        },
+                        "snippet": "  130 |\n  131 |     // Step 2: Verify dashboard is loaded\n> 132 |     await expect(page.locator('[data-testid=\"metrics-dashboard\"]')).toBeVisible();\n      |                                                                     ^\n  133 |\n  134 |     // Step 3: Check key metrics are displayed\n  135 |     await expect("
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-developer-workflow.spec.ts",
+                            "column": 69,
+                            "line": 132
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid=\"metrics-dashboard\"]')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid=\"metrics-dashboard\"]')\u001b[22m\n\n\n  130 |\n  131 |     // Step 2: Verify dashboard is loaded\n> 132 |     await expect(page.locator('[data-testid=\"metrics-dashboard\"]')).toBeVisible();\n      |                                                                     ^\n  133 |\n  134 |     // Step 3: Check key metrics are displayed\n  135 |     await expect(\n    at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-developer-workflow.spec.ts:132:69"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-04T00:55:38.664Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-developer-workflow-JT-08b03--developer-workflow-metrics-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-developer-workflow-JT-08b03--developer-workflow-metrics-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-developer-workflow-JT-08b03--developer-workflow-metrics-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-developer-workflow.spec.ts",
+                        "column": 69,
+                        "line": 132
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "8504c507fa6753990f5d-06b707723dc9d839f077",
+              "file": "jtbd-developer-workflow.spec.ts",
+              "line": 127,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "jtbd-team-collaboration.spec.ts",
+      "file": "jtbd-team-collaboration.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "JTBD: Team Collaboration & Code Review",
+          "file": "jtbd-team-collaboration.spec.ts",
+          "line": 14,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should provide AI-powered code review suggestions",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 9,
+                      "parallelIndex": 3,
+                      "status": "failed",
+                      "duration": 5868,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('h1')\nExpected substring: \u001b[32m\"Code Review\"\u001b[39m\nReceived string:    \u001b[31m\"404\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('h1')\u001b[22m\n\u001b[2m    9 × locator resolved to <h1 class=\"next-error-h1\">404</h1>\u001b[22m\n\u001b[2m      - unexpected value \"404\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('h1')\nExpected substring: \u001b[32m\"Code Review\"\u001b[39m\nReceived string:    \u001b[31m\"404\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('h1')\u001b[22m\n\u001b[2m    9 × locator resolved to <h1 class=\"next-error-h1\">404</h1>\u001b[22m\n\u001b[2m      - unexpected value \"404\"\u001b[22m\n\n    at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-team-collaboration.spec.ts:20:38",
+                        "location": {
+                          "file": "/Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-team-collaboration.spec.ts",
+                          "column": 38,
+                          "line": 20
+                        },
+                        "snippet": "  18 |     // Step 1: Navigate to code review interface\n  19 |     await page.goto('/studio/review');\n> 20 |     await expect(page.locator('h1')).toContainText('Code Review');\n     |                                      ^\n  21 |\n  22 |     // Step 2: Submit code for review\n  23 |     await page.click('[data-testid=\"submit-for-review-button\"]');"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-team-collaboration.spec.ts",
+                            "column": 38,
+                            "line": 20
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('h1')\nExpected substring: \u001b[32m\"Code Review\"\u001b[39m\nReceived string:    \u001b[31m\"404\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('h1')\u001b[22m\n\u001b[2m    9 × locator resolved to <h1 class=\"next-error-h1\">404</h1>\u001b[22m\n\u001b[2m      - unexpected value \"404\"\u001b[22m\n\n\n  18 |     // Step 1: Navigate to code review interface\n  19 |     await page.goto('/studio/review');\n> 20 |     await expect(page.locator('h1')).toContainText('Code Review');\n     |                                      ^\n  21 |\n  22 |     // Step 2: Submit code for review\n  23 |     await page.click('[data-testid=\"submit-for-review-button\"]');\n    at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-team-collaboration.spec.ts:20:38"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-04T00:55:38.652Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-team-collaboration-JT-67fda-red-code-review-suggestions-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-team-collaboration-JT-67fda-red-code-review-suggestions-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-team-collaboration-JT-67fda-red-code-review-suggestions-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-team-collaboration.spec.ts",
+                        "column": 38,
+                        "line": 20
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "d8ef6e478e20a5d29d4f-c6b630a4b93f12bd443a",
+              "file": "jtbd-team-collaboration.spec.ts",
+              "line": 15,
+              "column": 3
+            },
+            {
+              "title": "should enforce team coding standards with custom hooks",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 10,
+                      "parallelIndex": 5,
+                      "status": "failed",
+                      "duration": 5912,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid=\"active-standards\"]')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid=\"active-standards\"]')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid=\"active-standards\"]')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid=\"active-standards\"]')\u001b[22m\n\n    at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-team-collaboration.spec.ts:60:7",
+                        "location": {
+                          "file": "/Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-team-collaboration.spec.ts",
+                          "column": 7,
+                          "line": 60
+                        },
+                        "snippet": "  58 |     await expect(\n  59 |       page.locator('[data-testid=\"active-standards\"]')\n> 60 |     ).toBeVisible();\n     |       ^\n  61 |\n  62 |     // Step 3: Enable specific standards\n  63 |     const standardsCheckboxes = await page"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-team-collaboration.spec.ts",
+                            "column": 7,
+                            "line": 60
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid=\"active-standards\"]')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid=\"active-standards\"]')\u001b[22m\n\n\n  58 |     await expect(\n  59 |       page.locator('[data-testid=\"active-standards\"]')\n> 60 |     ).toBeVisible();\n     |       ^\n  61 |\n  62 |     // Step 3: Enable specific standards\n  63 |     const standardsCheckboxes = await page\n    at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-team-collaboration.spec.ts:60:7"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-04T00:55:38.668Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-team-collaboration-JT-1402a-standards-with-custom-hooks-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-team-collaboration-JT-1402a-standards-with-custom-hooks-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-team-collaboration-JT-1402a-standards-with-custom-hooks-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-team-collaboration.spec.ts",
+                        "column": 7,
+                        "line": 60
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "d8ef6e478e20a5d29d4f-ba662dbc82c1f88a4724",
+              "file": "jtbd-team-collaboration.spec.ts",
+              "line": 51,
+              "column": 3
+            },
+            {
+              "title": "should track team collaboration metrics",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 11,
+                      "parallelIndex": 4,
+                      "status": "failed",
+                      "duration": 5870,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid=\"team-dashboard\"]')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid=\"team-dashboard\"]')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid=\"team-dashboard\"]')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid=\"team-dashboard\"]')\u001b[22m\n\n    at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-team-collaboration.spec.ts:91:7",
+                        "location": {
+                          "file": "/Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-team-collaboration.spec.ts",
+                          "column": 7,
+                          "line": 91
+                        },
+                        "snippet": "  89 |     await expect(\n  90 |       page.locator('[data-testid=\"team-dashboard\"]')\n> 91 |     ).toBeVisible();\n     |       ^\n  92 |\n  93 |     // Step 3: Check review metrics\n  94 |     await expect("
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-team-collaboration.spec.ts",
+                            "column": 7,
+                            "line": 91
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid=\"team-dashboard\"]')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid=\"team-dashboard\"]')\u001b[22m\n\n\n  89 |     await expect(\n  90 |       page.locator('[data-testid=\"team-dashboard\"]')\n> 91 |     ).toBeVisible();\n     |       ^\n  92 |\n  93 |     // Step 3: Check review metrics\n  94 |     await expect(\n    at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-team-collaboration.spec.ts:91:7"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-04T00:55:38.651Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-team-collaboration-JT-2f69f--team-collaboration-metrics-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-team-collaboration-JT-2f69f--team-collaboration-metrics-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-team-collaboration-JT-2f69f--team-collaboration-metrics-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-team-collaboration.spec.ts",
+                        "column": 7,
+                        "line": 91
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "d8ef6e478e20a5d29d4f-72c75154413b973c6c81",
+              "file": "jtbd-team-collaboration.spec.ts",
+              "line": 84,
+              "column": 3
+            },
+            {
+              "title": "should enable asynchronous code discussions",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 12,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 31178,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-team-collaboration.spec.ts",
+                            "column": 16,
+                            "line": 119
+                          },
+                          "message": "Error: page.click: Test timeout of 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"new-discussion-button\"]')\u001b[22m\n\n\n  117 |\n  118 |     // Step 2: Create new discussion\n> 119 |     await page.click('[data-testid=\"new-discussion-button\"]');\n      |                ^\n  120 |     await page.fill('[data-testid=\"discussion-title\"]', 'Optimize database query');\n  121 |     await page.fill(\n  122 |       '[data-testid=\"discussion-code\"]',\n    at /Users/sac/gitvan/examples/nextjs-app/playwright/tests/jtbd-team-collaboration.spec.ts:119:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-04T00:55:45.149Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-team-collaboration-JT-16340-ynchronous-code-discussions-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-team-collaboration-JT-16340-ynchronous-code-discussions-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/sac/gitvan/examples/nextjs-app/test-results/jtbd-team-collaboration-JT-16340-ynchronous-code-discussions-chromium/error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "d8ef6e478e20a5d29d4f-b49bca1306743b9b6376",
+              "file": "jtbd-team-collaboration.spec.ts",
+              "line": 114,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-12-04T00:55:29.713Z",
+    "duration": 46777.963,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 13,
+    "flaky": 0
+  }
+}

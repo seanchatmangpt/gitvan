@@ -2,9 +2,11 @@
  * Workflows API Route
  *
  * Handles workflow generation, execution, and status tracking for autonomic hooks.
+ * Now integrated with enhanced workflow generator for Zod validation and AI optimization.
  */
 
 import { workflowGenerator } from '@/lib/workflow-generator';
+import { enhancedWorkflowGenerator } from '@/lib/enhanced-workflow-generator';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {

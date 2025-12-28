@@ -51,8 +51,12 @@ export class NunjucksTemplateEngine {
     // Uppercase filter
     this.env.addFilter('upper', (str: string) => str?.toUpperCase?.() ?? '');
 
-    // Lowercase filter
-    this.env.addFilter('lower', (str: string) => str?.toLowerCase?.() ?? '');
+    // Lowercase filter (handles both strings and booleans)
+    this.env.addFilter('lower', (val: any) => {
+      if (typeof val === 'boolean') return val.toString();
+      if (typeof val === 'string') return val.toLowerCase();
+      return val?.toString?.()?.toLowerCase?.() ?? '';
+    });
 
     // Capitalize filter
     this.env.addFilter('capitalize', (str: string) => {
@@ -448,7 +452,7 @@ curl -X {{ method | upper }} {{ path }}
 ## Props
 
 {% for prop in props %}
-- **{{ prop.name }}** (\`{{ prop.type }}\`{{ prop.required ? ' - required' : '' }}): {{ prop.description }}
+- **{{ prop.name }}** (\`{{ prop.type }}\`{% if prop.required %} - required{% endif %}): {{ prop.description }}
 {% endfor %}
 
 ## Usage

@@ -185,12 +185,15 @@ export class JTBDEngine {
 
     const endTime = new Date();
     const duration = endTime.getTime() - startTime.getTime();
+    const hasFailures = assertions.some((a) => !a.passed);
     const status =
-      stepsCompleted === scenario.steps.length
+      stepsCompleted === scenario.steps.length && !hasFailures
         ? 'passed'
-        : stepsCompleted === 0
-          ? 'skipped'
-          : 'failed';
+        : hasFailures
+          ? 'failed'
+          : stepsCompleted === 0
+            ? 'skipped'
+            : 'failed';
 
     const result: ExecutionResult = {
       scenarioId,

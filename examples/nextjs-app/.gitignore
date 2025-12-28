@@ -50,6 +50,7 @@ Thumbs.db
 # Project
 .test-state
 test-results.json
-*.test.mjs
-*.test.ts
 .vitest/
+
+# Don't ignore test files in tests/ directory
+# (removing *.test.ts and *.test.mjs patterns to allow test suite)

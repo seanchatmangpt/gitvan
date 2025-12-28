@@ -478,11 +478,12 @@ describe('Performance Utilities', () => {
 
     it('should measure async function time', async () => {
       const { result, duration } = await measureExecutionTime(async () => {
-        await new Promise((r) => setTimeout(r, 20));
+        await new Promise((r) => setTimeout(r, 25));
         return 'done';
       });
 
       expect(result).toBe('done');
+      // Allow for timer jitter - setTimeout(25) may resolve slightly early
       expect(duration).toBeGreaterThanOrEqual(20);
     });
   });

@@ -139,7 +139,8 @@ describe('E2E: Code Review Workflow', () => {
   let enhancedGenerator: EnhancedWorkflowGenerator;
   let hookExecutor: MockHookExecutor;
 
-  beforeAll(() => {
+  beforeEach(() => {
+    // Create fresh instances for each test to avoid accumulated state
     jtbdEngine = new JTBDEngine();
     enhancedGenerator = new EnhancedWorkflowGenerator();
     hookExecutor = new MockHookExecutor();
@@ -339,7 +340,8 @@ describe('E2E: Continuous Improvement Workflow', () => {
 
   it('should track improvement over time', async () => {
     // Register scenarios for tracking
-    Object.values(JTBD_SCENARIO_FIXTURES).forEach((scenario) => {
+    const scenarios = Object.values(JTBD_SCENARIO_FIXTURES);
+    scenarios.forEach((scenario) => {
       jtbdEngine.registerScenario(scenario);
     });
 
@@ -348,10 +350,10 @@ describe('E2E: Continuous Improvement Workflow', () => {
     const successRates: number[] = [];
 
     for (let i = 0; i < iterations; i++) {
-      // Execute all scenarios
+      // Execute all scenarios using actual IDs from fixture objects
       const results = await Promise.all(
-        Object.keys(JTBD_SCENARIO_FIXTURES).map((id) =>
-          jtbdEngine.executeScenario(id)
+        scenarios.map((scenario) =>
+          jtbdEngine.executeScenario(scenario.id)
         )
       );
 
@@ -379,7 +381,8 @@ describe('E2E: Performance Critical Workflow', () => {
 
       // Setup
       Object.values(JTBD_JOB_FIXTURES).forEach((job) => jtbdEngine.registerJob(job));
-      Object.values(JTBD_SCENARIO_FIXTURES).forEach((s) => jtbdEngine.registerScenario(s));
+      const scenarios = Object.values(JTBD_SCENARIO_FIXTURES);
+      scenarios.forEach((s) => jtbdEngine.registerScenario(s));
 
       // Generate hooks
       const hooks = await enhancedGenerator.generateAndOptimizeHooks([
@@ -393,10 +396,10 @@ describe('E2E: Performance Critical Workflow', () => {
         await hookExecutor.execute(hook);
       }
 
-      // Run scenarios
+      // Run scenarios using actual IDs from fixture objects
       await Promise.all(
-        Object.keys(JTBD_SCENARIO_FIXTURES).map((id) =>
-          jtbdEngine.executeScenario(id)
+        scenarios.map((scenario) =>
+          jtbdEngine.executeScenario(scenario.id)
         )
       );
 

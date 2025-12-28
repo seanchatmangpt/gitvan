@@ -149,7 +149,8 @@ describe('Performance Benchmarks', () => {
     });
 
     it('should execute scenarios quickly', async () => {
-      const scenarioIds = Object.keys(JTBD_SCENARIO_FIXTURES);
+      // Use actual scenario IDs from the fixture objects
+      const scenarioIds = Object.values(JTBD_SCENARIO_FIXTURES).map((s) => s.id);
 
       const benchmark = await runBenchmark(
         'scenario-execution',
@@ -371,9 +372,11 @@ describe('Performance Benchmarks', () => {
 
     it('should handle concurrent scenario execution', async () => {
       const jtbdEngine = new JTBDEngine();
-      Object.values(JTBD_SCENARIO_FIXTURES).forEach((s) => jtbdEngine.registerScenario(s));
+      const scenarios = Object.values(JTBD_SCENARIO_FIXTURES);
+      scenarios.forEach((s) => jtbdEngine.registerScenario(s));
 
-      const scenarioIds = Object.keys(JTBD_SCENARIO_FIXTURES);
+      // Use actual scenario IDs from the fixture objects
+      const scenarioIds = scenarios.map((s) => s.id);
 
       const { duration } = await measureExecutionTime(async () => {
         const executions = scenarioIds.map((id) => jtbdEngine.executeScenario(id));

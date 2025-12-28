@@ -8,12 +8,55 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { GET, POST, DELETE } from '@/app/api/gitvan/hooks/route';
 import { createMockNextRequest, createMockAPIResponse } from '../utils/test-utils';
-import { MockGitVanIntegration } from '../utils/mocks';
 import { HOOK_FIXTURES, JTBD_SCENARIO_FIXTURES } from '../fixtures';
 
-// Mock the gitvan integration module
+// Mock the gitvan integration module with inline mock objects
 vi.mock('@/lib/gitvan-integration', () => {
-  const mockIntegration = new MockGitVanIntegration();
+  // Create inline mock to avoid hoisting issues with imported classes
+  const mockIntegration = {
+    healthy: true,
+    registry: new Map(),
+    // Required by GET actions
+    listHooks: vi.fn().mockResolvedValue([
+      { name: 'test-hook', type: 'enforce-pattern', status: 'active' },
+    ]),
+    getAutomationStatus: vi.fn().mockResolvedValue({
+      active: true,
+      hooksRunning: 5,
+      lastExecution: new Date().toISOString(),
+    }),
+    getKnowledgeRegistry: vi.fn().mockResolvedValue({
+      hooks: ['hook-1', 'hook-2'],
+      scenarios: ['scenario-1'],
+      totalItems: 3,
+    }),
+    // Required by POST actions
+    executeHook: vi.fn().mockResolvedValue({ success: true, output: 'executed' }),
+    registerScenarioHook: vi.fn().mockResolvedValue({ id: 'mock-hook-id' }),
+    storeScenarioResult: vi.fn().mockResolvedValue({ success: true }),
+    getScenarioLearning: vi.fn().mockResolvedValue({
+      ttl: '@prefix : <test#> . :learning a :Knowledge .',
+      metadata: { timestamp: new Date().toISOString() },
+    }),
+    // Legacy compatibility methods
+    checkHealth: vi.fn().mockResolvedValue({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      uptime: 1000,
+      components: { database: 'healthy', cache: 'healthy', api: 'healthy' },
+      metrics: {
+        eventsPerSecond: 100,
+        hookSuccessRate: 99.5,
+        averageLatency: 50,
+        activeHooks: 25,
+        totalProcessed: 10000,
+      },
+      performance: { memoryUsage: 512, cpuUsage: 35 },
+    }),
+    getActiveHooks: vi.fn().mockReturnValue([
+      { name: 'test-hook', type: 'enforce-pattern', status: 'active' },
+    ]),
+  };
   return {
     gitvanIntegration: mockIntegration,
     jtbdHookDefinitions: {

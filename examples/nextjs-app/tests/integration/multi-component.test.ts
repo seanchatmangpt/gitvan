@@ -386,17 +386,19 @@ describe('Multi-Component Integration', () => {
 
   describe('Concurrent Operations', () => {
     it('should handle concurrent scenario executions', async () => {
-      Object.values(JTBD_SCENARIO_FIXTURES).forEach((scenario) => {
+      const scenarios = Object.values(JTBD_SCENARIO_FIXTURES);
+      scenarios.forEach((scenario) => {
         jtbdEngine.registerScenario(scenario);
       });
 
-      const executions = Object.keys(JTBD_SCENARIO_FIXTURES).map((id) =>
-        jtbdEngine.executeScenario(id)
+      // Use the actual scenario IDs from the fixture objects
+      const executions = scenarios.map((scenario) =>
+        jtbdEngine.executeScenario(scenario.id)
       );
 
       const results = await Promise.all(executions);
 
-      expect(results.length).toBe(Object.keys(JTBD_SCENARIO_FIXTURES).length);
+      expect(results.length).toBe(scenarios.length);
       results.forEach((r) => {
         expect(['passed', 'failed', 'skipped']).toContain(r.status);
       });

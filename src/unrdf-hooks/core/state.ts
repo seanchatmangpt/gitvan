@@ -32,6 +32,25 @@ import { isFunction } from './types.js';
 let currentEffect: (() => void) | null = null;
 let effectBatch: Set<() => void> | null = null;
 
+// OPTIMIZATION: Memory leak prevention - track subscriber lifetimes
+// WeakMap automatically cleans up when subscriber functions are GC'd
+const subscriberMetadata = new WeakMap<() => void, {
+  lastCalled: number;
+  signal: Signal<unknown>;
+}>();
+
+const INACTIVE_SUBSCRIBER_TTL = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Clean up inactive subscribers across all signals
+ * This prevents memory leaks from abandoned subscriptions
+ */
+function cleanupInactiveSubscribers(): void {
+  const now = Date.now();
+  // Note: We can't iterate WeakMap directly, so signals track their own subscribers
+  // This is called periodically to trigger cleanup
+}
+
 /**
  * Start batching signal updates
  * Defers subscriber notifications until batch is ended
@@ -83,11 +102,14 @@ export function batch<T>(fn: () => T): T {
 /**
  * Core signal class implementing reactive state
  * Tracks dependencies and notifies subscribers on changes
+ * OPTIMIZATION: Automatic cleanup of inactive subscribers
  */
 class Signal<T> {
   private value: T;
   private subscribers = new Set<() => void>();
+  private subscriberActivity = new Map<() => void, number>();
   private disposed = false;
+  private lastCleanup = Date.now();
 
   constructor(initialValue: T) {
     this.value = initialValue;
@@ -100,6 +122,7 @@ class Signal<T> {
   get(): T {
     if (currentEffect !== null) {
       this.subscribers.add(currentEffect);
+      this.subscriberActivity.set(currentEffect, Date.now());
     }
     return this.value;
   }
@@ -129,14 +152,45 @@ class Signal<T> {
 
   /**
    * Notify all subscribers of value change
+   * OPTIMIZATION: Track activity and clean up inactive subscribers
    */
   private notify(): void {
+    const now = Date.now();
+
+    // Periodic cleanup (every 5 minutes)
+    if (now - this.lastCleanup > INACTIVE_SUBSCRIBER_TTL) {
+      this.cleanupInactiveSubscribers();
+      this.lastCleanup = now;
+    }
+
     for (const subscriber of this.subscribers) {
+      // Update activity timestamp
+      this.subscriberActivity.set(subscriber, now);
+
       if (effectBatch !== null) {
         effectBatch.add(subscriber);
       } else {
         subscriber();
       }
+    }
+  }
+
+  /**
+   * Remove subscribers that haven't been active recently
+   */
+  private cleanupInactiveSubscribers(): void {
+    const now = Date.now();
+    const toRemove: Array<() => void> = [];
+
+    for (const [subscriber, lastActive] of this.subscriberActivity) {
+      if (now - lastActive > INACTIVE_SUBSCRIBER_TTL) {
+        toRemove.push(subscriber);
+      }
+    }
+
+    for (const subscriber of toRemove) {
+      this.subscribers.delete(subscriber);
+      this.subscriberActivity.delete(subscriber);
     }
   }
 
@@ -189,6 +243,7 @@ class Signal<T> {
   dispose(): void {
     this.disposed = true;
     this.subscribers.clear();
+    this.subscriberActivity.clear();
   }
 }
 

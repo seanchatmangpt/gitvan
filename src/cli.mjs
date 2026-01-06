@@ -19,6 +19,10 @@ import { hooksCommand } from "./cli/commands/hooks.mjs";
 import { workflowCommand } from "./cli/commands/workflow.mjs";
 import { jtbdCommand } from "./cli/commands/jtbd.mjs";
 import { cleanroomCommand } from "./cli/commands/cleanroom.mjs";
+import { jobCommand } from "./cli/commands/job.mjs";
+import { scheduleCommand } from "./cli/commands/schedule.mjs";
+import { worktreeCommand } from "./cli/commands/worktree.mjs";
+import { llmCommand } from "./cli/commands/llm.mjs";
 
 // Import existing Citty commands that are already properly implemented
 import { setupCommand } from "./cli/setup.mjs";
@@ -66,6 +70,15 @@ export const cli = defineCommand({
       "gitvan workflow list",
       "gitvan workflow run my-workflow --dry-run",
       "gitvan workflow cursor my-workflow --interactive",
+      "gitvan job list",
+      "gitvan job run my-job",
+      "gitvan job chain build test deploy",
+      'gitvan schedule apply my-job "*/5 * * * *"',
+      "gitvan schedule list --enabled-only",
+      "gitvan worktree list",
+      "gitvan worktree create ../feature feature/new",
+      'gitvan llm generate "create a backup job"',
+      'gitvan llm job "run tests on push" --save',
       "gitvan setup",
       "gitvan pack install react-pack",
       'gitvan marketplace search "react"',
@@ -87,6 +100,11 @@ export const cli = defineCommand({
     jtbd: jtbdCommand,
     cleanroom: cleanroomCommand,
 
+    // Job and schedule management commands
+    job: jobCommand,
+    schedule: scheduleCommand,
+    worktree: worktreeCommand,
+
     // Project management commands
     init: initCommand,
     setup: setupCommand,
@@ -101,16 +119,10 @@ export const cli = defineCommand({
 
     // AI and automation commands
     chat: chatCommand,
+    llm: llmCommand,
 
     // Studio and NextJS integration
     studio: studioCommand,
-
-    // TODO: Migrate these legacy commands to Citty
-    // run: runCommand,           // Legacy handler
-    // list: listCommand,         // Legacy handler
-    // schedule: scheduleCommand, // Legacy handler
-    // worktree: worktreeCommand, // Legacy handler
-    // job: jobCommand,          // Legacy handler
   },
 });
 

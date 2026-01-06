@@ -107,8 +107,11 @@ export default defineBuildConfig({
     // ESBuild configuration for better performance
     esbuild: {
       target: "node18",
-      minify: false, // Keep readable for debugging
-      sourcemap: true,
+      minify: process.env.NODE_ENV === "production",
+      sourcemap: process.env.NODE_ENV !== "production",
+      treeShaking: true,
+      platform: "node",
+      format: "esm",
     },
   },
 

@@ -10,6 +10,8 @@ import { createAIProvider, checkAIProviderAvailability } from './provider-factor
 import { GITVAN_COMPLETE_CONTEXT } from './prompts/gitvan-complete-context.mjs';
 import { parse } from '@babel/parser';
 import traverse from '@babel/traverse';
+import { sanitizeJobSpec } from '../security/input-sanitizer.mjs';
+import { generateSafeJobCode, validateGeneratedCode } from '../security/code-generator.mjs';
 
 const logger = createLogger('ai-provider');
 
@@ -327,8 +329,8 @@ export async function generateJobSpec({
       // Still use the code, but log the issues
     }
     
-    // Extract metadata from the AST for the spec
-    const spec = {
+    // Extract and sanitize metadata from the AST for the spec
+    const rawSpec = {
       name: validationResult.metadata?.name || 'ai-generated-job',
       desc: validationResult.metadata?.desc || `Generated job for: ${prompt.substring(0, 50)}...`,
       tags: validationResult.metadata?.tags || ["ai-generated", "automation"],
@@ -337,6 +339,9 @@ export async function generateJobSpec({
       on: validationResult.metadata?.on || {},
       code: jobCode
     };
+
+    // Sanitize the specification to prevent injection
+    const spec = sanitizeJobSpec(rawSpec);
 
     return {
       spec,
@@ -347,53 +352,21 @@ export async function generateJobSpec({
     };
   } catch (error) {
     logger.error('Job generation failed:', error.message);
-    
-    // Fallback to a simple working job
-    const fallbackCode = `import { defineJob, useGit, useTemplate, useNotes } from 'file:///Users/sac/gitvan/src/index.mjs'
-import { readFile, writeFile } from 'node:fs/promises'
 
-export default defineJob({
-  meta: {
-    name: "fallback-job",
-    desc: "Fallback job due to generation error",
-    tags: ["fallback", "error"],
-    author: "GitVan AI",
-    version: "1.0.0"
-  },
-  async run({ ctx, payload, meta }) {
-    try {
-      const git = useGit();
-      const template = useTemplate();
-      const notes = useNotes();
-      
-      console.log("Executing fallback job");
-      
-      await writeFile('fallback-output.txt', \`Fallback job executed at \${new Date().toISOString()}\`);
-      await notes.write(\`Fallback job completed: \${meta.desc}\`);
-      
-      return {
-        ok: true,
-        artifacts: ['fallback-output.txt'],
-        summary: "Fallback job completed successfully"
-      };
-    } catch (error) {
-      console.error('Fallback job failed:', error.message);
-      return {
-        ok: false,
-        error: error.message,
-        artifacts: []
-      };
-    }
-  }
-})`;
-    
+    // Generate secure fallback job
+    const fallbackSpec = sanitizeJobSpec({
+      name: 'fallback-job',
+      desc: 'Fallback job due to generation error',
+      tags: ['fallback', 'error'],
+      author: 'GitVan AI',
+      version: '1.0.0'
+    });
+
+    const fallbackCode = generateSafeJobCode(fallbackSpec);
+
     return {
       spec: {
-        name: 'fallback-job',
-        desc: 'Fallback job due to generation error',
-        tags: ['fallback', 'error'],
-        author: 'GitVan AI',
-        version: '1.0.0',
+        ...fallbackSpec,
         code: fallbackCode
       },
       model: 'fallback',
@@ -482,175 +455,32 @@ export async function checkAIAvailability(config = {}) {
 }
 
 /**
- * Generate working job code from specification
+ * Generate working job code from specification (SECURE VERSION)
  */
 function generateWorkingJobCode(spec) {
-  // If the AI generated complete job code, use it directly
+  // Sanitize the specification first
+  const sanitizedSpec = sanitizeJobSpec(spec);
+
+  // If the AI generated complete job code, validate it first
   if (spec.code && typeof spec.code === 'string') {
-    return spec.code;
+    const validation = validateGeneratedCode(spec.code);
+    if (validation.valid) {
+      return spec.code;
+    } else {
+      logger.warn('AI-generated code failed validation, using safe fallback');
+    }
   }
-  
-  // If the AI generated a complete job file, use it directly
+
+  // If the AI generated a complete job file, validate it
   if (spec.run && typeof spec.run === 'string') {
-    return spec.run;
-  }
-  
-  // If the AI generated implementation code directly, wrap it in defineJob
-  if (spec.implementation && typeof spec.implementation === 'string') {
-    const name = spec.name || 'ai-generated-job';
-    const desc = spec.description || spec.desc || 'AI-generated job';
-    const author = spec.meta?.author || spec.author || 'GitVan AI';
-    const version = spec.version || '1.0.0';
-    const on = spec.on || {};
-    
-    return `import { 
-  defineJob, 
-  useGit, 
-  useTemplate, 
-  useNotes, 
-  useWorktree, 
-  usePack, 
-  useSchedule, 
-  useReceipt, 
-  useLock 
-} from 'file:///Users/sac/gitvan/src/index.mjs'
-
-export default defineJob({
-      meta: {
-    name: "${name}",
-    desc: "${desc}",
-    author: "${author}",
-    version: "${version}"
-  },
-  ${Object.keys(on).length > 0 ? `on: ${JSON.stringify(on)},` : ''}
-  async run({ ctx, payload, meta }) {
-    ${spec.implementation}
-  }
-})`;
-  }
-  
-  const { meta, on, run, config, implementation } = spec;
-  
-  // If the AI generated actual JavaScript code in run.implementation or run.function, use it directly
-  if (run && (run.implementation || run.function)) {
-    const code = run.implementation || run.function;
-    return `import { defineJob, useGit, useTemplate, useNotes } from 'file:///Users/sac/gitvan/src/index.mjs'
-import { readFile, writeFile } from 'node:fs/promises'
-
-export default defineJob({
-      meta: {
-    ${meta.name ? `name: "${meta.name}",` : ''}
-    desc: "${meta.desc}",
-    tags: ${JSON.stringify(meta.tags)},
-    author: "${meta.author}",
-    version: "${meta.version}"
-  },
-  ${on ? `on: ${JSON.stringify(on)},` : ''}
-  ${config ? `config: ${JSON.stringify(config, null, 2)},` : ''}
-  async run({ ctx, payload, meta }) {
-    ${code}
-  }
-})`;
-  }
-  
-  // Fallback to legacy operations-based generation
-  if (implementation && implementation.operations) {
-  const operationsCode = implementation.operations.map(op => {
-    switch (op.type) {
-      case 'file-copy':
-          return `// ${op.description}\n    const sourceContent = await readFile('${op.parameters?.source || 'source.txt'}')\n    await writeFile('${op.parameters?.target || 'backup.txt'}', sourceContent)`;
-      case 'file-write':
-          return `// ${op.description}\n    await writeFile('${op.parameters?.path || 'output.txt'}', '${op.parameters?.content || 'Generated content'}')`;
-      case 'file-read':
-          return `// ${op.description}\n    const content = await readFile('${op.parameters?.path || 'input.txt'}')`;
-      case 'git-commit':
-          return `// ${op.description}\n    await git.commit('${op.parameters?.message || 'Automated commit'}')`;
-      case 'git-note':
-          return `// ${op.description}\n    await notes.write('${op.parameters?.content || 'Job executed'}')`;
-      case 'template-render':
-          return `// ${op.description}\n    const rendered = await template.render('${op.parameters?.template || 'template.njk'}', data)`;
-      case 'log':
-          return `// ${op.description}\n    console.log('${op.description}')`;
-      default:
-        return `// ${op.description}`;
-    }
-  }).join('\n    ');
-
-  return `import { defineJob, useGit, useTemplate, useNotes } from 'file:///Users/sac/gitvan/src/index.mjs'
-import { readFile, writeFile } from 'node:fs/promises'
-
-export default defineJob({
-  meta: {
-    desc: "${meta.desc}",
-    tags: ${JSON.stringify(meta.tags)},
-    author: "${meta.author}",
-    version: "${meta.version}"
-  },
-  ${config ? `config: ${JSON.stringify(config, null, 2)},` : ''}
-  async run({ ctx, payload, meta }) {
-    try {
-      const git = useGit();
-      const template = useTemplate();
-      const notes = useNotes();
-      
-      console.log("Executing job: ${meta.desc}");
-      
-      // Execute operations
-      ${operationsCode}
-      
-      return {
-        ok: true,
-        artifacts: ${JSON.stringify(implementation?.returnValue?.artifacts || ['output.txt'])},
-        summary: "${implementation?.returnValue?.success || 'Task completed successfully'}"
-      };
-    } catch (error) {
-      console.error('Job failed:', error.message);
-      return {
-        ok: false,
-        error: error.message,
-        artifacts: []
-      };
+    const validation = validateGeneratedCode(spec.run);
+    if (validation.valid) {
+      return spec.run;
+    } else {
+      logger.warn('AI-generated run code failed validation, using safe fallback');
     }
   }
-})`;
-}
 
-  // Ultimate fallback - generate a simple working job
-  return `import { defineJob, useGit, useTemplate, useNotes } from 'file:///Users/sac/gitvan/src/index.mjs'
-import { readFile, writeFile } from 'node:fs/promises'
-
-export default defineJob({
-  meta: {
-    desc: "${meta.desc}",
-    tags: ${JSON.stringify(meta.tags)},
-    author: "${meta.author}",
-    version: "${meta.version}"
-  },
-  async run({ ctx, payload, meta }) {
-    try {
-      const git = useGit();
-      const template = useTemplate();
-      const notes = useNotes();
-      
-      console.log("Executing job: ${meta.desc}");
-      
-      // Simple working implementation
-      await writeFile('job-output.txt', \`Job executed at \${new Date().toISOString()}\`);
-      await notes.write(\`Job completed: \${meta.desc}\`);
-    
-    return {
-        ok: true,
-        artifacts: ['job-output.txt'],
-        summary: "Job completed successfully"
-    };
-  } catch (error) {
-      console.error('Job failed:', error.message);
-    return {
-        ok: false,
-        error: error.message,
-        artifacts: []
-      };
-    }
-  }
-})`;
+  // For all other cases, use secure code generation
+  return generateSafeJobCode(sanitizedSpec);
 }

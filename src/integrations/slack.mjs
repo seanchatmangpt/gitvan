@@ -4,17 +4,25 @@
 import { defineJob } from "../core/job-registry.mjs";
 import { useGitVan } from "../core/context.mjs";
 
+import { getSecretsManager } from '../security/secrets-manager.mjs';
+
 /**
  * Slack Integration
  * Provides seamless integration with Slack for notifications and alerts
  */
 export class SlackIntegration {
   constructor(options = {}) {
-    this.webhookUrl = options.webhookUrl || process.env.SLACK_WEBHOOK_URL;
-    this.botToken = options.botToken || process.env.SLACK_BOT_TOKEN;
-    this.defaultChannel =
-      options.defaultChannel || process.env.SLACK_DEFAULT_CHANNEL;
+    const secretsManager = getSecretsManager();
+
+    this.webhookUrl = options.webhookUrl || secretsManager.get('SLACK_WEBHOOK_URL');
+    this.botToken = options.botToken || secretsManager.get('SLACK_BOT_TOKEN');
+    this.defaultChannel = options.defaultChannel || secretsManager.get('SLACK_DEFAULT_CHANNEL');
     this.logger = options.logger || console;
+
+    // Validate at least one authentication method is present
+    if (!this.webhookUrl && !this.botToken) {
+      throw new Error('Either SLACK_WEBHOOK_URL or SLACK_BOT_TOKEN is required for Slack integration');
+    }
   }
 
   /**

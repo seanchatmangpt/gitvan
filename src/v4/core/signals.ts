@@ -618,3 +618,218 @@ export function throttled<T>(
     },
   } as WritableSignal<T>;
 }
+
+// =============================================================================
+// Signal Utilities
+// =============================================================================
+
+/**
+ * Create a toggle signal (boolean with toggle helper)
+ *
+ * @example
+ * ```ts
+ * const [value, toggle, setValue] = createToggle(false);
+ * toggle(); // true
+ * toggle(); // false
+ * setValue(true); // explicitly set
+ * ```
+ */
+export function createToggle(
+  initialValue = false
+): [Signal<boolean>, () => void, (value: boolean) => void] {
+  const sig = signal(initialValue);
+  const toggle = () => sig.update((v) => !v);
+  const setValue = (value: boolean) => sig.set(value);
+
+  return [sig, toggle, setValue];
+}
+
+/**
+ * Create a counter signal with increment/decrement helpers
+ *
+ * @example
+ * ```ts
+ * const counter = createCounter(0);
+ * counter.increment(); // 1
+ * counter.increment(5); // 6
+ * counter.decrement(); // 5
+ * counter.value(); // 5
+ * counter.reset(); // 0
+ * ```
+ */
+export function createCounter(
+  initialValue = 0,
+  options?: { min?: number; max?: number; step?: number }
+): {
+  value: Signal<number>;
+  increment: (amount?: number) => void;
+  decrement: (amount?: number) => void;
+  reset: () => void;
+  set: (value: number) => void;
+} {
+  const { min = -Infinity, max = Infinity, step = 1 } = options ?? {};
+  const sig = signal(initialValue);
+
+  const clamp = (value: number) => Math.min(max, Math.max(min, value));
+
+  return {
+    value: sig,
+    increment: (amount?: number) => sig.update((v) => clamp(v + (amount ?? step))),
+    decrement: (amount?: number) => sig.update((v) => clamp(v - (amount ?? step))),
+    reset: () => sig.set(initialValue),
+    set: (value: number) => sig.set(clamp(value)),
+  };
+}
+
+/**
+ * Create a list signal with array helpers
+ *
+ * @example
+ * ```ts
+ * const list = createList<string>(['a', 'b']);
+ * list.push('c');
+ * list.remove('a');
+ * list.value(); // ['b', 'c']
+ * ```
+ */
+export function createList<T>(
+  initialValue: T[] = []
+): {
+  value: Signal<T[]>;
+  push: (...items: T[]) => void;
+  pop: () => T | undefined;
+  remove: (item: T) => boolean;
+  removeAt: (index: number) => T | undefined;
+  clear: () => void;
+  set: (items: T[]) => void;
+  filter: (predicate: (item: T) => boolean) => void;
+  map: (fn: (item: T) => T) => void;
+} {
+  const sig = signal<T[]>([...initialValue]);
+
+  return {
+    value: sig,
+    push: (...items: T[]) => sig.update((arr) => [...arr, ...items]),
+    pop: () => {
+      const arr = sig.peek();
+      if (arr.length === 0) return undefined;
+      const item = arr[arr.length - 1];
+      sig.set(arr.slice(0, -1));
+      return item;
+    },
+    remove: (item: T) => {
+      const arr = sig.peek();
+      const index = arr.indexOf(item);
+      if (index === -1) return false;
+      sig.set([...arr.slice(0, index), ...arr.slice(index + 1)]);
+      return true;
+    },
+    removeAt: (index: number) => {
+      const arr = sig.peek();
+      if (index < 0 || index >= arr.length) return undefined;
+      const item = arr[index];
+      sig.set([...arr.slice(0, index), ...arr.slice(index + 1)]);
+      return item;
+    },
+    clear: () => sig.set([]),
+    set: (items: T[]) => sig.set([...items]),
+    filter: (predicate: (item: T) => boolean) =>
+      sig.update((arr) => arr.filter(predicate)),
+    map: (fn: (item: T) => T) => sig.update((arr) => arr.map(fn)),
+  };
+}
+
+/**
+ * Create a map signal with helpers
+ *
+ * @example
+ * ```ts
+ * const map = createMap<string, number>();
+ * map.set('a', 1);
+ * map.get('a'); // 1
+ * map.has('a'); // true
+ * map.delete('a');
+ * ```
+ */
+export function createMap<K, V>(
+  initialValue?: Map<K, V>
+): {
+  value: Signal<Map<K, V>>;
+  get: (key: K) => V | undefined;
+  set: (key: K, value: V) => void;
+  delete: (key: K) => boolean;
+  has: (key: K) => boolean;
+  clear: () => void;
+  keys: () => K[];
+  values: () => V[];
+  entries: () => [K, V][];
+} {
+  const sig = signal<Map<K, V>>(new Map(initialValue));
+
+  return {
+    value: sig,
+    get: (key: K) => sig.peek().get(key),
+    set: (key: K, value: V) => {
+      sig.update((map) => {
+        const newMap = new Map(map);
+        newMap.set(key, value);
+        return newMap;
+      });
+    },
+    delete: (key: K) => {
+      const map = sig.peek();
+      if (!map.has(key)) return false;
+      sig.update((m) => {
+        const newMap = new Map(m);
+        newMap.delete(key);
+        return newMap;
+      });
+      return true;
+    },
+    has: (key: K) => sig.peek().has(key),
+    clear: () => sig.set(new Map()),
+    keys: () => Array.from(sig.peek().keys()),
+    values: () => Array.from(sig.peek().values()),
+    entries: () => Array.from(sig.peek().entries()),
+  };
+}
+
+/**
+ * Create a set signal with helpers
+ */
+export function createSet<T>(
+  initialValue?: Set<T>
+): {
+  value: Signal<Set<T>>;
+  add: (item: T) => void;
+  delete: (item: T) => boolean;
+  has: (item: T) => boolean;
+  clear: () => void;
+  values: () => T[];
+} {
+  const sig = signal<Set<T>>(new Set(initialValue));
+
+  return {
+    value: sig,
+    add: (item: T) => {
+      sig.update((set) => {
+        const newSet = new Set(set);
+        newSet.add(item);
+        return newSet;
+      });
+    },
+    delete: (item: T) => {
+      const set = sig.peek();
+      if (!set.has(item)) return false;
+      sig.update((s) => {
+        const newSet = new Set(s);
+        newSet.delete(item);
+        return newSet;
+      });
+      return true;
+    },
+    has: (item: T) => sig.peek().has(item),
+    clear: () => sig.set(new Set()),
+    values: () => Array.from(sig.peek()),
+  };
+}

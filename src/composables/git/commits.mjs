@@ -85,5 +85,117 @@ export default function makeCommits(base, run, runVoid, toArr) {
         return "";
       }
     },
+
+    // Amend last commit
+    async amendCommit(options = {}) {
+      const args = ["commit", "--amend"];
+
+      if (options.message) {
+        args.push("-m", options.message);
+      } else if (!options.edit) {
+        args.push("--no-edit");
+      }
+
+      if (options.all) {
+        args.push("--all");
+      }
+
+      if (options.sign) {
+        args.push("-S");
+      }
+
+      await runVoid(args);
+    },
+
+    // Reword commit message
+    async rewordCommit(commit, newMessage) {
+      // Interactive rebase to reword
+      const args = ["rebase", "-i", "--autosquash", commit + "^"];
+      // Note: This requires interactive mode, typically done via GIT_SEQUENCE_EDITOR
+      // For programmatic use, we'll use commit --amend for HEAD
+      if (commit === "HEAD") {
+        await runVoid(["commit", "--amend", "-m", newMessage]);
+      } else {
+        throw new Error("Reword for non-HEAD commits requires interactive rebase");
+      }
+    },
+
+    // Verify commit signature
+    async verifyCommit(commit = "HEAD") {
+      try {
+        const output = await run(["verify-commit", commit]);
+        return { verified: true, output };
+      } catch (error) {
+        return { verified: false, error: error.message };
+      }
+    },
+
+    // Squash commits (requires interactive rebase)
+    async squashCommits(fromCommit, toCommit = "HEAD") {
+      // Note: Full squash implementation requires interactive rebase
+      // This is a simplified version showing the command structure
+      const args = ["rebase", "-i", "--autosquash", fromCommit];
+      // In practice, this would need GIT_SEQUENCE_EDITOR set to automate
+      throw new Error("Interactive squash requires rebase automation setup");
+    },
+
+    // Create fixup commit
+    async createFixup(targetCommit, options = {}) {
+      const args = ["commit", "--fixup", targetCommit];
+
+      if (options.all) {
+        args.push("--all");
+      }
+
+      await runVoid(args);
+    },
+
+    // Create squash commit
+    async createSquash(targetCommit, options = {}) {
+      const args = ["commit", "--squash", targetCommit];
+
+      if (options.all) {
+        args.push("--all");
+      }
+
+      if (options.message) {
+        args.push("-m", options.message);
+      }
+
+      await runVoid(args);
+    },
+
+    // Show commit details
+    async showCommit(commit = "HEAD", options = {}) {
+      const args = ["show"];
+
+      if (options.stat) {
+        args.push("--stat");
+      }
+
+      if (options.patch === false) {
+        args.push("--no-patch");
+      }
+
+      if (options.format) {
+        args.push(`--format=${options.format}`);
+      }
+
+      args.push(commit);
+
+      return run(args);
+    },
+
+    // Get commit message
+    async getCommitMessage(commit = "HEAD") {
+      return run(["log", "-1", "--format=%B", commit]);
+    },
+
+    // Get commit author
+    async getCommitAuthor(commit = "HEAD") {
+      const output = await run(["log", "-1", "--format=%an%x09%ae", commit]);
+      const [name, email] = output.split("\t");
+      return { name, email };
+    },
   };
 }

@@ -1,0 +1,309 @@
+name: Documentation Generation
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'src/**'
+      - 'docs/**'
+      - 'README.md'
+      - 'CLAUDE.md'
+      - '.cursorrules'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'docs/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  # ============================================================================
+  # Generate API Documentation
+  # ============================================================================
+  api-docs:
+    name: Generate API Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate JSDoc
+        run: |
+          npm install -g jsdoc
+          mkdir -p docs/api
+
+          # Generate JSDoc for all source files
+          jsdoc -c jsdoc.conf.json -r src/ -d docs/api || echo "JSDoc configuration not found, creating default..."
+
+          # Create default JSDoc if config missing
+          if [ ! -f jsdoc.conf.json ]; then
+            cat > jsdoc.conf.json <<EOF
+          {
+            "source": {
+              "include": ["src"],
+              "includePattern": ".+\\.mjs$"
+            },
+            "opts": {
+              "destination": "docs/api",
+              "recurse": true
+            }
+          }
+          EOF
+            jsdoc -c jsdoc.conf.json -r src/ -d docs/api
+          fi
+        continue-on-error: true
+
+      - name: Upload API docs
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-documentation
+          path: docs/api/
+          retention-days: 30
+
+  # ============================================================================
+  # Generate README and Documentation
+  # ============================================================================
+  readme-docs:
+    name: Generate README Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Generate CLI documentation
+        run: |
+          mkdir -p docs/cli
+
+          # Generate CLI help output
+          npm ci
+          npm run build || true
+
+          if [ -f dist/bin/gitvan.mjs ]; then
+            node dist/bin/gitvan.mjs --help > docs/cli/help.txt 2>&1 || echo "CLI not yet available"
+          fi
+
+      - name: Generate examples documentation
+        run: |
+          mkdir -p docs/examples
+
+          # Document example files
+          find examples -name "*.mjs" -o -name "*.js" | while read -r file; do
+            echo "# Example: $file" >> docs/examples/index.md
+            echo '```javascript' >> docs/examples/index.md
+            head -50 "$file" >> docs/examples/index.md
+            echo '```' >> docs/examples/index.md
+            echo "" >> docs/examples/index.md
+          done
+        continue-on-error: true
+
+      - name: Upload README docs
+        uses: actions/upload-artifact@v4
+        with:
+          name: readme-documentation
+          path: docs/
+          retention-days: 30
+
+  # ============================================================================
+  # Generate Coverage Reports
+  # ============================================================================
+  coverage-docs:
+    name: Generate Coverage Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate coverage report
+        run: |
+          npm test -- --coverage || true
+
+          if [ -d coverage ]; then
+            mkdir -p docs/coverage
+            cp -r coverage/* docs/coverage/
+          fi
+
+      - name: Upload coverage docs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-documentation
+          path: docs/coverage/
+          retention-days: 30
+
+  # ============================================================================
+  # Build Documentation Site
+  # ============================================================================
+  build-site:
+    name: Build Documentation Site
+    runs-on: ubuntu-latest
+    needs: [api-docs, readme-docs, coverage-docs]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all documentation
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Prepare documentation site
+        run: |
+          mkdir -p public
+
+          # Copy README as index
+          cp README.md public/index.md || echo "# GitVan Documentation" > public/index.md
+
+          # Copy CLAUDE.md
+          cp CLAUDE.md public/developer-guide.md || true
+
+          # Copy API docs
+          if [ -d artifacts/api-documentation ]; then
+            cp -r artifacts/api-documentation public/api
+          fi
+
+          # Copy README docs
+          if [ -d artifacts/readme-documentation ]; then
+            cp -r artifacts/readme-documentation/* public/ || true
+          fi
+
+          # Copy coverage
+          if [ -d artifacts/coverage-documentation ]; then
+            cp -r artifacts/coverage-documentation public/coverage
+          fi
+
+          # Generate index.html
+          cat > public/index.html <<'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>GitVan Documentation</title>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <style>
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 20px;
+                line-height: 1.6;
+              }
+              h1 { color: #333; }
+              .nav { margin: 20px 0; }
+              .nav a {
+                display: inline-block;
+                margin: 5px 10px 5px 0;
+                padding: 10px 15px;
+                background: #007bff;
+                color: white;
+                text-decoration: none;
+                border-radius: 4px;
+              }
+              .nav a:hover { background: #0056b3; }
+            </style>
+          </head>
+          <body>
+            <h1>GitVan Documentation</h1>
+            <p>Git-native development automation platform with semantic workflow graphs</p>
+
+            <div class="nav">
+              <h2>Documentation</h2>
+              <a href="index.md">README</a>
+              <a href="developer-guide.md">Developer Guide (CLAUDE.md)</a>
+              <a href="api/">API Reference</a>
+              <a href="coverage/">Coverage Report</a>
+              <a href="cli/help.txt">CLI Help</a>
+            </div>
+
+            <h2>Quick Links</h2>
+            <ul>
+              <li><a href="https://github.com/seanchatmangpt/gitvan">GitHub Repository</a></li>
+              <li><a href="https://www.npmjs.com/package/gitvan">npm Package</a></li>
+            </ul>
+          </body>
+          </html>
+          EOF
+
+      - name: Upload documentation site
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation-site
+          path: public/
+          retention-days: 90
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public/
+
+  # ============================================================================
+  # Deploy to GitHub Pages
+  # ============================================================================
+  deploy-pages:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: build-site
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  # ============================================================================
+  # Documentation Summary
+  # ============================================================================
+  summary:
+    name: Documentation Summary
+    runs-on: ubuntu-latest
+    needs: [api-docs, readme-docs, coverage-docs, build-site]
+    if: always()
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## 📚 Documentation Generation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- API Documentation: ${{ needs.api-docs.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- README Documentation: ${{ needs.readme-docs.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Coverage Documentation: ${{ needs.coverage-docs.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Build Site: ${{ needs.build-site.result }}" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "📄 Documentation will be deployed to GitHub Pages" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [[ "${{ needs.build-site.result }}" == "success" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Documentation generated successfully!" >> $GITHUB_STEP_SUMMARY
+          fi

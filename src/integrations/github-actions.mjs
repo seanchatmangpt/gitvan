@@ -4,16 +4,28 @@
 import { defineJob } from "../core/job-registry.mjs";
 import { useGitVan } from "../core/context.mjs";
 
+import { getSecretsManager } from '../security/secrets-manager.mjs';
+
 /**
  * GitHub Actions Integration
  * Provides seamless integration with GitHub Actions workflows
  */
 export class GitHubActionsIntegration {
   constructor(options = {}) {
-    this.githubToken = options.githubToken || process.env.GITHUB_TOKEN;
-    this.repository = options.repository || process.env.GITHUB_REPOSITORY;
+    const secretsManager = getSecretsManager();
+
+    this.githubToken = options.githubToken || secretsManager.get('GITHUB_TOKEN');
+    this.repository = options.repository || secretsManager.get('GITHUB_REPOSITORY');
     this.apiBaseUrl = options.apiBaseUrl || "https://api.github.com";
     this.logger = options.logger || console;
+
+    // Validate required secrets
+    if (!this.githubToken) {
+      throw new Error('GITHUB_TOKEN is required for GitHub Actions integration');
+    }
+    if (!this.repository) {
+      throw new Error('GITHUB_REPOSITORY is required for GitHub Actions integration');
+    }
   }
 
   /**

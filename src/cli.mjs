@@ -39,6 +39,7 @@ import { jobCommand } from "./cli/commands/job.mjs";
 import { scheduleCommand } from "./cli/commands/schedule.mjs";
 import { worktreeCommand } from "./cli/commands/worktree.mjs";
 import { llmCommand } from "./cli/commands/llm.mjs";
+import { revopsCommand } from "./cli/commands/revops.mjs";
 
 // Import existing Citty commands that are already properly implemented
 import { setupCommand } from "./cli/setup.mjs";
@@ -95,6 +96,11 @@ export const cli = defineCommand({
       "gitvan worktree create ../feature feature/new",
       'gitvan llm generate "create a backup job"',
       'gitvan llm job "run tests on push" --save',
+      "gitvan revops metrics",
+      "gitvan revops report monthly",
+      "gitvan revops health",
+      "gitvan revops forecast --growth-rate=15 --months=12",
+      "gitvan revops customers --at-risk",
       "gitvan setup",
       "gitvan pack install react-pack",
       'gitvan marketplace search "react"',
@@ -136,6 +142,9 @@ export const cli = defineCommand({
     // AI and automation commands
     chat: chatCommand,
     llm: llmCommand,
+
+    // RevOps analytics and reporting
+    revops: revopsCommand,
 
     // Studio and NextJS integration
     studio: studioCommand,

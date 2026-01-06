@@ -1,3 +1,6 @@
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("performance:index");
+
 /**
  * @fileoverview GitVan v4 - Performance Optimization Module
  *
@@ -35,7 +38,7 @@
  *
  * // Track performance
  * const result = await monitor.track('query', () => memoizedQuery(sparql));
- * console.log(monitor.getReport());
+ * logger.info(monitor.getReport());
  * ```
  */
 
@@ -321,7 +324,7 @@ export const utils = {
       return await fn();
     } finally {
       const duration = performance.now() - start;
-      console.log(`[${label}] ${duration.toFixed(2)}ms`);
+      logger.info(`[${label}] ${duration.toFixed(2)}ms`);
     }
   },
 

@@ -11,6 +11,8 @@
 
 import { createJobLoader } from "./job-loader.mjs";
 import { withGitVan } from "./context.mjs";
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("core:hook-loader");
 
 /**
  * GitVan Hook Loader - Job-Only Architecture
@@ -31,7 +33,7 @@ export class GitVanHookLoader {
    * Load and execute jobs for a specific Git hook type
    */
   async run(gitHookName, context = {}) {
-    console.log(`🔍 GitVan: Running ${gitHookName} jobs`);
+    logger.info(`🔍 GitVan: Running ${gitHookName} jobs`);
 
     // Load all jobs first
     await this.jobLoader.loadAllJobs();
@@ -40,18 +42,18 @@ export class GitVanHookLoader {
     const hookJobs = this.jobLoader.getJobsForHook(gitHookName);
 
     if (hookJobs.length === 0) {
-      console.log(`   ✅ No jobs found for ${gitHookName}`);
+      logger.info(`   ✅ No jobs found for ${gitHookName}`);
       return;
     }
 
-    console.log(`   📁 Found ${hookJobs.length} jobs`);
+    logger.info(`   📁 Found ${hookJobs.length} jobs`);
 
     // Execute jobs in registration order
     for (const job of hookJobs) {
       await this.executeJob(job, context);
     }
 
-    console.log(`   ✅ All ${gitHookName} jobs completed`);
+    logger.info(`   ✅ All ${gitHookName} jobs completed`);
   }
 
   /**
@@ -59,7 +61,7 @@ export class GitVanHookLoader {
    */
   async executeJob(job, context) {
     const jobName = job.meta.name;
-    console.log(`   🔧 Running job: ${jobName}`);
+    logger.info(`   🔧 Running job: ${jobName}`);
 
     try {
       // Wrap job execution in GitVan context
@@ -67,7 +69,7 @@ export class GitVanHookLoader {
         await job.run(context);
       });
     } catch (error) {
-      console.error(`   ❌ Error in job ${jobName}:`, error.message);
+      logger.error(`   ❌ Error in job ${jobName}:`, error.message);
       throw error;
     }
   }

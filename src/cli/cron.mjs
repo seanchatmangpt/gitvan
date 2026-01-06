@@ -47,21 +47,21 @@ async function listCronJobs(config) {
     const cronJobs = jobs.filter((job) => job.cron);
 
     if (cronJobs.length === 0) {
-      console.log("No cron jobs found");
+      logger.info("No cron jobs found");
       return;
     }
 
-    console.log(`Found ${cronJobs.length} cron job(s):`);
-    console.log();
+    logger.info(`Found ${cronJobs.length} cron job(s):`);
+    logger.info();
 
     for (const job of cronJobs) {
-      console.log(`📅 ${job.id || job.name}`);
-      console.log(`   Cron: ${job.cron}`);
-      console.log(`   File: ${job.relativePath}`);
+      logger.info(`📅 ${job.id || job.name}`);
+      logger.info(`   Cron: ${job.cron}`);
+      logger.info(`   File: ${job.relativePath}`);
       if (job.meta?.desc) {
-        console.log(`   Desc: ${job.meta.desc}`);
+        logger.info(`   Desc: ${job.meta.desc}`);
       }
-      console.log();
+      logger.info();
     }
   } catch (error) {
     logger.error("Failed to list cron jobs:", error.message);
@@ -81,8 +81,8 @@ async function dryRunCronJobs(config, at) {
     const cronJobs = jobs.filter((job) => job.cron);
     const checkTime = at ? new Date(at) : new Date();
 
-    console.log(`Dry run for ${checkTime.toISOString()}:`);
-    console.log();
+    logger.info(`Dry run for ${checkTime.toISOString()}:`);
+    logger.info();
 
     const matchingJobs = [];
 
@@ -94,13 +94,13 @@ async function dryRunCronJobs(config, at) {
     }
 
     if (matchingJobs.length === 0) {
-      console.log("No jobs would run at this time");
+      logger.info("No jobs would run at this time");
       return;
     }
 
-    console.log(`Jobs that would run:`);
+    logger.info(`Jobs that would run:`);
     for (const job of matchingJobs) {
-      console.log(`  - ${job.id || job.name} (${job.cron})`);
+      logger.info(`  - ${job.id || job.name} (${job.cron})`);
     }
   } catch (error) {
     logger.error("Failed to dry run cron jobs:", error.message);
@@ -135,7 +135,7 @@ function shouldRunAtTime(cron, time) {
  * @returns {Promise<void>}
  */
 async function cronStatus(config) {
-  console.log("Cron scheduler status:");
-  console.log("  Status: Not implemented in this version");
-  console.log("  Config: ", JSON.stringify(config.jobs, null, 2));
+  logger.info("Cron scheduler status:");
+  logger.info("  Status: Not implemented in this version");
+  logger.info("  Config: ", JSON.stringify(config.jobs, null, 2));
 }

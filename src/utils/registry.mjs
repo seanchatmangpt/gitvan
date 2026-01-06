@@ -4,6 +4,8 @@
  */
 
 import { getLatestVersion, isValidVersion } from './version.mjs';
+import { createLogger } from "./logger.mjs";
+const logger = createLogger("utils:registry");
 
 /**
  * Mock registry data for testing - in production this would fetch from actual registries
@@ -82,7 +84,7 @@ export class RegistryClient {
 
       return packageInfo;
     } catch (error) {
-      console.warn(`Failed to fetch package info for ${packageId}: ${error.message}`);
+      logger.warn(`Failed to fetch package info for ${packageId}: ${error.message}`);
       return null;
     }
   }
@@ -239,7 +241,7 @@ export class RegistryClient {
       const data = await response.json();
       return data.results || [];
     } catch (error) {
-      console.warn(`Package search failed: ${error.message}`);
+      logger.warn(`Package search failed: ${error.message}`);
       return [];
     }
   }

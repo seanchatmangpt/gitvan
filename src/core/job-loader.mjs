@@ -8,6 +8,8 @@
 import { readdir } from "node:fs/promises";
 import { join, extname } from "path";
 import { jobRegistry } from "./job-registry.mjs";
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("core:job-loader");
 
 /**
  * Job Loader - Unified Hooks System
@@ -22,7 +24,7 @@ export class JobLoader {
    * Load all jobs and register them with the unified hooks system
    */
   async loadAllJobs() {
-    console.log("🔍 GitVan: Loading jobs for unified hooks system");
+    logger.info("🔍 GitVan: Loading jobs for unified hooks system");
 
     try {
       // Find all job files using readdir
@@ -31,10 +33,10 @@ export class JobLoader {
         .filter((file) => extname(file) === ".mjs")
         .map((file) => join(this.jobsDir, file));
 
-      console.log(`   📁 Found ${jobFiles.length} job files`);
+      logger.info(`   📁 Found ${jobFiles.length} job files`);
 
       if (jobFiles.length === 0) {
-        console.log("   ✅ No job files found");
+        logger.info("   ✅ No job files found");
         return;
       }
 
@@ -43,12 +45,12 @@ export class JobLoader {
         await this.loadJob(jobFile);
       }
 
-      console.log(`   ✅ Loaded ${jobRegistry.getAllJobs().length} jobs`);
+      logger.info(`   ✅ Loaded ${jobRegistry.getAllJobs().length} jobs`);
 
       // Show hook-to-job mapping
       this.showHookMapping();
     } catch (error) {
-      console.error("❌ Error loading jobs:", error.message);
+      logger.error("❌ Error loading jobs:", error.message);
       throw error;
     }
   }
@@ -64,10 +66,10 @@ export class JobLoader {
       if (job && typeof job.run === "function") {
         jobRegistry.register(job);
       } else {
-        console.warn(`   ⚠️  ${jobFile} is not a valid job`);
+        logger.warn(`   ⚠️  ${jobFile} is not a valid job`);
       }
     } catch (error) {
-      console.warn(`   ⚠️  Could not load job ${jobFile}:`, error.message);
+      logger.warn(`   ⚠️  Could not load job ${jobFile}:`, error.message);
     }
   }
 
@@ -77,13 +79,13 @@ export class JobLoader {
   showHookMapping() {
     const hooks = ["post-commit", "post-merge"];
 
-    console.log("\n   🎯 Hook-to-Job Mapping:");
+    logger.info("\n   🎯 Hook-to-Job Mapping:");
     for (const hook of hooks) {
       const jobs = jobRegistry.getJobsForHook(hook);
       if (jobs.length > 0) {
-        console.log(`   - ${hook}: ${jobs.map((j) => j.meta.name).join(", ")}`);
+        logger.info(`   - ${hook}: ${jobs.map((j) => j.meta.name).join(", ")}`);
       } else {
-        console.log(`   - ${hook}: (no jobs registered)`);
+        logger.info(`   - ${hook}: (no jobs registered)`);
       }
     }
   }

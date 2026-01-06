@@ -1,0 +1,46 @@
+#!/usr/bin/env node
+
+/**
+ * Pre-commit Hook - Security Checks
+ * Scans for secrets before allowing commit
+ */
+
+import { execSync } from 'node:child_process';
+import { preCommitHook } from '../src/security/secrets-scanner.mjs';
+
+async function main() {
+  try {
+    // Get list of staged files
+    const stagedFilesOutput = execSync('git diff --cached --name-only --diff-filter=ACM', {
+      encoding: 'utf8'
+    });
+
+    const stagedFiles = stagedFilesOutput
+      .trim()
+      .split('\n')
+      .filter(f => f.length > 0);
+
+    if (stagedFiles.length === 0) {
+      console.log('No files staged for commit');
+      process.exit(0);
+    }
+
+    console.log(`Scanning ${stagedFiles.length} staged file(s) for secrets...`);
+
+    // Run secrets scanner
+    const result = await preCommitHook(stagedFiles);
+
+    if (!result.passed) {
+      console.error('\n❌ Commit blocked due to security issues\n');
+      process.exit(1);
+    }
+
+    console.log('✅ Security checks passed\n');
+    process.exit(0);
+  } catch (error) {
+    console.error('Pre-commit hook failed:', error.message);
+    process.exit(1);
+  }
+}
+
+main();

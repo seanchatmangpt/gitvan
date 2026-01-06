@@ -1,0 +1,368 @@
+name: Build Metrics and Monitoring
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Run daily at 4 AM UTC
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  # ============================================================================
+  # Build Performance Metrics
+  # ============================================================================
+  build-metrics:
+    name: Build Performance Metrics
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          START_TIME=$(date +%s)
+          npm ci
+          END_TIME=$(date +%s)
+          INSTALL_TIME=$((END_TIME - START_TIME))
+          echo "INSTALL_TIME=$INSTALL_TIME" >> $GITHUB_ENV
+          echo "Dependency installation time: ${INSTALL_TIME}s"
+
+      - name: Build with timing
+        run: |
+          START_TIME=$(date +%s)
+          npm run build
+          END_TIME=$(date +%s)
+          BUILD_TIME=$((END_TIME - START_TIME))
+          echo "BUILD_TIME=$BUILD_TIME" >> $GITHUB_ENV
+          echo "Build time: ${BUILD_TIME}s"
+
+      - name: Measure build size
+        run: |
+          if [ -d "dist" ]; then
+            DIST_SIZE=$(du -sb dist | cut -f1)
+            DIST_SIZE_MB=$(echo "scale=2; $DIST_SIZE / 1024 / 1024" | bc)
+            echo "DIST_SIZE=$DIST_SIZE" >> $GITHUB_ENV
+            echo "DIST_SIZE_MB=$DIST_SIZE_MB" >> $GITHUB_ENV
+            echo "Build output size: ${DIST_SIZE_MB}MB"
+
+            # Count files in dist
+            FILE_COUNT=$(find dist -type f | wc -l)
+            echo "FILE_COUNT=$FILE_COUNT" >> $GITHUB_ENV
+            echo "Files in dist: $FILE_COUNT"
+          fi
+
+      - name: Package size
+        run: |
+          npm pack
+          PACKAGE_SIZE=$(ls -lh gitvan-*.tgz | awk '{print $5}')
+          PACKAGE_BYTES=$(ls -l gitvan-*.tgz | awk '{print $5}')
+          echo "PACKAGE_SIZE=$PACKAGE_SIZE" >> $GITHUB_ENV
+          echo "PACKAGE_BYTES=$PACKAGE_BYTES" >> $GITHUB_ENV
+          echo "Package size: $PACKAGE_SIZE"
+
+      - name: Generate metrics report
+        run: |
+          {
+            echo "# Build Metrics Report"
+            echo ""
+            echo "**Generated**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+            echo "**Commit**: ${{ github.sha }}"
+            echo "**Branch**: ${{ github.ref_name }}"
+            echo ""
+            echo "## Performance"
+            echo "- Dependency Installation: ${INSTALL_TIME}s"
+            echo "- Build Time: ${BUILD_TIME}s"
+            echo "- Total Time: $((INSTALL_TIME + BUILD_TIME))s"
+            echo ""
+            echo "## Build Output"
+            echo "- Dist Size: ${DIST_SIZE_MB}MB (${DIST_SIZE} bytes)"
+            echo "- File Count: ${FILE_COUNT}"
+            echo "- Package Size: ${PACKAGE_SIZE} (${PACKAGE_BYTES} bytes)"
+            echo ""
+            echo "## Thresholds"
+
+            # Check thresholds
+            if [ "$BUILD_TIME" -gt 60 ]; then
+              echo "⚠️ Build time exceeds 60 seconds"
+            else
+              echo "✅ Build time within acceptable range"
+            fi
+
+            if [ "$PACKAGE_BYTES" -gt 5242880 ]; then
+              echo "⚠️ Package size exceeds 5MB"
+            else
+              echo "✅ Package size within acceptable range"
+            fi
+          } > metrics-report.md
+
+      - name: Display metrics
+        run: |
+          cat metrics-report.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload metrics report
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-metrics-report
+          path: metrics-report.md
+          retention-days: 90
+
+      - name: Save metrics data
+        run: |
+          {
+            echo "{"
+            echo "  \"timestamp\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\","
+            echo "  \"commit\": \"${{ github.sha }}\","
+            echo "  \"branch\": \"${{ github.ref_name }}\","
+            echo "  \"installTime\": $INSTALL_TIME,"
+            echo "  \"buildTime\": $BUILD_TIME,"
+            echo "  \"distSize\": $DIST_SIZE,"
+            echo "  \"fileCount\": $FILE_COUNT,"
+            echo "  \"packageSize\": $PACKAGE_BYTES"
+            echo "}"
+          } > metrics.json
+
+      - name: Upload metrics data
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-metrics-data
+          path: metrics.json
+          retention-days: 90
+
+  # ============================================================================
+  # Test Performance Metrics
+  # ============================================================================
+  test-metrics:
+    name: Test Performance Metrics
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests with timing
+        run: |
+          START_TIME=$(date +%s)
+          npm test -- --reporter=json --outputFile=test-results.json || true
+          END_TIME=$(date +%s)
+          TEST_TIME=$((END_TIME - START_TIME))
+          echo "TEST_TIME=$TEST_TIME" >> $GITHUB_ENV
+          echo "Test execution time: ${TEST_TIME}s"
+
+      - name: Analyze test results
+        run: |
+          if [ -f test-results.json ]; then
+            # Count tests
+            TEST_COUNT=$(cat test-results.json | jq '.numTotalTests // 0')
+            PASSED=$(cat test-results.json | jq '.numPassedTests // 0')
+            FAILED=$(cat test-results.json | jq '.numFailedTests // 0')
+            SKIPPED=$(cat test-results.json | jq '.numPendingTests // 0')
+
+            echo "TEST_COUNT=$TEST_COUNT" >> $GITHUB_ENV
+            echo "PASSED=$PASSED" >> $GITHUB_ENV
+            echo "FAILED=$FAILED" >> $GITHUB_ENV
+            echo "SKIPPED=$SKIPPED" >> $GITHUB_ENV
+
+            echo "Test results: $PASSED passed, $FAILED failed, $SKIPPED skipped (total: $TEST_COUNT)"
+          fi
+
+      - name: Generate test metrics report
+        run: |
+          {
+            echo "# Test Metrics Report"
+            echo ""
+            echo "**Generated**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+            echo ""
+            echo "## Test Execution"
+            echo "- Total Tests: ${TEST_COUNT:-0}"
+            echo "- Passed: ${PASSED:-0}"
+            echo "- Failed: ${FAILED:-0}"
+            echo "- Skipped: ${SKIPPED:-0}"
+            echo "- Execution Time: ${TEST_TIME}s"
+            echo ""
+
+            if [ "${TEST_TIME:-0}" -gt 180 ]; then
+              echo "⚠️ Test execution exceeds 3 minutes"
+            else
+              echo "✅ Test execution within acceptable range"
+            fi
+          } > test-metrics-report.md
+
+      - name: Display test metrics
+        run: |
+          cat test-metrics-report.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload test metrics
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-metrics-report
+          path: test-metrics-report.md
+          retention-days: 90
+
+  # ============================================================================
+  # Code Quality Metrics
+  # ============================================================================
+  code-quality:
+    name: Code Quality Metrics
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Count lines of code
+        run: |
+          # Count source files
+          SRC_FILES=$(find src -name "*.mjs" -o -name "*.js" | wc -l)
+          TEST_FILES=$(find tests -name "*.mjs" -o -name "*.js" 2>/dev/null | wc -l || echo 0)
+
+          # Count lines
+          SRC_LINES=$(find src -name "*.mjs" -o -name "*.js" | xargs wc -l | tail -1 | awk '{print $1}')
+          TEST_LINES=$(find tests -name "*.mjs" -o -name "*.js" 2>/dev/null | xargs wc -l 2>/dev/null | tail -1 | awk '{print $1}' || echo 0)
+
+          echo "SRC_FILES=$SRC_FILES" >> $GITHUB_ENV
+          echo "TEST_FILES=$TEST_FILES" >> $GITHUB_ENV
+          echo "SRC_LINES=$SRC_LINES" >> $GITHUB_ENV
+          echo "TEST_LINES=$TEST_LINES" >> $GITHUB_ENV
+
+      - name: Calculate test coverage ratio
+        run: |
+          if [ "$SRC_LINES" -gt 0 ]; then
+            TEST_RATIO=$(echo "scale=2; $TEST_LINES / $SRC_LINES" | bc)
+            echo "TEST_RATIO=$TEST_RATIO" >> $GITHUB_ENV
+          fi
+
+      - name: Generate code quality report
+        run: |
+          {
+            echo "# Code Quality Metrics"
+            echo ""
+            echo "**Generated**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+            echo ""
+            echo "## Code Statistics"
+            echo "- Source Files: $SRC_FILES"
+            echo "- Test Files: $TEST_FILES"
+            echo "- Source Lines: $SRC_LINES"
+            echo "- Test Lines: $TEST_LINES"
+            echo "- Test/Source Ratio: ${TEST_RATIO:-0}"
+            echo ""
+
+            if [ "${TEST_RATIO:-0}" = "0" ] || [ $(echo "$TEST_RATIO < 0.5" | bc) -eq 1 ]; then
+              echo "⚠️ Test coverage ratio below recommended 0.5"
+            else
+              echo "✅ Good test coverage ratio"
+            fi
+          } > code-quality-report.md
+
+      - name: Display code quality metrics
+        run: |
+          cat code-quality-report.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload code quality report
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-quality-report
+          path: code-quality-report.md
+          retention-days: 90
+
+  # ============================================================================
+  # Dependency Analysis
+  # ============================================================================
+  dependency-analysis:
+    name: Dependency Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Analyze dependencies
+        run: |
+          DEP_COUNT=$(cat package.json | jq '.dependencies | length')
+          DEV_DEP_COUNT=$(cat package.json | jq '.devDependencies | length')
+          TOTAL_DEP=$((DEP_COUNT + DEV_DEP_COUNT))
+
+          echo "DEP_COUNT=$DEP_COUNT" >> $GITHUB_ENV
+          echo "DEV_DEP_COUNT=$DEV_DEP_COUNT" >> $GITHUB_ENV
+          echo "TOTAL_DEP=$TOTAL_DEP" >> $GITHUB_ENV
+
+          # Get installed size
+          npm ls --depth=0 --json > dep-tree.json || true
+
+      - name: Generate dependency report
+        run: |
+          {
+            echo "# Dependency Analysis"
+            echo ""
+            echo "**Generated**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+            echo ""
+            echo "## Dependency Counts"
+            echo "- Production Dependencies: $DEP_COUNT"
+            echo "- Dev Dependencies: $DEV_DEP_COUNT"
+            echo "- Total Dependencies: $TOTAL_DEP"
+            echo ""
+
+            if [ "$TOTAL_DEP" -gt 100 ]; then
+              echo "⚠️ High dependency count (>100)"
+            else
+              echo "✅ Dependency count within acceptable range"
+            fi
+          } > dependency-report.md
+
+      - name: Display dependency report
+        run: |
+          cat dependency-report.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload dependency report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-report
+          path: dependency-report.md
+          retention-days: 90
+
+  # ============================================================================
+  # Metrics Summary
+  # ============================================================================
+  summary:
+    name: Metrics Summary
+    runs-on: ubuntu-latest
+    needs: [build-metrics, test-metrics, code-quality, dependency-analysis]
+    if: always()
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## 📊 Overall Metrics Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All metrics have been collected and analyzed." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Build Metrics: ${{ needs.build-metrics.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Test Metrics: ${{ needs.test-metrics.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Code Quality: ${{ needs.code-quality.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Dependency Analysis: ${{ needs.dependency-analysis.result }}" >> $GITHUB_STEP_SUMMARY

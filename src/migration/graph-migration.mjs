@@ -9,6 +9,8 @@ import { createGraphPackStateManager } from './pack/graph-state-manager.mjs'
 import { createGraphUserFeedbackManager } from '../ai/graph-feedback-manager.mjs'
 import { createGraphPackRegistry } from './pack/graph-registry.mjs'
 import consola from 'consola'
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("migration:graph-migration");
 
 /**
  * Graph Migration Manager
@@ -458,16 +460,16 @@ export class GraphMigrationCLI {
     const legacyPaths = await this.detector.scanForLegacySystems()
     const summary = this.detector.getDetectedSystems()
     
-    console.log('\n📊 Legacy Systems Detected:')
-    console.log('=' .repeat(50))
+    logger.info('\n📊 Legacy Systems Detected:')
+    logger.info('=' .repeat(50))
     
     if (summary.total === 0) {
-      console.log('✅ No legacy systems detected')
+      logger.info('✅ No legacy systems detected')
     } else {
       summary.systems.forEach(system => {
-        console.log(`📁 ${system.type}: ${system.path} (${system.size} bytes)`)
+        logger.info(`📁 ${system.type}: ${system.path} (${system.size} bytes)`)
       })
-      console.log(`\n📈 Total: ${summary.total} systems, ${summary.totalSize} bytes`)
+      logger.info(`\n📈 Total: ${summary.total} systems, ${summary.totalSize} bytes`)
     }
     
     return { legacyPaths, summary }
@@ -482,26 +484,26 @@ export class GraphMigrationCLI {
     const legacyPaths = options.legacyPaths || await this.detector.scanForLegacySystems()
     
     if (Object.values(legacyPaths).every(path => !path)) {
-      console.log('ℹ️ No legacy systems found to migrate')
+      logger.info('ℹ️ No legacy systems found to migrate')
       return { message: 'No migration needed' }
     }
     
     const results = await this.migrationManager.migrateAll(legacyPaths)
     
-    console.log('\n🎉 Migration Results:')
-    console.log('=' .repeat(50))
+    logger.info('\n🎉 Migration Results:')
+    logger.info('=' .repeat(50))
     
     if (results.packState) {
-      console.log(`📦 Pack State: ${results.packState.migrated} packs migrated`)
+      logger.info(`📦 Pack State: ${results.packState.migrated} packs migrated`)
     }
     
     if (results.userFeedback) {
-      console.log(`💬 User Feedback: ${results.userFeedback.migrated} entries migrated`)
+      logger.info(`💬 User Feedback: ${results.userFeedback.migrated} entries migrated`)
     }
     
     if (results.packRegistry) {
       const successful = results.packRegistry.filter(r => r.status === 'registered').length
-      console.log(`📚 Pack Registry: ${successful} packs migrated`)
+      logger.info(`📚 Pack Registry: ${successful} packs migrated`)
     }
     
     return results
@@ -515,14 +517,14 @@ export class GraphMigrationCLI {
     
     const verification = await this.migrationManager.verifyMigration()
     
-    console.log('\n🔍 Migration Verification:')
-    console.log('=' .repeat(50))
+    logger.info('\n🔍 Migration Verification:')
+    logger.info('=' .repeat(50))
     
     Object.entries(verification).forEach(([system, result]) => {
       const status = result.valid ? '✅' : '❌'
-      console.log(`${status} ${system}: ${result.message}`)
+      logger.info(`${status} ${system}: ${result.message}`)
       if (!result.valid) {
-        console.log(`   Error: ${result.error}`)
+        logger.info(`   Error: ${result.error}`)
       }
     })
     
@@ -541,7 +543,7 @@ export class GraphMigrationCLI {
     
     await this.migrationManager.rollbackMigration(logPath)
     
-    console.log('🔄 Migration rollback completed')
+    logger.info('🔄 Migration rollback completed')
     return { status: 'rolled-back' }
   }
 
@@ -553,21 +555,21 @@ export class GraphMigrationCLI {
     
     const report = await this.migrationManager.generateMigrationReport()
     
-    console.log('\n📊 Migration Report:')
-    console.log('=' .repeat(50))
-    console.log(`📅 Generated: ${report.generatedAt}`)
-    console.log(`📝 Migrations: ${report.migrationLog.length}`)
+    logger.info('\n📊 Migration Report:')
+    logger.info('=' .repeat(50))
+    logger.info(`📅 Generated: ${report.generatedAt}`)
+    logger.info(`📝 Migrations: ${report.migrationLog.length}`)
     
     if (report.analytics.packState) {
-      console.log(`📦 Packs: ${report.analytics.packState.totalPacks}`)
+      logger.info(`📦 Packs: ${report.analytics.packState.totalPacks}`)
     }
     
     if (report.analytics.userFeedback) {
-      console.log(`💬 Feedback: ${report.analytics.userFeedback.totalFeedback}`)
+      logger.info(`💬 Feedback: ${report.analytics.userFeedback.totalFeedback}`)
     }
     
     if (report.analytics.packRegistry) {
-      console.log(`📚 Registry: ${report.analytics.packRegistry.totalPacks}`)
+      logger.info(`📚 Registry: ${report.analytics.packRegistry.totalPacks}`)
     }
     
     return report

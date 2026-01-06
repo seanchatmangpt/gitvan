@@ -3,6 +3,8 @@ import consola from "consola";
 import { join } from "pathe";
 import { mkdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
 import { execSync } from "node:child_process";
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("cli:init");
 
 export const initCommand = defineCommand({
   meta: {
@@ -32,9 +34,9 @@ export const initCommand = defineCommand({
     const projectDescription =
       args.description || "A GitVan-powered project with Knowledge Hook Engine";
 
-    console.log("🚀 Initializing GitVan project with Knowledge Hook Engine...");
-    console.log(`   Project: ${projectName}`);
-    console.log(`   Directory: ${cwd}`);
+    logger.info("🚀 Initializing GitVan project with Knowledge Hook Engine...");
+    logger.info(`   Project: ${projectName}`);
+    logger.info(`   Directory: ${cwd}`);
 
     try {
       // Step 1: Initialize Git repository
@@ -70,26 +72,26 @@ export const initCommand = defineCommand({
       // Step 11: Verify installation
       await verifyInstallation(cwd);
 
-      console.log("\n🎉 GitVan project initialization complete!");
-      console.log("\n📋 Next steps:");
-      console.log('   1. Configure Git user: git config user.name "Your Name"');
-      console.log(
+      logger.info("\n🎉 GitVan project initialization complete!");
+      logger.info("\n📋 Next steps:");
+      logger.info('   1. Configure Git user: git config user.name "Your Name"');
+      logger.info(
         '   2. Configure Git email: git config user.email "your@email.com"'
       );
-      console.log("   3. Complete setup: gitvan setup");
-      console.log("   4. Test hooks: gitvan hooks list");
-      console.log("   5. Test workflows: gitvan workflow list");
-      console.log("   6. Save changes: gitvan save");
-      console.log("\n📚 Documentation:");
-      console.log("   • Knowledge Hooks: ./hooks/README.md");
-      console.log("   • Workflows: ./workflows/README.md");
-      console.log("   • Templates: ./templates/README.md");
-      console.log("\nFor more help: gitvan help");
+      logger.info("   3. Complete setup: gitvan setup");
+      logger.info("   4. Test hooks: gitvan hooks list");
+      logger.info("   5. Test workflows: gitvan workflow list");
+      logger.info("   6. Save changes: gitvan save");
+      logger.info("\n📚 Documentation:");
+      logger.info("   • Knowledge Hooks: ./hooks/README.md");
+      logger.info("   • Workflows: ./workflows/README.md");
+      logger.info("   • Templates: ./templates/README.md");
+      logger.info("\nFor more help: gitvan help");
     } catch (error) {
-      console.log("\n❌ Initialization failed:");
-      console.log("   Error:", error.message);
-      console.log("\nYou can try again or run: gitvan help");
-      process.exit(1);
+      logger.info("\n❌ Initialization failed:");
+      logger.info("   Error:", error.message);
+      logger.info("\nYou can try again or run: gitvan help");
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -98,17 +100,17 @@ export const initCommand = defineCommand({
  * Initialize Git repository
  */
 async function initializeGit(cwd) {
-  console.log("\n📦 Initializing Git repository...");
+  logger.info("\n📦 Initializing Git repository...");
 
   try {
     // Check if already a git repo
     if (existsSync(join(cwd, ".git"))) {
-      console.log("   ✅ Git repository already exists");
+      logger.info("   ✅ Git repository already exists");
       return;
     }
 
     execSync("git init", { cwd, stdio: "pipe" });
-    console.log("   ✅ Git repository initialized");
+    logger.info("   ✅ Git repository initialized");
 
     // Create initial commit
     execSync("git add .", { cwd, stdio: "pipe" });
@@ -116,9 +118,9 @@ async function initializeGit(cwd) {
       cwd,
       stdio: "pipe",
     });
-    console.log("   ✅ Initial commit created");
+    logger.info("   ✅ Initial commit created");
   } catch (error) {
-    console.log("   ⚠️  Git initialization had issues:", error.message);
+    logger.info("   ⚠️  Git initialization had issues:", error.message);
   }
 }
 
@@ -126,12 +128,12 @@ async function initializeGit(cwd) {
  * Initialize npm project
  */
 async function initializeNpm(cwd, projectName, projectDescription) {
-  console.log("\n📦 Initializing npm project...");
+  logger.info("\n📦 Initializing npm project...");
 
   try {
     // Check if package.json already exists
     if (existsSync(join(cwd, "package.json"))) {
-      console.log("   ✅ package.json already exists");
+      logger.info("   ✅ package.json already exists");
       return;
     }
 
@@ -163,9 +165,9 @@ async function initializeNpm(cwd, projectName, projectDescription) {
       join(cwd, "package.json"),
       JSON.stringify(packageJson, null, 2)
     );
-    console.log("   ✅ package.json created");
+    logger.info("   ✅ package.json created");
   } catch (error) {
-    console.log("   ⚠️  npm initialization had issues:", error.message);
+    logger.info("   ⚠️  npm initialization had issues:", error.message);
   }
 }
 
@@ -173,7 +175,7 @@ async function initializeNpm(cwd, projectName, projectDescription) {
  * Create GitVan directory structure
  */
 async function createDirectoryStructure(cwd) {
-  console.log("\n📁 Creating GitVan directory structure...");
+  logger.info("\n📁 Creating GitVan directory structure...");
 
   const dirs = [
     ".gitvan",
@@ -196,9 +198,9 @@ async function createDirectoryStructure(cwd) {
   for (const dir of dirs) {
     try {
       mkdirSync(join(cwd, dir), { recursive: true });
-      console.log(`   ✅ Created: ${dir}`);
+      logger.info(`   ✅ Created: ${dir}`);
     } catch (error) {
-      console.log(`   ⚠️  Failed to create ${dir}:`, error.message);
+      logger.info(`   ⚠️  Failed to create ${dir}:`, error.message);
     }
   }
 }
@@ -207,12 +209,12 @@ async function createDirectoryStructure(cwd) {
  * Create GitVan configuration
  */
 async function createGitVanConfig(cwd, projectName, projectDescription) {
-  console.log("\n⚙️  Creating GitVan configuration...");
+  logger.info("\n⚙️  Creating GitVan configuration...");
 
   const configPath = join(cwd, "gitvan.config.js");
 
   if (existsSync(configPath)) {
-    console.log("   ⚠️  gitvan.config.js already exists");
+    logger.info("   ⚠️  gitvan.config.js already exists");
     return;
   }
 
@@ -289,14 +291,14 @@ async function createGitVanConfig(cwd, projectName, projectDescription) {
 `;
 
   writeFileSync(configPath, config);
-  console.log("   ✅ gitvan.config.js created");
+  logger.info("   ✅ gitvan.config.js created");
 }
 
 /**
  * Initialize Knowledge Graph
  */
 async function initializeKnowledgeGraph(cwd, projectName, projectDescription) {
-  console.log("\n🧠 Initializing Knowledge Graph...");
+  logger.info("\n🧠 Initializing Knowledge Graph...");
 
   const initTtl = `@prefix ex: <http://example.org/> .
 @prefix gv: <https://gitvan.dev/ontology#> .
@@ -339,7 +341,7 @@ ex:project-metrics rdf:type gv:ProjectMetrics ;
 `;
 
   writeFileSync(join(cwd, "graph", "init.ttl"), initTtl);
-  console.log("   ✅ graph/init.ttl created");
+  logger.info("   ✅ graph/init.ttl created");
 
   // Create graph README
   const graphReadme = `# Knowledge Graph
@@ -378,14 +380,14 @@ The Knowledge Graph integrates with:
 `;
 
   writeFileSync(join(cwd, "graph", "README.md"), graphReadme);
-  console.log("   ✅ graph/README.md created");
+  logger.info("   ✅ graph/README.md created");
 }
 
 /**
  * Create sample hooks
  */
 async function createSampleHooks(cwd) {
-  console.log("\n🎣 Creating sample Knowledge Hooks...");
+  logger.info("\n🎣 Creating sample Knowledge Hooks...");
 
   // Copy the example hooks we created earlier
   const hooks = [
@@ -475,7 +477,7 @@ ex:create-alert rdf:type gv:TemplateStep ;
 
   for (const hook of hooks) {
     writeFileSync(join(cwd, "hooks", hook.name), hook.content);
-    console.log(`   ✅ Created: hooks/${hook.name}`);
+    logger.info(`   ✅ Created: hooks/${hook.name}`);
   }
 
   // Copy the hooks README
@@ -517,14 +519,14 @@ gitvan hooks validate version-change-hook
 `;
 
   writeFileSync(join(cwd, "hooks", "README.md"), hooksReadme);
-  console.log("   ✅ hooks/README.md created");
+  logger.info("   ✅ hooks/README.md created");
 }
 
 /**
  * Create sample workflows
  */
 async function createSampleWorkflows(cwd) {
-  console.log("\n⚡ Creating sample Workflows...");
+  logger.info("\n⚡ Creating sample Workflows...");
 
   const workflows = [
     {
@@ -578,7 +580,7 @@ ex:generate-report rdf:type gv:TemplateStep ;
 
   for (const workflow of workflows) {
     writeFileSync(join(cwd, "workflows", workflow.name), workflow.content);
-    console.log(`   ✅ Created: workflows/${workflow.name}`);
+    logger.info(`   ✅ Created: workflows/${workflow.name}`);
   }
 
   // Create workflows README
@@ -617,14 +619,14 @@ Workflows support step dependencies to ensure proper execution order.
 `;
 
   writeFileSync(join(cwd, "workflows", "README.md"), workflowsReadme);
-  console.log("   ✅ workflows/README.md created");
+  logger.info("   ✅ workflows/README.md created");
 }
 
 /**
  * Create sample templates
  */
 async function createSampleTemplates(cwd) {
-  console.log("\n📝 Creating sample Templates...");
+  logger.info("\n📝 Creating sample Templates...");
 
   const templates = [
     {
@@ -687,7 +689,7 @@ Templates can access data from the Knowledge Graph through workflow steps and ho
 
   for (const template of templates) {
     writeFileSync(join(cwd, "templates", template.name), template.content);
-    console.log(`   ✅ Created: templates/${template.name}`);
+    logger.info(`   ✅ Created: templates/${template.name}`);
   }
 
   // Create templates README
@@ -726,14 +728,14 @@ Available Nunjucks filters:
 `;
 
   writeFileSync(join(cwd, "templates", "README.md"), templatesReadme);
-  console.log("   ✅ templates/README.md created");
+  logger.info("   ✅ templates/README.md created");
 }
 
 /**
  * Create package.json scripts
  */
 async function createPackageScripts(cwd) {
-  console.log("\n📜 Creating package.json scripts...");
+  logger.info("\n📜 Creating package.json scripts...");
 
   try {
     const packagePath = join(cwd, "package.json");
@@ -757,9 +759,9 @@ async function createPackageScripts(cwd) {
     };
 
     writeFileSync(packagePath, JSON.stringify(packageJson, null, 2));
-    console.log("   ✅ package.json scripts updated");
+    logger.info("   ✅ package.json scripts updated");
   } catch (error) {
-    console.log("   ⚠️  Failed to update package.json scripts:", error.message);
+    logger.info("   ⚠️  Failed to update package.json scripts:", error.message);
   }
 }
 
@@ -767,21 +769,21 @@ async function createPackageScripts(cwd) {
  * Install dependencies automatically
  */
 async function installDependencies(cwd) {
-  console.log("\n📦 Installing dependencies...");
+  logger.info("\n📦 Installing dependencies...");
 
   try {
     // Check if node_modules already exists
     if (existsSync(join(cwd, "node_modules"))) {
-      console.log("   ✅ Dependencies already installed");
+      logger.info("   ✅ Dependencies already installed");
       return;
     }
 
     // Run npm install
     execSync("npm install", { cwd, stdio: "inherit" });
-    console.log("   ✅ Dependencies installed successfully");
+    logger.info("   ✅ Dependencies installed successfully");
   } catch (error) {
-    console.log("   ⚠️  Dependency installation had issues:", error.message);
-    console.log("   💡 You can run 'npm install' manually later");
+    logger.info("   ⚠️  Dependency installation had issues:", error.message);
+    logger.info("   💡 You can run 'npm install' manually later");
   }
 }
 
@@ -789,7 +791,7 @@ async function installDependencies(cwd) {
  * Verify installation
  */
 async function verifyInstallation(cwd) {
-  console.log("\n🔍 Verifying installation...");
+  logger.info("\n🔍 Verifying installation...");
 
   const checks = [
     { name: "Git repository", path: ".git", type: "directory" },
@@ -806,16 +808,16 @@ async function verifyInstallation(cwd) {
   for (const check of checks) {
     const exists = existsSync(join(cwd, check.path));
     if (exists) {
-      console.log(`   ✅ ${check.name}`);
+      logger.info(`   ✅ ${check.name}`);
     } else {
-      console.log(`   ❌ ${check.name} missing`);
+      logger.info(`   ❌ ${check.name} missing`);
       allGood = false;
     }
   }
 
   if (allGood) {
-    console.log("   🎉 All components verified!");
+    logger.info("   🎉 All components verified!");
   } else {
-    console.log("   ⚠️  Some components missing - check above");
+    logger.info("   ⚠️  Some components missing - check above");
   }
 }

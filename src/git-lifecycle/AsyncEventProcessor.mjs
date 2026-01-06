@@ -6,6 +6,8 @@
 
 import { EventEmitter } from 'node:events';
 import { EventQueue } from './EventQueue.mjs';
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("git-lifecycle:AsyncEventProcessor");
 
 /**
  * @typedef {Object} ProcessorConfig
@@ -181,7 +183,7 @@ export class AsyncEventProcessor extends EventEmitter {
       const willRetry = this.queue.fail(event.id, error);
 
       if (!willRetry) {
-        console.error(`Event ${event.id} failed after ${event.retryCount} retries:`, error);
+        logger.error(`Event ${event.id} failed after ${event.retryCount} retries:`, error);
       }
     }
   }

@@ -5,6 +5,8 @@
 import { HookOrchestrator } from "../hooks/HookOrchestrator.mjs";
 import { KnowledgeHookRegistry } from "../hooks/KnowledgeHookRegistry.mjs";
 import { useGitVan } from "../core/context.mjs";
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("cli:hooks");
 
 /**
  * Knowledge Hook CLI commands
@@ -633,7 +635,7 @@ export async function handleHooksCommand(args, options = {}) {
         break;
     }
   } catch (error) {
-    console.error(`❌ Hooks command failed: ${error.message}`);
-    process.exit(1);
+    logger.error(`❌ Hooks command failed: ${error.message}`);
+    await exitWithError(new Error("Operation failed"), 1);
   }
 }

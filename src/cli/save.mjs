@@ -33,13 +33,13 @@ export const saveCommand = defineCommand({
     // Check if we're in a Git repository
     if (!existsSync(join(worktreePath, ".git"))) {
       consola.error("Not in a Git repository. Run gitvan init first.");
-      process.exit(1);
+      await exitWithError(new Error("Operation failed"), 1);
     }
 
     // Check if GitVan is initialized
     if (!existsSync(join(worktreePath, ".gitvan"))) {
       consola.error("GitVan not initialized. Run gitvan init first.");
-      process.exit(1);
+      await exitWithError(new Error("Operation failed"), 1);
     }
 
     try {
@@ -82,7 +82,7 @@ export const saveCommand = defineCommand({
       consola.success("✅ Save completed successfully!");
     } catch (error) {
       consola.error("Failed to save changes:", error.message);
-      process.exit(1);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });

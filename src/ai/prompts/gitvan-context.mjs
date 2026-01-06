@@ -19,6 +19,8 @@ All GitVan jobs follow this canonical structure:
 
 \`\`\`javascript
 import { 
+import { createLogger } from "../../utils/logger.mjs";
+const logger = createLogger("ai:prompts:gitvan-context");
   defineJob, 
   useGit, 
   useTemplate, 
@@ -422,7 +424,7 @@ try {
   const result = await someOperation()
   return { ok: true, artifacts: ["output.txt"], summary: "Success" }
 } catch (error) {
-  console.error('Job failed:', error.message)
+  logger.error('Job failed:', error.message)
   return { 
     ok: false, 
     error: error.message, 

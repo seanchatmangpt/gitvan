@@ -15,6 +15,8 @@ import { join } from "node:path";
 import { createKnowledgeSubstrateCore, parseTurtle, toTurtle, getStoreStats } from "unrdf";
 import { useGitVan, tryUseGitVan } from "../core/context.mjs";
 import { loadOptions } from "../config/loader.mjs";
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("composables:turtle");
 
 // Namespace constants for RDF vocabularies
 const RDF = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
@@ -118,7 +120,7 @@ export async function useTurtle(options = {}) {
           }
         } catch (error) {
           // Skip malformed turtle files gracefully
-          console.warn(
+          logger.warn(
             `Warning: Failed to parse turtle file ${file.name}: ${error.message}`
           );
         }
@@ -127,7 +129,7 @@ export async function useTurtle(options = {}) {
     } catch (error) {
       // If directory doesn't exist or can't be read, return empty core
       if (error.code === "ENOENT") {
-        console.log(
+        logger.info(
           `Graph directory ${graphDir} doesn't exist yet, starting with empty store`
         );
         const core = await createKnowledgeSubstrateCore({
@@ -279,12 +281,12 @@ export async function useTurtle(options = {}) {
         await fs.writeFile(filePath, turtleContent, "utf8");
         const stats = await fs.stat(filePath);
 
-        console.log(
+        logger.info(
           `Graph saved to: ${filePath} (${stats.size} bytes)`
         );
         return { path: filePath, bytes: stats.size };
       } catch (error) {
-        console.error(`Failed to save graph to ${fileName}:`, error.message);
+        logger.error(`Failed to save graph to ${fileName}:`, error.message);
         throw error;
       }
     },
@@ -317,10 +319,10 @@ export async function useTurtle(options = {}) {
         }
 
         const quads = store.size;
-        console.log(`Graph loaded from: ${filePath} (${quads} quads)`);
+        logger.info(`Graph loaded from: ${filePath} (${quads} quads)`);
         return { path: filePath, quads };
       } catch (error) {
-        console.error(
+        logger.error(
           `Failed to load graph from ${fileName}:`,
           error.message
         );
@@ -336,10 +338,10 @@ export async function useTurtle(options = {}) {
       try {
         const allFiles = await readdir(graphDir);
         const turtleFiles = allFiles.filter((file) => file.endsWith(".ttl"));
-        console.log(`Found ${turtleFiles.length} Turtle files in ${graphDir}`);
+        logger.info(`Found ${turtleFiles.length} Turtle files in ${graphDir}`);
         return turtleFiles;
       } catch (error) {
-        console.error(`Failed to list graph files:`, error.message);
+        logger.error(`Failed to list graph files:`, error.message);
         throw error;
       }
     },

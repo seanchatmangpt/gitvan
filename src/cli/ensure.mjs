@@ -154,7 +154,7 @@ export default defineConfig({
     }
 
     // Summary
-    console.log("\n📊 Configuration Summary:");
+    logger.info("\n📊 Configuration Summary:");
     const total = Object.keys(checks).length;
     const passed = Object.values(checks).filter(Boolean).length;
 
@@ -162,7 +162,7 @@ export default defineConfig({
       const status = value ? "✅" : "❌";
       const label =
         key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, " $1");
-      console.log(`   ${status} ${label}`);
+      logger.info(`   ${status} ${label}`);
     }
 
     if (passed === total) {

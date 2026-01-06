@@ -65,30 +65,30 @@ export const marketplaceCommand = defineCommand({
           consola.box(`GitVan Marketplace - Page ${results.page}/${results.pages}`);
           
           for (const pack of results.packs) {
-            console.log(`\n📦 ${pack.id} v${pack.version}`);
-            console.log(`   ${pack.description}`);
+            logger.info(`\n📦 ${pack.id} v${pack.version}`);
+            logger.info(`   ${pack.description}`);
             
             if (pack.tags?.length > 0) {
-              console.log(`   🏷️  ${pack.tags.join(', ')}`);
+              logger.info(`   🏷️  ${pack.tags.join(', ')}`);
             }
             
             if (pack.capabilities?.length > 0) {
-              console.log(`   ⚡ ${pack.capabilities.join(', ')}`);
+              logger.info(`   ⚡ ${pack.capabilities.join(', ')}`);
             }
             
             if (pack.downloads > 0) {
-              console.log(`   📥 ${pack.downloads} downloads`);
+              logger.info(`   📥 ${pack.downloads} downloads`);
             }
             
             if (pack.rating > 0) {
               const stars = '★'.repeat(Math.floor(pack.rating)) + '☆'.repeat(5 - Math.floor(pack.rating));
-              console.log(`   ${stars} (${pack.rating}/5)`);
+              logger.info(`   ${stars} (${pack.rating}/5)`);
             }
           }
           
           if (results.pages > 1) {
-            console.log(`\n📄 Showing ${results.packs.length} of ${results.total} packs`);
-            console.log(`   Use --page ${results.page + 1} to see more`);
+            logger.info(`\n📄 Showing ${results.packs.length} of ${results.total} packs`);
+            logger.info(`   Use --page ${results.page + 1} to see more`);
           }
         } catch (error) {
           consola.error('Failed to browse marketplace:', error.message);
@@ -133,8 +133,8 @@ export const marketplaceCommand = defineCommand({
           consola.success(`Found ${results.total} packs`);
           
           for (const pack of results.packs) {
-            console.log(`\n📦 ${pack.id} v${pack.version} - ${pack.description}`);
-            console.log(`   Install: gitvan pack apply ${pack.id}`);
+            logger.info(`\n📦 ${pack.id} v${pack.version} - ${pack.description}`);
+            logger.info(`   Install: gitvan pack apply ${pack.id}`);
           }
         } catch (error) {
           consola.error('Search failed:', error.message);
@@ -165,77 +165,77 @@ export const marketplaceCommand = defineCommand({
           
           consola.box(`📦 ${pack.id} v${pack.version}`);
           
-          console.log('\n📝 Description:');
-          console.log(`   ${pack.description}`);
+          logger.info('\n📝 Description:');
+          logger.info(`   ${pack.description}`);
           
           if (pack.author) {
-            console.log('\n👤 Author:');
-            console.log(`   ${pack.author}`);
+            logger.info('\n👤 Author:');
+            logger.info(`   ${pack.author}`);
           }
           
           if (pack.license) {
-            console.log('\n📄 License:');
-            console.log(`   ${pack.license}`);
+            logger.info('\n📄 License:');
+            logger.info(`   ${pack.license}`);
           }
           
           if (pack.homepage) {
-            console.log('\n🌐 Homepage:');
-            console.log(`   ${pack.homepage}`);
+            logger.info('\n🌐 Homepage:');
+            logger.info(`   ${pack.homepage}`);
           }
           
           if (pack.repository) {
-            console.log('\n📚 Repository:');
-            console.log(`   ${pack.repository}`);
+            logger.info('\n📚 Repository:');
+            logger.info(`   ${pack.repository}`);
           }
           
-          console.log('\n🎯 Capabilities:');
+          logger.info('\n🎯 Capabilities:');
           for (const cap of pack.capabilities || []) {
-            console.log(`   • ${cap}`);
+            logger.info(`   • ${cap}`);
           }
           
-          console.log('\n📋 Requirements:');
+          logger.info('\n📋 Requirements:');
           if (pack.requires?.gitvan) {
-            console.log(`   • GitVan: ${pack.requires.gitvan}`);
+            logger.info(`   • GitVan: ${pack.requires.gitvan}`);
           }
           if (pack.requires?.node) {
-            console.log(`   • Node.js: ${pack.requires.node}`);
+            logger.info(`   • Node.js: ${pack.requires.node}`);
           }
           if (pack.requires?.git) {
-            console.log(`   • Git: ${pack.requires.git}`);
+            logger.info(`   • Git: ${pack.requires.git}`);
           }
           
-          console.log('\n📦 Provides:');
-          console.log(`   • Templates: ${pack.provides?.templates || 0}`);
-          console.log(`   • Files: ${pack.provides?.files || 0}`);
-          console.log(`   • Jobs: ${pack.provides?.jobs || 0}`);
-          console.log(`   • Events: ${pack.provides?.events || 0}`);
-          console.log(`   • Scaffolds: ${pack.provides?.scaffolds || 0}`);
+          logger.info('\n📦 Provides:');
+          logger.info(`   • Templates: ${pack.provides?.templates || 0}`);
+          logger.info(`   • Files: ${pack.provides?.files || 0}`);
+          logger.info(`   • Jobs: ${pack.provides?.jobs || 0}`);
+          logger.info(`   • Events: ${pack.provides?.events || 0}`);
+          logger.info(`   • Scaffolds: ${pack.provides?.scaffolds || 0}`);
           
           if (pack.inputs?.length > 0) {
-            console.log('\n⚙️  Configuration:');
+            logger.info('\n⚙️  Configuration:');
             for (const input of pack.inputs) {
               const required = input.default === undefined ? ' (required)' : '';
-              console.log(`   • ${input.key}: ${input.type}${required}`);
+              logger.info(`   • ${input.key}: ${input.type}${required}`);
               if (input.prompt) {
-                console.log(`     ${input.prompt}`);
+                logger.info(`     ${input.prompt}`);
               }
             }
           }
           
-          console.log('\n📊 Statistics:');
-          console.log(`   • Downloads: ${pack.downloads || 0}`);
-          console.log(`   • Rating: ${pack.rating || 0}/5 (${pack.reviews || 0} reviews)`);
+          logger.info('\n📊 Statistics:');
+          logger.info(`   • Downloads: ${pack.downloads || 0}`);
+          logger.info(`   • Rating: ${pack.rating || 0}/5 (${pack.reviews || 0} reviews)`);
           
-          console.log('\n💻 Installation:');
-          console.log(`   gitvan pack apply ${pack.id}`);
+          logger.info('\n💻 Installation:');
+          logger.info(`   gitvan pack apply ${pack.id}`);
           
           if (pack.inputs?.length > 0) {
-            console.log('\n   With configuration:');
+            logger.info('\n   With configuration:');
             const exampleInputs = {};
             for (const input of pack.inputs) {
               exampleInputs[input.key] = input.default || `<${input.type}>`;
             }
-            console.log(`   gitvan pack apply ${pack.id} --inputs '${JSON.stringify(exampleInputs)}'`);
+            logger.info(`   gitvan pack apply ${pack.id} --inputs '${JSON.stringify(exampleInputs)}'`);
           }
         } catch (error) {
           consola.error('Failed to inspect pack:', error.message);
@@ -268,21 +268,21 @@ export const marketplaceCommand = defineCommand({
         if (!args.category) {
           consola.box('GitVan Quickstart Categories');
           
-          console.log('\n📚 Documentation (docs)');
-          console.log('   Changelog generation, MDBook, release notes');
-          console.log('   gitvan marketplace quickstart docs');
+          logger.info('\n📚 Documentation (docs)');
+          logger.info('   Changelog generation, MDBook, release notes');
+          logger.info('   gitvan marketplace quickstart docs');
           
-          console.log('\n⚛️  Next.js (next)');
-          console.log('   Next.js apps with TypeScript, MDX, and automation');
-          console.log('   gitvan marketplace quickstart next');
+          logger.info('\n⚛️  Next.js (next)');
+          logger.info('   Next.js apps with TypeScript, MDX, and automation');
+          logger.info('   gitvan marketplace quickstart next');
           
-          console.log('\n✅ Compliance (compliance)');
-          console.log('   QMS, audit trails, attestation reports');
-          console.log('   gitvan marketplace quickstart compliance');
+          logger.info('\n✅ Compliance (compliance)');
+          logger.info('   QMS, audit trails, attestation reports');
+          logger.info('   gitvan marketplace quickstart compliance');
           
-          console.log('\n🏢 Enterprise (enterprise)');
-          console.log('   Enterprise starters, incident management, ops');
-          console.log('   gitvan marketplace quickstart enterprise');
+          logger.info('\n🏢 Enterprise (enterprise)');
+          logger.info('   Enterprise starters, incident management, ops');
+          logger.info('   gitvan marketplace quickstart enterprise');
           
           return;
         }
@@ -295,13 +295,13 @@ export const marketplaceCommand = defineCommand({
           consola.box(`${args.category.toUpperCase()} Quickstart Packs`);
           
           for (const pack of quickstart.packs) {
-            console.log(`\n📦 ${pack.id} v${pack.version}`);
-            console.log(`   ${pack.description}`);
-            console.log(`   Install: gitvan pack apply ${pack.id}`);
+            logger.info(`\n📦 ${pack.id} v${pack.version}`);
+            logger.info(`   ${pack.description}`);
+            logger.info(`   Install: gitvan pack apply ${pack.id}`);
           }
           
-          console.log('\n🚀 Quick Install All:');
-          console.log(`   gitvan pack compose ${quickstart.packs.map(p => p.id).join(' ')}`);
+          logger.info('\n🚀 Quick Install All:');
+          logger.info(`   gitvan pack compose ${quickstart.packs.map(p => p.id).join(' ')}`);
         } catch (error) {
           consola.error('Failed to load quickstart:', error.message);
           logger.error('Quickstart error:', error);
@@ -340,8 +340,8 @@ export const marketplaceCommand = defineCommand({
           // Get pack info
           const packInfo = await marketplace.inspect(args.pack);
           
-          console.log(`\n📦 ${packInfo.name || packInfo.id} v${packInfo.version}`);
-          console.log(`   ${packInfo.description}`);
+          logger.info(`\n📦 ${packInfo.name || packInfo.id} v${packInfo.version}`);
+          logger.info(`   ${packInfo.description}`);
           
           if (!args.yes) {
             const confirmed = await consola.prompt(

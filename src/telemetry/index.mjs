@@ -11,6 +11,8 @@ import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
 import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { resourceFromAttributes } from '@opentelemetry/resources';
 import { SEMRESATTRS_SERVICE_NAME, SEMRESATTRS_SERVICE_VERSION, SEMRESATTRS_DEPLOYMENT_ENVIRONMENT } from '@opentelemetry/semantic-conventions';
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("telemetry:index");
 
 class GitVanTelemetry {
   constructor(config = {}) {
@@ -129,7 +131,7 @@ class GitVanTelemetry {
    */
   startSpan(name, attributes = {}, options = {}) {
     if (!this.initialized) {
-      console.warn('Telemetry not initialized, span will not be recorded');
+      logger.warn('Telemetry not initialized, span will not be recorded');
       return { end: () => {}, setAttribute: () => {}, setStatus: () => {} };
     }
 

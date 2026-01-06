@@ -61,24 +61,24 @@ const buildSubcommand = defineCommand({
       const config = await loadOptions();
       const notes = useNotes();
 
-      console.log("🔍 Building audit pack...");
-      console.log(`📁 Output: ${args.output}`);
-      console.log(`📊 Include Metadata: ${args["include-metadata"]}`);
-      console.log(`🗜️  Compress: ${args.compress}`);
+      logger.info("🔍 Building audit pack...");
+      logger.info(`📁 Output: ${args.output}`);
+      logger.info(`📊 Include Metadata: ${args["include-metadata"]}`);
+      logger.info(`🗜️  Compress: ${args.compress}`);
 
       if (args.since) {
-        console.log(`📅 Since: ${args.since}`);
+        logger.info(`📅 Since: ${args.since}`);
       }
       if (args.until) {
-        console.log(`📅 Until: ${args.until}`);
+        logger.info(`📅 Until: ${args.until}`);
       }
-      console.log();
+      logger.info();
 
       // Get all receipts
       const receipts = await notes.getAllReceipts();
 
       if (receipts.length === 0) {
-        console.log("⚠️  No receipts found");
+        logger.info("⚠️  No receipts found");
         return;
       }
 
@@ -96,7 +96,7 @@ const buildSubcommand = defineCommand({
         });
       }
 
-      console.log(`📊 Found ${filteredReceipts.length} receipts`);
+      logger.info(`📊 Found ${filteredReceipts.length} receipts`);
 
       // Build audit pack
       const auditPack = {
@@ -125,24 +125,24 @@ const buildSubcommand = defineCommand({
 
       await writeFileSafe(outputPath, content);
 
-      console.log(`✅ Audit pack built successfully`);
-      console.log(`📁 Output: ${outputPath}`);
-      console.log(`📊 Receipts: ${filteredReceipts.length}`);
-      console.log(`📏 Size: ${content.length} bytes`);
+      logger.info(`✅ Audit pack built successfully`);
+      logger.info(`📁 Output: ${outputPath}`);
+      logger.info(`📊 Receipts: ${filteredReceipts.length}`);
+      logger.info(`📏 Size: ${content.length} bytes`);
 
       if (args.verbose) {
-        console.log();
-        console.log("📋 Receipt Summary:");
+        logger.info();
+        logger.info("📋 Receipt Summary:");
         filteredReceipts.forEach((receipt, index) => {
-          console.log(
+          logger.info(
             `   ${index + 1}. ${receipt.jobName} (${receipt.timestamp})`
           );
         });
       }
     } catch (error) {
       logger.error("Failed to build audit pack:", error);
-      console.error("❌ Failed to build audit pack:", error.message);
-      process.exit(1);
+      logger.error("❌ Failed to build audit pack:", error.message);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -182,41 +182,41 @@ const verifySubcommand = defineCommand({
       const config = await loadOptions();
       const notes = useNotes();
 
-      console.log("🔍 Verifying receipt...");
-      console.log(`📄 Receipt: ${args.receipt}`);
-      console.log(`🔐 Check Signature: ${args["check-signature"]}`);
-      console.log(`🔗 Check Hash: ${args["check-hash"]}`);
-      console.log();
+      logger.info("🔍 Verifying receipt...");
+      logger.info(`📄 Receipt: ${args.receipt}`);
+      logger.info(`🔐 Check Signature: ${args["check-signature"]}`);
+      logger.info(`🔗 Check Hash: ${args["check-hash"]}`);
+      logger.info();
 
       // Get receipt
       let receipt;
       try {
         receipt = await notes.getReceipt(args.receipt);
       } catch (error) {
-        console.error("❌ Receipt not found:", args.receipt);
-        process.exit(1);
+        logger.error("❌ Receipt not found:", args.receipt);
+        await exitWithError(new Error("Operation failed"), 1);
       }
 
-      console.log(`📊 Receipt Details:`);
-      console.log(`   Job: ${receipt.jobName}`);
-      console.log(`   Timestamp: ${receipt.timestamp}`);
-      console.log(`   Status: ${receipt.status}`);
-      console.log(`   Duration: ${receipt.duration}ms`);
-      console.log();
+      logger.info(`📊 Receipt Details:`);
+      logger.info(`   Job: ${receipt.jobName}`);
+      logger.info(`   Timestamp: ${receipt.timestamp}`);
+      logger.info(`   Status: ${receipt.status}`);
+      logger.info(`   Duration: ${receipt.duration}ms`);
+      logger.info();
 
       // Verify signature
       if (args["check-signature"]) {
         try {
           const isValid = await notes.verifyReceiptSignature(receipt);
           if (isValid) {
-            console.log("✅ Signature verification: PASSED");
+            logger.info("✅ Signature verification: PASSED");
           } else {
-            console.log("❌ Signature verification: FAILED");
+            logger.info("❌ Signature verification: FAILED");
           }
         } catch (error) {
-          console.log("⚠️  Signature verification: ERROR");
+          logger.info("⚠️  Signature verification: ERROR");
           if (args.verbose) {
-            console.log(`   Error: ${error.message}`);
+            logger.info(`   Error: ${error.message}`);
           }
         }
       }
@@ -226,29 +226,29 @@ const verifySubcommand = defineCommand({
         try {
           const isValid = await notes.verifyReceiptHash(receipt);
           if (isValid) {
-            console.log("✅ Hash verification: PASSED");
+            logger.info("✅ Hash verification: PASSED");
           } else {
-            console.log("❌ Hash verification: FAILED");
+            logger.info("❌ Hash verification: FAILED");
           }
         } catch (error) {
-          console.log("⚠️  Hash verification: ERROR");
+          logger.info("⚠️  Hash verification: ERROR");
           if (args.verbose) {
-            console.log(`   Error: ${error.message}`);
+            logger.info(`   Error: ${error.message}`);
           }
         }
       }
 
       // Overall verification result
-      console.log();
-      console.log("📊 Verification Summary:");
-      console.log(`   Receipt ID: ${receipt.id}`);
-      console.log(`   Job Name: ${receipt.jobName}`);
-      console.log(`   Status: ${receipt.status}`);
-      console.log(`   Verified: ${receipt.verified ? "Yes" : "No"}`);
+      logger.info();
+      logger.info("📊 Verification Summary:");
+      logger.info(`   Receipt ID: ${receipt.id}`);
+      logger.info(`   Job Name: ${receipt.jobName}`);
+      logger.info(`   Status: ${receipt.status}`);
+      logger.info(`   Verified: ${receipt.verified ? "Yes" : "No"}`);
     } catch (error) {
       logger.error("Failed to verify receipt:", error);
-      console.error("❌ Failed to verify receipt:", error.message);
-      process.exit(1);
+      logger.error("❌ Failed to verify receipt:", error.message);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -298,14 +298,14 @@ const listSubcommand = defineCommand({
       const config = await loadOptions();
       const notes = useNotes();
 
-      console.log("📋 GitVan Receipts");
-      console.log("=".repeat(40));
+      logger.info("📋 GitVan Receipts");
+      logger.info("=".repeat(40));
 
       // Get all receipts
       const receipts = await notes.getAllReceipts();
 
       if (receipts.length === 0) {
-        console.log("No receipts found");
+        logger.info("No receipts found");
         return;
       }
 
@@ -340,7 +340,7 @@ const listSubcommand = defineCommand({
       filteredReceipts = filteredReceipts.slice(0, args.limit);
 
       if (filteredReceipts.length === 0) {
-        console.log("No receipts match the specified criteria");
+        logger.info("No receipts match the specified criteria");
         return;
       }
 
@@ -353,23 +353,23 @@ const listSubcommand = defineCommand({
             ? "❌"
             : "⚠️";
 
-        console.log(`${index + 1}. ${statusIcon} ${receipt.jobName}`);
-        console.log(`   📅 ${receipt.timestamp}`);
-        console.log(`   ⏱️  ${receipt.duration}ms`);
-        console.log(`   🆔 ${receipt.id}`);
+        logger.info(`${index + 1}. ${statusIcon} ${receipt.jobName}`);
+        logger.info(`   📅 ${receipt.timestamp}`);
+        logger.info(`   ⏱️  ${receipt.duration}ms`);
+        logger.info(`   🆔 ${receipt.id}`);
 
         if (args.verbose) {
-          console.log(`   📁 File: ${receipt.file}`);
-          console.log(`   🔐 Verified: ${receipt.verified ? "Yes" : "No"}`);
+          logger.info(`   📁 File: ${receipt.file}`);
+          logger.info(`   🔐 Verified: ${receipt.verified ? "Yes" : "No"}`);
         }
-        console.log();
+        logger.info();
       });
 
-      console.log(`📊 Total: ${filteredReceipts.length} receipts`);
+      logger.info(`📊 Total: ${filteredReceipts.length} receipts`);
     } catch (error) {
       logger.error("Failed to list receipts:", error);
-      console.error("❌ Failed to list receipts:", error.message);
-      process.exit(1);
+      logger.error("❌ Failed to list receipts:", error.message);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -409,54 +409,54 @@ const showSubcommand = defineCommand({
       const config = await loadOptions();
       const notes = useNotes();
 
-      console.log("📄 Receipt Details");
-      console.log("=".repeat(30));
+      logger.info("📄 Receipt Details");
+      logger.info("=".repeat(30));
 
       // Get receipt
       let receipt;
       try {
         receipt = await notes.getReceipt(args.receipt);
       } catch (error) {
-        console.error("❌ Receipt not found:", args.receipt);
-        process.exit(1);
+        logger.error("❌ Receipt not found:", args.receipt);
+        await exitWithError(new Error("Operation failed"), 1);
       }
 
       if (args.format === "json") {
-        console.log(JSON.stringify(receipt, null, 2));
+        logger.info(JSON.stringify(receipt, null, 2));
         return;
       }
 
       if (args.format === "yaml") {
         // YAML output format
         const yamlOutput = YAML.dump(receipt, { lineWidth: -1 });
-        console.log(yamlOutput);
+        logger.info(yamlOutput);
         return;
       }
 
       // Table format (default)
-      console.log(`🆔 ID: ${receipt.id}`);
-      console.log(`📝 Job: ${receipt.jobName}`);
-      console.log(`📅 Timestamp: ${receipt.timestamp}`);
-      console.log(`📊 Status: ${receipt.status}`);
-      console.log(`⏱️  Duration: ${receipt.duration}ms`);
-      console.log(`🔐 Verified: ${receipt.verified ? "Yes" : "No"}`);
-      console.log(`📁 File: ${receipt.file}`);
+      logger.info(`🆔 ID: ${receipt.id}`);
+      logger.info(`📝 Job: ${receipt.jobName}`);
+      logger.info(`📅 Timestamp: ${receipt.timestamp}`);
+      logger.info(`📊 Status: ${receipt.status}`);
+      logger.info(`⏱️  Duration: ${receipt.duration}ms`);
+      logger.info(`🔐 Verified: ${receipt.verified ? "Yes" : "No"}`);
+      logger.info(`📁 File: ${receipt.file}`);
 
       if (args["show-output"] && receipt.output) {
-        console.log();
-        console.log("📤 Job Output:");
-        console.log(receipt.output);
+        logger.info();
+        logger.info("📤 Job Output:");
+        logger.info(receipt.output);
       }
 
       if (args["show-logs"] && receipt.logs) {
-        console.log();
-        console.log("📋 Job Logs:");
-        console.log(receipt.logs);
+        logger.info();
+        logger.info("📋 Job Logs:");
+        logger.info(receipt.logs);
       }
     } catch (error) {
       logger.error("Failed to show receipt:", error);
-      console.error("❌ Failed to show receipt:", error.message);
-      process.exit(1);
+      logger.error("❌ Failed to show receipt:", error.message);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });

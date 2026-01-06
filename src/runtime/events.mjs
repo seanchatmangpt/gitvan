@@ -1,5 +1,7 @@
 import { readdirSync, statSync } from 'node:fs'
 import { join, extname, resolve } from 'pathe'
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("runtime:events");
 
 /**
  * Discovers hooks by scanning the hooks/ directory
@@ -147,7 +149,7 @@ export async function loadHookDefinition(hookFile) {
     const module = await import(hookFile)
     return module.default || module
   } catch (err) {
-    console.warn(`Failed to load hook file ${hookFile}:`, err.message)
+    logger.warn(`Failed to load hook file ${hookFile}:`, err.message)
     return null
   }
 }

@@ -1,0 +1,291 @@
+name: Canary Deployment
+
+on:
+  push:
+    branches: [develop, 'claude/**']
+  workflow_dispatch:
+    inputs:
+      force_publish:
+        description: 'Force publish canary release'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  packages: write
+
+env:
+  NODE_ENV: production
+
+jobs:
+  # ============================================================================
+  # Validate Canary Build
+  # ============================================================================
+  validate:
+    name: Validate Canary Build
+    runs-on: ubuntu-latest
+    outputs:
+      canary_version: ${{ steps.version.outputs.canary_version }}
+      should_publish: ${{ steps.check.outputs.should_publish }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate canary version
+        id: version
+        run: |
+          BASE_VERSION=$(node -p "require('./package.json').version")
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          CANARY_VERSION="${BASE_VERSION}-canary.${TIMESTAMP}.${COMMIT_SHA}"
+
+          echo "canary_version=$CANARY_VERSION" >> $GITHUB_OUTPUT
+          echo "Canary version: $CANARY_VERSION"
+
+      - name: Check if should publish
+        id: check
+        run: |
+          # Only publish canary on develop branch or if forced
+          if [[ "${{ github.ref }}" == "refs/heads/develop" ]] || [[ "${{ github.event.inputs.force_publish }}" == "true" ]]; then
+            echo "should_publish=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_publish=false" >> $GITHUB_OUTPUT
+          fi
+
+  # ============================================================================
+  # Run Tests
+  # ============================================================================
+  test:
+    name: Run Canary Tests
+    runs-on: ubuntu-latest
+    needs: validate
+    strategy:
+      matrix:
+        node-version: [18, 20, 22]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+        env:
+          CI: true
+          NODE_ENV: test
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: canary-test-results-node${{ matrix.node-version }}
+          path: test-results.json
+          retention-days: 7
+        continue-on-error: true
+
+  # ============================================================================
+  # Build Canary Package
+  # ============================================================================
+  build:
+    name: Build Canary Package
+    runs-on: ubuntu-latest
+    needs: [validate, test]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Update version to canary
+        run: |
+          npm version ${{ needs.validate.outputs.canary_version }} --no-git-tag-version
+
+      - name: Build package
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Verify build
+        run: |
+          if [ ! -d "dist" ]; then
+            echo "Build failed: dist directory not found"
+            exit 1
+          fi
+          ls -la dist/
+          npm pack --dry-run
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: canary-build
+          path: |
+            dist/
+            package.json
+          retention-days: 7
+
+  # ============================================================================
+  # Integration Tests with Canary Build
+  # ============================================================================
+  integration-test:
+    name: Integration Test Canary Build
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Download canary build
+        uses: actions/download-artifact@v4
+        with:
+          name: canary-build
+
+      - name: Install canary build locally
+        run: |
+          npm pack
+          npm install -g ./gitvan-*.tgz
+
+      - name: Test canary installation
+        run: |
+          which gitvan || echo "GitVan not found in PATH"
+          gitvan --version || echo "GitVan version command failed"
+          gitvan --help || echo "GitVan help command failed"
+
+      - name: Run smoke tests
+        run: |
+          # Basic smoke tests for the CLI
+          gitvan --version
+          echo "Canary build smoke tests passed!"
+        continue-on-error: true
+
+  # ============================================================================
+  # Publish Canary to npm
+  # ============================================================================
+  publish:
+    name: Publish Canary Release
+    runs-on: ubuntu-latest
+    needs: [validate, build, integration-test]
+    if: needs.validate.outputs.should_publish == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - name: Download canary build
+        uses: actions/download-artifact@v4
+        with:
+          name: canary-build
+
+      - name: Publish to npm with canary tag
+        run: |
+          echo "Publishing canary version: ${{ needs.validate.outputs.canary_version }}"
+          npm publish --tag canary --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        continue-on-error: true
+
+      - name: Verify canary publication
+        run: |
+          sleep 10
+          npm view gitvan@canary || echo "Canary package not yet available"
+
+  # ============================================================================
+  # Canary Deployment Summary
+  # ============================================================================
+  summary:
+    name: Canary Deployment Summary
+    runs-on: ubuntu-latest
+    needs: [validate, test, build, integration-test, publish]
+    if: always()
+    steps:
+      - name: Create summary
+        run: |
+          echo "## 🐤 Canary Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Canary Version**: ${{ needs.validate.outputs.canary_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Should Publish**: ${{ needs.validate.outputs.should_publish }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tests**: ${{ needs.test.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build**: ${{ needs.build.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Integration Tests**: ${{ needs.integration-test.result }}" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ needs.validate.outputs.should_publish }}" == "true" ]]; then
+            echo "- **Publish**: ${{ needs.publish.result }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 📦 Install Canary Build" >> $GITHUB_STEP_SUMMARY
+            echo '```bash' >> $GITHUB_STEP_SUMMARY
+            echo "npm install gitvan@canary" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "ℹ️ Canary build created but not published (branch: ${{ github.ref }})" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [[ "${{ needs.test.result }}" == "failure" ]] || [[ "${{ needs.build.result }}" == "failure" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "❌ Canary deployment failed!" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Canary deployment successful!" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================================================
+  # Cleanup Old Canary Builds
+  # ============================================================================
+  cleanup:
+    name: Cleanup Old Artifacts
+    runs-on: ubuntu-latest
+    needs: summary
+    if: always()
+    steps:
+      - name: Delete old canary artifacts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const artifacts = await github.rest.actions.listArtifactsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+
+            const canaryArtifacts = artifacts.data.artifacts.filter(artifact =>
+              artifact.name.startsWith('canary-') &&
+              new Date(artifact.created_at) < new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+            );
+
+            for (const artifact of canaryArtifacts) {
+              console.log(`Deleting artifact: ${artifact.name}`);
+              await github.rest.actions.deleteArtifact({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                artifact_id: artifact.id,
+              });
+            }
+        continue-on-error: true

@@ -1,11 +1,27 @@
-// src/jobs/daemon.mjs
-// GitVan v2 — Job Daemon
-// Combines cron scheduling and event monitoring
+/**
+ * GitVan Job Daemon
+ *
+ * Production-grade daemon with:
+ * - Structured logging
+ * - Graceful shutdown
+ * - Error recovery
+ * - Health checks
+ * - No process.exit calls
+ */
 
 import { CronScheduler } from "./cron.mjs";
 import { EventJobRunner } from "./events.mjs";
 import { loadOptions } from "../config/loader.mjs";
 import { useGit } from "../composables/git/index.mjs";
+import { createLogger } from "../utils/logger.mjs";
+import { GitVanError } from "../core/errors.mjs";
+import {
+  withErrorBoundary,
+  trackOperation,
+  registerErrorHandler,
+} from "../core/error-handler.mjs";
+
+const logger = createLogger("daemon");
 
 /**
  * GitVan Job Daemon
@@ -23,18 +39,36 @@ export class JobDaemon {
     this.lastCommit = null;
     this.eventCheckInterval = options.eventCheckInterval || 30000; // Check every 30 seconds
     this.eventTimer = null;
+    this.startTime = null;
+    this.errorCount = 0;
+    this.shutdownCallbacks = [];
   }
 
   async init() {
-    this.config = await loadOptions();
-    this.cronScheduler = new CronScheduler({
-      tickInterval: this.options.cronTickInterval || 60000,
-    });
-    this.eventRunner = new EventJobRunner();
-    this.git = useGit();
+    const complete = trackOperation("daemon:init");
 
-    await this.cronScheduler.init();
-    await this.eventRunner.init();
+    try {
+      logger.info("Initializing daemon");
+
+      this.config = await loadOptions();
+      this.cronScheduler = new CronScheduler({
+        tickInterval: this.options.cronTickInterval || 60000,
+      });
+      this.eventRunner = new EventJobRunner();
+      this.git = useGit();
+
+      await this.cronScheduler.init();
+      await this.eventRunner.init();
+
+      logger.info("Daemon initialized successfully");
+    } catch (error) {
+      logger.error("Failed to initialize daemon", {
+        error: error.message,
+      });
+      throw error;
+    } finally {
+      complete();
+    }
   }
 
   /**
@@ -42,78 +76,141 @@ export class JobDaemon {
    */
   async start() {
     if (this.isRunning) {
-      console.warn("Job daemon is already running");
+      logger.warn("Job daemon is already running");
       return;
     }
 
-    await this.init();
+    const complete = trackOperation("daemon:start");
 
-    console.log("Starting GitVan Job Daemon...");
-    console.log(`Configuration:`);
-    console.log(`  Root directory: ${this.config.rootDir}`);
-    console.log(`  Receipts ref: ${this.config.receipts.ref}`);
-    console.log(`  Event check interval: ${this.eventCheckInterval / 1000}s`);
-    console.log(
-      `  Cron tick interval: ${this.cronScheduler.tickInterval / 1000}s`
-    );
+    try {
+      await withErrorBoundary(
+        async () => {
+          await this.init();
 
-    this.isRunning = true;
+          logger.info("Starting GitVan Job Daemon", {
+            rootDir: this.config.rootDir,
+            receiptsRef: this.config.receipts.ref,
+            eventCheckInterval: this.eventCheckInterval,
+            cronTickInterval: this.cronScheduler.tickInterval,
+          });
 
-    // Start cron scheduler
-    await this.cronScheduler.start();
+          this.isRunning = true;
+          this.startTime = Date.now();
 
-    // Start event monitoring
-    await this.startEventMonitoring();
+          // Start cron scheduler
+          await this.cronScheduler.start();
 
-    // Set up signal handlers
-    this.setupSignalHandlers();
+          // Start event monitoring
+          await this.startEventMonitoring();
 
-    console.log("✅ Job daemon started successfully");
+          // Set up signal handlers
+          this.setupSignalHandlers();
+
+          logger.info("Job daemon started successfully", {
+            uptime: 0,
+          });
+        },
+        {
+          maxRetries: 0, // Don't retry start
+          fallback: undefined,
+          onError: (error) => {
+            logger.error("Failed to start daemon", {
+              error: error.message,
+              stack: error.stack,
+            });
+          },
+        }
+      );
+    } finally {
+      complete();
+    }
   }
 
   /**
-   * Stop the daemon
+   * Stop the daemon gracefully
    */
   async stop() {
     if (!this.isRunning) {
-      console.warn("Job daemon is not running");
+      logger.warn("Daemon is not running");
       return;
     }
 
-    console.log("Stopping GitVan Job Daemon...");
+    const complete = trackOperation("daemon:stop");
 
-    this.isRunning = false;
+    try {
+      logger.info("Stopping GitVan Job Daemon");
 
-    // Stop cron scheduler
-    this.cronScheduler.stop();
+      this.isRunning = false;
 
-    // Stop event monitoring
-    this.stopEventMonitoring();
+      // Run shutdown callbacks
+      for (const callback of this.shutdownCallbacks) {
+        try {
+          await callback();
+        } catch (error) {
+          logger.error("Shutdown callback failed", {
+            error: error.message,
+          });
+        }
+      }
 
-    console.log("✅ Job daemon stopped");
+      // Stop cron scheduler
+      if (this.cronScheduler) {
+        this.cronScheduler.stop();
+      }
+
+      // Stop event monitoring
+      this.stopEventMonitoring();
+
+      logger.info("Job daemon stopped successfully");
+    } finally {
+      complete();
+    }
   }
 
   /**
    * Start event monitoring
    */
   async startEventMonitoring() {
-    // Get initial commit
+    const complete = trackOperation("daemon:start-event-monitoring");
+
     try {
-      this.lastCommit = await this.git.currentHead();
-    } catch (error) {
-      console.warn("Could not get initial commit:", error.message);
-    }
-
-    // Set up periodic event checks
-    this.eventTimer = setInterval(async () => {
+      // Get initial commit
       try {
-        await this.checkForEvents();
+        this.lastCommit = await this.git.currentHead();
+        logger.info("Initial commit loaded", {
+          commit: this.lastCommit,
+        });
       } catch (error) {
-        console.error("Event monitoring error:", error.message);
+        logger.warn("Could not get initial commit", {
+          error: error.message,
+        });
       }
-    }, this.eventCheckInterval);
 
-    console.log("Event monitoring started");
+      // Set up periodic event checks
+      this.eventTimer = setInterval(async () => {
+        try {
+          await this.checkForEvents();
+        } catch (error) {
+          this.errorCount++;
+          logger.error("Event monitoring error", {
+            error: error.message,
+            errorCount: this.errorCount,
+          });
+
+          // If too many errors, something is seriously wrong
+          if (this.errorCount > 10) {
+            logger.error("Too many errors, stopping event monitoring");
+            this.stopEventMonitoring();
+          }
+        }
+      }, this.eventCheckInterval);
+
+      logger.info("Event monitoring started", {
+        interval: this.eventCheckInterval,
+      });
+    } finally {
+      complete();
+    }
   }
 
   /**
@@ -123,49 +220,89 @@ export class JobDaemon {
     if (this.eventTimer) {
       clearInterval(this.eventTimer);
       this.eventTimer = null;
+      logger.info("Event monitoring stopped");
     }
-
-    console.log("Event monitoring stopped");
   }
 
   /**
    * Check for new git events
    */
   async checkForEvents() {
-    try {
-      const currentCommit = await this.git.currentHead();
+    const currentCommit = await this.git.currentHead();
 
-      if (this.lastCommit && currentCommit !== this.lastCommit) {
-        console.log(
-          `Git event detected: ${this.lastCommit} → ${currentCommit}`
-        );
+    if (this.lastCommit && currentCommit !== this.lastCommit) {
+      logger.info("Git event detected", {
+        previous: this.lastCommit,
+        current: currentCommit,
+      });
 
-        // Check for event-driven jobs
-        await this.eventRunner.checkAndRunEventJobs({
-          commit: currentCommit,
-          previousCommit: this.lastCommit,
-        });
+      // Check for event-driven jobs
+      await this.eventRunner.checkAndRunEventJobs({
+        commit: currentCommit,
+        previousCommit: this.lastCommit,
+      });
 
-        this.lastCommit = currentCommit;
-      }
-    } catch (error) {
-      console.warn("Error checking for events:", error.message);
+      this.lastCommit = currentCommit;
+      this.errorCount = 0; // Reset error count on success
     }
   }
 
   /**
    * Set up signal handlers for graceful shutdown
+   * NOTE: Does NOT call process.exit - delegates to error handler
    */
   setupSignalHandlers() {
     const shutdown = async (signal) => {
-      console.log(`\nReceived ${signal}, shutting down gracefully...`);
+      logger.info("Received shutdown signal", { signal });
+
       await this.stop();
-      process.exit(0);
+
+      // Emit shutdown event for error handler to catch
+      process.emit("beforeExit", 0);
     };
 
     process.on("SIGINT", () => shutdown("SIGINT"));
     process.on("SIGTERM", () => shutdown("SIGTERM"));
     process.on("SIGHUP", () => shutdown("SIGHUP"));
+
+    logger.info("Signal handlers registered");
+  }
+
+  /**
+   * Register shutdown callback
+   * @param {Function} callback - Callback to run on shutdown
+   */
+  onShutdown(callback) {
+    this.shutdownCallbacks.push(callback);
+  }
+
+  /**
+   * Enable health checks
+   * @param {object} [options] - Health check options
+   * @param {number} [options.port=9090] - Health check port
+   * @param {string} [options.host="0.0.0.0"] - Health check host
+   * @returns {Promise<void>}
+   */
+  async enableHealthChecks(options = {}) {
+    const { createDefaultHealthChecks } = await import("../core/health-check.mjs");
+
+    this.healthChecks = createDefaultHealthChecks(this);
+
+    await this.healthChecks.start();
+
+    // Mark as ready once daemon is running
+    if (this.isRunning) {
+      this.healthChecks.setReady(true);
+    }
+
+    // Add shutdown callback to stop health checks
+    this.onShutdown(async () => {
+      if (this.healthChecks) {
+        await this.healthChecks.stop();
+      }
+    });
+
+    logger.info("Health checks enabled");
   }
 
   /**
@@ -177,6 +314,8 @@ export class JobDaemon {
       cronStatus: this.cronScheduler?.getStatus() || null,
       eventCheckInterval: this.eventCheckInterval,
       lastCommit: this.lastCommit,
+      errorCount: this.errorCount,
+      uptime: this.startTime ? Date.now() - this.startTime : 0,
       config: {
         rootDir: this.config?.rootDir,
         receiptsRef: this.config?.receipts?.ref,
@@ -247,25 +386,25 @@ export class DaemonCLI {
    */
   async status() {
     if (!this.daemon) {
-      console.log("Daemon is not running");
+      logger.info("Daemon is not running");
       return;
     }
 
     const status = this.daemon.getStatus();
 
-    console.log("GitVan Job Daemon Status:");
-    console.log(`  Running: ${status.isRunning}`);
-    console.log(`  Root directory: ${status.config?.rootDir || "N/A"}`);
-    console.log(`  Receipts ref: ${status.config?.receiptsRef || "N/A"}`);
-    console.log(`  Last commit: ${status.lastCommit || "N/A"}`);
+    logger.info("GitVan Job Daemon Status:");
+    logger.info(`  Running: ${status.isRunning}`);
+    logger.info(`  Root directory: ${status.config?.rootDir || "N/A"}`);
+    logger.info(`  Receipts ref: ${status.config?.receiptsRef || "N/A"}`);
+    logger.info(`  Last commit: ${status.lastCommit || "N/A"}`);
 
     if (status.cronStatus) {
-      console.log(
+      logger.info(
         `  Cron scheduler: ${
           status.cronStatus.isRunning ? "Running" : "Stopped"
         }`
       );
-      console.log(`  Scheduled jobs: ${status.cronStatus.scheduleSize}`);
+      logger.info(`  Scheduled jobs: ${status.cronStatus.scheduleSize}`);
     }
   }
 
@@ -274,17 +413,17 @@ export class DaemonCLI {
    */
   async stats() {
     if (!this.daemon) {
-      console.log("Daemon is not running");
+      logger.info("Daemon is not running");
       return;
     }
 
     const stats = await this.daemon.getStats();
 
-    console.log("GitVan Job Daemon Statistics:");
-    console.log(`  Cron jobs: ${stats.cronJobs}`);
-    console.log(`  Event jobs: ${stats.eventJobs}`);
-    console.log(`  Total jobs: ${stats.totalJobs}`);
-    console.log(`  Uptime: ${Math.round(stats.uptime / 1000)}s`);
+    logger.info("GitVan Job Daemon Statistics:");
+    logger.info(`  Cron jobs: ${stats.cronJobs}`);
+    logger.info(`  Event jobs: ${stats.eventJobs}`);
+    logger.info(`  Total jobs: ${stats.totalJobs}`);
+    logger.info(`  Uptime: ${Math.round(stats.uptime / 1000)}s`);
   }
 
   /**
@@ -292,12 +431,12 @@ export class DaemonCLI {
    */
   async check() {
     if (!this.daemon) {
-      console.log("Daemon is not running");
+      logger.info("Daemon is not running");
       return;
     }
 
     await this.daemon.forceEventCheck();
-    console.log("Event check completed");
+    logger.info("Event check completed");
   }
 }
 

@@ -1,6 +1,8 @@
 import { defineCommand } from "citty";
 import { JTBDCLI } from "../jtbd.mjs";
 import { useGitVan, withGitVan } from "../../core/context.mjs";
+import { createLogger } from "../../utils/logger.mjs";
+const logger = createLogger("cli:commands:jtbd");
 
 export const jtbdCommand = defineCommand({
   meta: {
@@ -54,8 +56,8 @@ export const jtbdCommand = defineCommand({
             }
           });
         } catch (error) {
-          console.error(`❌ Failed to list JTBD hooks: ${error.message}`);
-          process.exit(1);
+          logger.error(`❌ Failed to list JTBD hooks: ${error.message}`);
+          await exitWithError(new Error("Operation failed"), 1);
         }
       },
     }),
@@ -101,8 +103,8 @@ export const jtbdCommand = defineCommand({
             });
           });
         } catch (error) {
-          console.error(`❌ Failed to evaluate JTBD hooks: ${error.message}`);
-          process.exit(1);
+          logger.error(`❌ Failed to evaluate JTBD hooks: ${error.message}`);
+          await exitWithError(new Error("Operation failed"), 1);
         }
       },
     }),
@@ -135,8 +137,8 @@ export const jtbdCommand = defineCommand({
             await cli.validate(args.hookId);
           });
         } catch (error) {
-          console.error(`❌ Failed to validate JTBD hook: ${error.message}`);
-          process.exit(1);
+          logger.error(`❌ Failed to validate JTBD hook: ${error.message}`);
+          await exitWithError(new Error("Operation failed"), 1);
         }
       },
     }),
@@ -159,8 +161,8 @@ export const jtbdCommand = defineCommand({
             await cli.stats();
           });
         } catch (error) {
-          console.error(`❌ Failed to get JTBD stats: ${error.message}`);
-          process.exit(1);
+          logger.error(`❌ Failed to get JTBD stats: ${error.message}`);
+          await exitWithError(new Error("Operation failed"), 1);
         }
       },
     }),
@@ -183,8 +185,8 @@ export const jtbdCommand = defineCommand({
             await cli.refresh();
           });
         } catch (error) {
-          console.error(`❌ Failed to refresh JTBD registry: ${error.message}`);
-          process.exit(1);
+          logger.error(`❌ Failed to refresh JTBD registry: ${error.message}`);
+          await exitWithError(new Error("Operation failed"), 1);
         }
       },
     }),
@@ -226,8 +228,8 @@ export const jtbdCommand = defineCommand({
             await cli.create(args.hookId, args.title, args.predicateType);
           });
         } catch (error) {
-          console.error(`❌ Failed to create JTBD hook: ${error.message}`);
-          process.exit(1);
+          logger.error(`❌ Failed to create JTBD hook: ${error.message}`);
+          await exitWithError(new Error("Operation failed"), 1);
         }
       },
     }),
@@ -260,10 +262,10 @@ export const jtbdCommand = defineCommand({
                 await cli.listWorkflows();
               });
             } catch (error) {
-              console.error(
+              logger.error(
                 `❌ Failed to list JTBD workflows: ${error.message}`
               );
-              process.exit(1);
+              await exitWithError(new Error("Operation failed"), 1);
             }
           },
         }),
@@ -292,8 +294,8 @@ export const jtbdCommand = defineCommand({
                 await cli.runWorkflow(args.workflowId);
               });
             } catch (error) {
-              console.error(`❌ Failed to run JTBD workflow: ${error.message}`);
-              process.exit(1);
+              logger.error(`❌ Failed to run JTBD workflow: ${error.message}`);
+              await exitWithError(new Error("Operation failed"), 1);
             }
           },
         }),
@@ -314,10 +316,10 @@ export const jtbdCommand = defineCommand({
                 await cli.workflowStatus();
               });
             } catch (error) {
-              console.error(
+              logger.error(
                 `❌ Failed to get JTBD workflow status: ${error.message}`
               );
-              process.exit(1);
+              await exitWithError(new Error("Operation failed"), 1);
             }
           },
         }),
@@ -351,8 +353,8 @@ export const jtbdCommand = defineCommand({
             await cli.analytics(args.category);
           });
         } catch (error) {
-          console.error(`❌ Failed to get JTBD analytics: ${error.message}`);
-          process.exit(1);
+          logger.error(`❌ Failed to get JTBD analytics: ${error.message}`);
+          await exitWithError(new Error("Operation failed"), 1);
         }
       },
     }),

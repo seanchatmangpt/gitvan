@@ -5,6 +5,8 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, extname } from "pathe";
 import { fileURLToPath } from "node:url";
 import { dirname } from "node:path";
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("cli:cli-core");
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -78,21 +80,21 @@ export class GitVanCLI {
 
     const handler = this.commands[command];
     if (!handler) {
-      console.error(`❌ Unknown command: ${command}`);
-      console.error(`Run 'gitvan help' to see available commands`);
-      process.exit(1);
+      logger.error(`❌ Unknown command: ${command}`);
+      logger.error(`Run 'gitvan help' to see available commands`);
+      await exitWithError(new Error("Operation failed"), 1);
     }
 
     try {
       await handler(commandArgs);
     } catch (error) {
-      console.error(`❌ Error running command '${command}':`, error.message);
-      process.exit(1);
+      logger.error(`❌ Error running command '${command}':`, error.message);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   }
 
   showHelp() {
-    console.log(`
+    logger.info(`
 🚀 GitVan v3.0.0 - Git-native development automation
 
 USAGE:

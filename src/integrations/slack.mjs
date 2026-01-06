@@ -4,17 +4,27 @@
 import { defineJob } from "../core/job-registry.mjs";
 import { useGitVan } from "../core/context.mjs";
 
+import { getSecretsManager } from '../security/secrets-manager.mjs';
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("integrations:slack");
+
 /**
  * Slack Integration
  * Provides seamless integration with Slack for notifications and alerts
  */
 export class SlackIntegration {
   constructor(options = {}) {
-    this.webhookUrl = options.webhookUrl || process.env.SLACK_WEBHOOK_URL;
-    this.botToken = options.botToken || process.env.SLACK_BOT_TOKEN;
-    this.defaultChannel =
-      options.defaultChannel || process.env.SLACK_DEFAULT_CHANNEL;
+    const secretsManager = getSecretsManager();
+
+    this.webhookUrl = options.webhookUrl || secretsManager.get('SLACK_WEBHOOK_URL');
+    this.botToken = options.botToken || secretsManager.get('SLACK_BOT_TOKEN');
+    this.defaultChannel = options.defaultChannel || secretsManager.get('SLACK_DEFAULT_CHANNEL');
     this.logger = options.logger || console;
+
+    // Validate at least one authentication method is present
+    if (!this.webhookUrl && !this.botToken) {
+      throw new Error('Either SLACK_WEBHOOK_URL or SLACK_BOT_TOKEN is required for Slack integration');
+    }
   }
 
   /**
@@ -288,7 +298,7 @@ export default defineJob({
   hooks: ["post-commit", "post-merge", "pre-push"],
 
   async run(context) {
-    console.log("💬 Starting Slack Integration");
+    logger.info("💬 Starting Slack Integration");
 
     try {
       const gitvanContext = useGitVan();
@@ -314,8 +324,8 @@ export default defineJob({
 
         const result = await slackIntegration.sendMessage(notification);
 
-        console.log(`   💬 Slack notification sent to ${result.channel}`);
-        console.log(`   📊 Notification method: ${result.method}`);
+        logger.info(`   💬 Slack notification sent to ${result.channel}`);
+        logger.info(`   📊 Notification method: ${result.method}`);
 
         return {
           success: true,
@@ -323,7 +333,7 @@ export default defineJob({
           gitContext,
         };
       } else {
-        console.log("   ⏭️ Skipping Slack notification");
+        logger.info("   ⏭️ Skipping Slack notification");
         return {
           success: true,
           skipped: true,
@@ -332,7 +342,7 @@ export default defineJob({
         };
       }
     } catch (error) {
-      console.error("❌ Slack integration failed:", error.message);
+      logger.error("❌ Slack integration failed:", error.message);
       throw error;
     }
   },
@@ -364,7 +374,7 @@ export default defineJob({
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
-      console.warn("⚠️ Could not extract Git context:", error.message);
+      logger.warn("⚠️ Could not extract Git context:", error.message);
       return {
         commitSha: "unknown",
         branch: "unknown",

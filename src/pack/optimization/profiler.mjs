@@ -95,18 +95,18 @@ export class PackProfiler {
   logReport() {
     const report = this.getReport();
 
-    console.log('\n📊 Performance Report');
-    console.log('='.repeat(50));
+    logger.info('\n📊 Performance Report');
+    logger.info('='.repeat(50));
 
-    console.log(`\n⏱️  Total Time: ${Math.round(report.summary.total)}ms`);
-    console.log(`📦 Operations: ${report.summary.operations}`);
+    logger.info(`\n⏱️  Total Time: ${Math.round(report.summary.total)}ms`);
+    logger.info(`📦 Operations: ${report.summary.operations}`);
 
     if (report.top.length > 0) {
-      console.log('\n🔥 Top Operations:');
+      logger.info('\n🔥 Top Operations:');
       for (const op of report.top) {
-        console.log(`   ${op.name}`);
-        console.log(`     Time: ${op.total}ms (${op.percentage}%)`);
-        console.log(`     Avg: ${op.average}ms | Min: ${op.min}ms | Max: ${op.max}ms`);
+        logger.info(`   ${op.name}`);
+        logger.info(`     Time: ${op.total}ms (${op.percentage}%)`);
+        logger.info(`     Avg: ${op.average}ms | Min: ${op.min}ms | Max: ${op.max}ms`);
       }
     }
 

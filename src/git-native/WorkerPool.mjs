@@ -2,6 +2,7 @@ import { Worker } from 'worker_threads';
 import { promises as fs } from 'fs';
 import { join, dirname } from 'path';
 import { randomUUID } from 'crypto';
+import { exitWithError } from "../core/error-handler.mjs";
 
 /**
  * Worker pool with isolated thread execution using worker_threads.

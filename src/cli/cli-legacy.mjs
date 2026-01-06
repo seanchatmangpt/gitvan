@@ -5,6 +5,8 @@ import { GitVanDaemon, startDaemon } from "../runtime/daemon.mjs";
 import { discoverEvents, loadEventDefinition } from "../runtime/events.mjs";
 import { readReceiptsRange } from "../runtime/receipt.mjs";
 import {
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("cli:cli-legacy");
   discoverJobs,
   findJobFile,
   findAllJobs,
@@ -17,22 +19,22 @@ import { GitVanDefaults } from "../config/defaults.mjs";
 
 // Legacy command implementations
 export async function handleInit(args) {
-  console.log("🚀 Initializing GitVan...");
+  logger.info("🚀 Initializing GitVan...");
   // Implementation would go here
-  console.log("✅ GitVan initialized successfully!");
+  logger.info("✅ GitVan initialized successfully!");
 }
 
 export async function handleDaemon(args) {
   const [action] = args;
   
   if (action === 'start') {
-    console.log("🚀 Starting GitVan daemon...");
+    logger.info("🚀 Starting GitVan daemon...");
     await startDaemon();
   } else if (action === 'stop') {
-    console.log("🛑 Stopping GitVan daemon...");
+    logger.info("🛑 Stopping GitVan daemon...");
     // Implementation would go here
   } else {
-    console.log("❌ Unknown daemon action. Use 'start' or 'stop'");
+    logger.info("❌ Unknown daemon action. Use 'start' or 'stop'");
   }
 }
 
@@ -40,11 +42,11 @@ export async function handleRun(args) {
   const [jobName] = args;
   
   if (!jobName) {
-    console.log("❌ Please specify a job name to run");
+    logger.info("❌ Please specify a job name to run");
     return;
   }
   
-  console.log(`🚀 Running job: ${jobName}`);
+  logger.info(`🚀 Running job: ${jobName}`);
   // Implementation would go here
 }
 
@@ -52,38 +54,38 @@ export async function handleList(args) {
   const [type] = args;
   
   if (!type) {
-    console.log("❌ Please specify what to list (jobs, events, schedules)");
+    logger.info("❌ Please specify what to list (jobs, events, schedules)");
     return;
   }
   
-  console.log(`📋 Listing ${type}...`);
+  logger.info(`📋 Listing ${type}...`);
   // Implementation would go here
 }
 
 export async function handleEvent(args) {
-  console.log("📡 Event management not yet implemented");
+  logger.info("📡 Event management not yet implemented");
 }
 
 export async function handleSchedule(args) {
-  console.log("⏰ Schedule management not yet implemented");
+  logger.info("⏰ Schedule management not yet implemented");
 }
 
 export async function handleWorktree(args) {
-  console.log("🌳 Worktree management not yet implemented");
+  logger.info("🌳 Worktree management not yet implemented");
 }
 
 export async function handleJob(args) {
   const [action] = args;
   
   if (action === 'list') {
-    console.log("📋 Job listing not yet implemented");
+    logger.info("📋 Job listing not yet implemented");
   } else {
-    console.log("❌ Unknown job action");
+    logger.info("❌ Unknown job action");
   }
 }
 
 export async function handleHelp(args) {
-  console.log(`
+  logger.info(`
 🚀 GitVan v3.0.0 - Git-native development automation
 
 USAGE:

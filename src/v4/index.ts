@@ -25,6 +25,12 @@ export {
   subscribe,
   deferred,
   throttled,
+  // Signal utilities
+  createToggle,
+  createCounter,
+  createList,
+  createMap,
+  createSet,
 } from './core/signals.js';
 
 export type {
@@ -358,3 +364,28 @@ export async function initGitVan(options?: {
 
   return { context, cleanup };
 }
+
+// =============================================================================
+// V3 Compatibility Layer (Deprecated)
+// =============================================================================
+
+/**
+ * V3-compatible composables for gradual migration
+ *
+ * @deprecated Use V4 hooks directly. This compatibility layer will be removed in v5.
+ * See migration guide: /docs/migration/v3-to-v4.md
+ *
+ * @example
+ * ```ts
+ * // V3 (deprecated)
+ * import { useGit } from '@gitvan/v4/compat';
+ * const git = useGit();
+ * await git.run(['status']);
+ *
+ * // V4 (recommended)
+ * import { useGit } from '@gitvan/v4';
+ * const git = useGit();
+ * await git.run(['status']);
+ * ```
+ */
+export * as compat from './compat/index.mjs';

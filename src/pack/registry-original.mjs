@@ -1419,8 +1419,8 @@ app.get('/health', (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(\`🚀 Server running on http://localhost:\${PORT}\`);
-  console.log(\`📋 Health check: http://localhost:\${PORT}/health\`);
+  logger.info(\`🚀 Server running on http://localhost:\${PORT}\`);
+  logger.info(\`📋 Health check: http://localhost:\${PORT}/health\`);
 });
 `;
 

@@ -6,6 +6,8 @@ import { GitVanDaemon, startDaemon } from "./runtime/daemon.mjs";
 import { discoverEvents, loadEventDefinition } from "./runtime/events.mjs";
 import { readReceiptsRange } from "./runtime/receipt.mjs";
 import {
+import { createLogger } from "./utils/logger.mjs";
+const logger = createLogger("cli-old");
   discoverJobs,
   findJobFile,
   findAllJobs,
@@ -51,16 +53,16 @@ async function main() {
 
   const handler = commands[command];
   if (!handler) {
-    console.error(`Unknown command: ${command}`);
+    logger.error(`Unknown command: ${command}`);
     handleHelp();
-    process.exit(1);
+    await exitWithError(new Error("Operation failed"), 1);
   }
 
   try {
     await handler(...args);
   } catch (err) {
-    console.error("Error:", err.message);
-    process.exit(1);
+    logger.error("Error:", err.message);
+    await exitWithError(new Error("Operation failed"), 1);
   }
 }
 
@@ -78,7 +80,7 @@ async function handleDaemon(action = "start", ...options) {
   switch (action) {
     case "start":
       if (opts.worktrees === "all") {
-        console.log("Starting daemon for all worktrees...");
+        logger.info("Starting daemon for all worktrees...");
         await startDaemon({ rootDir: worktreePath }, null, "all");
       } else {
         const daemon = new GitVanDaemon(worktreePath);
@@ -91,15 +93,15 @@ async function handleDaemon(action = "start", ...options) {
       break;
     case "status":
       const statusDaemon = new GitVanDaemon(worktreePath);
-      console.log(
+      logger.info(
         `Daemon ${
           statusDaemon.isRunning() ? "running" : "not running"
         } for: ${worktreePath}`
       );
       break;
     default:
-      console.error(`Unknown daemon action: ${action}`);
-      process.exit(1);
+      logger.error(`Unknown daemon action: ${action}`);
+      await exitWithError(new Error("Operation failed"), 1);
   }
 }
 
@@ -143,12 +145,12 @@ function parseArgs(args) {
 async function handleSchedule(action = "apply") {
   switch (action) {
     case "apply":
-      console.log("Schedule management not yet implemented");
+      logger.info("Schedule management not yet implemented");
       // TODO: Implement cron-like scheduling
       break;
     default:
-      console.error(`Unknown schedule action: ${action}`);
-      process.exit(1);
+      logger.error(`Unknown schedule action: ${action}`);
+      await exitWithError(new Error("Operation failed"), 1);
   }
 }
 
@@ -169,26 +171,26 @@ async function handleWorktree(action = "list") {
           const worktrees = git.listWorktrees();
 
           if (worktrees.length === 0) {
-            console.log("No worktrees found");
+            logger.info("No worktrees found");
             return;
           }
 
-          console.log("\nWorktrees:");
-          console.log("==========");
+          logger.info("\nWorktrees:");
+          logger.info("==========");
           for (const wt of worktrees) {
-            console.log(`${wt.path} ${wt.isMain ? "(main)" : ""}`);
-            console.log(`  Branch: ${wt.branch || "detached"}`);
-            if (wt.head) console.log(`  HEAD: ${wt.head.slice(0, 8)}`);
-            console.log();
+            logger.info(`${wt.path} ${wt.isMain ? "(main)" : ""}`);
+            logger.info(`  Branch: ${wt.branch || "detached"}`);
+            if (wt.head) logger.info(`  HEAD: ${wt.head.slice(0, 8)}`);
+            logger.info();
           }
         });
       } catch (err) {
-        console.error("Error listing worktrees:", err.message);
+        logger.error("Error listing worktrees:", err.message);
       }
       break;
     default:
-      console.error(`Unknown worktree action: ${action}`);
-      process.exit(1);
+      logger.error(`Unknown worktree action: ${action}`);
+      await exitWithError(new Error("Operation failed"), 1);
   }
 }
 
@@ -199,45 +201,45 @@ async function handleJob(action = "list", ...args) {
   switch (action) {
     case "list":
       if (!statSync(jobsDir).isDirectory()) {
-        console.log("No jobs directory found");
+        logger.info("No jobs directory found");
         return;
       }
 
       const jobs = discoverJobs(jobsDir);
       if (jobs.length === 0) {
-        console.log("No jobs found");
+        logger.info("No jobs found");
         return;
       }
 
-      console.log("Available jobs:");
-      console.log("==============");
+      logger.info("Available jobs:");
+      logger.info("==============");
       jobs.forEach((job) => {
-        console.log(`${job.id}`);
-        console.log(`  File: ${job.relativePath}`);
-        console.log(`  Directory: ${job.directory}`);
-        console.log();
+        logger.info(`${job.id}`);
+        logger.info(`  File: ${job.relativePath}`);
+        logger.info(`  Directory: ${job.directory}`);
+        logger.info();
       });
       break;
 
     case "run":
       const nameIndex = args.indexOf("--name");
       if (nameIndex === -1 || !args[nameIndex + 1]) {
-        console.error("Job name required: gitvan job run --name <job-name>");
-        process.exit(1);
+        logger.error("Job name required: gitvan job run --name <job-name>");
+        await exitWithError(new Error("Operation failed"), 1);
       }
       const jobName = args[nameIndex + 1];
 
       const jobPath = findJobFile(jobsDir, jobName);
       if (!jobPath) {
-        console.error(`Job not found: ${jobName}`);
-        process.exit(1);
+        logger.error(`Job not found: ${jobName}`);
+        await exitWithError(new Error("Operation failed"), 1);
       }
 
       try {
         const jobDef = await loadJobDefinition(jobPath);
         if (!jobDef) {
-          console.error(`Failed to load job: ${jobName}`);
-          process.exit(1);
+          logger.error(`Failed to load job: ${jobName}`);
+          await exitWithError(new Error("Operation failed"), 1);
         }
 
         const ctx = {
@@ -254,25 +256,25 @@ async function handleJob(action = "list", ...args) {
           },
         };
 
-        console.log(`Running job: ${jobName}`);
+        logger.info(`Running job: ${jobName}`);
         const result = await runJobWithContext(ctx, jobDef);
-        console.log("Result:", JSON.stringify(result, null, 2));
+        logger.info("Result:", JSON.stringify(result, null, 2));
       } catch (error) {
-        console.error(`Error running job ${jobName}:`, error.message);
-        process.exit(1);
+        logger.error(`Error running job ${jobName}:`, error.message);
+        await exitWithError(new Error("Operation failed"), 1);
       }
       break;
 
     default:
-      console.error(`Unknown job action: ${action}`);
-      process.exit(1);
+      logger.error(`Unknown job action: ${action}`);
+      await exitWithError(new Error("Operation failed"), 1);
   }
 }
 
 async function handleRun(jobName) {
   if (!jobName) {
-    console.error("Job name required");
-    process.exit(1);
+    logger.error("Job name required");
+    await exitWithError(new Error("Operation failed"), 1);
   }
 
   const worktreePath = process.cwd();
@@ -280,15 +282,15 @@ async function handleRun(jobName) {
   const jobPath = findJobFile(jobsDir, jobName);
 
   if (!jobPath) {
-    console.error(`Job not found: ${jobName}`);
-    process.exit(1);
+    logger.error(`Job not found: ${jobName}`);
+    await exitWithError(new Error("Operation failed"), 1);
   }
 
   try {
     const jobDef = await loadJobDefinition(jobPath);
     if (!jobDef) {
-      console.error(`Failed to load job: ${jobName}`);
-      process.exit(1);
+      logger.error(`Failed to load job: ${jobName}`);
+      await exitWithError(new Error("Operation failed"), 1);
     }
 
     const ctx = {
@@ -305,12 +307,12 @@ async function handleRun(jobName) {
       },
     };
 
-    console.log(`Running job: ${jobName}`);
+    logger.info(`Running job: ${jobName}`);
     const result = await runJobWithContext(ctx, jobDef);
-    console.log("Result:", JSON.stringify(result, null, 2));
+    logger.info("Result:", JSON.stringify(result, null, 2));
   } catch (error) {
-    console.error(`Error running job ${jobName}:`, error.message);
-    process.exit(1);
+    logger.error(`Error running job ${jobName}:`, error.message);
+    await exitWithError(new Error("Operation failed"), 1);
   }
 }
 
@@ -319,13 +321,13 @@ function handleList() {
   const jobsDir = join(worktreePath, "jobs");
 
   if (!statSync(jobsDir).isDirectory()) {
-    console.log("No jobs directory found");
+    logger.info("No jobs directory found");
     return;
   }
 
   const jobs = findAllJobs(jobsDir);
-  console.log("Available jobs:");
-  jobs.forEach((job) => console.log(`  ${job}`));
+  logger.info("Available jobs:");
+  jobs.forEach((job) => logger.info(`  ${job}`));
 }
 
 // LLM command handler
@@ -340,8 +342,8 @@ async function handleLLM(subcommand = "call", ...args) {
   switch (subcommand) {
     case "call":
       if (!args[0]) {
-        console.error('Prompt required: gitvan llm call "<prompt>"');
-        process.exit(1);
+        logger.error('Prompt required: gitvan llm call "<prompt>"');
+        await exitWithError(new Error("Operation failed"), 1);
       }
 
       const prompt = args[0];
@@ -351,31 +353,31 @@ async function handleLLM(subcommand = "call", ...args) {
 
       try {
         const result = await generateText({ prompt, model, config });
-        console.log(result.output);
+        logger.info(result.output);
       } catch (error) {
-        console.error("LLM call failed:", error.message);
-        process.exit(1);
+        logger.error("LLM call failed:", error.message);
+        await exitWithError(new Error("Operation failed"), 1);
       }
       break;
 
     case "models":
       const availability = await checkAIAvailability(config);
-      console.log(`Provider: ${availability.provider}`);
-      console.log(`Model: ${availability.model}`);
-      console.log(`Available: ${availability.available ? "Yes" : "No"}`);
+      logger.info(`Provider: ${availability.provider}`);
+      logger.info(`Model: ${availability.model}`);
+      logger.info(`Available: ${availability.available ? "Yes" : "No"}`);
       if (!availability.available) {
-        console.log(`Message: ${availability.message}`);
+        logger.info(`Message: ${availability.message}`);
       }
       break;
 
     default:
-      console.error(`Unknown llm subcommand: ${subcommand}`);
-      process.exit(1);
+      logger.error(`Unknown llm subcommand: ${subcommand}`);
+      await exitWithError(new Error("Operation failed"), 1);
   }
 }
 
 function handleHelp() {
-  console.log(`
+  logger.info(`
 GitVan v2 - AI-powered Git workflow automation
 
 Usage:

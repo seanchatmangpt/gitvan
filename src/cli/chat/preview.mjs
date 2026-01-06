@@ -26,7 +26,7 @@ export async function previewCommand(config, args) {
       throw new Error("Prompt required for preview command");
     }
 
-    console.log("🤖 Previewing WORKING GitVan job with AI...");
+    logger.info("🤖 Previewing WORKING GitVan job with AI...");
 
     const input = ChatInput.parse({
       prompt: prompt,
@@ -65,21 +65,21 @@ The generated code must be production-ready and functional.`;
       config,
     });
 
-    console.log("📋 Preview of WORKING GitVan job:");
-    console.log(`  Job Type: ${input.kind}`);
-    console.log(`  Mode: ${input.kind === "event" ? "event" : "on-demand"}`);
-    console.log(`  Summary: ${result.spec.implementation.returnValue.success}`);
-    console.log(`  Working: ${result.working ? "YES" : "NO"}`);
-    console.log();
-    console.log("📄 Generated WORKING Code:");
-    console.log(result.code);
-    console.log();
-    console.log("💡 Next steps:");
-    console.log("  • Use 'gitvan chat generate' to create the actual file");
-    console.log(
+    logger.info("📋 Preview of WORKING GitVan job:");
+    logger.info(`  Job Type: ${input.kind}`);
+    logger.info(`  Mode: ${input.kind === "event" ? "event" : "on-demand"}`);
+    logger.info(`  Summary: ${result.spec.implementation.returnValue.success}`);
+    logger.info(`  Working: ${result.working ? "YES" : "NO"}`);
+    logger.info();
+    logger.info("📄 Generated WORKING Code:");
+    logger.info(result.code);
+    logger.info();
+    logger.info("💡 Next steps:");
+    logger.info("  • Use 'gitvan chat generate' to create the actual file");
+    logger.info(
       "  • Use 'gitvan chat apply --name <name>' to create with custom name"
     );
-    console.log(
+    logger.info(
       "  • Use 'gitvan chat draft' to refine the specification first"
     );
   } catch (error) {

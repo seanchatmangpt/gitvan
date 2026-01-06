@@ -34,7 +34,7 @@ export async function applyCommand(config, args) {
       throw new Error("Job name required for apply command (use --name)");
     }
 
-    console.log(`🤖 Applying WORKING GitVan job "${name}" with AI...`);
+    logger.info(`🤖 Applying WORKING GitVan job "${name}" with AI...`);
 
     const input = ChatInput.parse({
       prompt: prompt,
@@ -84,16 +84,16 @@ The generated code must be production-ready and functional.`;
         : join("jobs", filename);
     const outPath = writeFileSafe(config.rootDir, relPath, result.code);
 
-    console.log(`✅ Applied WORKING GitVan job "${name}":`);
-    console.log(`  File: ${outPath}`);
-    console.log(`  Working: ${result.working ? "YES" : "NO"}`);
-    console.log(`  Summary: ${result.spec.implementation.returnValue.success}`);
+    logger.info(`✅ Applied WORKING GitVan job "${name}":`);
+    logger.info(`  File: ${outPath}`);
+    logger.info(`  Working: ${result.working ? "YES" : "NO"}`);
+    logger.info(`  Summary: ${result.spec.implementation.returnValue.success}`);
 
-    console.log("\n🚀 Ready to use:");
-    console.log(`  • Run: gitvan job run ${relPath}`);
-    console.log(`  • Test: gitvan job test ${relPath}`);
-    console.log(`  • Explain: gitvan chat explain ${relPath}`);
-    console.log(`  • List: gitvan job list`);
+    logger.info("\n🚀 Ready to use:");
+    logger.info(`  • Run: gitvan job run ${relPath}`);
+    logger.info(`  • Test: gitvan job test ${relPath}`);
+    logger.info(`  • Explain: gitvan chat explain ${relPath}`);
+    logger.info(`  • List: gitvan job list`);
   } catch (error) {
     logger.error("Failed to apply working changes:", error.message);
     throw error;

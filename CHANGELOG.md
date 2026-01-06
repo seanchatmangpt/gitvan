@@ -2,6 +2,38 @@
 
 All notable changes to GitVan will be documented in this file.
 
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Planned
+- Enhanced AI provider support (OpenAI, Google AI)
+- Advanced workflow visualization
+- Performance optimizations for large repositories
+- Extended pack marketplace
+
+## [3.1.0] - 2026-01-06
+
+### Added
+- Comprehensive npm package configuration
+- Proper .npmignore for minimal package size
+- Enhanced package.json with complete metadata
+- Installation documentation
+- Contributing guidelines
+- Support and issue templates
+- Automated release workflow
+
+### Changed
+- Updated LICENSE with proper copyright (2025 GitVan Development Team)
+- Improved build configuration with unbuild
+- Enhanced documentation structure
+- Package size optimized to under 1MB
+
+### Fixed
+- Build warnings for external dependencies
+- Missing development scripts in package.json
+
 ## [3.0.1] - 2025-12-03
 
 ### Fixed

@@ -1,8 +1,11 @@
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("cli:help");
+
 // GitVan v3.0.0 - Help Command
 // Shows help information
 
 export async function handleHelp(args) {
-  console.log(`
+  logger.info(`
 🚀 GitVan v3.0.0 - Git-native development automation
 
 USAGE:

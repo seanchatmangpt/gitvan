@@ -1,3 +1,6 @@
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("performance:batch");
+
 /**
  * @fileoverview GitVan v4 - Batch Update System
  *
@@ -484,7 +487,7 @@ export function usePriorityBatchQueue(options = {}) {
         }
       }
     } catch (error) {
-      console.error("Priority queue processing error:", error);
+      logger.error("Priority queue processing error:", error);
     } finally {
       processing = false;
     }

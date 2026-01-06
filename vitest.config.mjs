@@ -55,13 +55,11 @@ export default defineConfig({
     // Watch mode configuration
     watch: false,
 
-    // Parallel execution
+    // Parallel execution (Vitest 4 - moved poolOptions to top level)
     pool: "threads",
-    poolOptions: {
-      threads: {
-        singleThread: false,
-      },
-    },
+    maxConcurrency: 5,
+    minWorkers: 1,
+    maxWorkers: 4,
   },
 
   // Resolve configuration

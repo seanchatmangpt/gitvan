@@ -26,7 +26,7 @@ export async function draftCommand(config, args) {
       throw new Error("Prompt required for draft command");
     }
 
-    console.log("🤖 Analyzing your request with GitVan context...");
+    logger.info("🤖 Analyzing your request with GitVan context...");
 
     const input = ChatInput.parse({
       prompt: prompt,
@@ -63,13 +63,13 @@ Return only valid JSON specification.`;
       config,
     });
 
-    console.log("✅ Generated GitVan job specification:");
-    console.log(JSON.stringify(result.spec, null, 2));
+    logger.info("✅ Generated GitVan job specification:");
+    logger.info(JSON.stringify(result.spec, null, 2));
 
-    console.log("\n📋 Next steps:");
-    console.log("  • Use 'gitvan chat generate' to create the actual job file");
-    console.log("  • Use 'gitvan chat preview' to see the generated code");
-    console.log(
+    logger.info("\n📋 Next steps:");
+    logger.info("  • Use 'gitvan chat generate' to create the actual job file");
+    logger.info("  • Use 'gitvan chat preview' to see the generated code");
+    logger.info(
       "  • Use 'gitvan chat apply --name <name>' to create with custom name"
     );
   } catch (error) {

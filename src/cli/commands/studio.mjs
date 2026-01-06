@@ -8,6 +8,8 @@
 import { defineCommand } from 'citty';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { createLogger } from "../../utils/logger.mjs";
+const logger = createLogger("cli:commands:studio");
 
 /**
  * Studio initialization command
@@ -18,7 +20,7 @@ const initCommand = defineCommand({
     description: 'Initialize GitVan Studio with knowledge hooks',
   },
   async run(ctx) {
-    console.log('🚀 Initializing GitVan Studio...');
+    logger.info('🚀 Initializing GitVan Studio...');
 
     const studioDir = resolve('.gitvan/studio');
     const hooksDir = resolve('.gitvan/hooks');
@@ -40,9 +42,9 @@ const initCommand = defineCommand({
       JSON.stringify(metadata, null, 2)
     );
 
-    console.log('✅ GitVan Studio initialized successfully');
-    console.log(`📁 Studio directory: ${studioDir}`);
-    console.log(`📚 Hooks directory: ${hooksDir}`);
+    logger.info('✅ GitVan Studio initialized successfully');
+    logger.info(`📁 Studio directory: ${studioDir}`);
+    logger.info(`📚 Hooks directory: ${hooksDir}`);
   },
 });
 
@@ -71,8 +73,8 @@ const hookCommand = defineCommand({
 
     try {
       const contextData = JSON.parse(context);
-      console.log(`⚙️  Executing hook: ${name}`);
-      console.log(`📋 Context:`, JSON.stringify(contextData, null, 2));
+      logger.info(`⚙️  Executing hook: ${name}`);
+      logger.info(`📋 Context:`, JSON.stringify(contextData, null, 2));
 
       // Simulate hook execution
       const result = {
@@ -85,10 +87,10 @@ const hookCommand = defineCommand({
         },
       };
 
-      console.log(JSON.stringify(result, null, 2));
+      logger.info(JSON.stringify(result, null, 2));
       return result;
     } catch (error) {
-      console.error(`❌ Failed to execute hook ${name}:`, error.message);
+      logger.error(`❌ Failed to execute hook ${name}:`, error.message);
       throw error;
     }
   },
@@ -119,8 +121,8 @@ const workflowCommand = defineCommand({
 
     try {
       const paramsData = JSON.parse(params);
-      console.log(`🚀 Running workflow: ${name}`);
-      console.log(`📋 Parameters:`, JSON.stringify(paramsData, null, 2));
+      logger.info(`🚀 Running workflow: ${name}`);
+      logger.info(`📋 Parameters:`, JSON.stringify(paramsData, null, 2));
 
       const orchestrator = new HookOrchestrator({
         graphDir: '.gitvan/hooks',
@@ -137,11 +139,11 @@ const workflowCommand = defineCommand({
         steps: [],
       };
 
-      console.log('✅ Workflow completed successfully');
-      console.log(JSON.stringify(result, null, 2));
+      logger.info('✅ Workflow completed successfully');
+      logger.info(JSON.stringify(result, null, 2));
       return result;
     } catch (error) {
-      console.error(`❌ Workflow failed:`, error.message);
+      logger.error(`❌ Workflow failed:`, error.message);
       throw error;
     }
   },
@@ -176,19 +178,19 @@ const registryCommand = defineCommand({
       };
 
       if (format === 'json') {
-        console.log(JSON.stringify(hooks, null, 2));
+        logger.info(JSON.stringify(hooks, null, 2));
       } else {
-        console.log('📚 Knowledge Hook Registry:');
-        console.log(`Location: ${hooksDir}`);
-        console.log('\nAvailable Hooks:');
+        logger.info('📚 Knowledge Hook Registry:');
+        logger.info(`Location: ${hooksDir}`);
+        logger.info('\nAvailable Hooks:');
         Object.entries(hooks).forEach(([name, description]) => {
-          console.log(`  🧠 ${name}: ${description}`);
+          logger.info(`  🧠 ${name}: ${description}`);
         });
       }
 
       return hooks;
     } catch (error) {
-      console.error(`❌ Failed to list hooks:`, error.message);
+      logger.error(`❌ Failed to list hooks:`, error.message);
       throw error;
     }
   },
@@ -225,10 +227,10 @@ const storeCommand = defineCommand({
       const filePath = join(storageDir, `${key}.json`);
       writeFileSync(filePath, JSON.stringify(data, null, 2));
 
-      console.log(`✅ Stored knowledge at key: ${key}`);
-      console.log(JSON.stringify(data, null, 2));
+      logger.info(`✅ Stored knowledge at key: ${key}`);
+      logger.info(JSON.stringify(data, null, 2));
     } catch (error) {
-      console.error(`❌ Failed to store knowledge:`, error.message);
+      logger.error(`❌ Failed to store knowledge:`, error.message);
       throw error;
     }
   },
@@ -262,14 +264,14 @@ const retrieveCommand = defineCommand({
       const data = JSON.parse(readFileSync(filePath, 'utf-8'));
 
       if (format === 'json') {
-        console.log(JSON.stringify(data, null, 2));
+        logger.info(JSON.stringify(data, null, 2));
       } else {
-        console.log(`Knowledge at ${key}:`, data);
+        logger.info(`Knowledge at ${key}:`, data);
       }
 
       return data;
     } catch (error) {
-      console.error(`❌ Failed to retrieve knowledge at ${key}:`, error.message);
+      logger.error(`❌ Failed to retrieve knowledge at ${key}:`, error.message);
       return null;
     }
   },
@@ -300,8 +302,8 @@ const automationCommand = defineCommand({
 
     try {
       const metaData = JSON.parse(metadata);
-      console.log(`⚙️  Triggering automation: ${type}`);
-      console.log(`📊 Metadata:`, JSON.stringify(metaData, null, 2));
+      logger.info(`⚙️  Triggering automation: ${type}`);
+      logger.info(`📊 Metadata:`, JSON.stringify(metaData, null, 2));
 
       const result = {
         automation: type,
@@ -310,11 +312,11 @@ const automationCommand = defineCommand({
         metadata: metaData,
       };
 
-      console.log('✅ Automation triggered successfully');
-      console.log(JSON.stringify(result, null, 2));
+      logger.info('✅ Automation triggered successfully');
+      logger.info(JSON.stringify(result, null, 2));
       return result;
     } catch (error) {
-      console.error(`❌ Failed to trigger automation:`, error.message);
+      logger.error(`❌ Failed to trigger automation:`, error.message);
       throw error;
     }
   },
@@ -351,15 +353,15 @@ const statusCommand = defineCommand({
     };
 
     if (format === 'json') {
-      console.log(JSON.stringify(status, null, 2));
+      logger.info(JSON.stringify(status, null, 2));
     } else {
-      console.log('⚙️  Studio Automation Status:');
-      console.log(`  Studio: ${status.studio}`);
-      console.log(`  Hooks: ${status.hooks}`);
-      console.log(`  Workflows: ${status.workflows}`);
-      console.log('  Automations:');
+      logger.info('⚙️  Studio Automation Status:');
+      logger.info(`  Studio: ${status.studio}`);
+      logger.info(`  Hooks: ${status.hooks}`);
+      logger.info(`  Workflows: ${status.workflows}`);
+      logger.info('  Automations:');
       status.automations.forEach((auto) => {
-        console.log(`    - ${auto.name}: ${auto.status}`);
+        logger.info(`    - ${auto.name}: ${auto.status}`);
       });
     }
 
@@ -387,17 +389,17 @@ export const studioCommand = defineCommand({
     'automation:status': statusCommand,
   },
   async run(ctx) {
-    console.log('🎬 GitVan Studio - Autonomic Development Platform');
-    console.log('Use: gitvan studio <command>');
-    console.log('\nAvailable commands:');
-    console.log('  init                    Initialize Studio with hooks');
-    console.log('  hook:execute            Execute a knowledge hook');
-    console.log('  workflow:run            Run a Studio workflow');
-    console.log('  knowledge:registry      List knowledge hooks');
-    console.log('  knowledge:store         Store knowledge data');
-    console.log('  knowledge:retrieve      Retrieve knowledge data');
-    console.log('  automation:trigger      Trigger automation hook');
-    console.log('  automation:status       Get automation status');
+    logger.info('🎬 GitVan Studio - Autonomic Development Platform');
+    logger.info('Use: gitvan studio <command>');
+    logger.info('\nAvailable commands:');
+    logger.info('  init                    Initialize Studio with hooks');
+    logger.info('  hook:execute            Execute a knowledge hook');
+    logger.info('  workflow:run            Run a Studio workflow');
+    logger.info('  knowledge:registry      List knowledge hooks');
+    logger.info('  knowledge:store         Store knowledge data');
+    logger.info('  knowledge:retrieve      Retrieve knowledge data');
+    logger.info('  automation:trigger      Trigger automation hook');
+    logger.info('  automation:status       Get automation status');
   },
 });
 

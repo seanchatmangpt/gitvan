@@ -1,0 +1,106 @@
+# Development files
+.github/
+.claude/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Test files
+tests/
+test/
+**/*.test.mjs
+**/*.spec.mjs
+**/*.test.js
+**/*.spec.js
+coverage/
+.nyc_output/
+test-results.json
+vitest.*.config.mjs
+vitest.config.mjs
+
+# Documentation (keep README.md, LICENSE, CHANGELOG.md)
+docs/
+*.md
+!README.md
+!CHANGELOG.md
+
+# Examples
+examples/
+
+# Build configuration
+build.config.ts
+tsconfig.json
+.eslintrc*
+eslint.config.mjs
+.prettierrc*
+.editorconfig
+
+# Git files
+.git/
+.gitignore
+.gitattributes
+.cursorrules
+
+# CI/CD files
+.travis.yml
+.gitlab-ci.yml
+azure-pipelines.yml
+circle.yml
+appveyor.yml
+
+# Package manager files
+pnpm-lock.yaml
+yarn.lock
+package-lock.json
+.npmrc
+.yarnrc
+
+# Source files (we package dist/ instead)
+src/
+
+# Environment files
+.env
+.env.*
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Cache directories
+.cache/
+.vitest/
+.turbo/
+node_modules/.cache/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Graph storage (development only)
+graph/
+
+# Hooks (development only)
+hooks/
+
+# Jobs (keep examples in packs/ but exclude root jobs/)
+jobs/
+
+# Version control
+.git
+.svn
+.hg
+
+# Misc
+*.orig
+.vscode-test/

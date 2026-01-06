@@ -9,8 +9,8 @@ export async function handleSchedule(args) {
   const [action] = args;
   
   if (!action) {
-    console.log("❌ Please specify a schedule action");
-    console.log("Usage: gitvan schedule <list|create|delete|apply>");
+    logger.info("❌ Please specify a schedule action");
+    logger.info("Usage: gitvan schedule <list|create|delete|apply>");
     return;
   }
   
@@ -31,33 +31,33 @@ export async function handleSchedule(args) {
         await applySchedule(args.slice(1));
         break;
       default:
-        console.log(`❌ Unknown schedule action: ${action}`);
-        console.log("Available actions: list, create, delete, apply");
+        logger.info(`❌ Unknown schedule action: ${action}`);
+        logger.info("Available actions: list, create, delete, apply");
     }
   } catch (error) {
     logger.error(`❌ Schedule operation failed: ${error.message}`);
-    console.error(`❌ Failed to ${action} schedule: ${error.message}`);
-    process.exit(1);
+    logger.error(`❌ Failed to ${action} schedule: ${error.message}`);
+    await exitWithError(new Error("Operation failed"), 1);
   }
 }
 
 async function listSchedules() {
-  console.log("⏰ Available Schedules:");
-  console.log("  - No schedules found");
+  logger.info("⏰ Available Schedules:");
+  logger.info("  - No schedules found");
   // Implementation would go here
 }
 
 async function createSchedule(args) {
-  console.log("⏰ Schedule creation not yet implemented");
+  logger.info("⏰ Schedule creation not yet implemented");
   // Implementation would go here
 }
 
 async function deleteSchedule(args) {
-  console.log("⏰ Schedule deletion not yet implemented");
+  logger.info("⏰ Schedule deletion not yet implemented");
   // Implementation would go here
 }
 
 async function applySchedule(args) {
-  console.log("⏰ Schedule application not yet implemented");
+  logger.info("⏰ Schedule application not yet implemented");
   // Implementation would go here
 }

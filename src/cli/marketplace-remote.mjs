@@ -79,35 +79,35 @@ export const remoteMarketplaceCommand = defineCommand({
 
           // Display results with source information
           consola.success(`Found ${results.total} packs`);
-          console.log();
+          logger.info();
 
           for (const pack of results.packs) {
             const sourceIcon = pack.source === 'remote' ? '🌐' : '📦';
-            console.log(`${sourceIcon} ${pack.name} v${pack.version}`);
-            console.log(`   ${pack.description}`);
-            console.log(`   ID: ${pack.id}`);
-            console.log(`   Source: ${pack.source || 'local'}`);
+            logger.info(`${sourceIcon} ${pack.name} v${pack.version}`);
+            logger.info(`   ${pack.description}`);
+            logger.info(`   ID: ${pack.id}`);
+            logger.info(`   Source: ${pack.source || 'local'}`);
             
             if (pack.tags && pack.tags.length > 0) {
-              console.log(`   Tags: ${pack.tags.join(', ')}`);
+              logger.info(`   Tags: ${pack.tags.join(', ')}`);
             }
             
             if (pack.capabilities && pack.capabilities.length > 0) {
-              console.log(`   Capabilities: ${pack.capabilities.join(', ')}`);
+              logger.info(`   Capabilities: ${pack.capabilities.join(', ')}`);
             }
 
-            console.log();
+            logger.info();
           }
 
           // Show pagination info
           if (results.totalPages > 1) {
-            console.log(`Page ${args.page} of ${results.totalPages}`);
-            console.log(`Use --page to navigate, --limit to change page size`);
+            logger.info(`Page ${args.page} of ${results.totalPages}`);
+            logger.info(`Use --page to navigate, --limit to change page size`);
           }
 
         } catch (error) {
           consola.error('Failed to browse marketplace:', error.message);
-          process.exit(1);
+          await exitWithError(new Error("Operation failed"), 1);
         }
       }
     }),
@@ -150,7 +150,7 @@ export const remoteMarketplaceCommand = defineCommand({
       async run({ args }) {
         if (!args.source) {
           consola.error('Pack source is required');
-          process.exit(1);
+          await exitWithError(new Error("Operation failed"), 1);
         }
 
         const packManager = new EnhancedPackManager({
@@ -170,21 +170,21 @@ export const remoteMarketplaceCommand = defineCommand({
           
           if (installResult.success) {
             consola.success(`Pack installed successfully`);
-            console.log(`   ID: ${installResult.packId}`);
-            console.log(`   Path: ${installResult.path}`);
-            console.log(`   Source: ${installResult.source}`);
+            logger.info(`   ID: ${installResult.packId}`);
+            logger.info(`   Path: ${installResult.path}`);
+            logger.info(`   Source: ${installResult.source}`);
             
             if (installResult.url) {
-              console.log(`   URL: ${installResult.url}`);
+              logger.info(`   URL: ${installResult.url}`);
             }
           } else {
             consola.error(`Failed to install pack: ${installResult.error}`);
-            process.exit(1);
+            await exitWithError(new Error("Operation failed"), 1);
           }
 
         } catch (error) {
           consola.error('Installation failed:', error.message);
-          process.exit(1);
+          await exitWithError(new Error("Operation failed"), 1);
         }
       }
     }),
@@ -213,20 +213,20 @@ export const remoteMarketplaceCommand = defineCommand({
                 return;
               }
 
-              console.log(`Found ${remotePacks.length} remote packs:`);
-              console.log();
+              logger.info(`Found ${remotePacks.length} remote packs:`);
+              logger.info();
 
               for (const pack of remotePacks) {
-                console.log(`🌐 ${pack.name} v${pack.version}`);
-                console.log(`   ID: ${pack.id}`);
-                console.log(`   Path: ${pack.path}`);
-                console.log(`   Installed: ${pack.installedAt}`);
-                console.log();
+                logger.info(`🌐 ${pack.name} v${pack.version}`);
+                logger.info(`   ID: ${pack.id}`);
+                logger.info(`   Path: ${pack.path}`);
+                logger.info(`   Installed: ${pack.installedAt}`);
+                logger.info();
               }
 
             } catch (error) {
               consola.error('Failed to list remote packs:', error.message);
-              process.exit(1);
+              await exitWithError(new Error("Operation failed"), 1);
             }
           }
         }),
@@ -249,7 +249,7 @@ export const remoteMarketplaceCommand = defineCommand({
           async run({ args }) {
             if (!args.pack) {
               consola.error('Pack ID is required');
-              process.exit(1);
+              await exitWithError(new Error("Operation failed"), 1);
             }
 
             const packManager = new EnhancedPackManager();
@@ -263,13 +263,13 @@ export const remoteMarketplaceCommand = defineCommand({
 
               if (updateResult.success) {
                 consola.success(`Pack updated successfully`);
-                console.log(`   ID: ${updateResult.packId}`);
-                console.log(`   Path: ${updateResult.path}`);
+                logger.info(`   ID: ${updateResult.packId}`);
+                logger.info(`   Path: ${updateResult.path}`);
               }
 
             } catch (error) {
               consola.error('Update failed:', error.message);
-              process.exit(1);
+              await exitWithError(new Error("Operation failed"), 1);
             }
           }
         }),
@@ -288,7 +288,7 @@ export const remoteMarketplaceCommand = defineCommand({
           async run({ args }) {
             if (!args.pack) {
               consola.error('Pack ID is required');
-              process.exit(1);
+              await exitWithError(new Error("Operation failed"), 1);
             }
 
             const packManager = new EnhancedPackManager();
@@ -300,13 +300,13 @@ export const remoteMarketplaceCommand = defineCommand({
 
               if (removeResult.success) {
                 consola.success(`Pack removed successfully`);
-                console.log(`   ID: ${removeResult.packId}`);
-                console.log(`   Removed from: ${removeResult.removedPath}`);
+                logger.info(`   ID: ${removeResult.packId}`);
+                logger.info(`   Removed from: ${removeResult.removedPath}`);
               }
 
             } catch (error) {
               consola.error('Removal failed:', error.message);
-              process.exit(1);
+              await exitWithError(new Error("Operation failed"), 1);
             }
           }
         }),
@@ -329,7 +329,7 @@ export const remoteMarketplaceCommand = defineCommand({
           async run({ args }) {
             if (!args.query) {
               consola.error('Search query is required');
-              process.exit(1);
+              await exitWithError(new Error("Operation failed"), 1);
             }
 
             const packManager = new EnhancedPackManager({
@@ -346,23 +346,23 @@ export const remoteMarketplaceCommand = defineCommand({
                 return;
               }
 
-              console.log(`Found ${results.length} remote packs:`);
-              console.log();
+              logger.info(`Found ${results.length} remote packs:`);
+              logger.info();
 
               for (const pack of results) {
-                console.log(`🌐 ${pack.name}`);
-                console.log(`   ID: ${pack.id}`);
-                console.log(`   Description: ${pack.description}`);
-                console.log(`   Source: ${pack.source}`);
+                logger.info(`🌐 ${pack.name}`);
+                logger.info(`   ID: ${pack.id}`);
+                logger.info(`   Description: ${pack.description}`);
+                logger.info(`   Source: ${pack.source}`);
                 if (pack.url) {
-                  console.log(`   URL: ${pack.url}`);
+                  logger.info(`   URL: ${pack.url}`);
                 }
-                console.log();
+                logger.info();
               }
 
             } catch (error) {
               consola.error('Search failed:', error.message);
-              process.exit(1);
+              await exitWithError(new Error("Operation failed"), 1);
             }
           }
         })
@@ -387,7 +387,7 @@ export const remoteMarketplaceCommand = defineCommand({
       async run({ args }) {
         if (!args.query) {
           consola.error('Search query is required');
-          process.exit(1);
+          await exitWithError(new Error("Operation failed"), 1);
         }
 
         const marketplace = new Marketplace();
@@ -404,21 +404,21 @@ export const remoteMarketplaceCommand = defineCommand({
             return;
           }
 
-          console.log(`Found ${results.length} packs:`);
-          console.log();
+          logger.info(`Found ${results.length} packs:`);
+          logger.info();
 
           for (const pack of results) {
             const sourceIcon = pack.source === 'remote' ? '🌐' : '📦';
-            console.log(`${sourceIcon} ${pack.name} v${pack.version}`);
-            console.log(`   ${pack.description}`);
-            console.log(`   ID: ${pack.id}`);
-            console.log(`   Source: ${pack.source || 'local'}`);
-            console.log();
+            logger.info(`${sourceIcon} ${pack.name} v${pack.version}`);
+            logger.info(`   ${pack.description}`);
+            logger.info(`   ID: ${pack.id}`);
+            logger.info(`   Source: ${pack.source || 'local'}`);
+            logger.info();
           }
 
         } catch (error) {
           consola.error('Search failed:', error.message);
-          process.exit(1);
+          await exitWithError(new Error("Operation failed"), 1);
         }
       }
     }),
@@ -429,48 +429,48 @@ export const remoteMarketplaceCommand = defineCommand({
         description: 'Show examples of remote pack installation'
       },
       async run() {
-        console.log('GitVan Remote Pack Installation Examples');
-        console.log('=====================================');
-        console.log();
+        logger.info('GitVan Remote Pack Installation Examples');
+        logger.info('=====================================');
+        logger.info();
         
-        console.log('GitHub Packs:');
-        console.log('  gitvan marketplace install github:unjs/template');
-        console.log('  gitvan marketplace install github:unjs/template#dev');
-        console.log('  gitvan marketplace install github:unjs/template/packages/core');
-        console.log();
+        logger.info('GitHub Packs:');
+        logger.info('  gitvan marketplace install github:unjs/template');
+        logger.info('  gitvan marketplace install github:unjs/template#dev');
+        logger.info('  gitvan marketplace install github:unjs/template/packages/core');
+        logger.info();
         
-        console.log('GitLab Packs:');
-        console.log('  gitvan marketplace install gitlab:unjs/template');
-        console.log('  gitvan marketplace install gitlab:unjs/template#main');
-        console.log();
+        logger.info('GitLab Packs:');
+        logger.info('  gitvan marketplace install gitlab:unjs/template');
+        logger.info('  gitvan marketplace install gitlab:unjs/template#main');
+        logger.info();
         
-        console.log('Bitbucket Packs:');
-        console.log('  gitvan marketplace install bitbucket:unjs/template');
-        console.log();
+        logger.info('Bitbucket Packs:');
+        logger.info('  gitvan marketplace install bitbucket:unjs/template');
+        logger.info();
         
-        console.log('Sourcehut Packs:');
-        console.log('  gitvan marketplace install sourcehut:pi0/unjs-template');
-        console.log();
+        logger.info('Sourcehut Packs:');
+        logger.info('  gitvan marketplace install sourcehut:pi0/unjs-template');
+        logger.info();
         
-        console.log('Registry Packs:');
-        console.log('  gitvan marketplace install registry:nuxt');
-        console.log('  gitvan marketplace install registry:vue');
-        console.log();
+        logger.info('Registry Packs:');
+        logger.info('  gitvan marketplace install registry:nuxt');
+        logger.info('  gitvan marketplace install registry:vue');
+        logger.info();
         
-        console.log('With Options:');
-        console.log('  gitvan marketplace install github:owner/repo --force');
-        console.log('  gitvan marketplace install github:owner/repo --install-deps');
-        console.log('  gitvan marketplace install github:owner/repo --auth TOKEN');
-        console.log('  gitvan marketplace install github:owner/repo --offline');
-        console.log();
+        logger.info('With Options:');
+        logger.info('  gitvan marketplace install github:owner/repo --force');
+        logger.info('  gitvan marketplace install github:owner/repo --install-deps');
+        logger.info('  gitvan marketplace install github:owner/repo --auth TOKEN');
+        logger.info('  gitvan marketplace install github:owner/repo --offline');
+        logger.info();
         
-        console.log('Private Repositories:');
-        console.log('  export GIGET_AUTH=your_token');
-        console.log('  gitvan marketplace install github:private-org/private-repo');
-        console.log();
+        logger.info('Private Repositories:');
+        logger.info('  export GIGET_AUTH=your_token');
+        logger.info('  gitvan marketplace install github:private-org/private-repo');
+        logger.info();
         
-        console.log('Custom Registry:');
-        console.log('  gitvan marketplace remote search "react" --registry https://custom-registry.com');
+        logger.info('Custom Registry:');
+        logger.info('  gitvan marketplace remote search "react" --registry https://custom-registry.com');
       }
     })
   }

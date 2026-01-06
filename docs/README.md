@@ -1,219 +1,296 @@
-# GitVan v2 Documentation
+# GitVan Documentation
 
-Welcome to the comprehensive documentation for GitVan v2, the UnJS-powered Git workflow automation toolkit. This documentation covers everything from advanced architecture patterns to quick start guides.
+> **Version:** 3.0.0
+> **Complete Documentation Index**
 
-## 📚 Documentation Overview
+Welcome to the GitVan documentation! This guide will help you find what you need.
 
-### 🔧 Advanced Topics
-- **[Cache System Enhancement](./cache-system-enhancement.md)** - Caching system improvements
-- **[Transform Processor Enhancement](./transform-processor-enhancement.md)** - Processing improvements
-- **[Implementation Delta](./implementation-delta.md)** - Implementation changes
-- **[Implementation Plan](./implementation-plan.md)** - Development planning
-- **[GitHub Integration](./github-integration.md)** - GitHub platform integration
-- **[UseGit Reference](./useGit.md)** - Git composable detailed reference
+## Quick Navigation
 
-### 📊 V2 Development
-- **[V2 Overview](./v2/)** - GitVan v2 development documentation
-- **[AI PRD V2](./v2/AI-PRD-V2.md)** - AI product requirements
-- **[AI VOC V2](./v2/AI-VOC-V2.md)** - AI voice of customer
-- **[Chat PRD V2](./v2/CHAT-PRD-V2.md)** - Chat system requirements
-- **[Frontmatter PRD V2](./v2/FRONTMATTER-PRD-V2.md)** - Frontmatter system requirements
-- **[Frontmatter V2](./v2/FRONTMATTER-V2.md)** - Frontmatter implementation details
-- **[GitVan Pack](./v2/GITVAN-PACK.md)** - Pack system design
-- **[Release Plan V2](./v2/RELEASE-PLAN-V2.md)** - V2 release planning
-- **[VOC V2](./v2/VOC-V2.md)** - Voice of customer analysis
-- **[DFLSS Project Charter V2](./v2/DFLSS-PROJECT-CHARTER-V2.md)** - Project charter
-- **[DFLSS Workshop V2](./v2/DFLSS-WORKSHOP-V2.md)** - Workshop documentation
-- **[File Sketches V2](./v2/FILE-SKETCHES-V2.md)** - File structure planning
-- **[Prompting System](./v2/PROMPTING-SYSTEM.md)** - AI prompting framework
+### Getting Started (5-10 minutes)
 
-### 🏢 UnJS Integration
-- **[UnJS Overview](./unjs/)** - UnJS ecosystem integration
-- **[Citty CLI Integration](./unjs/citty-cli-integration.md)** - CLI framework integration
-- **[Hookable Plugins](./unjs/hookable-plugins.md)** - Plugin system integration
-- **[UnStorage Drivers](./unjs/unstorage-drivers.md)** - Storage driver integration
+- **[Quick Start Guide](./quickstart.md)** - Get up and running in 5-10 minutes
+- **[Installation](#installation)** - Install and configure GitVan
+- **[Your First Job](#your-first-job)** - Create and run your first automation
 
-### 📋 Research & Development
-- **[Research Overview](./research/)** - Research and development documentation
-- **[Git Workflow Implementation Plan](./research/git-workflow-implementation-plan.md)** - Implementation planning
-- **[Git Workflow Patterns](./research/git-workflow-patterns.md)** - Workflow pattern research
-- **[Git Workflow Quick Reference](./research/git-workflow-quick-reference.md)** - Quick workflow reference
+### Core Documentation
 
-### 🔌 Plugins & Extensions
-- **[Plugins Overview](./plugins/README.md)** - Plugin system and development
-- **[Hooks Reference](./plugins/hooks-reference.md)** - Plugin hooks and lifecycle
-- **[Plugin Examples](./plugins/examples.md)** - Example plugins and patterns
+- **[Complete API Reference](./api/complete-reference.md)** - All composables, methods, and types
+- **[CLI Reference](./cli/complete-reference.md)** - All 22 commands with examples
+- **[Configuration Guide](./configuration.md)** - Complete configuration options
+- **[Error Codes & Troubleshooting](./errors-troubleshooting.md)** - Error reference and solutions
 
-### 🤖 AI Integration
-- **[AI Overview](./ai/README.md)** - AI integration and capabilities
-- **[Chat Workflows](./ai/chat-workflows.md)** - AI-powered chat workflows
-- **[AI Providers](./ai/providers.md)** - AI provider configuration
+### Advanced Topics
 
-### 🔍 Reference Documentation
-- **[Commands Reference](./reference/commands.md)** - Complete command reference
-- **[Configuration Reference](./reference/configuration.md)** - Configuration options and schemas
+- **[Advanced Patterns](./advanced/patterns.md)** - Advanced workflows and techniques
+- **[Architecture Deep Dive](./advanced/architecture.md)** - System internals and design
 
-### 🧠 Validation & Autonomic Intelligence
-- **[🚀 ESSENTIALS](./validation/ESSENTIALS.md)** - **START HERE!** (5-min read, 80/20 guide)
-- **[Quick Reference](./validation/QUICK_REFERENCE.md)** - Command cheat sheet
-- **[Validation Overview](./validation/README.md)** - Full documentation index
-- **[Hive Mind Usage](./validation/HIVE_MIND_USAGE_GUIDE.md)** - Multi-agent swarms (54 agent types)
-- **[Autonomic Patterns](./validation/AUTONOMIC_PATTERNS_GUIDE.md)** - Self-healing code (5 patterns)
-- **[Synthesis Report](./validation/HIVE_QUEEN_SYNTHESIS_REPORT.md)** - 142-issue analysis
-- **[Security Audit](./validation/SECURITY_AUDIT_REPORT.md)** - 7 CRITICAL CVEs
-- **[Production Tests](./validation/PRODUCTION_READINESS_REPORT.md)** - 21 validation tests
+### Migration & Upgrades
 
-### 🧪 Testing
-- **[Testing Overview](./testing/)** - Testing strategies and tools
-- **[Documentation Testing Plan](./testing/documentation-testing-plan.md)** - Testing documentation
-- **[Documentation Testing Report](./testing/documentation-testing-report.md)** - Testing results
-
-### ⚡ Performance
-- **[Performance Overview](./performance/README.md)** - Performance optimization guide
-- **[Performance Tuning](./performance/tuning.md)** - Advanced performance optimization
-- **[Performance Analysis Report](./performance-analysis-report.md)** - Detailed performance analysis
-
-### 🔒 Security & Compliance
-- **[Security Overview](./security/README.md)** - Security best practices
-- **[Best Practices](./security/best-practices.md)** - Security guidelines
-- **[Compliance](./security/compliance.md)** - Compliance and auditing
-
-### 📦 Pack System
-- **[Pack Overview](./pack/README.md)** - Pack system introduction
-- **[Pack Dependency System](./pack-dependency-system.md)** - Managing pack dependencies
-
-### 🛠️ CLI Documentation
-- **[CLI Overview](./cli/README.md)** - Command-line interface guide
-- **[CLI Examples](./cli/examples.md)** - Common CLI usage patterns
-
-### 🔄 Migration & Upgrades
-- **[Migration Overview](./migration/)** - Migration guides and strategies
-- **[From GitHub Actions](./migration/from-github-actions.md)** - Migrating from GitHub Actions
-- **[From Husky](./migration/from-husky.md)** - Migrating from Husky hooks
-- **[V2 Upgrade Guide](./migration/v2-upgrade.md)** - Upgrading to GitVan v2
-
-### 📚 Guides & Tutorials
-- **[Events System Guide](./guides/events-system.md)** - Deep dive into event-driven automation
-- **[Pack Authoring Guide](./guides/pack-authoring.md)** - Creating and publishing packs
-- **[Tutorials Index](./tutorials/index.md)** - Step-by-step tutorials
-- **[Troubleshooting FAQ](./tutorials/troubleshooting/faq.md)** - Frequently asked questions
-- **[Troubleshooting Guide](./tutorials/troubleshooting/README.md)** - Comprehensive troubleshooting guide
-
-### 🎮 Playground & Examples
-- **[Playground Overview](./playground/README.md)** - Interactive examples and demos
-- **[Playground Index](./playground/index.md)** - Playground navigation and structure
-- **[Complete Playground](./playground/COMPLETE.md)** - All playground examples
-- **[Job Examples](./playground/job-examples.md)** - Real-world job implementations
-- **[Architecture Guide](./playground/architecture-guide.md)** - Playground architecture
-- **[Testing Guide](./playground/testing-guide.md)** - Testing playground examples
-- **[Troubleshooting Guide](./playground/troubleshooting-guide.md)** - Common issues and solutions
-
-### 📋 Examples
-- **[Composables Examples](./examples/composables-examples.md)** - Comprehensive composables usage examples
-
-### 📖 Cookbook & Examples
-- **[Cookbook Overview](./cookbook/README.md)** - Recipe collection and patterns
-- **[Complete Cookbook](./cookbook/COMPLETE.md)** - All recipes in one place
-
-#### Specialized Recipes
-- **[AI Recipes](./cookbook/ai-recipes.md)** - AI-powered automation patterns
-- **[Automation Recipes](./cookbook/automation-recipes.md)** - General automation patterns
-- **[Git Workflows](./cookbook/git-workflows.md)** - Git-specific workflow patterns
-
-#### Documentation Recipes
-- **[Changelog Generation](./cookbook/documentation/changelog-generation.md)** - Automated changelog creation
-
-#### CI/CD Recipes
-- **[Build Automation](./cookbook/cicd/build-automation.md)** - Automated build processes
-
-#### Foundation Recipes
-- **[Template System](./cookbook/foundation/template-system.md)** - Advanced templating techniques
-- **[Error Handling](./cookbook/foundation/error-handling.md)** - Robust error handling patterns
-- **[Configuration Management](./cookbook/foundation/configuration-management.md)** - Managing job configuration
-- **[Basic Job Setup](./cookbook/foundation/basic-job-setup.md)** - Your first GitVan job
-
-### 🎯 Composables Documentation
-- **[Pack CLI Quick Reference](./composables/pack-cli-quick-reference.md)** - CLI commands reference
-- **[Pack CLI Integration](./composables/pack-cli-integration.md)** - CLI integration patterns
-- **[Migration Guide](./composables/migration-guide.md)** - Migrating from v1 to v2
-- **[Quick Reference](./composables/quick-reference.md)** - Quick composables lookup
-- **[Pack API](./composables/pack-api.md)** - Pack management composable
-- **[Git API](./composables/git-api.md)** - Git operations composable
-- **[Composables Index](./composables/index.md)** - Complete composables reference
-- **[Composables Overview](./composables/README.md)** - Introduction to composables
-
-### 🔧 API Reference
-- **[Git Modular API](./api/git-modular.md)** - Modular Git composable reference
-- **[Git API (80/20)](./api/git-8020.md)** - Essential Git operations
-- **[Events API](./api/events.md)** - Event system and predicates
-- **[Jobs API](./api/jobs.md)** - Job definition and execution API
-- **[Composables Quick Reference](./api/composables-quick-reference.md)** - Quick lookup for common operations
-- **[Composables API](./api/composables.md)** - Complete composables reference
-
-### 🏗️ Architecture & Design
-- **[ADR-001: Git as Runtime](./architecture/adr-001-git-as-runtime.md)** - Architectural decision record
-- **[Technology Evaluation](./architecture/technology-evaluation.md)** - Technology choices and rationale
-- **[System Overview](./architecture/system-overview.md)** - High-level system architecture
-- **[Patterns](./architecture/patterns.md)** - Design patterns and best practices
-- **[Components](./architecture/components.md)** - Core system components
-- **[GitVan UnJS Architecture](./architecture/gitvan-unjs-architecture.md)** - UnJS ecosystem integration details
-- **[Architecture Overview](./architecture/README.md)** - System design and principles
-
-#### Architecture Diagrams
-- **[C4 Context Diagram](./architecture/c4-context.puml)** - System context view
-- **[C4 Container Diagram](./architecture/c4-container.puml)** - Container architecture
-- **[C4 Component Diagram](./architecture/c4-component.puml)** - Component relationships
-- **[C4 Code Diagram](./architecture/c4-code.puml)** - Code structure
-
-### 🚀 Getting Started
-- **[Understanding Events](./getting-started.md#understanding-events)** - Event-driven automation basics
-- **[Your First Job](./getting-started.md#your-first-job)** - Create your first automation
-- **[Installation & Prerequisites](./getting-started.md#installation)** - System requirements and setup
-- **[Getting Started Guide](./getting-started.md)** - Complete setup and first automation
-
-### 📈 Releases & Changelog
-- **[V2.0.0 Release](./releases/v2.0.0.md)** - V2.0.0 release notes
-- **[Changelog](./CHANGELOG.md)** - Complete project changelog
-
-## 🎯 Quick Navigation
-
-### By Experience Level
-- **Advanced**: [API Reference](./api/composables.md) → [Security Best Practices](./security/best-practices.md) → [Performance Tuning](./performance/tuning.md)
-- **Intermediate**: [Architecture Overview](./architecture/README.md) → [Cookbook Recipes](./cookbook/README.md) → [Playground Examples](./playground/README.md)
-- **Beginner**: [Getting Started](./getting-started.md) → [Basic Job Setup](./cookbook/foundation/basic-job-setup.md) → [Composables Quick Reference](./api/composables-quick-reference.md)
-
-### By Use Case
-- **Validation & Quality**: [Validation Overview](./validation/README.md) → [Hive Mind Usage](./validation/HIVE_MIND_USAGE_GUIDE.md) → [Autonomic Patterns](./validation/AUTONOMIC_PATTERNS_GUIDE.md)
-- **Pack Development**: [Pack Authoring Guide](./guides/pack-authoring.md) → [Pack API](./composables/pack-api.md) → [Pack CLI Integration](./composables/pack-cli-integration.md)
-- **AI Integration**: [AI Overview](./ai/README.md) → [Chat Workflows](./ai/chat-workflows.md) → [AI Recipes](./cookbook/ai-recipes.md)
-- **Documentation**: [Changelog Generation](./cookbook/documentation/changelog-generation.md) → [Template System](./cookbook/foundation/template-system.md)
-- **CI/CD**: [Build Automation](./cookbook/cicd/build-automation.md) → [GitHub Integration](./github-integration.md) → [Migration from GitHub Actions](./migration/from-github-actions.md)
-- **Event Automation**: [Events System Guide](./guides/events-system.md) → [Events API](./api/events.md) → [Job Examples](./playground/job-examples.md)
-
-### By Component
-- **CLI**: [CLI Overview](./cli/README.md) → [Commands Reference](./reference/commands.md)
-- **Composables**: [Composables API](./api/composables.md) → [Git API](./composables/git-api.md) → [UseGit Reference](./useGit.md)
-- **Events**: [Events API](./api/events.md) → [Events System Guide](./guides/events-system.md)
-- **Jobs**: [Jobs API](./api/jobs.md) → [Job Examples](./playground/job-examples.md) → [Job Development Guide](./guides/job-development.md)
-
-## 📝 Contributing to Documentation
-
-We welcome contributions to improve GitVan's documentation! Please see our [Contributing Guide](../CONTRIBUTING.md) for details on how to:
-
-- Report documentation issues
-- Suggest improvements
-- Submit documentation updates
-- Add new examples or recipes
-
-## 🔗 External Resources
-
-- **[Main Repository](https://github.com/sac/gitvan)** - Source code and issues
-- **[NPM Package](https://www.npmjs.com/package/gitvan)** - Package installation
-- **[UnJS Ecosystem](https://unjs.io/)** - Underlying technology stack
-- **[Ollama](https://ollama.ai/)** - Local AI inference (optional)
+- **[v3 to v4 Migration Guide](./migration/v3-to-v4.md)** - Upgrade to v4
+- **[Breaking Changes](#breaking-changes)** - What changed and why
 
 ---
 
-**Ready to automate?** Jump into the [Cookbook](./cookbook/README.md) for practical examples and recipes.
+## Documentation Structure
 
-**Need help?** Start with the [Getting Started Guide](./getting-started.md) or check out our [Troubleshooting FAQ](./tutorials/troubleshooting/faq.md).
+```
+docs/
+├── README.md                          # This file
+├── quickstart.md                      # 5-10 minute tutorial
+├── configuration.md                   # Configuration guide
+├── errors-troubleshooting.md          # Error reference
+├── api/
+│   ├── complete-reference.md          # Complete API docs
+│   ├── composables.md                 # Composables overview
+│   └── composables-quick-reference.md # Quick reference
+├── cli/
+│   ├── complete-reference.md          # All CLI commands
+│   ├── README.md                      # CLI overview
+│   └── examples.md                    # CLI examples
+├── advanced/
+│   ├── patterns.md                    # Advanced patterns
+│   └── architecture.md                # Architecture deep dive
+└── migration/
+    └── v3-to-v4.md                    # Migration guide
+```
+
+---
+
+## By Topic
+
+### Jobs
+
+- [Creating Jobs](./quickstart.md#your-first-job)
+- [Job API Reference](./api/complete-reference.md#usejob)
+- [Job Patterns](./advanced/patterns.md#custom-job-types)
+- [CLI: Job Commands](./cli/complete-reference.md#job-management)
+
+### Events
+
+- [Event-Driven Automation](./quickstart.md#event-driven-automation)
+- [Event API Reference](./api/complete-reference.md#useevent)
+- [Event Simulation](./cli/complete-reference.md#event-system)
+
+### Workflows
+
+- [Workflow Composition](./advanced/patterns.md#workflow-composition)
+- [DAG Workflows](./advanced/architecture.md#workflow-engine)
+- [CLI: Workflow Commands](./cli/complete-reference.md#workflow-operations)
+
+### Templates
+
+- [Using Templates](./quickstart.md#using-templates)
+- [Template API Reference](./api/complete-reference.md#usetemplate)
+- [Template Patterns](./advanced/patterns.md#template-inheritance)
+
+### Scheduling
+
+- [Cron Scheduling](./quickstart.md#scheduled-automation)
+- [Schedule API Reference](./api/complete-reference.md#useschedule)
+- [CLI: Cron Commands](./cli/complete-reference.md#cron-scheduling)
+
+### Audit & Compliance
+
+- [Audit Receipts](./quickstart.md#working-with-receipts)
+- [Receipt API Reference](./api/complete-reference.md#usereceipt)
+- [CLI: Audit Commands](./cli/complete-reference.md#audit--compliance)
+
+---
+
+## By Role
+
+### For Developers
+
+Start here:
+1. [Quick Start](./quickstart.md)
+2. [API Reference](./api/complete-reference.md)
+3. [Advanced Patterns](./advanced/patterns.md)
+
+### For DevOps Engineers
+
+Start here:
+1. [Quick Start](./quickstart.md)
+2. [Configuration Guide](./configuration.md)
+3. [CLI Reference](./cli/complete-reference.md)
+
+### For Architects
+
+Start here:
+1. [Architecture Deep Dive](./advanced/architecture.md)
+2. [Advanced Patterns](./advanced/patterns.md)
+3. [API Reference](./api/complete-reference.md)
+
+### For New Users
+
+Start here:
+1. **[Quick Start](./quickstart.md)** - Complete this first!
+2. [Configuration Guide](./configuration.md)
+3. [CLI Reference](./cli/complete-reference.md)
+
+---
+
+## Common Tasks
+
+### Setup
+
+- [Install GitVan](./quickstart.md#installation)
+- [Create Configuration](./configuration.md#configuration-file)
+- [Initialize First Job](./quickstart.md#your-first-job)
+
+### Development
+
+- [Create a Job](./quickstart.md#your-first-job)
+- [Use Templates](./quickstart.md#using-templates)
+- [Handle Errors](./advanced/patterns.md#error-recovery)
+- [Test Jobs](./api/complete-reference.md#best-practices)
+
+### Deployment
+
+- [Configure for Production](./configuration.md#production-configuration)
+- [Start Daemon](./cli/complete-reference.md#daemon-control)
+- [Monitor Execution](./cli/complete-reference.md#daemon-logs)
+- [Build Audit Reports](./cli/complete-reference.md#audit-build)
+
+### Troubleshooting
+
+- [Error Codes](./errors-troubleshooting.md#error-code-reference)
+- [Common Errors](./errors-troubleshooting.md#common-errors)
+- [Debug Tools](./errors-troubleshooting.md#debugging-tools)
+- [Getting Help](./errors-troubleshooting.md#getting-help)
+
+---
+
+## API Documentation
+
+### Composables
+
+| Composable | Purpose | Documentation |
+|------------|---------|---------------|
+| `useGit()` | Git operations | [API](./api/complete-reference.md#usegit) |
+| `useJob()` | Job management | [API](./api/complete-reference.md#usejob) |
+| `useEvent()` | Event system | [API](./api/complete-reference.md#useevent) |
+| `useSchedule()` | Cron scheduling | [API](./api/complete-reference.md#useschedule) |
+| `useTemplate()` | Template rendering | [API](./api/complete-reference.md#usetemplate) |
+| `useReceipt()` | Audit trails | [API](./api/complete-reference.md#usereceipt) |
+| `useLock()` | Distributed locking | [API](./api/complete-reference.md#uselock) |
+| `usePack()` | Pack management | [API](./api/complete-reference.md#usepack) |
+| `useWorktree()` | Worktree operations | [API](./api/complete-reference.md#useworktree) |
+
+### CLI Commands
+
+| Command | Purpose | Documentation |
+|---------|---------|---------------|
+| `gitvan job` | Job management | [CLI](./cli/complete-reference.md#job-management) |
+| `gitvan workflow` | Workflow operations | [CLI](./cli/complete-reference.md#workflow-operations) |
+| `gitvan event` | Event simulation | [CLI](./cli/complete-reference.md#event-system) |
+| `gitvan cron` | Cron scheduling | [CLI](./cli/complete-reference.md#cron-scheduling) |
+| `gitvan daemon` | Daemon control | [CLI](./cli/complete-reference.md#daemon-control) |
+| `gitvan audit` | Audit & compliance | [CLI](./cli/complete-reference.md#audit--compliance) |
+
+---
+
+## Key Concepts
+
+### Context Management
+
+**Critical:** All composables must be used within `withGitVan()` context.
+
+```javascript
+import { withGitVan, useGit } from 'gitvan';
+
+await withGitVan({ cwd: process.cwd() }, async () => {
+  const git = useGit();
+  await git.branch(); // ✓ Works
+});
+```
+
+[Learn more](./api/complete-reference.md#withgitvan)
+
+### Git-Native Storage
+
+GitVan stores everything in Git - no external databases.
+
+- Git refs for locks and state
+- Git notes for audit trails
+- Git objects for receipts
+- Git worktrees for parallel execution
+
+[Learn more](./advanced/architecture.md#git-native-storage)
+
+### Event-Driven Automation
+
+Jobs can trigger automatically on Git events:
+
+```
+jobs/
+  events/
+    merge-to/
+      main.mjs      # Runs when merging to main
+    commit/
+      *.mjs         # Runs on commits
+```
+
+[Learn more](./quickstart.md#event-driven-automation)
+
+---
+
+## Examples
+
+### Quick Examples
+
+**Run a job:**
+```bash
+gitvan job run --name deploy
+```
+
+**Schedule a job:**
+```javascript
+// jobs/cron/backup.mjs
+export default {
+  cron: "0 2 * * *",  // Daily at 2 AM
+  async run() { /* ... */ }
+};
+```
+
+**Create audit report:**
+```bash
+gitvan audit build --out report.json
+```
+
+### Complete Examples
+
+See [Quick Start Guide](./quickstart.md) for step-by-step tutorials.
+
+---
+
+## Version Information
+
+| Version | Status | Documentation |
+|---------|--------|---------------|
+| v3.0.x | **Current** | This documentation |
+| v4.0.x | Beta | [Migration Guide](./migration/v3-to-v4.md) |
+| v2.x | End of Life | Archive |
+
+---
+
+## Contributing
+
+Documentation contributions are welcome! See [CONTRIBUTING.md](../CONTRIBUTING.md).
+
+---
+
+## Getting Help
+
+- **Documentation Issues:** [Report here](https://github.com/gitvan/gitvan/issues/new?labels=documentation)
+- **Questions:** [GitHub Discussions](https://github.com/gitvan/gitvan/discussions)
+- **Chat:** [Discord](https://discord.gg/gitvan)
+- **Email:** support@gitvan.dev
+
+---
+
+## Documentation Updates
+
+This documentation is updated with each release. Last updated: January 6, 2026 for v3.0.0.
+
+**Next Update:** v3.1.0 (February 2026)

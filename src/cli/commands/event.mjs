@@ -54,10 +54,10 @@ const simulateSubcommand = defineCommand({
       const jobs = await scanJobs({ cwd: config.rootDir });
       const eventJobs = jobs.filter((job) => job.on);
 
-      console.log(`🎭 Simulating ${args.type} event...`);
-      console.log(`📁 Files: ${args.files || "all"}`);
-      console.log(`🌳 Branch: ${args.branch}`);
-      console.log();
+      logger.info(`🎭 Simulating ${args.type} event...`);
+      logger.info(`📁 Files: ${args.files || "all"}`);
+      logger.info(`🌳 Branch: ${args.branch}`);
+      logger.info();
 
       const eventData = {
         type: args.type,
@@ -71,25 +71,25 @@ const simulateSubcommand = defineCommand({
       for (const job of eventJobs) {
         if (matches(job.on, eventData)) {
           triggeredJobs.push(job);
-          console.log(`✅ Job would trigger: ${job.name}`);
+          logger.info(`✅ Job would trigger: ${job.name}`);
           if (args.verbose) {
-            console.log(
+            logger.info(
               `   📝 Description: ${job.description || "No description"}`
             );
-            console.log(`   🎯 Event: ${JSON.stringify(job.on)}`);
+            logger.info(`   🎯 Event: ${JSON.stringify(job.on)}`);
           }
         }
       }
 
-      console.log();
-      console.log(`📊 Summary:`);
-      console.log(`   Total jobs: ${eventJobs.length}`);
-      console.log(`   Triggered jobs: ${triggeredJobs.length}`);
-      console.log(`   Dry run: ${args["dry-run"] ? "Yes" : "No"}`);
+      logger.info();
+      logger.info(`📊 Summary:`);
+      logger.info(`   Total jobs: ${eventJobs.length}`);
+      logger.info(`   Triggered jobs: ${triggeredJobs.length}`);
+      logger.info(`   Dry run: ${args["dry-run"] ? "Yes" : "No"}`);
 
       if (!args["dry-run"] && triggeredJobs.length > 0) {
-        console.log();
-        console.log("🚀 Executing triggered jobs...");
+        logger.info();
+        logger.info("🚀 Executing triggered jobs...");
 
         // Execute triggered jobs
         let successCount = 0;
@@ -98,38 +98,38 @@ const simulateSubcommand = defineCommand({
         for (const job of triggeredJobs) {
           try {
             const startTime = Date.now();
-            console.log();
-            console.log(`📋 Executing: ${job.name}`);
+            logger.info();
+            logger.info(`📋 Executing: ${job.name}`);
 
             // Simulate job execution with basic steps
             const steps = job.steps || [];
             for (let i = 0; i < Math.min(steps.length || 2, 3); i++) {
               const step = steps[i] || `Step ${i + 1}`;
-              console.log(`   ⚙️  ${step}...`);
+              logger.info(`   ⚙️  ${step}...`);
               // Simulate async work
               await new Promise((resolve) => setTimeout(resolve, 100));
-              console.log(`   ✅ Completed`);
+              logger.info(`   ✅ Completed`);
             }
 
             const duration = Date.now() - startTime;
-            console.log(`✅ Job completed in ${duration}ms`);
+            logger.info(`✅ Job completed in ${duration}ms`);
             successCount++;
           } catch (error) {
-            console.log(`❌ Job failed: ${error.message}`);
+            logger.info(`❌ Job failed: ${error.message}`);
             failureCount++;
           }
         }
 
-        console.log();
-        console.log(`📊 Execution Summary:`);
-        console.log(`   ✅ Successful: ${successCount}`);
-        console.log(`   ❌ Failed: ${failureCount}`);
-        console.log(`   ⏱️  Total: ${successCount + failureCount}`);
+        logger.info();
+        logger.info(`📊 Execution Summary:`);
+        logger.info(`   ✅ Successful: ${successCount}`);
+        logger.info(`   ❌ Failed: ${failureCount}`);
+        logger.info(`   ⏱️  Total: ${successCount + failureCount}`);
       }
     } catch (error) {
       logger.error("Failed to simulate event:", error);
-      console.error("❌ Failed to simulate event:", error.message);
-      process.exit(1);
+      logger.error("❌ Failed to simulate event:", error.message);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -164,30 +164,30 @@ const testSubcommand = defineCommand({
       const predicate = JSON.parse(args.predicate);
       const sampleData = JSON.parse(args["sample-data"]);
 
-      console.log("🧪 Testing event predicate...");
-      console.log(`🎯 Predicate: ${JSON.stringify(predicate)}`);
-      console.log(`📊 Sample Data: ${JSON.stringify(sampleData)}`);
-      console.log();
+      logger.info("🧪 Testing event predicate...");
+      logger.info(`🎯 Predicate: ${JSON.stringify(predicate)}`);
+      logger.info(`📊 Sample Data: ${JSON.stringify(sampleData)}`);
+      logger.info();
 
       const result = matches(predicate, sampleData);
 
       if (result) {
-        console.log("✅ Predicate matches sample data");
+        logger.info("✅ Predicate matches sample data");
       } else {
-        console.log("❌ Predicate does not match sample data");
+        logger.info("❌ Predicate does not match sample data");
       }
 
       if (args.verbose) {
-        console.log();
-        console.log("🔍 Detailed Analysis:");
-        console.log(`   Predicate Type: ${typeof predicate}`);
-        console.log(`   Sample Data Type: ${typeof sampleData}`);
-        console.log(`   Match Result: ${result}`);
+        logger.info();
+        logger.info("🔍 Detailed Analysis:");
+        logger.info(`   Predicate Type: ${typeof predicate}`);
+        logger.info(`   Sample Data Type: ${typeof sampleData}`);
+        logger.info(`   Match Result: ${result}`);
       }
     } catch (error) {
       logger.error("Failed to test predicate:", error);
-      console.error("❌ Failed to test predicate:", error.message);
-      process.exit(1);
+      logger.error("❌ Failed to test predicate:", error.message);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -218,11 +218,11 @@ const listSubcommand = defineCommand({
       const jobs = await scanJobs({ cwd: config.rootDir });
       const eventJobs = jobs.filter((job) => job.on);
 
-      console.log("📋 Event-Triggered Jobs");
-      console.log("=".repeat(40));
+      logger.info("📋 Event-Triggered Jobs");
+      logger.info("=".repeat(40));
 
       if (eventJobs.length === 0) {
-        console.log("No event-triggered jobs found");
+        logger.info("No event-triggered jobs found");
         return;
       }
 
@@ -235,29 +235,29 @@ const listSubcommand = defineCommand({
         : eventJobs;
 
       filteredJobs.forEach((job, index) => {
-        console.log(`${index + 1}. ${job.name}`);
-        console.log(
+        logger.info(`${index + 1}. ${job.name}`);
+        logger.info(
           `   📝 Description: ${job.description || "No description"}`
         );
 
         if (typeof job.on === "string") {
-          console.log(`   🎯 Event: ${job.on}`);
+          logger.info(`   🎯 Event: ${job.on}`);
         } else {
-          console.log(`   🎯 Event: ${JSON.stringify(job.on)}`);
+          logger.info(`   🎯 Event: ${JSON.stringify(job.on)}`);
         }
 
         if (args.verbose) {
-          console.log(`   📁 File: ${job.file}`);
-          console.log(`   ⏰ Modified: ${job.modified}`);
+          logger.info(`   📁 File: ${job.file}`);
+          logger.info(`   ⏰ Modified: ${job.modified}`);
         }
-        console.log();
+        logger.info();
       });
 
-      console.log(`📊 Total: ${filteredJobs.length} jobs`);
+      logger.info(`📊 Total: ${filteredJobs.length} jobs`);
     } catch (error) {
       logger.error("Failed to list event jobs:", error);
-      console.error("❌ Failed to list event jobs:", error.message);
-      process.exit(1);
+      logger.error("❌ Failed to list event jobs:", error.message);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -303,7 +303,7 @@ const triggerSubcommand = defineCommand({
       const jobs = await scanJobs({ cwd: config.rootDir });
       const eventJobs = jobs.filter((job) => job.on);
 
-      console.log(`🚀 Triggering ${args.type} event...`);
+      logger.info(`🚀 Triggering ${args.type} event...`);
 
       const eventData = {
         type: args.type,
@@ -316,27 +316,27 @@ const triggerSubcommand = defineCommand({
         matches(job.on, eventData)
       );
 
-      console.log(`📊 Found ${triggeredJobs.length} jobs that would trigger`);
+      logger.info(`📊 Found ${triggeredJobs.length} jobs that would trigger`);
 
       if (triggeredJobs.length > 0) {
         triggeredJobs.forEach((job) => {
-          console.log(`   ✅ ${job.name}`);
+          logger.info(`   ✅ ${job.name}`);
         });
       }
 
       if (args["execute-jobs"] && triggeredJobs.length > 0) {
-        console.log();
-        console.log("🚀 Executing triggered jobs...");
+        logger.info();
+        logger.info("🚀 Executing triggered jobs...");
         // TODO: Implement actual job execution
-        console.log("⚠️  Job execution not implemented in this demo");
+        logger.info("⚠️  Job execution not implemented in this demo");
       } else if (triggeredJobs.length > 0) {
-        console.log();
-        console.log("💡 Use --execute-jobs to run the triggered jobs");
+        logger.info();
+        logger.info("💡 Use --execute-jobs to run the triggered jobs");
       }
     } catch (error) {
       logger.error("Failed to trigger event:", error);
-      console.error("❌ Failed to trigger event:", error.message);
-      process.exit(1);
+      logger.error("❌ Failed to trigger event:", error.message);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });

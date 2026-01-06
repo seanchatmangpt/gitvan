@@ -49,16 +49,16 @@ async function simulateEvent(config, args) {
     const eventJobs = jobs.filter((job) => job.on);
 
     if (eventJobs.length === 0) {
-      console.log("No event jobs found");
+      logger.info("No event jobs found");
       return;
     }
 
     // Parse event metadata from args
     const meta = parseEventMeta(args);
 
-    console.log(`Simulating event:`);
-    console.log(JSON.stringify(meta, null, 2));
-    console.log();
+    logger.info(`Simulating event:`);
+    logger.info(JSON.stringify(meta, null, 2));
+    logger.info();
 
     const matchingJobs = [];
 
@@ -69,14 +69,14 @@ async function simulateEvent(config, args) {
     }
 
     if (matchingJobs.length === 0) {
-      console.log("No jobs would trigger for this event");
+      logger.info("No jobs would trigger for this event");
       return;
     }
 
-    console.log(`Jobs that would trigger (${matchingJobs.length}):`);
+    logger.info(`Jobs that would trigger (${matchingJobs.length}):`);
     for (const job of matchingJobs) {
-      console.log(`  - ${job.id || job.filename}`);
-      console.log(`    Predicate: ${JSON.stringify(job.on, null, 2)}`);
+      logger.info(`  - ${job.id || job.filename}`);
+      logger.info(`    Predicate: ${JSON.stringify(job.on, null, 2)}`);
     }
   } catch (error) {
     logger.error("Failed to simulate event:", error.message);
@@ -99,16 +99,16 @@ async function testPredicate(config, args) {
     const predicate = JSON.parse(args.predicate);
     const meta = parseEventMeta(args);
 
-    console.log("Testing predicate:");
-    console.log(JSON.stringify(predicate, null, 2));
-    console.log();
-    console.log("Against event metadata:");
-    console.log(JSON.stringify(meta, null, 2));
-    console.log();
+    logger.info("Testing predicate:");
+    logger.info(JSON.stringify(predicate, null, 2));
+    logger.info();
+    logger.info("Against event metadata:");
+    logger.info(JSON.stringify(meta, null, 2));
+    logger.info();
 
     const result = matches(predicate, meta);
 
-    console.log(`Result: ${result ? "✅ MATCH" : "❌ NO MATCH"}`);
+    logger.info(`Result: ${result ? "✅ MATCH" : "❌ NO MATCH"}`);
   } catch (error) {
     logger.error("Failed to test predicate:", error.message);
     throw error;
@@ -126,21 +126,21 @@ async function listEventJobs(config) {
     const eventJobs = jobs.filter((job) => job.on);
 
     if (eventJobs.length === 0) {
-      console.log("No event jobs found");
+      logger.info("No event jobs found");
       return;
     }
 
-    console.log(`Found ${eventJobs.length} event job(s):`);
-    console.log();
+    logger.info(`Found ${eventJobs.length} event job(s):`);
+    logger.info();
 
     for (const job of eventJobs) {
-      console.log(`🎯 ${job.id || job.filename}`);
-      console.log(`   File: ${job.filePath}`);
+      logger.info(`🎯 ${job.id || job.filename}`);
+      logger.info(`   File: ${job.filePath}`);
       if (job.meta?.desc) {
-        console.log(`   Desc: ${job.meta.desc}`);
+        logger.info(`   Desc: ${job.meta.desc}`);
       }
-      console.log(`   Predicate: ${JSON.stringify(job.on, null, 2)}`);
-      console.log();
+      logger.info(`   Predicate: ${JSON.stringify(job.on, null, 2)}`);
+      logger.info();
     }
   } catch (error) {
     logger.error("Failed to list event jobs:", error.message);
@@ -156,8 +156,8 @@ async function listEventJobs(config) {
  */
 async function triggerEvent(config, args) {
   try {
-    console.log("Event triggering not implemented in this version");
-    console.log("Use 'simulate' command to test event predicates");
+    logger.info("Event triggering not implemented in this version");
+    logger.info("Use 'simulate' command to test event predicates");
   } catch (error) {
     logger.error("Failed to trigger event:", error.message);
     throw error;

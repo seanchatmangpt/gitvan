@@ -13,6 +13,8 @@ import { useGit } from "../composables/git.mjs";
 import { useUnrouting } from "../composables/unrouting.mjs";
 import { HookOrchestrator } from "../hooks/HookOrchestrator.mjs";
 import { withGitVan } from "./context.mjs";
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("core:hookable");
 
 /**
  * GitVan Hookable System - Knowledge Hook Signal Layer
@@ -70,7 +72,7 @@ export class GitVanHookable {
    * Two-layer architecture: Git signal → Knowledge Hook intelligence
    */
   async processGitSignal(signalType, context) {
-    console.log(`🔍 GitVan: Processing Git signal '${signalType}' for Knowledge Hook evaluation`);
+    logger.info(`🔍 GitVan: Processing Git signal '${signalType}' for Knowledge Hook evaluation`);
 
     return await withGitVan({ cwd: context.cwd }, async () => {
       const git = useGit();
@@ -88,13 +90,13 @@ export class GitVanHookable {
         });
       }
 
-      console.log(`   📡 Git Signal: ${signalType}`);
-      console.log(`   📁 Changed files: ${gitContext.changedFiles.length}`);
-      console.log(`   🎯 Branch: ${gitContext.branch}`);
-      console.log(`   📝 Commit: ${gitContext.commitSha?.substring(0, 8) || 'N/A'}`);
+      logger.info(`   📡 Git Signal: ${signalType}`);
+      logger.info(`   📁 Changed files: ${gitContext.changedFiles.length}`);
+      logger.info(`   🎯 Branch: ${gitContext.branch}`);
+      logger.info(`   📝 Commit: ${gitContext.commitSha?.substring(0, 8) || 'N/A'}`);
 
       if (gitContext.changedFiles.length === 0) {
-        console.log("   ✅ No changes to process");
+        logger.info("   ✅ No changes to process");
         return { processed: 0, changes: [], knowledgeHooksTriggered: 0 };
       }
 
@@ -108,9 +110,9 @@ export class GitVanHookable {
         verbose: true,
       });
 
-      console.log(`   🧠 Knowledge Hooks evaluated: ${evaluationResult.hooksEvaluated}`);
-      console.log(`   ⚡ Knowledge Hooks triggered: ${evaluationResult.hooksTriggered}`);
-      console.log(`   🔄 Workflows executed: ${evaluationResult.workflowsExecuted}`);
+      logger.info(`   🧠 Knowledge Hooks evaluated: ${evaluationResult.hooksEvaluated}`);
+      logger.info(`   ⚡ Knowledge Hooks triggered: ${evaluationResult.hooksTriggered}`);
+      logger.info(`   🔄 Workflows executed: ${evaluationResult.workflowsExecuted}`);
 
       return {
         processed: gitContext.changedFiles.length,
@@ -184,10 +186,10 @@ export class GitVanHookable {
           break;
 
         default:
-          console.warn(`   ⚠️ Unknown signal type: ${signalType}`);
+          logger.warn(`   ⚠️ Unknown signal type: ${signalType}`);
       }
     } catch (error) {
-      console.warn(`   ⚠️ Error extracting Git context for ${signalType}:`, error.message);
+      logger.warn(`   ⚠️ Error extracting Git context for ${signalType}:`, error.message);
     }
 
     return gitContext;
@@ -215,7 +217,7 @@ export class GitVanHookable {
       const result = await this.hooks.callHook(hookName, context);
       return result;
     } catch (error) {
-      console.error(`❌ GitVan Hookable Error in ${hookName}:`, error.message);
+      logger.error(`❌ GitVan Hookable Error in ${hookName}:`, error.message);
       throw error;
     }
   }

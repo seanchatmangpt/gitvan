@@ -47,7 +47,7 @@ const startSubcommand = defineCommand({
   },
   async run({ args }) {
     try {
-      console.log("🚀 Starting GitVan daemon...");
+      logger.info("🚀 Starting GitVan daemon...");
 
       const options = {
         rootDir: args["root-dir"],
@@ -58,14 +58,14 @@ const startSubcommand = defineCommand({
 
       await startDaemon(options);
 
-      console.log("✅ GitVan daemon started successfully");
-      console.log(`📁 Monitoring: ${options.rootDir}`);
-      console.log(`🌳 Worktrees: ${options.worktrees}`);
-      console.log(`🔌 Port: ${options.port}`);
+      logger.info("✅ GitVan daemon started successfully");
+      logger.info(`📁 Monitoring: ${options.rootDir}`);
+      logger.info(`🌳 Worktrees: ${options.worktrees}`);
+      logger.info(`🔌 Port: ${options.port}`);
     } catch (error) {
       logger.error("Failed to start daemon:", error);
-      console.error("❌ Failed to start daemon:", error.message);
-      process.exit(1);
+      logger.error("❌ Failed to start daemon:", error.message);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -87,15 +87,15 @@ const stopSubcommand = defineCommand({
   },
   async run({ args }) {
     try {
-      console.log("🛑 Stopping GitVan daemon...");
+      logger.info("🛑 Stopping GitVan daemon...");
 
       await stopDaemon({ force: args.force });
 
-      console.log("✅ GitVan daemon stopped successfully");
+      logger.info("✅ GitVan daemon stopped successfully");
     } catch (error) {
       logger.error("Failed to stop daemon:", error);
-      console.error("❌ Failed to stop daemon:", error.message);
-      process.exit(1);
+      logger.error("❌ Failed to stop daemon:", error.message);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -124,28 +124,28 @@ const statusSubcommand = defineCommand({
     try {
       const status = await daemonStatus(args["root-dir"]);
 
-      console.log("📊 GitVan Daemon Status");
-      console.log("=".repeat(30));
+      logger.info("📊 GitVan Daemon Status");
+      logger.info("=".repeat(30));
 
       if (status.running) {
-        console.log("🟢 Status: Running");
-        console.log(`📁 Root Directory: ${status.rootDir}`);
-        console.log(`⏰ Started: ${status.startedAt}`);
-        console.log(`🔄 Uptime: ${status.uptime}`);
+        logger.info("🟢 Status: Running");
+        logger.info(`📁 Root Directory: ${status.rootDir}`);
+        logger.info(`⏰ Started: ${status.startedAt}`);
+        logger.info(`🔄 Uptime: ${status.uptime}`);
 
         if (args.verbose) {
-          console.log(`🌳 Worktrees: ${status.worktrees?.length || 0}`);
-          console.log(`📊 Jobs Executed: ${status.jobsExecuted || 0}`);
-          console.log(`🔌 Port: ${status.port || "N/A"}`);
+          logger.info(`🌳 Worktrees: ${status.worktrees?.length || 0}`);
+          logger.info(`📊 Jobs Executed: ${status.jobsExecuted || 0}`);
+          logger.info(`🔌 Port: ${status.port || "N/A"}`);
         }
       } else {
-        console.log("🔴 Status: Not Running");
-        console.log(`📁 Root Directory: ${args["root-dir"]}`);
+        logger.info("🔴 Status: Not Running");
+        logger.info(`📁 Root Directory: ${args["root-dir"]}`);
       }
     } catch (error) {
       logger.error("Failed to get daemon status:", error);
-      console.error("❌ Failed to get daemon status:", error.message);
-      process.exit(1);
+      logger.error("❌ Failed to get daemon status:", error.message);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -187,17 +187,17 @@ const restartSubcommand = defineCommand({
   },
   async run({ args }) {
     try {
-      console.log("🔄 Restarting GitVan daemon...");
+      logger.info("🔄 Restarting GitVan daemon...");
 
       // Stop daemon first
       try {
         await stopDaemon({ force: args.force });
-        console.log("✅ Daemon stopped");
+        logger.info("✅ Daemon stopped");
       } catch (error) {
         if (!args.force) {
           throw error;
         }
-        console.log("⚠️  Force stopping daemon");
+        logger.info("⚠️  Force stopping daemon");
       }
 
       // Start daemon
@@ -210,14 +210,14 @@ const restartSubcommand = defineCommand({
 
       await startDaemon(options);
 
-      console.log("✅ GitVan daemon restarted successfully");
-      console.log(`📁 Monitoring: ${options.rootDir}`);
-      console.log(`🌳 Worktrees: ${options.worktrees}`);
-      console.log(`🔌 Port: ${options.port}`);
+      logger.info("✅ GitVan daemon restarted successfully");
+      logger.info(`📁 Monitoring: ${options.rootDir}`);
+      logger.info(`🌳 Worktrees: ${options.worktrees}`);
+      logger.info(`🔌 Port: ${options.port}`);
     } catch (error) {
       logger.error("Failed to restart daemon:", error);
-      console.error("❌ Failed to restart daemon:", error.message);
-      process.exit(1);
+      logger.error("❌ Failed to restart daemon:", error.message);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });

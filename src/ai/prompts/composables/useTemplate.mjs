@@ -30,6 +30,8 @@ The useTemplate() composable provides Nunjucks-based template rendering with fro
 ## Usage Pattern
 \`\`\`javascript
 import { useTemplate } from 'file:///Users/sac/gitvan/src/index.mjs'
+import { createLogger } from "../../../utils/logger.mjs";
+const logger = createLogger("ai:prompts:composables:useTemplate");
 
 const template = useTemplate({ paths: ['templates'] })
 
@@ -243,7 +245,7 @@ export default defineJob({
         summary: 'Documentation generated successfully'
       }
     } catch (error) {
-      console.error('Documentation generation failed:', error.message)
+      logger.error('Documentation generation failed:', error.message)
       return {
         ok: false,
         error: error.message,
@@ -260,11 +262,11 @@ try {
   const rendered = await template.render('template.njk', data)
 } catch (error) {
   if (error.message.includes('template not found')) {
-    console.error('Template file not found')
+    logger.error('Template file not found')
   } else if (error.message.includes('syntax error')) {
-    console.error('Template syntax error:', error.message)
+    logger.error('Template syntax error:', error.message)
   } else {
-    console.error('Template rendering failed:', error.message)
+    logger.error('Template rendering failed:', error.message)
   }
   throw error
 }

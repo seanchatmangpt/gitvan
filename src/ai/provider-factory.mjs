@@ -5,6 +5,7 @@
  */
 
 import { createLogger } from "../utils/logger.mjs";
+import { ProviderError, ConfigurationError } from "../core/errors.mjs";
 import { GITVAN_COMPLETE_CONTEXT } from "./prompts/gitvan-complete-context.mjs";
 import { experimental_customProvider } from "ai";
 
@@ -14,12 +15,21 @@ const logger = createLogger("ai-provider-factory");
  * Create AI provider based on configuration
  * @param {object} config - GitVan configuration
  * @returns {object} AI provider instance
+ * @throws {ConfigurationError} If provider is invalid or not configured
+ * @throws {ProviderError} If provider creation fails
  */
 export async function createAIProvider(config = {}) {
   const aiConfig = config.ai || {};
   const provider = aiConfig.provider || "ollama";
 
-  logger.info(`Creating AI provider: ${provider}`);
+  // Validate environment (never use mock in production)
+  const isProduction = process.env.NODE_ENV === "production";
+  const isTest = process.env.NODE_ENV === "test" || process.env.VITEST;
+
+  logger.info("Creating AI provider", {
+    provider,
+    environment: process.env.NODE_ENV || "development",
+  });
 
   switch (provider.toLowerCase()) {
     case "ollama":
@@ -33,11 +43,21 @@ export async function createAIProvider(config = {}) {
 
     case "mock":
     case "test":
+      // Only allow mock provider in test environment
+      if (isProduction) {
+        throw new ConfigurationError(
+          "Mock provider is not allowed in production environment",
+          "ai.provider"
+        );
+      }
+      logger.warn("Using mock provider (test environment only)");
       return createMockProvider(aiConfig);
 
     default:
-      logger.warn(`Unknown provider: ${provider}, falling back to mock`);
-      return createMockProvider(aiConfig);
+      throw new ConfigurationError(
+        `Unknown AI provider: '${provider}'. Valid providers: ollama, openai, anthropic${isTest ? ", mock" : ""}`,
+        "ai.provider"
+      );
   }
 }
 
@@ -45,6 +65,7 @@ export async function createAIProvider(config = {}) {
  * Create Ollama provider
  * @param {object} aiConfig - AI configuration
  * @returns {object} Ollama provider
+ * @throws {ProviderError} If Ollama provider creation fails
  */
 async function createOllamaProvider(aiConfig) {
   try {
@@ -53,17 +74,18 @@ async function createOllamaProvider(aiConfig) {
     // Use the simple ollama function with model name
     const provider = ollama(aiConfig.model || "qwen3-coder:30b");
 
-    logger.info(
-      `Ollama provider created with model: ${
-        aiConfig.model || "qwen3-coder:30b"
-      }`
-    );
+    logger.info("Ollama provider created", {
+      model: aiConfig.model || "qwen3-coder:30b",
+    });
+
     return provider;
   } catch (error) {
-    logger.warn(
-      `Failed to create Ollama provider: ${error.message}, falling back to mock`
-    );
-    return createMockProvider(aiConfig);
+    logger.error("Failed to create Ollama provider", {
+      error: error.message,
+      model: aiConfig.model,
+    });
+
+    throw new ProviderError("ollama", error.message, error);
   }
 }
 
@@ -71,44 +93,90 @@ async function createOllamaProvider(aiConfig) {
  * Create OpenAI provider
  * @param {object} aiConfig - AI configuration
  * @returns {object} OpenAI provider
+ * @throws {ProviderError} If OpenAI provider creation fails
+ * @throws {ConfigurationError} If API key is missing
  */
 async function createOpenAIProvider(aiConfig) {
-  const { openai } = await import("ai/openai");
+  try {
+    const apiKey = aiConfig.apiKey || process.env.OPENAI_API_KEY;
 
-  const provider = openai({
-    apiKey: aiConfig.apiKey || process.env.OPENAI_API_KEY,
-    model: aiConfig.model || "qwen3-coder:30b",
-    temperature: aiConfig.temperature || 0.7,
-    ...aiConfig.options,
-  });
+    if (!apiKey) {
+      throw new ConfigurationError(
+        "OpenAI API key is required. Set OPENAI_API_KEY environment variable or configure ai.apiKey",
+        "ai.apiKey"
+      );
+    }
 
-  logger.info(
-    `OpenAI provider created with model: ${aiConfig.model || "qwen3-coder:30b"}`
-  );
-  return provider;
+    const { openai } = await import("ai/openai");
+
+    const provider = openai({
+      apiKey,
+      model: aiConfig.model || "gpt-4",
+      temperature: aiConfig.temperature || 0.7,
+      ...aiConfig.options,
+    });
+
+    logger.info("OpenAI provider created", {
+      model: aiConfig.model || "gpt-4",
+    });
+
+    return provider;
+  } catch (error) {
+    if (error instanceof ConfigurationError) {
+      throw error;
+    }
+
+    logger.error("Failed to create OpenAI provider", {
+      error: error.message,
+    });
+
+    throw new ProviderError("openai", error.message, error);
+  }
 }
 
 /**
  * Create Anthropic provider
  * @param {object} aiConfig - AI configuration
  * @returns {object} Anthropic provider
+ * @throws {ProviderError} If Anthropic provider creation fails
+ * @throws {ConfigurationError} If API key is missing
  */
 async function createAnthropicProvider(aiConfig) {
-  const { anthropic } = await import("ai/anthropic");
+  try {
+    const apiKey = aiConfig.apiKey || process.env.ANTHROPIC_API_KEY;
 
-  const provider = anthropic({
-    apiKey: aiConfig.apiKey || process.env.ANTHROPIC_API_KEY,
-    model: aiConfig.model || "qwen3-coder:30b",
-    temperature: aiConfig.temperature || 0.7,
-    ...aiConfig.options,
-  });
+    if (!apiKey) {
+      throw new ConfigurationError(
+        "Anthropic API key is required. Set ANTHROPIC_API_KEY environment variable or configure ai.apiKey",
+        "ai.apiKey"
+      );
+    }
 
-  logger.info(
-    `Anthropic provider created with model: ${
-      aiConfig.model || "qwen3-coder:30b"
-    }`
-  );
-  return provider;
+    const { anthropic } = await import("ai/anthropic");
+
+    const provider = anthropic({
+      apiKey,
+      model: aiConfig.model || "claude-3-5-sonnet-20241022",
+      temperature: aiConfig.temperature || 0.7,
+      ...aiConfig.options,
+    });
+
+    logger.info("Anthropic provider created", {
+      model: aiConfig.model || "claude-3-5-sonnet-20241022",
+    });
+
+    return provider;
+  } catch (error) {
+    if (error instanceof ConfigurationError) {
+      throw error;
+    }
+
+    logger.error("Failed to create Anthropic provider", {
+      error: error.message,
+    });
+
+    throw new ProviderError("anthropic", error.message, error);
+  }
 }
 
 /**

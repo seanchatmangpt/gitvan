@@ -21,7 +21,7 @@ export async function generateTemplateCommand(args) {
       throw new Error("Prompt required for template generation");
     }
 
-    console.log("🤖 Generating template with AI loop integration...");
+    logger.info("🤖 Generating template with AI loop integration...");
 
     const result = await aiTemplateLoop.generateTemplate(prompt, {
       rootPath: process.cwd(),
@@ -30,12 +30,12 @@ export async function generateTemplateCommand(args) {
       temperature: args.temp ? parseFloat(args.temp) : 0.7,
     });
 
-    console.log("✅ Template generated successfully!");
-    console.log(`📊 Generation ID: ${result.generationId}`);
-    console.log(`⏱️  Duration: ${result.executionResult.duration}ms`);
-    console.log(`🎯 Project Type: ${result.projectContext.projectType}`);
-    console.log(`🔧 Framework: ${result.projectContext.framework}`);
-    console.log(
+    logger.info("✅ Template generated successfully!");
+    logger.info(`📊 Generation ID: ${result.generationId}`);
+    logger.info(`⏱️  Duration: ${result.executionResult.duration}ms`);
+    logger.info(`🎯 Project Type: ${result.projectContext.projectType}`);
+    logger.info(`🔧 Framework: ${result.projectContext.framework}`);
+    logger.info(
       `📈 Success Rate: ${(result.learningInsights.successRate * 100).toFixed(
         1
       )}%`
@@ -44,16 +44,16 @@ export async function generateTemplateCommand(args) {
     // Save template to file if requested
     if (args.output) {
       await fs.writeFile(args.output, result.template);
-      console.log(`💾 Template saved to: ${args.output}`);
+      logger.info(`💾 Template saved to: ${args.output}`);
     } else {
-      console.log("\n📝 Generated Template:");
-      console.log("─".repeat(50));
-      console.log(result.template);
+      logger.info("\n📝 Generated Template:");
+      logger.info("─".repeat(50));
+      logger.info(result.template);
     }
 
     return result;
   } catch (error) {
-    console.error("❌ Failed to generate template:", error.message);
+    logger.error("❌ Failed to generate template:", error.message);
     throw error;
   }
 }
@@ -68,21 +68,21 @@ export async function optimizeTemplateCommand(args) {
       throw new Error("Template path required for optimization");
     }
 
-    console.log(`🔧 Optimizing template: ${templatePath}`);
+    logger.info(`🔧 Optimizing template: ${templatePath}`);
 
     const result = await aiTemplateLoop.optimizeTemplate(templatePath, {
       rootPath: process.cwd(),
       userAgent: "cli",
     });
 
-    console.log("✅ Template optimized successfully!");
-    console.log(
+    logger.info("✅ Template optimized successfully!");
+    logger.info(
       `📊 Optimization Suggestions: ${result.optimizationResult.optimizationSuggestions.length}`
     );
-    console.log(
+    logger.info(
       `📈 Feedback Score: ${result.feedbackInsights.overallScore.toFixed(2)}`
     );
-    console.log(
+    logger.info(
       `🎯 Overall Health: ${result.feedbackInsights.overallScore.toFixed(2)}`
     );
 
@@ -92,16 +92,16 @@ export async function optimizeTemplateCommand(args) {
         args.output,
         result.integratedOptimization.integratedTemplate
       );
-      console.log(`💾 Optimized template saved to: ${args.output}`);
+      logger.info(`💾 Optimized template saved to: ${args.output}`);
     } else {
-      console.log("\n📝 Optimized Template:");
-      console.log("─".repeat(50));
-      console.log(result.integratedOptimization.integratedTemplate);
+      logger.info("\n📝 Optimized Template:");
+      logger.info("─".repeat(50));
+      logger.info(result.integratedOptimization.integratedTemplate);
     }
 
     return result;
   } catch (error) {
-    console.error("❌ Failed to optimize template:", error.message);
+    logger.error("❌ Failed to optimize template:", error.message);
     throw error;
   }
 }
@@ -129,7 +129,7 @@ export async function collectFeedbackCommand(args) {
       throw new Error("Rating required for feedback collection");
     }
 
-    console.log(`📝 Collecting feedback for template: ${templatePath}`);
+    logger.info(`📝 Collecting feedback for template: ${templatePath}`);
 
     const result = await aiTemplateLoop.collectFeedback(
       templatePath,
@@ -145,29 +145,29 @@ export async function collectFeedbackCommand(args) {
       }
     );
 
-    console.log("✅ Feedback collected successfully!");
-    console.log(`📊 Feedback ID: ${result.feedbackId}`);
-    console.log(
+    logger.info("✅ Feedback collected successfully!");
+    logger.info(`📊 Feedback ID: ${result.feedbackId}`);
+    logger.info(
       `⭐ Average Rating: ${result.feedbackSummary.averageRating.toFixed(1)}/5`
     );
-    console.log(`📝 Total Feedback: ${result.feedbackSummary.totalFeedback}`);
-    console.log(
+    logger.info(`📝 Total Feedback: ${result.feedbackSummary.totalFeedback}`);
+    logger.info(
       `💡 Common Suggestions: ${result.feedbackSummary.commonSuggestions.length}`
     );
-    console.log(
+    logger.info(
       `🐛 Common Issues: ${result.feedbackSummary.commonIssues.length}`
     );
 
     if (result.recommendations.length > 0) {
-      console.log("\n🎯 Recommendations:");
+      logger.info("\n🎯 Recommendations:");
       result.recommendations.forEach((rec) => {
-        console.log(`  - ${rec.message} (Priority: ${rec.priority})`);
+        logger.info(`  - ${rec.message} (Priority: ${rec.priority})`);
       });
     }
 
     return result;
   } catch (error) {
-    console.error("❌ Failed to collect feedback:", error.message);
+    logger.error("❌ Failed to collect feedback:", error.message);
     throw error;
   }
 }
@@ -182,36 +182,36 @@ export async function getInsightsCommand(args) {
       throw new Error("Template path required for insights");
     }
 
-    console.log(`📊 Getting insights for template: ${templatePath}`);
+    logger.info(`📊 Getting insights for template: ${templatePath}`);
 
     const result = await aiTemplateLoop.getTemplateInsights(templatePath);
 
-    console.log("✅ Template insights retrieved successfully!");
-    console.log(`📈 Overall Health: ${result.overallHealth.toFixed(2)}`);
-    console.log(
+    logger.info("✅ Template insights retrieved successfully!");
+    logger.info(`📈 Overall Health: ${result.overallHealth.toFixed(2)}`);
+    logger.info(
       `🎯 Success Rate: ${(result.learningInsights.successRate * 100).toFixed(
         1
       )}%`
     );
-    console.log(
+    logger.info(
       `📝 Total Executions: ${result.learningInsights.totalExecutions}`
     );
-    console.log(
+    logger.info(
       `⭐ Average Rating: ${result.feedbackInsights.feedbackSummary.averageRating.toFixed(
         1
       )}/5`
     );
-    console.log(
+    logger.info(
       `💡 Total Feedback: ${result.feedbackInsights.feedbackSummary.totalFeedback}`
     );
 
     // Show successful patterns
     if (result.learningInsights.successfulPatterns.length > 0) {
-      console.log("\n✅ Successful Patterns:");
+      logger.info("\n✅ Successful Patterns:");
       result.learningInsights.successfulPatterns
         .slice(0, 5)
         .forEach((pattern) => {
-          console.log(
+          logger.info(
             `  - ${pattern.pattern} (${pattern.successCount} successes)`
           );
         });
@@ -219,9 +219,9 @@ export async function getInsightsCommand(args) {
 
     // Show failed patterns
     if (result.learningInsights.failedPatterns.length > 0) {
-      console.log("\n❌ Failed Patterns:");
+      logger.info("\n❌ Failed Patterns:");
       result.learningInsights.failedPatterns.slice(0, 5).forEach((pattern) => {
-        console.log(
+        logger.info(
           `  - ${pattern.pattern} (${pattern.failureCount} failures)`
         );
       });
@@ -229,16 +229,16 @@ export async function getInsightsCommand(args) {
 
     // Show optimization recommendations
     if (result.optimizationRecommendations.length > 0) {
-      console.log("\n🔧 Optimization Recommendations:");
+      logger.info("\n🔧 Optimization Recommendations:");
       result.optimizationRecommendations.forEach((rec) => {
-        console.log(`  - ${rec.title} (Priority: ${rec.priority})`);
-        console.log(`    ${rec.description}`);
+        logger.info(`  - ${rec.title} (Priority: ${rec.priority})`);
+        logger.info(`    ${rec.description}`);
       });
     }
 
     return result;
   } catch (error) {
-    console.error("❌ Failed to get template insights:", error.message);
+    logger.error("❌ Failed to get template insights:", error.message);
     throw error;
   }
 }
@@ -248,27 +248,27 @@ export async function getInsightsCommand(args) {
  */
 export async function getSystemMetricsCommand(args) {
   try {
-    console.log("📊 Getting system metrics...");
+    logger.info("📊 Getting system metrics...");
 
     const result = await aiTemplateLoop.getSystemMetrics();
 
-    console.log("✅ System metrics retrieved successfully!");
-    console.log(`🎯 System Health: ${result.systemHealth.toFixed(2)}`);
-    console.log(
+    logger.info("✅ System metrics retrieved successfully!");
+    logger.info(`🎯 System Health: ${result.systemHealth.toFixed(2)}`);
+    logger.info(
       `📈 Global Success Rate: ${(
         result.globalInsights.successRate * 100
       ).toFixed(1)}%`
     );
-    console.log(
+    logger.info(
       `📝 Total Executions: ${result.globalInsights.totalExecutions}`
     );
-    console.log(`🔄 Total Generations: ${result.totalExecutions}`);
+    logger.info(`🔄 Total Generations: ${result.totalExecutions}`);
 
     // Show global success patterns
     if (result.globalSuccessPatterns.length > 0) {
-      console.log("\n✅ Global Success Patterns:");
+      logger.info("\n✅ Global Success Patterns:");
       result.globalSuccessPatterns.slice(0, 10).forEach((pattern) => {
-        console.log(
+        logger.info(
           `  - ${pattern.pattern} (${pattern.successCount} successes)`
         );
       });
@@ -276,9 +276,9 @@ export async function getSystemMetricsCommand(args) {
 
     // Show global failure patterns
     if (result.globalFailurePatterns.length > 0) {
-      console.log("\n❌ Global Failure Patterns:");
+      logger.info("\n❌ Global Failure Patterns:");
       result.globalFailurePatterns.slice(0, 10).forEach((pattern) => {
-        console.log(
+        logger.info(
           `  - ${pattern.pattern} (${pattern.failureCount} failures)`
         );
       });
@@ -286,7 +286,7 @@ export async function getSystemMetricsCommand(args) {
 
     return result;
   } catch (error) {
-    console.error("❌ Failed to get system metrics:", error.message);
+    logger.error("❌ Failed to get system metrics:", error.message);
     throw error;
   }
 }
@@ -296,13 +296,13 @@ export async function getSystemMetricsCommand(args) {
  */
 export async function persistLearningDataCommand(args) {
   try {
-    console.log("💾 Persisting learning data...");
+    logger.info("💾 Persisting learning data...");
 
     await aiTemplateLoop.persist();
 
-    console.log("✅ Learning data persisted successfully!");
+    logger.info("✅ Learning data persisted successfully!");
   } catch (error) {
-    console.error("❌ Failed to persist learning data:", error.message);
+    logger.error("❌ Failed to persist learning data:", error.message);
     throw error;
   }
 }
@@ -315,25 +315,25 @@ export async function showHistoryCommand(args) {
     const history = aiTemplateLoop.getExecutionHistory();
     const limit = args.limit ? parseInt(args.limit) : 10;
 
-    console.log(`📜 Showing last ${limit} executions:`);
+    logger.info(`📜 Showing last ${limit} executions:`);
 
     if (history.length === 0) {
-      console.log("No execution history found.");
+      logger.info("No execution history found.");
       return;
     }
 
     history.slice(0, limit).forEach((execution, index) => {
-      console.log(`\n${index + 1}. ${execution.id}`);
-      console.log(`   Prompt: ${execution.prompt.substring(0, 50)}...`);
-      console.log(
+      logger.info(`\n${index + 1}. ${execution.id}`);
+      logger.info(`   Prompt: ${execution.prompt.substring(0, 50)}...`);
+      logger.info(
         `   Project: ${execution.projectContext.projectType} (${execution.projectContext.framework})`
       );
-      console.log(`   Duration: ${execution.executionResult.duration}ms`);
-      console.log(`   Success: ${execution.executionResult.ok ? "✅" : "❌"}`);
-      console.log(`   Timestamp: ${execution.timestamp}`);
+      logger.info(`   Duration: ${execution.executionResult.duration}ms`);
+      logger.info(`   Success: ${execution.executionResult.ok ? "✅" : "❌"}`);
+      logger.info(`   Timestamp: ${execution.timestamp}`);
     });
   } catch (error) {
-    console.error("❌ Failed to show execution history:", error.message);
+    logger.error("❌ Failed to show execution history:", error.message);
     throw error;
   }
 }
@@ -343,13 +343,13 @@ export async function showHistoryCommand(args) {
  */
 export async function clearHistoryCommand(args) {
   try {
-    console.log("🗑️  Clearing execution history...");
+    logger.info("🗑️  Clearing execution history...");
 
     aiTemplateLoop.clearExecutionHistory();
 
-    console.log("✅ Execution history cleared successfully!");
+    logger.info("✅ Execution history cleared successfully!");
   } catch (error) {
-    console.error("❌ Failed to clear execution history:", error.message);
+    logger.error("❌ Failed to clear execution history:", error.message);
     throw error;
   }
 }

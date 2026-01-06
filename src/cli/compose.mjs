@@ -73,42 +73,42 @@ export const composeCommand = defineCommand({
 
       if (result.status === "OK") {
         consola.success("All packs composed successfully");
-        console.log(`\n✅ Applied ${result.applied.length} packs:`);
+        logger.info(`\n✅ Applied ${result.applied.length} packs:`);
         for (const pack of result.applied) {
-          console.log(`   • ${pack.id} v${pack.version}`);
+          logger.info(`   • ${pack.id} v${pack.version}`);
         }
       } else if (result.status === "PARTIAL") {
         consola.warn("Some packs failed to apply");
 
         if (result.applied.length > 0) {
-          console.log(`\n✅ Applied ${result.applied.length} packs:`);
+          logger.info(`\n✅ Applied ${result.applied.length} packs:`);
           for (const pack of result.applied) {
-            console.log(`   • ${pack.id} v${pack.version}`);
+            logger.info(`   • ${pack.id} v${pack.version}`);
           }
         }
 
         if (result.errors.length > 0) {
-          console.log(`\n❌ Failed ${result.errors.length} packs:`);
+          logger.info(`\n❌ Failed ${result.errors.length} packs:`);
           for (const error of result.errors) {
-            console.log(`   • ${error.id}: ${error.error}`);
+            logger.info(`   • ${error.id}: ${error.error}`);
           }
         }
       } else if (result.status === "ERROR") {
         consola.error("Composition failed");
 
         if (result.conflicts?.length > 0) {
-          console.log("\n⚠️  Conflicts detected:");
+          logger.info("\n⚠️  Conflicts detected:");
           for (const conflict of result.conflicts) {
-            console.log(
+            logger.info(
               `   • ${conflict.pack} conflicts with ${conflict.conflictsWith}`
             );
           }
         }
 
         if (result.errors?.length > 0) {
-          console.log("\n❌ Errors:");
+          logger.info("\n❌ Errors:");
           for (const error of result.errors) {
-            console.log(`   • ${error}`);
+            logger.info(`   • ${error}`);
           }
         }
       }

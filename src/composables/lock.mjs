@@ -6,6 +6,8 @@
 import { useGitVan, tryUseGitVan, withGitVan } from "../core/context.mjs";
 import { useGit } from "./git/index.mjs";
 import {
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("composables:lock");
   acquireLock,
   releaseLock,
   generateLockRef,
@@ -224,7 +226,7 @@ export function useLock() {
 
             locks.push(lock);
           } catch (error) {
-            console.warn(`Failed to process lock ref ${ref}:`, error.message);
+            logger.warn(`Failed to process lock ref ${ref}:`, error.message);
           }
         }
 
@@ -288,7 +290,7 @@ export function useLock() {
             await this.release(lock.name);
             cleaned++;
           } catch (error) {
-            console.warn(`Failed to cleanup lock ${lock.name}:`, error.message);
+            logger.warn(`Failed to cleanup lock ${lock.name}:`, error.message);
           }
         }
 

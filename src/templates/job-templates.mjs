@@ -1,3 +1,6 @@
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("templates:job-templates");
+
 /**
  * GitVan Job Templates - Reusable job templates with value injection
  * Templates that can be filled with specific values to generate jobs
@@ -27,7 +30,7 @@ export default {
         template = await templateModule.useTemplate()
         pack = await packModule.usePack()
       } catch (importError) {
-        console.log("GitVan composables not available, running in standalone mode")
+        logger.info("GitVan composables not available, running in standalone mode")
         git = null
         template = null
         pack = null
@@ -41,7 +44,7 @@ export default {
         summary: "{{ implementation.successMessage }}"
       }
     } catch (error) {
-      console.error('Job failed:', error.message)
+      logger.error('Job failed:', error.message)
       return { 
         ok: false, 
         error: error.message,
@@ -61,23 +64,23 @@ export const FILE_OPERATION_TEMPLATE = `
       
       {% for operation in implementation.operations %}
       {% if operation.type == "log" %}
-      console.log("{{ operation.description }}")
+      logger.info("{{ operation.description }}")
       {% elif operation.type == "file-read" %}
       const fs = await import('fs/promises')
       const content = await fs.readFile({{ operation.parameters.path }}, 'utf8')
-      console.log("Read file: {{ operation.description }}")
+      logger.info("Read file: {{ operation.description }}")
       {% elif operation.type == "file-write" %}
       const fs = await import('fs/promises')
       await fs.writeFile({{ operation.parameters.path }}, {{ operation.parameters.content }})
-      console.log("Wrote file: {{ operation.description }}")
+      logger.info("Wrote file: {{ operation.description }}")
       {% elif operation.type == "file-copy" %}
       const fs = await import('fs/promises')
       await fs.copyFile({{ operation.parameters.source }}, {{ operation.parameters.destination }})
-      console.log("Copied file: {{ operation.description }}")
+      logger.info("Copied file: {{ operation.description }}")
       {% elif operation.type == "file-move" %}
       const fs = await import('fs/promises')
       await fs.rename({{ operation.parameters.source }}, {{ operation.parameters.destination }})
-      console.log("Moved file: {{ operation.description }}")
+      logger.info("Moved file: {{ operation.description }}")
       {% endif %}
       {% endfor %}
 `;
@@ -91,17 +94,17 @@ export const GIT_OPERATION_TEMPLATE = `
       
       {% for operation in implementation.operations %}
       {% if operation.type == "log" %}
-      console.log("{{ operation.description }}")
+      logger.info("{{ operation.description }}")
       {% elif operation.type == "git-commit" %}
       if (git) {
         const head = await git.currentHead()
-        console.log("Current HEAD: {{ operation.description }}")
+        logger.info("Current HEAD: {{ operation.description }}")
       }
       {% elif operation.type == "git-note" %}
       if (git) {
         const noteContent = JSON.stringify({{ operation.parameters.content | safe }})
         await git.noteAppend('{{ operation.parameters.ref }}', noteContent)
-        console.log("Added Git note: {{ operation.description }}")
+        logger.info("Added Git note: {{ operation.description }}")
       }
       {% endif %}
       {% endfor %}
@@ -116,12 +119,12 @@ export const TEMPLATE_OPERATION_TEMPLATE = `
       
       {% for operation in implementation.operations %}
       {% if operation.type == "log" %}
-      console.log("{{ operation.description }}")
+      logger.info("{{ operation.description }}")
       {% elif operation.type == "template-render" %}
       if (template) {
         const plan = await template.plan('{{ operation.parameters.template }}', {{ operation.parameters.data | safe }})
         const result = await template.apply(plan)
-        console.log("Rendered template: {{ operation.description }}")
+        logger.info("Rendered template: {{ operation.description }}")
       }
       {% endif %}
       {% endfor %}
@@ -136,11 +139,11 @@ export const PACK_OPERATION_TEMPLATE = `
       
       {% for operation in implementation.operations %}
       {% if operation.type == "log" %}
-      console.log("{{ operation.description }}")
+      logger.info("{{ operation.description }}")
       {% elif operation.type == "pack-apply" %}
       if (pack) {
         const result = await pack.apply('{{ operation.parameters.packName }}', {{ operation.parameters.inputs | safe }})
-        console.log("Applied pack: {{ operation.description }}")
+        logger.info("Applied pack: {{ operation.description }}")
       }
       {% endif %}
       {% endfor %}
@@ -155,7 +158,7 @@ export const SIMPLE_OPERATION_TEMPLATE = `
       
       {% for operation in implementation.operations %}
       {% if operation.type == "log" %}
-      console.log("{{ operation.description }}")
+      logger.info("{{ operation.description }}")
       {% endif %}
       {% endfor %}
 `;

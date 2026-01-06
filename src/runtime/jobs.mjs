@@ -1,5 +1,7 @@
 import { readdirSync, statSync } from "node:fs";
 import { join, extname, resolve } from "pathe";
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("runtime:jobs");
 
 /**
  * Discovers jobs by scanning the jobs/ directory
@@ -134,7 +136,7 @@ export async function loadJobDefinition(jobFile) {
     // If no clear run function, return the module as-is
     return jobMod;
   } catch (err) {
-    console.warn(`Failed to load job from ${jobFile}:`, err.message);
+    logger.warn(`Failed to load job from ${jobFile}:`, err.message);
     return null;
   }
 }

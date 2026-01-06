@@ -9,8 +9,8 @@ export async function handleList(args) {
   const [type] = args;
   
   if (!type) {
-    console.log("❌ Please specify what to list");
-    console.log("Usage: gitvan list <jobs|events|schedules|packs>");
+    logger.info("❌ Please specify what to list");
+    logger.info("Usage: gitvan list <jobs|events|schedules|packs>");
     return;
   }
   
@@ -31,36 +31,36 @@ export async function handleList(args) {
         await listPacks();
         break;
       default:
-        console.log(`❌ Unknown list type: ${type}`);
-        console.log("Available types: jobs, events, schedules, packs");
+        logger.info(`❌ Unknown list type: ${type}`);
+        logger.info("Available types: jobs, events, schedules, packs");
     }
   } catch (error) {
     logger.error(`❌ List operation failed: ${error.message}`);
-    console.error(`❌ Failed to list ${type}: ${error.message}`);
-    process.exit(1);
+    logger.error(`❌ Failed to list ${type}: ${error.message}`);
+    await exitWithError(new Error("Operation failed"), 1);
   }
 }
 
 async function listJobs() {
-  console.log("📋 Available Jobs:");
-  console.log("  - No jobs found");
+  logger.info("📋 Available Jobs:");
+  logger.info("  - No jobs found");
   // Implementation would go here
 }
 
 async function listEvents() {
-  console.log("📡 Available Events:");
-  console.log("  - No events found");
+  logger.info("📡 Available Events:");
+  logger.info("  - No events found");
   // Implementation would go here
 }
 
 async function listSchedules() {
-  console.log("⏰ Available Schedules:");
-  console.log("  - No schedules found");
+  logger.info("⏰ Available Schedules:");
+  logger.info("  - No schedules found");
   // Implementation would go here
 }
 
 async function listPacks() {
-  console.log("📦 Available Packs:");
-  console.log("  - No packs found");
+  logger.info("📦 Available Packs:");
+  logger.info("  - No packs found");
   // Implementation would go here
 }

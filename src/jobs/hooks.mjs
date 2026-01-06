@@ -3,6 +3,8 @@
 // Lifecycle hooks for job execution
 
 import { createHooks } from "hookable";
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("jobs:hooks");
 
 /**
  * Job hooks system
@@ -108,63 +110,63 @@ export const DEFAULT_HOOKS = {
    * Log job execution
    */
   "job:before": async ({ id, payload, ctx }) => {
-    console.log(`🚀 Starting job: ${id}`);
+    logger.info(`🚀 Starting job: ${id}`);
     if (payload && Object.keys(payload).length > 0) {
-      console.log(`   Payload: ${JSON.stringify(payload)}`);
+      logger.info(`   Payload: ${JSON.stringify(payload)}`);
     }
   },
 
   "job:after": async ({ id, result, ctx }) => {
-    console.log(`✅ Job completed: ${id} (${result.duration}ms)`);
+    logger.info(`✅ Job completed: ${id} (${result.duration}ms)`);
     if (result.artifacts && result.artifacts.length > 0) {
-      console.log(`   Artifacts: ${result.artifacts.length}`);
+      logger.info(`   Artifacts: ${result.artifacts.length}`);
     }
   },
 
   "job:error": async ({ id, error, ctx }) => {
-    console.error(`❌ Job failed: ${id}`);
-    console.error(`   Error: ${error.message}`);
+    logger.error(`❌ Job failed: ${id}`);
+    logger.error(`   Error: ${error.message}`);
   },
 
   /**
    * Log daemon events
    */
   "daemon:start": async () => {
-    console.log("🔄 Daemon started");
+    logger.info("🔄 Daemon started");
   },
 
   "daemon:stop": async () => {
-    console.log("⏹️ Daemon stopped");
+    logger.info("⏹️ Daemon stopped");
   },
 
   "event:detected": async ({ from, to }) => {
-    console.log(`📡 Git event detected: ${from} → ${to}`);
+    logger.info(`📡 Git event detected: ${from} → ${to}`);
   },
 
   "cron:execute": async ({ jobs }) => {
-    console.log(`⏰ Executing ${jobs.length} cron jobs`);
+    logger.info(`⏰ Executing ${jobs.length} cron jobs`);
   },
 
   /**
    * Receipt logging
    */
   "receipt:write": async ({ id, note, ref }) => {
-    console.log(`📝 Receipt written for job: ${id}`);
+    logger.info(`📝 Receipt written for job: ${id}`);
   },
 
   /**
    * Lock management
    */
   "lock:acquire": async ({ id, fingerprint }) => {
-    console.log(`🔒 Lock acquired for job: ${id}`);
+    logger.info(`🔒 Lock acquired for job: ${id}`);
   },
 
   "lock:release": async ({ id }) => {
-    console.log(`🔓 Lock released for job: ${id}`);
+    logger.info(`🔓 Lock released for job: ${id}`);
   },
 
   "lock:fail": async ({ id, reason }) => {
-    console.warn(`⚠️ Lock acquisition failed for job: ${id} - ${reason}`);
+    logger.warn(`⚠️ Lock acquisition failed for job: ${id} - ${reason}`);
   },
 };
 
@@ -326,12 +328,12 @@ export class HookCLI {
    * List available hooks
    */
   list() {
-    console.log("Available Job Hooks:");
-    console.log("=".repeat(50));
+    logger.info("Available Job Hooks:");
+    logger.info("=".repeat(50));
 
     for (const [name, description] of Object.entries(JOB_HOOKS)) {
       const count = this.hooks.hookCounts.get(name) || 0;
-      console.log(`${name.padEnd(20)} - ${description} (${count} handlers)`);
+      logger.info(`${name.padEnd(20)} - ${description} (${count} handlers)`);
     }
   }
 
@@ -341,14 +343,14 @@ export class HookCLI {
   stats() {
     const stats = this.hooks.getStats();
 
-    console.log("Hook Statistics:");
-    console.log(`  Total hooks: ${stats.totalHooks}`);
-    console.log(`  Hook types: ${Object.keys(stats.hookCounts).length}`);
+    logger.info("Hook Statistics:");
+    logger.info(`  Total hooks: ${stats.totalHooks}`);
+    logger.info(`  Hook types: ${Object.keys(stats.hookCounts).length}`);
 
     if (Object.keys(stats.hookCounts).length > 0) {
-      console.log("\nHook counts:");
+      logger.info("\nHook counts:");
       for (const [name, count] of Object.entries(stats.hookCounts)) {
-        console.log(`  ${name}: ${count}`);
+        logger.info(`  ${name}: ${count}`);
       }
     }
   }
@@ -358,18 +360,18 @@ export class HookCLI {
    */
   async test(hookName, data = {}) {
     if (!JOB_HOOKS[hookName]) {
-      console.error(`Unknown hook: ${hookName}`);
+      logger.error(`Unknown hook: ${hookName}`);
       return;
     }
 
-    console.log(`Testing hook: ${hookName}`);
-    console.log(`Data: ${JSON.stringify(data, null, 2)}`);
+    logger.info(`Testing hook: ${hookName}`);
+    logger.info(`Data: ${JSON.stringify(data, null, 2)}`);
 
     try {
       await this.hooks.callHook(hookName, data);
-      console.log("✅ Hook executed successfully");
+      logger.info("✅ Hook executed successfully");
     } catch (error) {
-      console.error("❌ Hook failed:", error.message);
+      logger.error("❌ Hook failed:", error.message);
     }
   }
 }

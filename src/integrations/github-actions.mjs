@@ -5,6 +5,8 @@ import { defineJob } from "../core/job-registry.mjs";
 import { useGitVan } from "../core/context.mjs";
 
 import { getSecretsManager } from '../security/secrets-manager.mjs';
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("integrations:github-actions");
 
 /**
  * GitHub Actions Integration
@@ -193,7 +195,7 @@ export class GitHubActionsIntegration {
             verbose: true,
           });
           
-          console.log('Knowledge Hook evaluation result:', result);
+          logger.info('Knowledge Hook evaluation result:', result);
         `,
       },
     };
@@ -215,7 +217,7 @@ export default defineJob({
   hooks: ["post-commit", "post-merge", "pre-push"],
 
   async run(context) {
-    console.log("🔗 Starting GitHub Actions Integration");
+    logger.info("🔗 Starting GitHub Actions Integration");
 
     try {
       const gitvanContext = useGitVan();
@@ -238,10 +240,10 @@ export default defineJob({
           gitContext
         );
 
-        console.log(
+        logger.info(
           `   🚀 GitHub Actions workflow triggered: ${workflowResult.workflowId}`
         );
-        console.log(
+        logger.info(
           `   📊 Workflow inputs: ${JSON.stringify(workflowResult.inputs)}`
         );
 
@@ -251,7 +253,7 @@ export default defineJob({
           gitContext,
         };
       } else {
-        console.log("   ⏭️ Skipping GitHub Actions trigger");
+        logger.info("   ⏭️ Skipping GitHub Actions trigger");
         return {
           success: true,
           skipped: true,
@@ -260,7 +262,7 @@ export default defineJob({
         };
       }
     } catch (error) {
-      console.error("❌ GitHub Actions integration failed:", error.message);
+      logger.error("❌ GitHub Actions integration failed:", error.message);
       throw error;
     }
   },
@@ -292,7 +294,7 @@ export default defineJob({
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
-      console.warn("⚠️ Could not extract Git context:", error.message);
+      logger.warn("⚠️ Could not extract Git context:", error.message);
       return {
         commitSha: "unknown",
         branch: "unknown",

@@ -70,37 +70,37 @@ export const enhancedMarketplaceCommand = defineCommand({
               }
 
               if (args['output-format'] === 'json') {
-                console.log(JSON.stringify(filteredPacks, null, 2));
+                logger.info(JSON.stringify(filteredPacks, null, 2));
               } else if (args['output-format'] === 'list') {
                 for (const pack of filteredPacks) {
-                  console.log(`${pack.id} - ${pack.name} v${pack.version}`);
+                  logger.info(`${pack.id} - ${pack.name} v${pack.version}`);
                 }
               } else {
                 // Table format
-                console.log(`Found ${filteredPacks.length} unplugin-compatible packs:`);
-                console.log();
+                logger.info(`Found ${filteredPacks.length} unplugin-compatible packs:`);
+                logger.info();
                 
                 for (const pack of filteredPacks) {
-                  console.log(`📦 ${pack.name} v${pack.version}`);
-                  console.log(`   ID: ${pack.id}`);
-                  console.log(`   Description: ${pack.description}`);
+                  logger.info(`📦 ${pack.name} v${pack.version}`);
+                  logger.info(`   ID: ${pack.id}`);
+                  logger.info(`   Description: ${pack.description}`);
                   
                   if (pack.unplugin) {
                     const frameworks = pack.unplugin.frameworks || ['vite', 'webpack', 'rollup'];
-                    console.log(`   🔌 Frameworks: ${frameworks.join(', ')}`);
+                    logger.info(`   🔌 Frameworks: ${frameworks.join(', ')}`);
                     
                     if (pack.unplugin.description) {
-                      console.log(`   Plugin: ${pack.unplugin.description}`);
+                      logger.info(`   Plugin: ${pack.unplugin.description}`);
                     }
                   }
                   
-                  console.log();
+                  logger.info();
                 }
               }
 
             } catch (error) {
               consola.error('Failed to discover unplugin packs:', error.message);
-              process.exit(1);
+              await exitWithError(new Error("Operation failed"), 1);
             }
           }
         }),
@@ -185,18 +185,18 @@ export const enhancedMarketplaceCommand = defineCommand({
               const totalPlugins = generatedPlugins.reduce((sum, p) => sum + p.plugins.length, 0);
               consola.success(`Generated ${totalPlugins} plugins for ${generatedPlugins.length} packs`);
               
-              console.log();
-              console.log('Generated plugins:');
+              logger.info();
+              logger.info('Generated plugins:');
               for (const packResult of generatedPlugins) {
-                console.log(`📦 ${packResult.packName}:`);
+                logger.info(`📦 ${packResult.packName}:`);
                 for (const plugin of packResult.plugins) {
-                  console.log(`   🔌 ${plugin.framework}: ${plugin.path}`);
+                  logger.info(`   🔌 ${plugin.framework}: ${plugin.path}`);
                 }
               }
 
             } catch (error) {
               consola.error('Failed to generate plugins:', error.message);
-              process.exit(1);
+              await exitWithError(new Error("Operation failed"), 1);
             }
           }
         }),
@@ -220,7 +220,7 @@ export const enhancedMarketplaceCommand = defineCommand({
           async run({ args }) {
             if (!args.pack) {
               consola.error('Pack ID is required');
-              process.exit(1);
+              await exitWithError(new Error("Operation failed"), 1);
             }
 
             const { PackManager } = await import('../pack/manager.mjs');
@@ -237,12 +237,12 @@ export const enhancedMarketplaceCommand = defineCommand({
               const packInfo = await packManager.getPackInfo(args.pack);
               if (!packInfo) {
                 consola.error(`Pack ${args.pack} not found`);
-                process.exit(1);
+                await exitWithError(new Error("Operation failed"), 1);
               }
 
               if (!packInfo.unplugin) {
                 consola.error(`Pack ${args.pack} does not have unplugin configuration`);
-                process.exit(1);
+                await exitWithError(new Error("Operation failed"), 1);
               }
 
               // Generate plugin
@@ -266,11 +266,11 @@ export const enhancedMarketplaceCommand = defineCommand({
                       const pluginInstance = pluginCode.default({});
                       consola.success(`Plugin instantiation successful`);
                       
-                      console.log();
-                      console.log('Plugin configuration:');
-                      console.log(`  Name: ${pluginInstance.name}`);
-                      console.log(`  Framework: ${pluginInstance.framework}`);
-                      console.log(`  Hooks: ${Object.keys(pluginInstance).filter(k => typeof pluginInstance[k] === 'function').join(', ')}`);
+                      logger.info();
+                      logger.info('Plugin configuration:');
+                      logger.info(`  Name: ${pluginInstance.name}`);
+                      logger.info(`  Framework: ${pluginInstance.framework}`);
+                      logger.info(`  Hooks: ${Object.keys(pluginInstance).filter(k => typeof pluginInstance[k] === 'function').join(', ')}`);
                     }
                   } catch (error) {
                     consola.error(`Plugin loading failed:`, error.message);
@@ -282,7 +282,7 @@ export const enhancedMarketplaceCommand = defineCommand({
 
             } catch (error) {
               consola.error('Test failed:', error.message);
-              process.exit(1);
+              await exitWithError(new Error("Operation failed"), 1);
             }
           }
         })

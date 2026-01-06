@@ -30,6 +30,8 @@ The useNotes() composable provides Git notes functionality for audit trails, rec
 ## Usage Pattern
 \`\`\`javascript
 import { useNotes } from 'file:///Users/sac/gitvan/src/index.mjs'
+import { createLogger } from "../../../utils/logger.mjs";
+const logger = createLogger("ai:prompts:composables:useNotes");
 
 const notes = useNotes()
 
@@ -151,7 +153,7 @@ await notes.write('receipt-deploy-job', JSON.stringify(receipt))
 // Verify receipt
 const storedReceipt = await notes.read('receipt-deploy-job')
 const parsedReceipt = JSON.parse(storedReceipt)
-console.log('Deployment receipt:', parsedReceipt)
+logger.info('Deployment receipt:', parsedReceipt)
 \`\`\`
 
 ### Configuration Storage
@@ -223,11 +225,11 @@ try {
   await notes.write('key', 'value')
 } catch (error) {
   if (error.message.includes('notes ref')) {
-    console.error('Notes reference not found')
+    logger.error('Notes reference not found')
   } else if (error.message.includes('permission')) {
-    console.error('Permission denied for notes operation')
+    logger.error('Permission denied for notes operation')
   } else {
-    console.error('Notes operation failed:', error.message)
+    logger.error('Notes operation failed:', error.message)
   }
   throw error
 }

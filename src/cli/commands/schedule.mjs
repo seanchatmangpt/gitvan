@@ -68,24 +68,24 @@ const listSubcommand = defineCommand({
 
         // Format output
         if (args.format === "json") {
-          console.log(JSON.stringify(schedules, null, 2));
+          logger.info(JSON.stringify(schedules, null, 2));
         } else if (args.format === "yaml") {
           for (const s of schedules) {
-            console.log(`- id: ${s.id}`);
-            console.log(`  name: ${s.name}`);
-            console.log(`  cron: ${s.cron}`);
-            console.log(`  jobId: ${s.jobId}`);
-            console.log(`  enabled: ${s.enabled}`);
-            console.log(`  timezone: ${s.timezone}`);
+            logger.info(`- id: ${s.id}`);
+            logger.info(`  name: ${s.name}`);
+            logger.info(`  cron: ${s.cron}`);
+            logger.info(`  jobId: ${s.jobId}`);
+            logger.info(`  enabled: ${s.enabled}`);
+            logger.info(`  timezone: ${s.timezone}`);
           }
         } else {
           // Table format
-          console.log("\n⏰ Schedules");
-          console.log("=".repeat(90));
-          console.log(
+          logger.info("\n⏰ Schedules");
+          logger.info("=".repeat(90));
+          logger.info(
             `${"ID".padEnd(20)} ${"Cron".padEnd(15)} ${"Job".padEnd(20)} ${"Status".padEnd(10)} ${"TZ".padEnd(10)}`
           );
-          console.log("=".repeat(90));
+          logger.info("=".repeat(90));
 
           for (const s of schedules) {
             const id = s.id.length > 18 ? s.id.slice(0, 17) + "…" : s.id.padEnd(20);
@@ -96,24 +96,24 @@ const listSubcommand = defineCommand({
             const status = s.enabled ? "✓ Enabled" : "✗ Disabled";
             const tz = s.timezone.padEnd(10);
 
-            console.log(`${id} ${cron} ${jobId} ${status.padEnd(10)} ${tz}`);
+            logger.info(`${id} ${cron} ${jobId} ${status.padEnd(10)} ${tz}`);
 
             if (args.verbose) {
-              console.log(`  Name: ${s.name}`);
-              console.log(`  Description: ${s.description}`);
-              console.log(`  File: ${s.file}`);
-              console.log("");
+              logger.info(`  Name: ${s.name}`);
+              logger.info(`  Description: ${s.description}`);
+              logger.info(`  File: ${s.file}`);
+              logger.info("");
             }
           }
 
-          console.log("=".repeat(90));
-          console.log(`Total: ${schedules.length} schedule(s)\n`);
+          logger.info("=".repeat(90));
+          logger.info(`Total: ${schedules.length} schedule(s)\n`);
         }
       });
     } catch (error) {
       logger.error("Failed to list schedules:", error);
       consola.error(`Failed to list schedules: ${error.message}`);
-      process.exit(1);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -193,13 +193,13 @@ const applySubcommand = defineCommand({
         );
 
         consola.success(`Schedule applied: ${scheduleId}`);
-        console.log("\n📅 Schedule Details:");
-        console.log(`  ID: ${scheduleDef.id}`);
-        console.log(`  Name: ${scheduleDef.name}`);
-        console.log(`  Cron: ${scheduleDef.cron}`);
-        console.log(`  Job: ${scheduleDef.jobId}`);
-        console.log(`  Enabled: ${scheduleDef.enabled}`);
-        console.log(`  Timezone: ${scheduleDef.timezone}\n`);
+        logger.info("\n📅 Schedule Details:");
+        logger.info(`  ID: ${scheduleDef.id}`);
+        logger.info(`  Name: ${scheduleDef.name}`);
+        logger.info(`  Cron: ${scheduleDef.cron}`);
+        logger.info(`  Job: ${scheduleDef.jobId}`);
+        logger.info(`  Enabled: ${scheduleDef.enabled}`);
+        logger.info(`  Timezone: ${scheduleDef.timezone}\n`);
 
         if (args.restart) {
           consola.start("Restarting scheduler...");
@@ -210,7 +210,7 @@ const applySubcommand = defineCommand({
     } catch (error) {
       logger.error("Failed to apply schedule:", error);
       consola.error(`Failed to apply schedule: ${error.message}`);
-      process.exit(1);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -244,7 +244,7 @@ const enableSubcommand = defineCommand({
     } catch (error) {
       logger.error(`Failed to enable schedule ${args.scheduleId}:`, error);
       consola.error(`Failed to enable schedule: ${error.message}`);
-      process.exit(1);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -278,7 +278,7 @@ const disableSubcommand = defineCommand({
     } catch (error) {
       logger.error(`Failed to disable schedule ${args.scheduleId}:`, error);
       consola.error(`Failed to disable schedule: ${error.message}`);
-      process.exit(1);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -312,7 +312,7 @@ const removeSubcommand = defineCommand({
     } catch (error) {
       logger.error(`Failed to remove schedule ${args.scheduleId}:`, error);
       consola.error(`Failed to remove schedule: ${error.message}`);
-      process.exit(1);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -340,22 +340,22 @@ const statusSubcommand = defineCommand({
         const schedule = useSchedule();
         const status = await schedule.status(args.scheduleId);
 
-        console.log("\n📊 Schedule Status");
-        console.log("=".repeat(80));
-        console.log(`Schedule: ${status.id}`);
-        console.log(`Enabled: ${status.enabled ? "Yes" : "No"}`);
-        console.log(`Cron: ${status.cron}`);
-        console.log(`Job: ${status.jobId}`);
-        console.log(`Last Run: ${status.lastRun || "Never"}`);
-        console.log(`Last Status: ${status.lastStatus || "N/A"}`);
-        console.log(`Total Runs: ${status.totalRuns}`);
-        console.log(`Success Rate: ${status.successRate}%`);
-        console.log("=".repeat(80) + "\n");
+        logger.info("\n📊 Schedule Status");
+        logger.info("=".repeat(80));
+        logger.info(`Schedule: ${status.id}`);
+        logger.info(`Enabled: ${status.enabled ? "Yes" : "No"}`);
+        logger.info(`Cron: ${status.cron}`);
+        logger.info(`Job: ${status.jobId}`);
+        logger.info(`Last Run: ${status.lastRun || "Never"}`);
+        logger.info(`Last Status: ${status.lastStatus || "N/A"}`);
+        logger.info(`Total Runs: ${status.totalRuns}`);
+        logger.info(`Success Rate: ${status.successRate}%`);
+        logger.info("=".repeat(80) + "\n");
       });
     } catch (error) {
       logger.error(`Failed to get schedule status for ${args.scheduleId}:`, error);
       consola.error(`Failed to get schedule status: ${error.message}`);
-      process.exit(1);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -397,67 +397,67 @@ const validateSubcommand = defineCommand({
           let validCount = 0;
           let invalidCount = 0;
 
-          console.log("\n📋 Validation Results");
-          console.log("=".repeat(80));
+          logger.info("\n📋 Validation Results");
+          logger.info("=".repeat(80));
 
           for (const result of results) {
             if (result.valid) {
               validCount++;
-              console.log(`✓ ${result.id.padEnd(30)} VALID`);
+              logger.info(`✓ ${result.id.padEnd(30)} VALID`);
             } else {
               invalidCount++;
-              console.log(`✗ ${result.id.padEnd(30)} INVALID`);
+              logger.info(`✗ ${result.id.padEnd(30)} INVALID`);
               for (const error of result.errors) {
-                console.log(`  Error: ${error}`);
+                logger.info(`  Error: ${error}`);
               }
             }
 
             if (result.warnings.length > 0) {
               for (const warning of result.warnings) {
-                console.log(`  Warning: ${warning}`);
+                logger.info(`  Warning: ${warning}`);
               }
             }
           }
 
-          console.log("=".repeat(80));
-          console.log(`Valid: ${validCount} | Invalid: ${invalidCount}\n`);
+          logger.info("=".repeat(80));
+          logger.info(`Valid: ${validCount} | Invalid: ${invalidCount}\n`);
         } else if (args.scheduleId) {
           consola.start(`Validating schedule: ${args.scheduleId}`);
           const result = await schedule.validate(args.scheduleId);
 
-          console.log("\n📋 Validation Result");
-          console.log("=".repeat(80));
-          console.log(`Schedule: ${result.id}`);
-          console.log(`Status: ${result.valid ? "✓ VALID" : "✗ INVALID"}`);
+          logger.info("\n📋 Validation Result");
+          logger.info("=".repeat(80));
+          logger.info(`Schedule: ${result.id}`);
+          logger.info(`Status: ${result.valid ? "✓ VALID" : "✗ INVALID"}`);
 
           if (result.errors.length > 0) {
-            console.log("\nErrors:");
+            logger.info("\nErrors:");
             for (const error of result.errors) {
-              console.log(`  - ${error}`);
+              logger.info(`  - ${error}`);
             }
           }
 
           if (result.warnings.length > 0) {
-            console.log("\nWarnings:");
+            logger.info("\nWarnings:");
             for (const warning of result.warnings) {
-              console.log(`  - ${warning}`);
+              logger.info(`  - ${warning}`);
             }
           }
 
-          console.log("=".repeat(80) + "\n");
+          logger.info("=".repeat(80) + "\n");
 
           if (!result.valid) {
-            process.exit(1);
+            await exitWithError(new Error("Operation failed"), 1);
           }
         } else {
           consola.error("Please specify a schedule ID or use --all flag");
-          process.exit(1);
+          await exitWithError(new Error("Operation failed"), 1);
         }
       });
     } catch (error) {
       logger.error("Failed to validate schedule:", error);
       consola.error(`Failed to validate schedule: ${error.message}`);
-      process.exit(1);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -489,14 +489,14 @@ const runSubcommand = defineCommand({
         consola.success(`Schedule completed: ${args.scheduleId}`);
 
         if (result && typeof result === "object") {
-          console.log("\nResult:");
-          console.log(JSON.stringify(result, null, 2));
+          logger.info("\nResult:");
+          logger.info(JSON.stringify(result, null, 2));
         }
       });
     } catch (error) {
       logger.error(`Failed to run schedule ${args.scheduleId}:`, error);
       consola.error(`Failed to run schedule: ${error.message}`);
-      process.exit(1);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });

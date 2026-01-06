@@ -24,30 +24,30 @@ export async function designCommand(config, args) {
     const requirements = args.requirements || args.arg0;
 
     if (!requirements) {
-      console.log("🎨 GitVan Interactive Design Wizard");
-      console.log();
-      console.log(
+      logger.info("🎨 GitVan Interactive Design Wizard");
+      logger.info();
+      logger.info(
         "This wizard helps you design complex GitVan jobs step by step."
       );
-      console.log("It will ask questions and guide you through the process.");
-      console.log();
-      console.log("Usage:");
-      console.log('  gitvan chat design "Create a deployment pipeline"');
-      console.log('  gitvan chat design "Build a testing framework"');
-      console.log('  gitvan chat design "Set up monitoring system"');
-      console.log();
-      console.log("The wizard will:");
-      console.log("  • Analyze your requirements");
-      console.log("  • Suggest appropriate event triggers");
-      console.log("  • Recommend composables to use");
-      console.log("  • Generate implementation strategy");
-      console.log("  • Create working job code");
+      logger.info("It will ask questions and guide you through the process.");
+      logger.info();
+      logger.info("Usage:");
+      logger.info('  gitvan chat design "Create a deployment pipeline"');
+      logger.info('  gitvan chat design "Build a testing framework"');
+      logger.info('  gitvan chat design "Set up monitoring system"');
+      logger.info();
+      logger.info("The wizard will:");
+      logger.info("  • Analyze your requirements");
+      logger.info("  • Suggest appropriate event triggers");
+      logger.info("  • Recommend composables to use");
+      logger.info("  • Generate implementation strategy");
+      logger.info("  • Create working job code");
       return;
     }
 
-    console.log("🎨 GitVan Interactive Design Wizard");
-    console.log(`Analyzing requirements: "${requirements}"`);
-    console.log();
+    logger.info("🎨 GitVan Interactive Design Wizard");
+    logger.info(`Analyzing requirements: "${requirements}"`);
+    logger.info();
 
     // Build context-aware design prompt
     const designPrompt = `${GITVAN_SYSTEM_CONTEXT}
@@ -96,14 +96,14 @@ Format the response clearly with sections and actionable recommendations.`;
       config,
     });
 
-    console.log("🎯 Design Analysis:");
-    console.log(result.output);
+    logger.info("🎯 Design Analysis:");
+    logger.info(result.output);
 
-    console.log("\n🚀 Implementation Commands:");
-    console.log(`  • Draft spec: gitvan chat draft "${requirements}"`);
-    console.log(`  • Generate job: gitvan chat generate "${requirements}"`);
-    console.log(`  • Preview code: gitvan chat preview "${requirements}"`);
-    console.log(
+    logger.info("\n🚀 Implementation Commands:");
+    logger.info(`  • Draft spec: gitvan chat draft "${requirements}"`);
+    logger.info(`  • Generate job: gitvan chat generate "${requirements}"`);
+    logger.info(`  • Preview code: gitvan chat preview "${requirements}"`);
+    logger.info(
       `  • Apply with name: gitvan chat apply "${requirements}" --name <name>`
     );
   } catch (error) {

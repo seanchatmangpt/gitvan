@@ -10,6 +10,8 @@
 import { defineCommand } from "citty";
 import { WorkflowCLI } from "../workflow.mjs";
 import { useGitVan, withGitVan } from "../../core/context.mjs";
+import { createLogger } from "../../utils/logger.mjs";
+const logger = createLogger("cli:commands:workflow");
 
 /**
  * Main workflow command with all subcommands
@@ -57,8 +59,8 @@ export const workflowCommand = defineCommand({
             await cli.list();
           });
         } catch (error) {
-          console.error(`❌ Failed to list workflows: ${error.message}`);
-          process.exit(1);
+          logger.error(`❌ Failed to list workflows: ${error.message}`);
+          await exitWithError(new Error("Operation failed"), 1);
         }
       },
     }),
@@ -131,8 +133,8 @@ export const workflowCommand = defineCommand({
             await cli.run(args.workflowId, runOptions);
           });
         } catch (error) {
-          console.error(`❌ Failed to run workflow: ${error.message}`);
-          process.exit(1);
+          logger.error(`❌ Failed to run workflow: ${error.message}`);
+          await exitWithError(new Error("Operation failed"), 1);
         }
       },
     }),
@@ -164,8 +166,8 @@ export const workflowCommand = defineCommand({
             await cli.validate(args.workflowId);
           });
         } catch (error) {
-          console.error(`❌ Failed to validate workflow: ${error.message}`);
-          process.exit(1);
+          logger.error(`❌ Failed to validate workflow: ${error.message}`);
+          await exitWithError(new Error("Operation failed"), 1);
         }
       },
     }),
@@ -205,8 +207,8 @@ export const workflowCommand = defineCommand({
             await cli.create(args.workflowId, args.title);
           });
         } catch (error) {
-          console.error(`❌ Failed to create workflow: ${error.message}`);
-          process.exit(1);
+          logger.error(`❌ Failed to create workflow: ${error.message}`);
+          await exitWithError(new Error("Operation failed"), 1);
         }
       },
     }),
@@ -231,8 +233,8 @@ export const workflowCommand = defineCommand({
             await cli.stats();
           });
         } catch (error) {
-          console.error(`❌ Failed to show stats: ${error.message}`);
-          process.exit(1);
+          logger.error(`❌ Failed to show stats: ${error.message}`);
+          await exitWithError(new Error("Operation failed"), 1);
         }
       },
     }),
@@ -295,8 +297,8 @@ export const workflowCommand = defineCommand({
             await cli.cursor(args.workflowId, cursorOptions);
           });
         } catch (error) {
-          console.error(`❌ Failed to connect with Cursor: ${error.message}`);
-          process.exit(1);
+          logger.error(`❌ Failed to connect with Cursor: ${error.message}`);
+          await exitWithError(new Error("Operation failed"), 1);
         }
       },
     }),
@@ -328,10 +330,10 @@ export const workflowCommand = defineCommand({
             await cli.generateCursorScript(args.workflowId);
           });
         } catch (error) {
-          console.error(
+          logger.error(
             `❌ Failed to generate Cursor script: ${error.message}`
           );
-          process.exit(1);
+          await exitWithError(new Error("Operation failed"), 1);
         }
       },
     }),

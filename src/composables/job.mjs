@@ -13,6 +13,8 @@ import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { existsSync, readFileSync } from "node:fs";
 import {
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("composables:job");
   unrouteJobId,
   getJobDirectory,
   isJobInDirectory,
@@ -92,7 +94,7 @@ export function useJob() {
               jobs.push(job);
             }
           } catch (error) {
-            console.warn(`Failed to load job ${jobInfo.id}:`, error.message);
+            logger.warn(`Failed to load job ${jobInfo.id}:`, error.message);
           }
         }
 

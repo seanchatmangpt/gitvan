@@ -9,8 +9,8 @@ export async function handleJob(args) {
   const [action] = args;
   
   if (!action) {
-    console.log("❌ Please specify a job action");
-    console.log("Usage: gitvan job <list|run|create|delete>");
+    logger.info("❌ Please specify a job action");
+    logger.info("Usage: gitvan job <list|run|create|delete>");
     return;
   }
   
@@ -31,19 +31,19 @@ export async function handleJob(args) {
         await deleteJob(args.slice(1));
         break;
       default:
-        console.log(`❌ Unknown job action: ${action}`);
-        console.log("Available actions: list, run, create, delete");
+        logger.info(`❌ Unknown job action: ${action}`);
+        logger.info("Available actions: list, run, create, delete");
     }
   } catch (error) {
     logger.error(`❌ Job operation failed: ${error.message}`);
-    console.error(`❌ Failed to ${action} job: ${error.message}`);
-    process.exit(1);
+    logger.error(`❌ Failed to ${action} job: ${error.message}`);
+    await exitWithError(new Error("Operation failed"), 1);
   }
 }
 
 async function listJobs() {
-  console.log("📋 Available Jobs:");
-  console.log("  - No jobs found");
+  logger.info("📋 Available Jobs:");
+  logger.info("  - No jobs found");
   // Implementation would go here
 }
 
@@ -51,20 +51,20 @@ async function runJob(args) {
   const [jobName] = args;
   
   if (!jobName) {
-    console.log("❌ Please specify a job name to run");
+    logger.info("❌ Please specify a job name to run");
     return;
   }
   
-  console.log(`🚀 Running job: ${jobName}`);
+  logger.info(`🚀 Running job: ${jobName}`);
   // Implementation would go here
 }
 
 async function createJob(args) {
-  console.log("📋 Job creation not yet implemented");
+  logger.info("📋 Job creation not yet implemented");
   // Implementation would go here
 }
 
 async function deleteJob(args) {
-  console.log("📋 Job deletion not yet implemented");
+  logger.info("📋 Job deletion not yet implemented");
   // Implementation would go here
 }

@@ -90,7 +90,7 @@ function writeToFile(formatted) {
     appendFileSync(LOG_FILE, formatted + "\n");
   } catch (error) {
     // Fallback to console if file write fails
-    console.error("Failed to write log to file:", error.message);
+    logger.error("Failed to write log to file:", error.message);
   }
 }
 

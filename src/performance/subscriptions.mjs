@@ -1,3 +1,6 @@
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("performance:subscriptions");
+
 /**
  * @fileoverview GitVan v4 - Selective Subscription System
  *
@@ -33,7 +36,7 @@
  *
  * // Subscribe to specific path
  * store.subscribe(['settings', 'theme'], (theme) => {
- *   console.log('Theme changed:', theme);
+ *   logger.info('Theme changed:', theme);
  * });
  *
  * // Update triggers only relevant subscribers

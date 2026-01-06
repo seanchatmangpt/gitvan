@@ -1,3 +1,6 @@
+import { createLogger } from "../../utils/logger.mjs";
+const logger = createLogger("cli:chat:help");
+
 /**
  * GitVan Chat Help Subcommand
  * Shows comprehensive help for chat commands
@@ -8,7 +11,7 @@
  * @returns {Promise<void>}
  */
 export async function helpCommand() {
-  console.log(`
+  logger.info(`
 🤖 GitVan Chat Commands - AI-Powered Job Generation
 
 GitVan's chat interface uses AI to generate working GitVan jobs from natural language prompts.

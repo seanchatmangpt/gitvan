@@ -18,6 +18,8 @@
  */
 
 import { z } from "zod";
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("rdf-to-zod:RDFToZodConverter");
 // Note: N3 types are now provided by unrdf
 
 /**
@@ -78,7 +80,7 @@ export class RDFToZodConverter {
         const validated = schema.parse(binding);
         validatedBindings.push(validated);
       } catch (error) {
-        console.warn(`Failed to validate binding:`, error.message);
+        logger.warn(`Failed to validate binding:`, error.message);
         // Include original binding with validation error
         validatedBindings.push({
           ...binding,
@@ -348,7 +350,7 @@ export class RDFToZodConverter {
         const validated = schema.parse(result);
         validatedResults.push(validated);
       } catch (error) {
-        console.warn(`Failed to validate hook result:`, error.message);
+        logger.warn(`Failed to validate hook result:`, error.message);
         // Include original result with validation error
         validatedResults.push({
           ...result,

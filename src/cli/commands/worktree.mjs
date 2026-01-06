@@ -54,25 +54,25 @@ const listSubcommand = defineCommand({
 
         // Format output
         if (args.format === "json") {
-          console.log(JSON.stringify(worktrees, null, 2));
+          logger.info(JSON.stringify(worktrees, null, 2));
         } else if (args.format === "yaml") {
           for (const wt of worktrees) {
-            console.log(`- path: ${wt.path}`);
-            console.log(`  branch: ${wt.branch || "N/A"}`);
-            console.log(`  head: ${wt.head}`);
-            console.log(`  isMain: ${wt.isMain}`);
+            logger.info(`- path: ${wt.path}`);
+            logger.info(`  branch: ${wt.branch || "N/A"}`);
+            logger.info(`  head: ${wt.head}`);
+            logger.info(`  isMain: ${wt.isMain}`);
             if (wt.detached) {
-              console.log(`  detached: true`);
+              logger.info(`  detached: true`);
             }
           }
         } else {
           // Table format
-          console.log("\n🌳 Git Worktrees");
-          console.log("=".repeat(90));
-          console.log(
+          logger.info("\n🌳 Git Worktrees");
+          logger.info("=".repeat(90));
+          logger.info(
             `${"Path".padEnd(40)} ${"Branch".padEnd(25)} ${"Status".padEnd(15)}`
           );
-          console.log("=".repeat(90));
+          logger.info("=".repeat(90));
 
           for (const wt of worktrees) {
             const path =
@@ -85,22 +85,22 @@ const listSubcommand = defineCommand({
                 : "Linked";
 
             const marker = wt.isMain ? "●" : "○";
-            console.log(`${marker} ${path} ${branch} ${status.padEnd(15)}`);
+            logger.info(`${marker} ${path} ${branch} ${status.padEnd(15)}`);
 
             if (args.verbose) {
-              console.log(`  HEAD: ${wt.head}`);
-              console.log("");
+              logger.info(`  HEAD: ${wt.head}`);
+              logger.info("");
             }
           }
 
-          console.log("=".repeat(90));
-          console.log(`Total: ${worktrees.length} worktree(s)\n`);
+          logger.info("=".repeat(90));
+          logger.info(`Total: ${worktrees.length} worktree(s)\n`);
         }
       });
     } catch (error) {
       logger.error("Failed to list worktrees:", error);
       consola.error(`Failed to list worktrees: ${error.message}`);
-      process.exit(1);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -154,14 +154,14 @@ const createSubcommand = defineCommand({
         });
 
         consola.success(`Worktree created successfully`);
-        console.log("\n🌳 Worktree Details:");
-        console.log(`  Path: ${result.path}`);
-        console.log(`  Branch: ${result.branch}\n`);
+        logger.info("\n🌳 Worktree Details:");
+        logger.info(`  Path: ${result.path}`);
+        logger.info(`  Branch: ${result.branch}\n`);
       });
     } catch (error) {
       logger.error("Failed to create worktree:", error);
       consola.error(`Failed to create worktree: ${error.message}`);
-      process.exit(1);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -208,7 +208,7 @@ const removeSubcommand = defineCommand({
     } catch (error) {
       logger.error(`Failed to remove worktree ${args.path}:`, error);
       consola.error(`Failed to remove worktree: ${error.message}`);
-      process.exit(1);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -235,7 +235,7 @@ const pruneSubcommand = defineCommand({
     } catch (error) {
       logger.error("Failed to prune worktrees:", error);
       consola.error(`Failed to prune worktrees: ${error.message}`);
-      process.exit(1);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -269,7 +269,7 @@ const repairSubcommand = defineCommand({
     } catch (error) {
       logger.error(`Failed to repair worktree ${args.path}:`, error);
       consola.error(`Failed to repair worktree: ${error.message}`);
-      process.exit(1);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -290,18 +290,18 @@ const infoSubcommand = defineCommand({
         const worktree = useWorktree();
         const info = await worktree.info();
 
-        console.log("\n🌳 Current Worktree Information");
-        console.log("=".repeat(80));
-        console.log(`Worktree: ${info.worktree}`);
-        console.log(`Branch: ${info.branch}`);
-        console.log(`HEAD: ${info.head}`);
-        console.log(`Common Dir: ${info.commonDir}`);
-        console.log("=".repeat(80) + "\n");
+        logger.info("\n🌳 Current Worktree Information");
+        logger.info("=".repeat(80));
+        logger.info(`Worktree: ${info.worktree}`);
+        logger.info(`Branch: ${info.branch}`);
+        logger.info(`HEAD: ${info.head}`);
+        logger.info(`Common Dir: ${info.commonDir}`);
+        logger.info("=".repeat(80) + "\n");
       });
     } catch (error) {
       logger.error("Failed to get worktree info:", error);
       consola.error(`Failed to get worktree info: ${error.message}`);
-      process.exit(1);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -322,20 +322,20 @@ const statusSubcommand = defineCommand({
         const worktree = useWorktree();
         const status = await worktree.status();
 
-        console.log("\n📊 Worktree Status");
-        console.log("=".repeat(80));
-        console.log("\nCurrent Worktree:");
-        console.log(`  Path: ${status.current.path}`);
-        console.log(`  Branch: ${status.current.branch}`);
-        console.log(`  HEAD: ${status.current.head}`);
-        console.log(`  Is Main: ${status.isMain ? "Yes" : "No"}`);
-        console.log(`\nTotal Worktrees: ${status.count}`);
-        console.log("=".repeat(80) + "\n");
+        logger.info("\n📊 Worktree Status");
+        logger.info("=".repeat(80));
+        logger.info("\nCurrent Worktree:");
+        logger.info(`  Path: ${status.current.path}`);
+        logger.info(`  Branch: ${status.current.branch}`);
+        logger.info(`  HEAD: ${status.current.head}`);
+        logger.info(`  Is Main: ${status.isMain ? "Yes" : "No"}`);
+        logger.info(`\nTotal Worktrees: ${status.count}`);
+        logger.info("=".repeat(80) + "\n");
       });
     } catch (error) {
       logger.error("Failed to get worktree status:", error);
       consola.error(`Failed to get worktree status: ${error.message}`);
-      process.exit(1);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -369,7 +369,7 @@ const switchSubcommand = defineCommand({
     } catch (error) {
       logger.error(`Failed to switch to worktree ${args.path}:`, error);
       consola.error(`Failed to switch to worktree: ${error.message}`);
-      process.exit(1);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });

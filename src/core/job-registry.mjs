@@ -1,3 +1,6 @@
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("core:job-registry");
+
 /**
  * GitVan Job Definition - Unified Hooks System
  *
@@ -30,18 +33,18 @@ export function defineJob(config) {
       const startTime = Date.now();
 
       try {
-        console.log(`🚀 Starting job: ${meta.name}`);
+        logger.info(`🚀 Starting job: ${meta.name}`);
 
         // Execute the job's run function
         const result = await run(context);
 
         const duration = Date.now() - startTime;
-        console.log(`✅ Job ${meta.name} completed in ${duration}ms`);
+        logger.info(`✅ Job ${meta.name} completed in ${duration}ms`);
 
         return result;
       } catch (error) {
         const duration = Date.now() - startTime;
-        console.error(
+        logger.error(
           `❌ Job ${meta.name} failed after ${duration}ms:`,
           error.message
         );
@@ -74,12 +77,12 @@ export class JobRegistry {
         }
         this.hookJobs.get(hookName).push(job.meta.name);
       }
-      console.log(
+      logger.info(
         `📝 Registered job: ${job.meta.name} (hooks: ${job.hooks.join(", ")})`
       );
     } else {
       // Jobs without hooks are registered but not mapped to any hooks
-      console.log(`📝 Registered job: ${job.meta.name} (no hooks defined)`);
+      logger.info(`📝 Registered job: ${job.meta.name} (no hooks defined)`);
     }
   }
 

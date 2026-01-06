@@ -76,27 +76,27 @@ const listSubcommand = defineCommand({
 
         // Format output
         if (args.format === "json") {
-          console.log(JSON.stringify(jobs, null, 2));
+          logger.info(JSON.stringify(jobs, null, 2));
         } else if (args.format === "yaml") {
           for (const j of jobs) {
-            console.log(`- id: ${j.id}`);
-            console.log(`  name: ${j.name}`);
-            console.log(`  description: ${j.description}`);
+            logger.info(`- id: ${j.id}`);
+            logger.info(`  name: ${j.name}`);
+            logger.info(`  description: ${j.description}`);
             if (j.tags.length > 0) {
-              console.log(`  tags: [${j.tags.join(", ")}]`);
+              logger.info(`  tags: [${j.tags.join(", ")}]`);
             }
             if (j.cron) {
-              console.log(`  cron: ${j.cron}`);
+              logger.info(`  cron: ${j.cron}`);
             }
           }
         } else {
           // Table format
-          console.log("\n📋 Available Jobs");
-          console.log("=".repeat(80));
-          console.log(
+          logger.info("\n📋 Available Jobs");
+          logger.info("=".repeat(80));
+          logger.info(
             `${"ID".padEnd(20)} ${"Name".padEnd(25)} ${"Description".padEnd(30)}`
           );
-          console.log("=".repeat(80));
+          logger.info("=".repeat(80));
 
           for (const j of jobs) {
             const id = j.id.length > 18 ? j.id.slice(0, 17) + "…" : j.id.padEnd(20);
@@ -106,28 +106,28 @@ const listSubcommand = defineCommand({
                 ? j.description.slice(0, 27) + "…"
                 : j.description.padEnd(30);
 
-            console.log(`${id} ${name} ${desc}`);
+            logger.info(`${id} ${name} ${desc}`);
 
             if (args.verbose) {
               if (j.tags.length > 0) {
-                console.log(`  Tags: ${j.tags.join(", ")}`);
+                logger.info(`  Tags: ${j.tags.join(", ")}`);
               }
               if (j.cron) {
-                console.log(`  Cron: ${j.cron}`);
+                logger.info(`  Cron: ${j.cron}`);
               }
-              console.log(`  File: ${j.file}`);
-              console.log("");
+              logger.info(`  File: ${j.file}`);
+              logger.info("");
             }
           }
 
-          console.log("=".repeat(80));
-          console.log(`Total: ${jobs.length} job(s)\n`);
+          logger.info("=".repeat(80));
+          logger.info(`Total: ${jobs.length} job(s)\n`);
         }
       });
     } catch (error) {
       logger.error("Failed to list jobs:", error);
       consola.error(`Failed to list jobs: ${error.message}`);
-      process.exit(1);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -193,14 +193,14 @@ const runSubcommand = defineCommand({
         consola.success(`Job completed: ${args.jobId}`);
 
         if (result && typeof result === "object") {
-          console.log("\nResult:");
-          console.log(JSON.stringify(result, null, 2));
+          logger.info("\nResult:");
+          logger.info(JSON.stringify(result, null, 2));
         }
       });
     } catch (error) {
       logger.error(`Failed to run job ${args.jobId}:`, error);
       consola.error(`Failed to run job: ${error.message}`);
-      process.exit(1);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -242,67 +242,67 @@ const validateSubcommand = defineCommand({
           let validCount = 0;
           let invalidCount = 0;
 
-          console.log("\n📋 Validation Results");
-          console.log("=".repeat(80));
+          logger.info("\n📋 Validation Results");
+          logger.info("=".repeat(80));
 
           for (const result of results) {
             if (result.valid) {
               validCount++;
-              console.log(`✓ ${result.id.padEnd(30)} VALID`);
+              logger.info(`✓ ${result.id.padEnd(30)} VALID`);
             } else {
               invalidCount++;
-              console.log(`✗ ${result.id.padEnd(30)} INVALID`);
+              logger.info(`✗ ${result.id.padEnd(30)} INVALID`);
               for (const error of result.errors) {
-                console.log(`  Error: ${error}`);
+                logger.info(`  Error: ${error}`);
               }
             }
 
             if (result.warnings.length > 0) {
               for (const warning of result.warnings) {
-                console.log(`  Warning: ${warning}`);
+                logger.info(`  Warning: ${warning}`);
               }
             }
           }
 
-          console.log("=".repeat(80));
-          console.log(`Valid: ${validCount} | Invalid: ${invalidCount}\n`);
+          logger.info("=".repeat(80));
+          logger.info(`Valid: ${validCount} | Invalid: ${invalidCount}\n`);
         } else if (args.jobId) {
           consola.start(`Validating job: ${args.jobId}`);
           const result = await job.validate(args.jobId);
 
-          console.log("\n📋 Validation Result");
-          console.log("=".repeat(80));
-          console.log(`Job: ${result.id}`);
-          console.log(`Status: ${result.valid ? "✓ VALID" : "✗ INVALID"}`);
+          logger.info("\n📋 Validation Result");
+          logger.info("=".repeat(80));
+          logger.info(`Job: ${result.id}`);
+          logger.info(`Status: ${result.valid ? "✓ VALID" : "✗ INVALID"}`);
 
           if (result.errors.length > 0) {
-            console.log("\nErrors:");
+            logger.info("\nErrors:");
             for (const error of result.errors) {
-              console.log(`  - ${error}`);
+              logger.info(`  - ${error}`);
             }
           }
 
           if (result.warnings.length > 0) {
-            console.log("\nWarnings:");
+            logger.info("\nWarnings:");
             for (const warning of result.warnings) {
-              console.log(`  - ${warning}`);
+              logger.info(`  - ${warning}`);
             }
           }
 
-          console.log("=".repeat(80) + "\n");
+          logger.info("=".repeat(80) + "\n");
 
           if (!result.valid) {
-            process.exit(1);
+            await exitWithError(new Error("Operation failed"), 1);
           }
         } else {
           consola.error("Please specify a job ID or use --all flag");
-          process.exit(1);
+          await exitWithError(new Error("Operation failed"), 1);
         }
       });
     } catch (error) {
       logger.error("Failed to validate job:", error);
       consola.error(`Failed to validate job: ${error.message}`);
-      process.exit(1);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -330,20 +330,20 @@ const statusSubcommand = defineCommand({
         const job = useJob();
         const status = await job.status(args.jobId);
 
-        console.log("\n📊 Job Status");
-        console.log("=".repeat(80));
-        console.log(`Job: ${status.id}`);
-        console.log(`Running: ${status.isRunning ? "Yes" : "No"}`);
-        console.log(`Last Run: ${status.lastRun || "Never"}`);
-        console.log(`Last Status: ${status.lastStatus || "N/A"}`);
-        console.log(`Total Runs: ${status.totalRuns}`);
-        console.log(`Success Rate: ${status.successRate}%`);
-        console.log("=".repeat(80) + "\n");
+        logger.info("\n📊 Job Status");
+        logger.info("=".repeat(80));
+        logger.info(`Job: ${status.id}`);
+        logger.info(`Running: ${status.isRunning ? "Yes" : "No"}`);
+        logger.info(`Last Run: ${status.lastRun || "Never"}`);
+        logger.info(`Last Status: ${status.lastStatus || "N/A"}`);
+        logger.info(`Total Runs: ${status.totalRuns}`);
+        logger.info(`Success Rate: ${status.successRate}%`);
+        logger.info("=".repeat(80) + "\n");
       });
     } catch (error) {
       logger.error(`Failed to get job status for ${args.jobId}:`, error);
       consola.error(`Failed to get job status: ${error.message}`);
-      process.exit(1);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -392,30 +392,30 @@ const historySubcommand = defineCommand({
           return;
         }
 
-        console.log("\n📜 Job History");
-        console.log("=".repeat(80));
-        console.log(
+        logger.info("\n📜 Job History");
+        logger.info("=".repeat(80));
+        logger.info(
           `${"Timestamp".padEnd(25)} ${"Status".padEnd(15)} ${"Duration".padEnd(10)}`
         );
-        console.log("=".repeat(80));
+        logger.info("=".repeat(80));
 
         for (const entry of history) {
           const timestamp = entry.timestamp || "N/A";
           const status = entry.status || "N/A";
           const duration = entry.duration ? `${entry.duration}ms` : "N/A";
 
-          console.log(
+          logger.info(
             `${timestamp.padEnd(25)} ${status.padEnd(15)} ${duration.padEnd(10)}`
           );
         }
 
-        console.log("=".repeat(80));
-        console.log(`Total: ${history.length} execution(s)\n`);
+        logger.info("=".repeat(80));
+        logger.info(`Total: ${history.length} execution(s)\n`);
       });
     } catch (error) {
       logger.error(`Failed to get job history for ${args.jobId}:`, error);
       consola.error(`Failed to get job history: ${error.message}`);
-      process.exit(1);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -447,7 +447,7 @@ const chainSubcommand = defineCommand({
 
       if (!jobIds || jobIds.length < 2) {
         consola.error("Please specify at least 2 jobs to chain");
-        process.exit(1);
+        await exitWithError(new Error("Operation failed"), 1);
       }
 
       await withGitVan({ cwd: process.cwd() }, async () => {
@@ -479,19 +479,19 @@ const chainSubcommand = defineCommand({
             consola.error(`[${i + 1}/${jobIds.length}] Failed: ${jobId}`);
             consola.error(`Error: ${error.message}`);
 
-            console.log("\n❌ Job chain failed");
-            console.log(`Failed at: ${jobId} (step ${i + 1}/${jobIds.length})`);
-            process.exit(1);
+            logger.info("\n❌ Job chain failed");
+            logger.info(`Failed at: ${jobId} (step ${i + 1}/${jobIds.length})`);
+            await exitWithError(new Error("Operation failed"), 1);
           }
         }
 
-        console.log("\n✅ Job chain completed successfully");
-        console.log(`Executed: ${jobIds.join(" → ")}\n`);
+        logger.info("\n✅ Job chain completed successfully");
+        logger.info(`Executed: ${jobIds.join(" → ")}\n`);
       });
     } catch (error) {
       logger.error("Failed to chain jobs:", error);
       consola.error(`Failed to chain jobs: ${error.message}`);
-      process.exit(1);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -524,25 +524,25 @@ const searchSubcommand = defineCommand({
           return;
         }
 
-        console.log(`\n🔍 Search Results for "${args.query}"`);
-        console.log("=".repeat(80));
+        logger.info(`\n🔍 Search Results for "${args.query}"`);
+        logger.info("=".repeat(80));
 
         for (const j of results) {
-          console.log(`\n${j.id}`);
-          console.log(`  Name: ${j.name}`);
-          console.log(`  Description: ${j.description}`);
+          logger.info(`\n${j.id}`);
+          logger.info(`  Name: ${j.name}`);
+          logger.info(`  Description: ${j.description}`);
           if (j.tags.length > 0) {
-            console.log(`  Tags: ${j.tags.join(", ")}`);
+            logger.info(`  Tags: ${j.tags.join(", ")}`);
           }
         }
 
-        console.log("\n" + "=".repeat(80));
-        console.log(`Found: ${results.length} job(s)\n`);
+        logger.info("\n" + "=".repeat(80));
+        logger.info(`Found: ${results.length} job(s)\n`);
       });
     } catch (error) {
       logger.error("Failed to search jobs:", error);
       consola.error(`Failed to search jobs: ${error.message}`);
-      process.exit(1);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });

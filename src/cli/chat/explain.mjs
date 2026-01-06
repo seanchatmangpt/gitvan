@@ -24,7 +24,7 @@ export async function explainCommand(config, args) {
       throw new Error("Job path required for explain command");
     }
 
-    console.log(`📖 Explaining GitVan job: ${jobPath}`);
+    logger.info(`📖 Explaining GitVan job: ${jobPath}`);
 
     // Find and read the job file
     const possiblePaths = [
@@ -91,17 +91,17 @@ Format the explanation clearly with headers and bullet points.`;
       config,
     });
 
-    console.log("📋 Job Analysis:");
-    console.log(`  Job: ${jobPath}`);
-    console.log(`  File: ${jobFile}`);
-    console.log();
-    console.log("📖 Explanation:");
-    console.log(result.output);
+    logger.info("📋 Job Analysis:");
+    logger.info(`  Job: ${jobPath}`);
+    logger.info(`  File: ${jobFile}`);
+    logger.info();
+    logger.info("📖 Explanation:");
+    logger.info(result.output);
 
-    console.log("\n🔧 Quick Commands:");
-    console.log(`  • Run: gitvan job run ${jobPath}`);
-    console.log(`  • Test: gitvan job test ${jobPath}`);
-    console.log(`  • Edit: code ${jobFile}`);
+    logger.info("\n🔧 Quick Commands:");
+    logger.info(`  • Run: gitvan job run ${jobPath}`);
+    logger.info(`  • Test: gitvan job test ${jobPath}`);
+    logger.info(`  • Edit: code ${jobFile}`);
   } catch (error) {
     logger.error("Failed to explain job:", error.message);
     throw error;

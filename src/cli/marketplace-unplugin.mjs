@@ -85,41 +85,41 @@ export const marketplaceCommand = defineCommand({
 
           // Display results with unplugin information
           consola.success(`Found ${results.total} packs`);
-          console.log();
+          logger.info();
 
           for (const pack of results.packs) {
-            console.log(`📦 ${pack.name} v${pack.version}`);
-            console.log(`   ${pack.description}`);
-            console.log(`   ID: ${pack.id}`);
+            logger.info(`📦 ${pack.name} v${pack.version}`);
+            logger.info(`   ${pack.description}`);
+            logger.info(`   ID: ${pack.id}`);
             
             if (pack.tags && pack.tags.length > 0) {
-              console.log(`   Tags: ${pack.tags.join(', ')}`);
+              logger.info(`   Tags: ${pack.tags.join(', ')}`);
             }
             
             if (pack.capabilities && pack.capabilities.length > 0) {
-              console.log(`   Capabilities: ${pack.capabilities.join(', ')}`);
+              logger.info(`   Capabilities: ${pack.capabilities.join(', ')}`);
             }
 
             // Show unplugin support
             if (pack.unplugin) {
-              console.log(`   🔌 Unplugin Support: ${pack.unplugin.frameworks?.join(', ') || 'All frameworks'}`);
+              logger.info(`   🔌 Unplugin Support: ${pack.unplugin.frameworks?.join(', ') || 'All frameworks'}`);
               if (pack.unplugin.description) {
-                console.log(`   Plugin: ${pack.unplugin.description}`);
+                logger.info(`   Plugin: ${pack.unplugin.description}`);
               }
             }
 
-            console.log();
+            logger.info();
           }
 
           // Show pagination info
           if (results.totalPages > 1) {
-            console.log(`Page ${args.page} of ${results.totalPages}`);
-            console.log(`Use --page to navigate, --limit to change page size`);
+            logger.info(`Page ${args.page} of ${results.totalPages}`);
+            logger.info(`Use --page to navigate, --limit to change page size`);
           }
 
         } catch (error) {
           consola.error('Failed to browse marketplace:', error.message);
-          process.exit(1);
+          await exitWithError(new Error("Operation failed"), 1);
         }
       }
     }),
@@ -150,7 +150,7 @@ export const marketplaceCommand = defineCommand({
       async run({ args }) {
         if (!args.pack) {
           consola.error('Pack ID is required');
-          process.exit(1);
+          await exitWithError(new Error("Operation failed"), 1);
         }
 
         const packManager = new PackManager();
@@ -183,7 +183,7 @@ export const marketplaceCommand = defineCommand({
                   if (pluginResult) {
                     consola.success(`Generated ${pluginResult.plugins.length} plugins:`);
                     for (const plugin of pluginResult.plugins) {
-                      console.log(`   🔌 ${plugin.framework}: ${plugin.path}`);
+                      logger.info(`   🔌 ${plugin.framework}: ${plugin.path}`);
                     }
                   }
                 } else {
@@ -195,12 +195,12 @@ export const marketplaceCommand = defineCommand({
             }
           } else {
             consola.error(`Failed to install pack: ${installResult.error}`);
-            process.exit(1);
+            await exitWithError(new Error("Operation failed"), 1);
           }
 
         } catch (error) {
           consola.error('Installation failed:', error.message);
-          process.exit(1);
+          await exitWithError(new Error("Operation failed"), 1);
         }
       }
     }),
@@ -238,28 +238,28 @@ export const marketplaceCommand = defineCommand({
                 return;
               }
 
-              console.log(`Found ${packs.packs.length} unplugin-compatible packs:`);
-              console.log();
+              logger.info(`Found ${packs.packs.length} unplugin-compatible packs:`);
+              logger.info();
 
               for (const pack of packs.packs) {
-                console.log(`📦 ${pack.name} v${pack.version}`);
-                console.log(`   ID: ${pack.id}`);
+                logger.info(`📦 ${pack.name} v${pack.version}`);
+                logger.info(`   ID: ${pack.id}`);
                 
                 if (pack.unplugin) {
                   const frameworks = pack.unplugin.frameworks || ['vite', 'webpack', 'rollup'];
-                  console.log(`   🔌 Frameworks: ${frameworks.join(', ')}`);
+                  logger.info(`   🔌 Frameworks: ${frameworks.join(', ')}`);
                   
                   if (args.framework && !frameworks.includes(args.framework)) {
                     continue;
                   }
                 }
 
-                console.log();
+                logger.info();
               }
 
             } catch (error) {
               consola.error('Failed to list plugins:', error.message);
-              process.exit(1);
+              await exitWithError(new Error("Operation failed"), 1);
             }
           }
         }),
@@ -292,7 +292,7 @@ export const marketplaceCommand = defineCommand({
 
             if (!args.pack) {
               consola.error('Pack ID is required');
-              process.exit(1);
+              await exitWithError(new Error("Operation failed"), 1);
             }
 
             consola.start(`Generating plugins for pack: ${args.pack}`);
@@ -301,12 +301,12 @@ export const marketplaceCommand = defineCommand({
               const packInfo = await packManager.getPackInfo(args.pack);
               if (!packInfo) {
                 consola.error(`Pack ${args.pack} not found`);
-                process.exit(1);
+                await exitWithError(new Error("Operation failed"), 1);
               }
 
               if (!packInfo.unplugin) {
                 consola.error(`Pack ${args.pack} does not have unplugin configuration`);
-                process.exit(1);
+                await exitWithError(new Error("Operation failed"), 1);
               }
 
               const pluginResult = await unpluginIntegration.generatePlugins(
@@ -317,13 +317,13 @@ export const marketplaceCommand = defineCommand({
               if (pluginResult) {
                 consola.success(`Generated ${pluginResult.plugins.length} plugins:`);
                 for (const plugin of pluginResult.plugins) {
-                  console.log(`   🔌 ${plugin.framework}: ${plugin.path}`);
+                  logger.info(`   🔌 ${plugin.framework}: ${plugin.path}`);
                 }
               }
 
             } catch (error) {
               consola.error('Failed to generate plugins:', error.message);
-              process.exit(1);
+              await exitWithError(new Error("Operation failed"), 1);
             }
           }
         }),
@@ -353,12 +353,12 @@ export const marketplaceCommand = defineCommand({
               writeFileSync(outputFile, JSON.stringify(registry, null, 2));
 
               consola.success(`Plugin registry generated: ${outputFile}`);
-              console.log(`   📦 ${registry.plugins.length} packs with unplugin support`);
-              console.log(`   🔌 ${registry.plugins.reduce((sum, p) => sum + p.plugins.length, 0)} total plugins`);
+              logger.info(`   📦 ${registry.plugins.length} packs with unplugin support`);
+              logger.info(`   🔌 ${registry.plugins.reduce((sum, p) => sum + p.plugins.length, 0)} total plugins`);
 
             } catch (error) {
               consola.error('Failed to generate plugin registry:', error.message);
-              process.exit(1);
+              await exitWithError(new Error("Operation failed"), 1);
             }
           }
         }),
@@ -376,11 +376,11 @@ export const marketplaceCommand = defineCommand({
             try {
               const dependencies = await unpluginIntegration.installDependencies();
               consola.success('Unplugin dependencies installed successfully');
-              console.log(`   📦 ${dependencies.length} packages installed`);
+              logger.info(`   📦 ${dependencies.length} packages installed`);
 
             } catch (error) {
               consola.error('Failed to install dependencies:', error.message);
-              process.exit(1);
+              await exitWithError(new Error("Operation failed"), 1);
             }
           }
         })
@@ -409,7 +409,7 @@ export const marketplaceCommand = defineCommand({
       async run({ args }) {
         if (!args.query) {
           consola.error('Search query is required');
-          process.exit(1);
+          await exitWithError(new Error("Operation failed"), 1);
         }
 
         const marketplace = new Marketplace();
@@ -427,24 +427,24 @@ export const marketplaceCommand = defineCommand({
             return;
           }
 
-          console.log(`Found ${results.length} packs:`);
-          console.log();
+          logger.info(`Found ${results.length} packs:`);
+          logger.info();
 
           for (const pack of results) {
-            console.log(`📦 ${pack.name} v${pack.version}`);
-            console.log(`   ${pack.description}`);
-            console.log(`   ID: ${pack.id}`);
+            logger.info(`📦 ${pack.name} v${pack.version}`);
+            logger.info(`   ${pack.description}`);
+            logger.info(`   ID: ${pack.id}`);
             
             if (pack.unplugin) {
-              console.log(`   🔌 Unplugin: ${pack.unplugin.frameworks?.join(', ') || 'All frameworks'}`);
+              logger.info(`   🔌 Unplugin: ${pack.unplugin.frameworks?.join(', ') || 'All frameworks'}`);
             }
 
-            console.log();
+            logger.info();
           }
 
         } catch (error) {
           consola.error('Search failed:', error.message);
-          process.exit(1);
+          await exitWithError(new Error("Operation failed"), 1);
         }
       }
     })

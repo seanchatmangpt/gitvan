@@ -11,6 +11,8 @@ Every GitVan job follows this standard structure:
 
 \`\`\`javascript
 import { defineJob, useGit, useTemplate, useNotes } from 'file:///Users/sac/gitvan/src/index.mjs'
+import { createLogger } from "../../../utils/logger.mjs";
+const logger = createLogger("ai:prompts:patterns:job-patterns");
 
 export default defineJob({
   meta: {
@@ -33,7 +35,7 @@ export default defineJob({
       const notes = useNotes()
       
       // Job logic
-      console.log(\`Executing job: \${meta.desc}\`)
+      logger.info(\`Executing job: \${meta.desc}\`)
       
       // Do work using composables
       await git.writeFile('output.txt', 'content')
@@ -47,7 +49,7 @@ export default defineJob({
         summary: 'Job completed successfully'
       }
     } catch (error) {
-      console.error('Job failed:', error.message)
+      logger.error('Job failed:', error.message)
       return {
         ok: false,
         error: error.message,
@@ -176,7 +178,7 @@ export default defineJob({
         summary: 'Documentation generated successfully'
       }
     } catch (error) {
-      console.error('Documentation generation failed:', error.message)
+      logger.error('Documentation generation failed:', error.message)
       return {
         ok: false,
         error: error.message,
@@ -219,7 +221,7 @@ export default defineJob({
             backedUpFiles.push(\`\${backupDir}/\${file}\`)
           }
         } catch (error) {
-          console.warn(\`Could not backup \${file}: \${error.message}\`)
+          logger.warn(\`Could not backup \${file}: \${error.message}\`)
         }
       }
       
@@ -246,7 +248,7 @@ export default defineJob({
         summary: \`Backup completed: \${backedUpFiles.length} files\`
       }
     } catch (error) {
-      console.error('Backup failed:', error.message)
+      logger.error('Backup failed:', error.message)
       return {
         ok: false,
         error: error.message,
@@ -313,7 +315,7 @@ export default defineJob({
         summary: \`Changelog generated for version \${data.version}\`
       }
     } catch (error) {
-      console.error('Changelog generation failed:', error.message)
+      logger.error('Changelog generation failed:', error.message)
       return {
         ok: false,
         error: error.message,
@@ -376,7 +378,7 @@ async run({ ctx, payload, meta }) {
     // Job logic
     return { ok: true, artifacts: [], summary: 'Success' }
   } catch (error) {
-    console.error('Job failed:', error.message)
+    logger.error('Job failed:', error.message)
     return {
       ok: false,
       error: error.message,
@@ -403,7 +405,7 @@ async run({ ctx, payload, meta }) {
       timestamp: new Date().toISOString()
     }))
     
-    console.error('Job failed:', error.message)
+    logger.error('Job failed:', error.message)
     return {
       ok: false,
       error: error.message,

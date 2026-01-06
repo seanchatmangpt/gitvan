@@ -50,7 +50,7 @@ async function buildAuditPack(config, args) {
     const notes = useNotes();
     const outPath = args.out || "dist/audit.json";
 
-    console.log("Building audit pack...");
+    logger.info("Building audit pack...");
 
     // Get all receipt notes using the notes composable
     const noteLines = await notes.list();
@@ -131,12 +131,12 @@ async function buildAuditPack(config, args) {
       JSON.stringify(auditPack, null, 2),
     );
 
-    console.log(`Audit pack written: ${absPath}`);
-    console.log(`  Total receipts: ${receipts.length}`);
-    console.log(
+    logger.info(`Audit pack written: ${absPath}`);
+    logger.info(`  Total receipts: ${receipts.length}`);
+    logger.info(
       `  OK: ${summary.ok}, Error: ${summary.error}, Skip: ${summary.skip}`,
     );
-    console.log(`  Invalid receipts: ${invalidCount}`);
+    logger.info(`  Invalid receipts: ${invalidCount}`);
   } catch (error) {
     logger.error("Failed to build audit pack:", error.message);
     throw error;
@@ -157,7 +157,7 @@ async function verifyReceipt(config, args) {
 
     const notes = useNotes();
 
-    console.log(`Verifying receipt: ${args.id}`);
+    logger.info(`Verifying receipt: ${args.id}`);
 
     // Find receipt by ID using notes composable
     const noteLines = await notes.list();
@@ -215,20 +215,20 @@ async function verifyReceipt(config, args) {
       throw new Error(`Receipt ${args.id} not found`);
     }
 
-    console.log("Receipt found:");
-    console.log(`  ID: ${receipt.id}`);
-    console.log(`  Status: ${receipt.status}`);
-    console.log(`  Action: ${receipt.action}`);
-    console.log(`  Timestamp: ${receipt.ts}`);
-    console.log(`  Commit: ${receipt.commit || commitSha}`);
+    logger.info("Receipt found:");
+    logger.info(`  ID: ${receipt.id}`);
+    logger.info(`  Status: ${receipt.status}`);
+    logger.info(`  Action: ${receipt.action}`);
+    logger.info(`  Timestamp: ${receipt.ts}`);
+    logger.info(`  Commit: ${receipt.commit || commitSha}`);
 
     // Verify receipt integrity
     const isValid = verifyReceiptIntegrity(receipt);
 
     if (isValid) {
-      console.log("✅ Receipt verification passed");
+      logger.info("✅ Receipt verification passed");
     } else {
-      console.log("❌ Receipt verification failed");
+      logger.info("❌ Receipt verification failed");
     }
   } catch (error) {
     logger.error("Failed to verify receipt:", error.message);
@@ -247,7 +247,7 @@ async function listReceipts(config, args) {
     const notes = useNotes();
     const limit = args.limit ? parseInt(args.limit) : 50;
 
-    console.log(`Listing receipts (limit: ${limit})...`);
+    logger.info(`Listing receipts (limit: ${limit})...`);
 
     const noteLines = await notes.list();
     const receipts = [];
@@ -292,22 +292,22 @@ async function listReceipts(config, args) {
     }
 
     if (receipts.length === 0) {
-      console.log("No receipts found");
+      logger.info("No receipts found");
       return;
     }
 
-    console.log(`Found ${receipts.length} receipt(s):`);
-    console.log();
+    logger.info(`Found ${receipts.length} receipt(s):`);
+    logger.info();
 
     for (const receipt of receipts) {
-      console.log(`📋 ${receipt.id}`);
-      console.log(`   Status: ${receipt.status}`);
-      console.log(`   Action: ${receipt.action}`);
-      console.log(`   Time: ${receipt.ts}`);
+      logger.info(`📋 ${receipt.id}`);
+      logger.info(`   Status: ${receipt.status}`);
+      logger.info(`   Action: ${receipt.action}`);
+      logger.info(`   Time: ${receipt.ts}`);
       if (receipt.commit) {
-        console.log(`   Commit: ${receipt.commit}`);
+        logger.info(`   Commit: ${receipt.commit}`);
       }
-      console.log();
+      logger.info();
     }
   } catch (error) {
     logger.error("Failed to list receipts:", error.message);

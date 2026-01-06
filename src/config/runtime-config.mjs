@@ -3,6 +3,8 @@
 // Ensures runtime config is serializable and provides fallback values
 
 import defu from "defu";
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("config:runtime-config");
 
 /**
  * Normalize runtime configuration for serialization and fallback values
@@ -58,7 +60,7 @@ function _checkSerializable(obj, path = []) {
       _checkSerializable(v, [...path, k]);
     } else {
       // warn once per path; keep simple
-      console.warn(
+      logger.warn(
         `Runtime config \`${[...path, k].join(".")}\` may not serialize. Use only strings, numbers, booleans, arrays, and plain objects.`,
       );
     }

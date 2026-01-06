@@ -8,12 +8,14 @@
  * await io.acquireLock("build");
  * await io.addJob("high", () => doWork(), { name: "build" });
  * await io.writeReceipt("hook://build", { ok: true });
- * console.log(await io.getStatus());
+ * logger.info(await io.getStatus());
  */
 
 import { useGitVan, tryUseGitVan, withGitVan } from "../core/context.mjs";
 import { GitNativeIO } from "../git-native/git-native-io.mjs";
 import { useLog } from "./log.mjs";
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("composables:native-io");
 
 export function useNativeIO() {
   // Get context from unctx - this must be called synchronously

@@ -82,14 +82,14 @@ const generateSubcommand = defineCommand({
 
         consola.success("Code generated successfully!");
 
-        console.log("\n" + "=".repeat(80));
-        console.log("Generated Code:");
-        console.log("=".repeat(80));
-        console.log(result.output);
-        console.log("=".repeat(80));
-        console.log(`\nModel: ${result.model}`);
-        console.log(`Provider: ${result.provider}`);
-        console.log(`Duration: ${result.duration}ms\n`);
+        logger.info("\n" + "=".repeat(80));
+        logger.info("Generated Code:");
+        logger.info("=".repeat(80));
+        logger.info(result.output);
+        logger.info("=".repeat(80));
+        logger.info(`\nModel: ${result.model}`);
+        logger.info(`Provider: ${result.provider}`);
+        logger.info(`Duration: ${result.duration}ms\n`);
 
         // Save to file if output path specified
         if (args.output) {
@@ -100,7 +100,7 @@ const generateSubcommand = defineCommand({
     } catch (error) {
       logger.error("Failed to generate code:", error);
       consola.error(`Failed to generate code: ${error.message}`);
-      process.exit(1);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -171,20 +171,20 @@ const jobSubcommand = defineCommand({
 
         consola.success("Job generated successfully!");
 
-        console.log("\n" + "=".repeat(80));
-        console.log("Generated Job:");
-        console.log("=".repeat(80));
-        console.log(`Name: ${result.spec.name}`);
-        console.log(`Description: ${result.spec.desc}`);
-        console.log(`Tags: ${result.spec.tags.join(", ")}`);
-        console.log(`Author: ${result.spec.author}`);
-        console.log(`Version: ${result.spec.version}`);
-        console.log("\nCode:");
-        console.log("-".repeat(80));
-        console.log(result.code);
-        console.log("=".repeat(80));
-        console.log(`\nModel: ${result.model}`);
-        console.log(`Provider: ${result.provider}\n`);
+        logger.info("\n" + "=".repeat(80));
+        logger.info("Generated Job:");
+        logger.info("=".repeat(80));
+        logger.info(`Name: ${result.spec.name}`);
+        logger.info(`Description: ${result.spec.desc}`);
+        logger.info(`Tags: ${result.spec.tags.join(", ")}`);
+        logger.info(`Author: ${result.spec.author}`);
+        logger.info(`Version: ${result.spec.version}`);
+        logger.info("\nCode:");
+        logger.info("-".repeat(80));
+        logger.info(result.code);
+        logger.info("=".repeat(80));
+        logger.info(`\nModel: ${result.model}`);
+        logger.info(`Provider: ${result.provider}\n`);
 
         // Save to jobs directory if requested
         if (args.save) {
@@ -203,7 +203,7 @@ const jobSubcommand = defineCommand({
     } catch (error) {
       logger.error("Failed to generate job:", error);
       consola.error(`Failed to generate job: ${error.message}`);
-      process.exit(1);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -236,19 +236,19 @@ const statusSubcommand = defineCommand({
         const config = args.provider ? { provider: args.provider } : {};
         const status = await checkAIAvailability(config);
 
-        console.log("\n" + "=".repeat(80));
-        console.log("AI Provider Status");
-        console.log("=".repeat(80));
-        console.log(`Available: ${status.available ? "✓ Yes" : "✗ No"}`);
-        console.log(`Provider: ${status.provider}`);
-        console.log(`Model: ${status.model}`);
+        logger.info("\n" + "=".repeat(80));
+        logger.info("AI Provider Status");
+        logger.info("=".repeat(80));
+        logger.info(`Available: ${status.available ? "✓ Yes" : "✗ No"}`);
+        logger.info(`Provider: ${status.provider}`);
+        logger.info(`Model: ${status.model}`);
         if (status.message) {
-          console.log(`Message: ${status.message}`);
+          logger.info(`Message: ${status.message}`);
         }
         if (status.error) {
-          console.log(`Error: ${status.error}`);
+          logger.info(`Error: ${status.error}`);
         }
-        console.log("=".repeat(80) + "\n");
+        logger.info("=".repeat(80) + "\n");
 
         if (!status.available) {
           consola.warn("AI provider is not available");
@@ -264,7 +264,7 @@ const statusSubcommand = defineCommand({
     } catch (error) {
       logger.error("Failed to check AI status:", error);
       consola.error(`Failed to check AI status: ${error.message}`);
-      process.exit(1);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -299,7 +299,7 @@ const chatSubcommand = defineCommand({
     } catch (error) {
       logger.error("Failed to start chat:", error);
       consola.error(`Failed to start chat: ${error.message}`);
-      process.exit(1);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -343,7 +343,7 @@ const completeSubcommand = defineCommand({
     } catch (error) {
       logger.error("Failed to complete code:", error);
       consola.error(`Failed to complete code: ${error.message}`);
-      process.exit(1);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });

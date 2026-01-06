@@ -7,6 +7,8 @@ import { USE_GIT_CONTEXT } from "./composables/useGit.mjs";
 import { USE_TEMPLATE_CONTEXT } from "./composables/useTemplate.mjs";
 import { USE_NOTES_CONTEXT } from "./composables/useNotes.mjs";
 import { JOB_PATTERNS_CONTEXT } from "./patterns/job-patterns.mjs";
+import { createLogger } from "../../utils/logger.mjs";
+const logger = createLogger("ai:prompts:gitvan-complete-context");
 
 export const GITVAN_COMPLETE_CONTEXT = `
 # GitVan v2 Complete AI Context
@@ -78,7 +80,7 @@ try {
   // Job logic using composables
   return { ok: true, artifacts: [], summary: 'Success' }
 } catch (error) {
-  console.error('Job failed:', error.message)
+  logger.error('Job failed:', error.message)
   return { ok: false, error: error.message, artifacts: [] }
 }
 \`\`\`
@@ -111,9 +113,9 @@ async run({ ctx, payload, meta }) {
 
 ### 7. Include Meaningful Logging
 \`\`\`javascript
-console.log(\`Executing job: \${meta.desc}\`)
-console.log('Processing files...')
-console.log('Job completed successfully')
+logger.info(\`Executing job: \${meta.desc}\`)
+logger.info('Processing files...')
+logger.info('Job completed successfully')
 \`\`\`
 
 ## Common Mistakes to Avoid
@@ -121,7 +123,7 @@ console.log('Job completed successfully')
 ### ❌ Don't Use Generic Operations
 \`\`\`javascript
 // WRONG
-console.log('Execute task')
+logger.info('Execute task')
 
 // CORRECT
 const git = useGit()
@@ -144,7 +146,7 @@ async run({ ctx, payload, meta }) {
     await git.writeFile('file.txt', 'content')
     return { ok: true, artifacts: ['file.txt'], summary: 'File created' }
   } catch (error) {
-    console.error('Job failed:', error.message)
+    logger.error('Job failed:', error.message)
     return { ok: false, error: error.message, artifacts: [] }
   }
 }
@@ -199,7 +201,7 @@ export default defineJob({
       const template = useTemplate()
       const notes = useNotes()
       
-      console.log(\`Executing job: \${meta.desc}\`)
+      logger.info(\`Executing job: \${meta.desc}\`)
       
       // Create backup directory
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
@@ -220,7 +222,7 @@ export default defineJob({
             backedUpFiles.push(\`\${backupDir}/\${file}\`)
           }
         } catch (error) {
-          console.warn(\`Could not backup \${file}: \${error.message}\`)
+          logger.warn(\`Could not backup \${file}: \${error.message}\`)
         }
       }
       
@@ -252,7 +254,7 @@ export default defineJob({
         summary: \`Backup completed: \${backedUpFiles.length} files\`
       }
     } catch (error) {
-      console.error('Backup failed:', error.message)
+      logger.error('Backup failed:', error.message)
       return {
         ok: false,
         error: error.message,

@@ -39,24 +39,24 @@ const listSubcommand = defineCommand({
       const jobs = await scanJobs({ cwd: config.rootDir || process.cwd() });
       const cronJobs = jobs.filter((job) => job.cron);
 
-      console.log("⏰ GitVan Cron Jobs");
-      console.log("=".repeat(40));
+      logger.info("⏰ GitVan Cron Jobs");
+      logger.info("=".repeat(40));
 
       if (cronJobs.length === 0) {
-        console.log("No cron jobs found");
+        logger.info("No cron jobs found");
         return;
       }
 
       cronJobs.forEach((job, index) => {
-        console.log(`${index + 1}. ${job.name}`);
-        console.log(
+        logger.info(`${index + 1}. ${job.name}`);
+        logger.info(
           `   📝 Description: ${job.description || "No description"}`
         );
-        console.log(`   ⏰ Schedule: ${job.cron}`);
+        logger.info(`   ⏰ Schedule: ${job.cron}`);
 
         if (args.verbose) {
-          console.log(`   📁 File: ${job.file}`);
-          console.log(`   ⏰ Modified: ${job.modified}`);
+          logger.info(`   📁 File: ${job.file}`);
+          logger.info(`   ⏰ Modified: ${job.modified}`);
         }
 
         if (args["show-schedule"]) {
@@ -90,7 +90,7 @@ const listSubcommand = defineCommand({
 
                     if (minMatch && hourMatch) {
                       found = true;
-                      console.log(`   🔮 Next Run: ${testDate.toLocaleString()}`);
+                      logger.info(`   🔮 Next Run: ${testDate.toLocaleString()}`);
                       break;
                     }
                   }
@@ -98,24 +98,24 @@ const listSubcommand = defineCommand({
               }
 
               if (!found) {
-                console.log(`   🔮 Next Run: ${new Date(nextDate.getTime() + 3600000).toLocaleString()} (estimated)`);
+                logger.info(`   🔮 Next Run: ${new Date(nextDate.getTime() + 3600000).toLocaleString()} (estimated)`);
               }
             } else {
-              console.log(`   🔮 Next Run: Invalid cron expression`);
+              logger.info(`   🔮 Next Run: Invalid cron expression`);
             }
           } catch (error) {
-            console.log(`   🔮 Next Run: Unable to calculate`);
+            logger.info(`   🔮 Next Run: Unable to calculate`);
           }
         }
 
-        console.log();
+        logger.info();
       });
 
-      console.log(`📊 Total: ${cronJobs.length} cron jobs`);
+      logger.info(`📊 Total: ${cronJobs.length} cron jobs`);
     } catch (error) {
       logger.error("Failed to list cron jobs:", error);
-      console.error("❌ Failed to list cron jobs:", error.message);
-      process.exit(1);
+      logger.error("❌ Failed to list cron jobs:", error.message);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -154,10 +154,10 @@ const startSubcommand = defineCommand({
     try {
       const config = await loadConfig();
 
-      console.log("🚀 Starting GitVan cron scheduler...");
-      console.log(`📁 Root Directory: ${args["root-dir"]}`);
-      console.log(`⏰ Check Interval: ${args["check-interval"]}s`);
-      console.log(`🔄 Max Concurrent: ${args["max-concurrent"]}`);
+      logger.info("🚀 Starting GitVan cron scheduler...");
+      logger.info(`📁 Root Directory: ${args["root-dir"]}`);
+      logger.info(`⏰ Check Interval: ${args["check-interval"]}s`);
+      logger.info(`🔄 Max Concurrent: ${args["max-concurrent"]}`);
 
       const schedulerOptions = {
         rootDir: args["root-dir"],
@@ -168,12 +168,12 @@ const startSubcommand = defineCommand({
 
       await startCronScheduler(schedulerOptions);
 
-      console.log("✅ Cron scheduler started successfully");
-      console.log("💡 Press Ctrl+C to stop the scheduler");
+      logger.info("✅ Cron scheduler started successfully");
+      logger.info("💡 Press Ctrl+C to stop the scheduler");
     } catch (error) {
       logger.error("Failed to start cron scheduler:", error);
-      console.error("❌ Failed to start cron scheduler:", error.message);
-      process.exit(1);
+      logger.error("❌ Failed to start cron scheduler:", error.message);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -209,13 +209,13 @@ const dryRunSubcommand = defineCommand({
       const jobs = await scanJobs({ cwd: args["root-dir"] });
       const cronJobs = jobs.filter((job) => job.cron);
 
-      console.log("🧪 Dry Run - Cron Job Simulation");
-      console.log("=".repeat(40));
-      console.log(`⏰ Simulating time: ${args.at}`);
-      console.log();
+      logger.info("🧪 Dry Run - Cron Job Simulation");
+      logger.info("=".repeat(40));
+      logger.info(`⏰ Simulating time: ${args.at}`);
+      logger.info();
 
       if (cronJobs.length === 0) {
-        console.log("No cron jobs found to simulate");
+        logger.info("No cron jobs found to simulate");
         return;
       }
 
@@ -227,26 +227,26 @@ const dryRunSubcommand = defineCommand({
         // For now, just show all jobs as potential candidates
         jobsToRun.push(job);
 
-        console.log(`✅ Would run: ${job.name}`);
-        console.log(`   ⏰ Schedule: ${job.cron}`);
-        console.log(
+        logger.info(`✅ Would run: ${job.name}`);
+        logger.info(`   ⏰ Schedule: ${job.cron}`);
+        logger.info(
           `   📝 Description: ${job.description || "No description"}`
         );
 
         if (args.verbose) {
-          console.log(`   📁 File: ${job.file}`);
+          logger.info(`   📁 File: ${job.file}`);
         }
-        console.log();
+        logger.info();
       }
 
-      console.log(`📊 Summary:`);
-      console.log(`   Total cron jobs: ${cronJobs.length}`);
-      console.log(`   Jobs that would run: ${jobsToRun.length}`);
-      console.log(`   Simulation time: ${simulationTime.toISOString()}`);
+      logger.info(`📊 Summary:`);
+      logger.info(`   Total cron jobs: ${cronJobs.length}`);
+      logger.info(`   Jobs that would run: ${jobsToRun.length}`);
+      logger.info(`   Simulation time: ${simulationTime.toISOString()}`);
     } catch (error) {
       logger.error("Failed to dry run cron jobs:", error);
-      console.error("❌ Failed to dry run cron jobs:", error.message);
-      process.exit(1);
+      logger.error("❌ Failed to dry run cron jobs:", error.message);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });
@@ -277,36 +277,36 @@ const statusSubcommand = defineCommand({
       const jobs = await scanJobs({ cwd: args["root-dir"] });
       const cronJobs = jobs.filter((job) => job.cron);
 
-      console.log("📊 GitVan Cron Status");
-      console.log("=".repeat(30));
+      logger.info("📊 GitVan Cron Status");
+      logger.info("=".repeat(30));
 
-      console.log(`📁 Root Directory: ${args["root-dir"]}`);
-      console.log(`⏰ Total Cron Jobs: ${cronJobs.length}`);
+      logger.info(`📁 Root Directory: ${args["root-dir"]}`);
+      logger.info(`⏰ Total Cron Jobs: ${cronJobs.length}`);
 
       if (cronJobs.length > 0) {
-        console.log();
-        console.log("📋 Cron Jobs:");
+        logger.info();
+        logger.info("📋 Cron Jobs:");
         cronJobs.forEach((job, index) => {
-          console.log(`   ${index + 1}. ${job.name} (${job.cron})`);
+          logger.info(`   ${index + 1}. ${job.name} (${job.cron})`);
         });
       }
 
       // TODO: Check if scheduler is actually running
-      console.log();
-      console.log("🔄 Scheduler Status: Not implemented");
-      console.log("💡 Use 'gitvan cron start' to start the scheduler");
+      logger.info();
+      logger.info("🔄 Scheduler Status: Not implemented");
+      logger.info("💡 Use 'gitvan cron start' to start the scheduler");
 
       if (args.verbose) {
-        console.log();
-        console.log("🔍 Detailed Information:");
-        console.log(`   Config Root: ${config.rootDir || "Not set"}`);
-        console.log(`   Jobs Directory: ${args["root-dir"]}`);
-        console.log(`   Last Check: Not implemented`);
+        logger.info();
+        logger.info("🔍 Detailed Information:");
+        logger.info(`   Config Root: ${config.rootDir || "Not set"}`);
+        logger.info(`   Jobs Directory: ${args["root-dir"]}`);
+        logger.info(`   Last Check: Not implemented`);
       }
     } catch (error) {
       logger.error("Failed to get cron status:", error);
-      console.error("❌ Failed to get cron status:", error.message);
-      process.exit(1);
+      logger.error("❌ Failed to get cron status:", error.message);
+      await exitWithError(new Error("Operation failed"), 1);
     }
   },
 });

@@ -10,6 +10,8 @@
 import { defineCommand } from "citty";
 import { HooksCLI } from "../hooks.mjs";
 import { useGitVan, withGitVan } from "../../core/context.mjs";
+import { createLogger } from "../../utils/logger.mjs";
+const logger = createLogger("cli:commands:hooks");
 
 /**
  * Main hooks command with all subcommands
@@ -69,8 +71,8 @@ export const hooksCommand = defineCommand({
             }
           });
         } catch (error) {
-          console.error(`❌ Failed to list hooks: ${error.message}`);
-          process.exit(1);
+          logger.error(`❌ Failed to list hooks: ${error.message}`);
+          await exitWithError(new Error("Operation failed"), 1);
         }
       },
     }),
@@ -131,8 +133,8 @@ export const hooksCommand = defineCommand({
             }
           });
         } catch (error) {
-          console.error(`❌ Failed to evaluate hooks: ${error.message}`);
-          process.exit(1);
+          logger.error(`❌ Failed to evaluate hooks: ${error.message}`);
+          await exitWithError(new Error("Operation failed"), 1);
         }
       },
     }),
@@ -168,8 +170,8 @@ export const hooksCommand = defineCommand({
             await cli.validate(args.hookId);
           });
         } catch (error) {
-          console.error(`❌ Failed to validate hook: ${error.message}`);
-          process.exit(1);
+          logger.error(`❌ Failed to validate hook: ${error.message}`);
+          await exitWithError(new Error("Operation failed"), 1);
         }
       },
     }),
@@ -195,8 +197,8 @@ export const hooksCommand = defineCommand({
             await cli.stats();
           });
         } catch (error) {
-          console.error(`❌ Failed to get stats: ${error.message}`);
-          process.exit(1);
+          logger.error(`❌ Failed to get stats: ${error.message}`);
+          await exitWithError(new Error("Operation failed"), 1);
         }
       },
     }),
@@ -222,8 +224,8 @@ export const hooksCommand = defineCommand({
             await cli.refresh();
           });
         } catch (error) {
-          console.error(`❌ Failed to refresh registry: ${error.message}`);
-          process.exit(1);
+          logger.error(`❌ Failed to refresh registry: ${error.message}`);
+          await exitWithError(new Error("Operation failed"), 1);
         }
       },
     }),
@@ -270,8 +272,8 @@ export const hooksCommand = defineCommand({
             await cli.create(args.hookId, args.title, args.predicateType);
           });
         } catch (error) {
-          console.error(`❌ Failed to create hook: ${error.message}`);
-          process.exit(1);
+          logger.error(`❌ Failed to create hook: ${error.message}`);
+          await exitWithError(new Error("Operation failed"), 1);
         }
       },
     }),

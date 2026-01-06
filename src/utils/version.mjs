@@ -4,6 +4,8 @@
  */
 
 import semver from 'semver';
+import { createLogger } from "./logger.mjs";
+const logger = createLogger("utils:version");
 
 /**
  * Check if a version satisfies a constraint using semver
@@ -19,7 +21,7 @@ export function satisfiesConstraint(version, constraint) {
 
     return semver.satisfies(cleanVersion, cleanConstraint);
   } catch (error) {
-    console.warn(`Version constraint check failed: ${error.message}`);
+    logger.warn(`Version constraint check failed: ${error.message}`);
     return false;
   }
 }
@@ -43,7 +45,7 @@ export function compareVersions(version1, version2) {
 
     return semver.compare(clean1, clean2);
   } catch (error) {
-    console.warn(`Version comparison failed: ${error.message}`);
+    logger.warn(`Version comparison failed: ${error.message}`);
     // Fallback to string comparison
     return version1.localeCompare(version2);
   }
@@ -68,7 +70,7 @@ export function isGreaterThan(version1, version2) {
 
     return semver.gt(clean1, clean2);
   } catch (error) {
-    console.warn(`Version gt check failed: ${error.message}`);
+    logger.warn(`Version gt check failed: ${error.message}`);
     return false;
   }
 }
@@ -91,7 +93,7 @@ export function getLatestVersion(versions) {
 
     return validVersions[0] || null;
   } catch (error) {
-    console.warn(`Latest version calculation failed: ${error.message}`);
+    logger.warn(`Latest version calculation failed: ${error.message}`);
     return versions[0] || null;
   }
 }
@@ -151,7 +153,7 @@ export function areConstraintsCompatible(constraint1, constraint2) {
 
     return false;
   } catch (error) {
-    console.warn(`Constraint compatibility check failed: ${error.message}`);
+    logger.warn(`Constraint compatibility check failed: ${error.message}`);
     return false;
   }
 }
@@ -196,7 +198,7 @@ export function getVersionsMatching(versions, constraint) {
       .filter(v => satisfiesConstraint(v, constraint))
       .sort(semver.rcompare);
   } catch (error) {
-    console.warn(`Version matching failed: ${error.message}`);
+    logger.warn(`Version matching failed: ${error.message}`);
     return [];
   }
 }
@@ -211,7 +213,7 @@ export function isUpdateAvailable(currentVersion, latestVersion) {
   try {
     return isGreaterThan(latestVersion, currentVersion);
   } catch (error) {
-    console.warn(`Update check failed: ${error.message}`);
+    logger.warn(`Update check failed: ${error.message}`);
     return false;
   }
 }
@@ -234,7 +236,7 @@ export function getSuggestedUpdate(currentVersion, constraint, availableVersions
 
     return null;
   } catch (error) {
-    console.warn(`Suggested update calculation failed: ${error.message}`);
+    logger.warn(`Suggested update calculation failed: ${error.message}`);
     return null;
   }
 }

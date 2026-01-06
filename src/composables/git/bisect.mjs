@@ -1,3 +1,6 @@
+import { createLogger } from "../../utils/logger.mjs";
+const logger = createLogger("composables:git:bisect");
+
 // src/composables/git/bisect.mjs
 // GitVan v2 — Bisect operations factory
 // - Binary search to find bug-introducing commits
@@ -302,7 +305,7 @@ export default function makeBisect(base, run, runVoid, toArr) {
      *
      * @example
      * if (await isBisecting()) {
-     *   console.log('Bisect in progress');
+     *   logger.info('Bisect in progress');
      * }
      */
     async isBisecting() {

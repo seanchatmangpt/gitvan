@@ -13,6 +13,8 @@ import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import {
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("composables:event");
   unrouteEventId,
   unrouteCronExpression,
   unrouteBranchName,
@@ -98,7 +100,7 @@ export function useEvent() {
               events.push(event);
             }
           } catch (error) {
-            console.warn(
+            logger.warn(
               `Failed to load event ${eventInfo.id}:`,
               error.message
             );

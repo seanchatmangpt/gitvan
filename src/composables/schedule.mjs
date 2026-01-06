@@ -11,6 +11,8 @@ import { startCronScheduler } from "../jobs/cron.mjs";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("composables:schedule");
 
 export function useSchedule() {
   // Get context from unctx - this must be called synchronously
@@ -191,7 +193,7 @@ export default ${JSON.stringify(schedule.definition, null, 2)};
               schedules.push(schedule);
             }
           } catch (error) {
-            console.warn(
+            logger.warn(
               `Failed to load schedule ${scheduleInfo.id}:`,
               error.message
             );
@@ -601,7 +603,7 @@ export default ${JSON.stringify(schedule.definition, null, 2)};
     async stopScheduler() {
       try {
         // Note: stopCronScheduler is not implemented yet
-        console.log("Cron scheduler stop not implemented yet");
+        logger.info("Cron scheduler stop not implemented yet");
         return true;
       } catch (error) {
         throw new Error(`Failed to stop cron scheduler: ${error.message}`);

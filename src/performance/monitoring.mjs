@@ -1,3 +1,6 @@
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("performance:monitoring");
+
 /**
  * @fileoverview GitVan v4 - Performance Monitoring Hooks
  *
@@ -49,7 +52,7 @@ const DEFAULT_CONFIG = {
  *   return await graph.query(sparql);
  * });
  *
- * console.log(monitor.getReport());
+ * logger.info(monitor.getReport());
  * ```
  */
 export function usePerformanceMonitor(options = {}) {
@@ -465,7 +468,7 @@ export function usePerformanceMonitor(options = {}) {
  * await evaluatePredicates();
  * session.mark('evaluated');
  *
- * console.log(session.getTimeline());
+ * logger.info(session.getTimeline());
  * session.end();
  * ```
  */

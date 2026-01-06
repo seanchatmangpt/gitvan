@@ -1,3 +1,6 @@
+import { createLogger } from "../../utils/logger.mjs";
+const logger = createLogger("composables:git:submodules");
+
 // src/composables/git/submodules.mjs
 // GitVan v2 — Submodules operations factory
 // - Add, remove, update, and list submodules
@@ -393,7 +396,7 @@ export default function makeSubmodules(base, run, runVoid, toArr) {
      *
      * @example
      * if (await isSubmodule('lib/repo')) {
-     *   console.log('This is a submodule');
+     *   logger.info('This is a submodule');
      * }
      */
     async isSubmodule(path) {

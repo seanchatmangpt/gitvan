@@ -6,6 +6,8 @@
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { parse } from '@babel/parser';
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("security:code-generator");
 
 // Get the source directory dynamically
 const __filename = fileURLToPath(import.meta.url);
@@ -103,7 +105,7 @@ export default defineJob({
       const template = useTemplate();
       const notes = useNotes();
 
-      console.log("Executing job: ${desc}");
+      logger.info("Executing job: ${desc}");
 
       // Simple working implementation
       await writeFile('job-output.txt', \`Job executed at \${new Date().toISOString()}\`);
@@ -115,7 +117,7 @@ export default defineJob({
         summary: "Job completed successfully"
       };
     } catch (error) {
-      console.error('Job failed:', error.message);
+      logger.error('Job failed:', error.message);
       return {
         ok: false,
         error: error.message,

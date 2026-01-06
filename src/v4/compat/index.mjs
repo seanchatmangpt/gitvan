@@ -25,6 +25,8 @@ import { useJob as useJobV4 } from '../hooks/gitvan.js';
 import { useTemplate as useTemplateV4 } from '../hooks/gitvan.js';
 import { useConfig as useConfigV4 } from '../hooks/gitvan.js';
 import { useWorkflow as useWorkflowV4 } from '../hooks/gitvan.js';
+import { createLogger } from "../../utils/logger.mjs";
+const logger = createLogger("v4:compat:index");
 
 // =============================================================================
 // Deprecation Warnings
@@ -39,7 +41,7 @@ function warnDeprecation(name, v4Alternative) {
   if (hasWarnedGlobal) return;
   hasWarnedGlobal = true;
 
-  console.warn(
+  logger.warn(
     `\n⚠️  DEPRECATION WARNING: V3 composables are deprecated\n` +
     `   Current function: ${name}\n` +
     `   Use V4 alternative: ${v4Alternative}\n` +

@@ -1,3 +1,6 @@
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("git-native:GitNativeIO");
+
 /**
  * Git-Native I/O — public façade for queues, locks, receipts, snapshots, and workers.
  * Deterministic, durable task execution with Git-backed state.
@@ -7,7 +10,7 @@
  * await io.acquireLock("build");
  * await io.addJob("high", () => doWork(), { name: "build" });
  * await io.writeReceipt("hook://build", { ok: true });
- * console.log(await io.getStatus());
+ * logger.info(await io.getStatus());
  */
 export class GitNativeIO {
   /**

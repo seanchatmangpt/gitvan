@@ -294,7 +294,7 @@ export async function preCommitHook(stagedFiles) {
 
   if (results.criticalCount > 0 || results.highCount > 0) {
     logger.error('Critical or high-severity secrets detected!');
-    console.error(formatScanResults(results));
+    logger.error(formatScanResults(results));
 
     return {
       passed: false,
@@ -305,7 +305,7 @@ export async function preCommitHook(stagedFiles) {
 
   if (results.mediumCount > 0 || results.lowCount > 0) {
     logger.warn('Medium or low-severity secrets detected');
-    console.warn(formatScanResults(results));
+    logger.warn(formatScanResults(results));
   }
 
   return {

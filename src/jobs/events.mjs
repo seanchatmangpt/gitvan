@@ -6,6 +6,8 @@ import { scanJobs } from "./scan.mjs";
 import { JobRunner } from "./runner.mjs";
 import { loadOptions } from "../config/loader.mjs";
 import { useGit } from "../composables/git/index.mjs";
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("jobs:events");
 
 /**
  * Event predicate evaluator
@@ -395,7 +397,7 @@ export class EventJobRunner {
       this.eventJobs.set(job.id, job);
     }
 
-    console.log(`Loaded ${this.eventJobs.size} event-driven jobs`);
+    logger.info(`Loaded ${this.eventJobs.size} event-driven jobs`);
   }
 
   /**
@@ -415,7 +417,7 @@ export class EventJobRunner {
           jobsToRun.push(job);
         }
       } catch (error) {
-        console.warn(
+        logger.warn(
           `Failed to evaluate predicates for job ${jobId}:`,
           error.message
         );
@@ -426,7 +428,7 @@ export class EventJobRunner {
       return;
     }
 
-    console.log(`Running ${jobsToRun.length} event-driven jobs`);
+    logger.info(`Running ${jobsToRun.length} event-driven jobs`);
 
     // Run jobs in parallel
     const promises = jobsToRun.map(async (job) => {
@@ -442,10 +444,10 @@ export class EventJobRunner {
             },
           },
         });
-        console.log(`✅ Event job ${job.id} completed successfully`);
+        logger.info(`✅ Event job ${job.id} completed successfully`);
         return result;
       } catch (error) {
-        console.error(`❌ Event job ${job.id} failed:`, error.message);
+        logger.error(`❌ Event job ${job.id} failed:`, error.message);
         throw error;
       }
     });
@@ -453,7 +455,7 @@ export class EventJobRunner {
     try {
       await Promise.all(promises);
     } catch (error) {
-      console.error("Some event jobs failed:", error.message);
+      logger.error("Some event jobs failed:", error.message);
     }
   }
 
@@ -536,19 +538,19 @@ export class EventCLI {
     const jobs = await this.runner.listEventJobs();
 
     if (jobs.length === 0) {
-      console.log("No event-driven jobs found");
+      logger.info("No event-driven jobs found");
       return;
     }
 
-    console.log("Event-Driven Jobs:");
-    console.log("ID".padEnd(20) + "PREDICATES".padEnd(40) + "DESCRIPTION");
-    console.log("-".repeat(80));
+    logger.info("Event-Driven Jobs:");
+    logger.info("ID".padEnd(20) + "PREDICATES".padEnd(40) + "DESCRIPTION");
+    logger.info("-".repeat(80));
 
     for (const job of jobs) {
       const id = job.id.padEnd(20);
       const predicates = JSON.stringify(job.predicates).padEnd(40);
       const desc = job.description;
-      console.log(`${id}${predicates}${desc}`);
+      logger.info(`${id}${predicates}${desc}`);
     }
   }
 
@@ -559,17 +561,17 @@ export class EventCLI {
     await this.init();
     const result = await this.runner.dryRun(context);
 
-    console.log(`Event dry run:`);
-    console.log(`Context: ${JSON.stringify(result.context, null, 2)}`);
+    logger.info(`Event dry run:`);
+    logger.info(`Context: ${JSON.stringify(result.context, null, 2)}`);
 
     if (result.jobsToRun.length === 0) {
-      console.log("No jobs would run for this context");
+      logger.info("No jobs would run for this context");
       return;
     }
 
-    console.log(`Would run ${result.totalJobs} jobs:`);
+    logger.info(`Would run ${result.totalJobs} jobs:`);
     result.jobsToRun.forEach((job) => {
-      console.log(`  - ${job.id} - ${job.description}`);
+      logger.info(`  - ${job.id} - ${job.description}`);
     });
   }
 

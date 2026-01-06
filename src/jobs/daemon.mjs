@@ -386,25 +386,25 @@ export class DaemonCLI {
    */
   async status() {
     if (!this.daemon) {
-      console.log("Daemon is not running");
+      logger.info("Daemon is not running");
       return;
     }
 
     const status = this.daemon.getStatus();
 
-    console.log("GitVan Job Daemon Status:");
-    console.log(`  Running: ${status.isRunning}`);
-    console.log(`  Root directory: ${status.config?.rootDir || "N/A"}`);
-    console.log(`  Receipts ref: ${status.config?.receiptsRef || "N/A"}`);
-    console.log(`  Last commit: ${status.lastCommit || "N/A"}`);
+    logger.info("GitVan Job Daemon Status:");
+    logger.info(`  Running: ${status.isRunning}`);
+    logger.info(`  Root directory: ${status.config?.rootDir || "N/A"}`);
+    logger.info(`  Receipts ref: ${status.config?.receiptsRef || "N/A"}`);
+    logger.info(`  Last commit: ${status.lastCommit || "N/A"}`);
 
     if (status.cronStatus) {
-      console.log(
+      logger.info(
         `  Cron scheduler: ${
           status.cronStatus.isRunning ? "Running" : "Stopped"
         }`
       );
-      console.log(`  Scheduled jobs: ${status.cronStatus.scheduleSize}`);
+      logger.info(`  Scheduled jobs: ${status.cronStatus.scheduleSize}`);
     }
   }
 
@@ -413,17 +413,17 @@ export class DaemonCLI {
    */
   async stats() {
     if (!this.daemon) {
-      console.log("Daemon is not running");
+      logger.info("Daemon is not running");
       return;
     }
 
     const stats = await this.daemon.getStats();
 
-    console.log("GitVan Job Daemon Statistics:");
-    console.log(`  Cron jobs: ${stats.cronJobs}`);
-    console.log(`  Event jobs: ${stats.eventJobs}`);
-    console.log(`  Total jobs: ${stats.totalJobs}`);
-    console.log(`  Uptime: ${Math.round(stats.uptime / 1000)}s`);
+    logger.info("GitVan Job Daemon Statistics:");
+    logger.info(`  Cron jobs: ${stats.cronJobs}`);
+    logger.info(`  Event jobs: ${stats.eventJobs}`);
+    logger.info(`  Total jobs: ${stats.totalJobs}`);
+    logger.info(`  Uptime: ${Math.round(stats.uptime / 1000)}s`);
   }
 
   /**
@@ -431,12 +431,12 @@ export class DaemonCLI {
    */
   async check() {
     if (!this.daemon) {
-      console.log("Daemon is not running");
+      logger.info("Daemon is not running");
       return;
     }
 
     await this.daemon.forceEventCheck();
-    console.log("Event check completed");
+    logger.info("Event check completed");
   }
 }
 

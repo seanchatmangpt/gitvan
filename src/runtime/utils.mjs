@@ -1,4 +1,6 @@
 import { useGit } from "../composables/git/index.mjs";
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("runtime:utils");
 
 /**
  * Get recent commit SHAs from current worktree HEAD
@@ -89,7 +91,7 @@ export async function eventFires(eventDef, sha) {
     const { eventMatches } = await import("./events.mjs");
     return eventMatches(eventDef, context);
   } catch (err) {
-    console.warn(`Error checking if event fires for ${sha}:`, err.message);
+    logger.warn(`Error checking if event fires for ${sha}:`, err.message);
     return false;
   }
 }

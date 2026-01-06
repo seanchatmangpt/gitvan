@@ -380,7 +380,7 @@ export async function gracefulShutdown(exitCode = 0) {
   }
 
   // Exit process
-  process.exit(exitCode);
+  await exitWithError(new Error("Operation failed"), exitCode);
 }
 
 /**
@@ -391,16 +391,16 @@ export function setupGlobalErrorHandlers() {
   process.on("uncaughtException", (error) => {
     handleUncaughtError(error).catch(() => {
       // Last resort
-      console.error("Fatal error in error handler:", error);
-      process.exit(1);
+      logger.error("Fatal error in error handler:", error);
+      await exitWithError(new Error("Operation failed"), 1);
     });
   });
 
   // Unhandled rejection handler
   process.on("unhandledRejection", (error) => {
     handleUnhandledRejection(error).catch(() => {
-      console.error("Fatal error in rejection handler:", error);
-      process.exit(1);
+      logger.error("Fatal error in rejection handler:", error);
+      await exitWithError(new Error("Operation failed"), 1);
     });
   });
 
@@ -462,7 +462,7 @@ export async function exitWithError(error, exitCode = 1) {
   });
 
   // Log to stderr
-  console.error(`\nError: ${message}\n`);
+  logger.error(`\nError: ${message}\n`);
 
   // Log error details
   logError(error, "exit");

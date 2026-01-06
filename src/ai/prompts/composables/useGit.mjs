@@ -88,6 +88,8 @@ For file operations, use Node.js built-in modules:
 ## Usage Pattern
 \`\`\`javascript
 import { useGit } from 'file:///Users/sac/gitvan/src/index.mjs'
+import { createLogger } from "../../../utils/logger.mjs";
+const logger = createLogger("ai:prompts:composables:useGit");
 
 const git = useGit()
 
@@ -132,7 +134,7 @@ Use try/catch for error handling:
 try {
   await git.writeFile('file.txt', 'content')
 } catch (error) {
-  console.error('Failed to write file:', error.message)
+  logger.error('Failed to write file:', error.message)
   throw error
 }
 \`\`\`

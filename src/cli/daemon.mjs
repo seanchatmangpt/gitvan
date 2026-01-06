@@ -40,7 +40,7 @@ export async function daemonCommand(subcommand = "start", args = {}) {
  */
 async function startDaemonCommand(args) {
   try {
-    console.log("Starting GitVan daemon...");
+    logger.info("Starting GitVan daemon...");
 
     const options = {
       rootDir: args.rootDir || process.cwd(),
@@ -50,9 +50,9 @@ async function startDaemonCommand(args) {
 
     await startDaemon(options);
 
-    console.log("Daemon started successfully");
-    console.log(`  Root: ${options.rootDir}`);
-    console.log(`  Worktrees: ${options.worktrees}`);
+    logger.info("Daemon started successfully");
+    logger.info(`  Root: ${options.rootDir}`);
+    logger.info(`  Worktrees: ${options.worktrees}`);
   } catch (error) {
     logger.error("Failed to start daemon:", error.message);
     throw error;
@@ -65,11 +65,11 @@ async function startDaemonCommand(args) {
  */
 async function stopDaemonCommand() {
   try {
-    console.log("Stopping GitVan daemon...");
+    logger.info("Stopping GitVan daemon...");
 
     await stopDaemon();
 
-    console.log("Daemon stopped successfully");
+    logger.info("Daemon stopped successfully");
   } catch (error) {
     logger.error("Failed to stop daemon:", error.message);
     throw error;
@@ -84,19 +84,19 @@ async function statusCommand() {
   try {
     const status = await daemonStatus();
 
-    console.log("GitVan Daemon Status:");
-    console.log(`  Running: ${status.running ? "Yes" : "No"}`);
+    logger.info("GitVan Daemon Status:");
+    logger.info(`  Running: ${status.running ? "Yes" : "No"}`);
 
     if (status.running) {
-      console.log(`  PID: ${status.pid || "Unknown"}`);
-      console.log(`  Uptime: ${status.uptime || "Unknown"}`);
-      console.log(`  Worktrees: ${status.worktrees || "Unknown"}`);
+      logger.info(`  PID: ${status.pid || "Unknown"}`);
+      logger.info(`  Uptime: ${status.uptime || "Unknown"}`);
+      logger.info(`  Worktrees: ${status.worktrees || "Unknown"}`);
     }
 
     if (status.jobs) {
-      console.log(`  Active Jobs: ${status.jobs.active || 0}`);
-      console.log(`  Completed Jobs: ${status.jobs.completed || 0}`);
-      console.log(`  Failed Jobs: ${status.jobs.failed || 0}`);
+      logger.info(`  Active Jobs: ${status.jobs.active || 0}`);
+      logger.info(`  Completed Jobs: ${status.jobs.completed || 0}`);
+      logger.info(`  Failed Jobs: ${status.jobs.failed || 0}`);
     }
   } catch (error) {
     logger.error("Failed to get daemon status:", error.message);
@@ -111,7 +111,7 @@ async function statusCommand() {
  */
 async function restartCommand(args) {
   try {
-    console.log("Restarting GitVan daemon...");
+    logger.info("Restarting GitVan daemon...");
 
     await stopDaemon();
 
@@ -120,7 +120,7 @@ async function restartCommand(args) {
 
     await startDaemonCommand(args);
 
-    console.log("Daemon restarted successfully");
+    logger.info("Daemon restarted successfully");
   } catch (error) {
     logger.error("Failed to restart daemon:", error.message);
     throw error;

@@ -9,6 +9,22 @@
  */
 
 import { defineCommand, runMain } from "citty";
+import { createLogger } from "./utils/logger.mjs";
+import { exitWithError } from "./core/error-handler.mjs";
+
+const logger = createLogger("cli");
+
+// Setup global error handlers
+process.on("uncaughtException", async (error) => {
+  logger.error("Uncaught Exception", { error: error.message, stack: error.stack });
+  await exitWithError(error, 1);
+});
+
+process.on("unhandledRejection", async (reason) => {
+  logger.error("Unhandled Rejection", { reason });
+  const error = reason instanceof Error ? reason : new Error(String(reason));
+  await exitWithError(error, 1);
+});
 
 // Import all Citty-based commands
 import { daemonCommand } from "./cli/commands/daemon.mjs";

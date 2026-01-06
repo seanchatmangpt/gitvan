@@ -8,6 +8,8 @@ import { useGit } from "../composables/git/index.mjs";
 import { useTemplate } from "../composables/template.mjs";
 import { useNotes } from "../composables/notes.mjs";
 import { withGitVan } from "../composables/ctx.mjs";
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("core:graph-architecture");
 
 /**
  * GitVan Graph Registry
@@ -647,30 +649,30 @@ export class GitVanGraphArchitecture {
   async initialize() {
     if (this.initialized) return this;
 
-    console.log("🔧 Initializing GitVan Graph Architecture...");
+    logger.info("🔧 Initializing GitVan Graph Architecture...");
 
     // Initialize default graphs
     await this.graphManager.initializeDefaultGraphs();
-    console.log("✅ Default graphs initialized");
+    logger.info("✅ Default graphs initialized");
 
     // Initialize AI loop
     await this.aiLoop.initialize();
-    console.log("✅ AI graph loop initialized");
+    logger.info("✅ AI graph loop initialized");
 
     // Initialize pack system
     await this.packSystem.initialize();
-    console.log("✅ Graph pack system initialized");
+    logger.info("✅ Graph pack system initialized");
 
     // Initialize marketplace
     await this.marketplace.initialize();
-    console.log("✅ Graph marketplace initialized");
+    logger.info("✅ Graph marketplace initialized");
 
     // Initialize daemon
     await this.daemon.initialize();
-    console.log("✅ Graph daemon initialized");
+    logger.info("✅ Graph daemon initialized");
 
     this.initialized = true;
-    console.log("🎉 GitVan Graph Architecture fully initialized!");
+    logger.info("🎉 GitVan Graph Architecture fully initialized!");
 
     return this;
   }

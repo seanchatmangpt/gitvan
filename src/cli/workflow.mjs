@@ -4,6 +4,8 @@
 
 import { WorkflowEngine } from "../workflow/workflow-engine.mjs";
 import { tryUseGitVan } from "../core/context.mjs";
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("cli:workflow");
 
 /**
  * Workflow CLI commands
@@ -657,7 +659,7 @@ export async function handleWorkflowCommand(args, options = {}) {
         break;
     }
   } catch (error) {
-    console.error(`❌ Workflow command failed: ${error.message}`);
-    process.exit(1);
+    logger.error(`❌ Workflow command failed: ${error.message}`);
+    await exitWithError(new Error("Operation failed"), 1);
   }
 }

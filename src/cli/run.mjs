@@ -9,8 +9,8 @@ export async function handleRun(args) {
   const [jobName] = args;
   
   if (!jobName) {
-    console.log("❌ Please specify a job name to run");
-    console.log("Usage: gitvan run <job-name>");
+    logger.info("❌ Please specify a job name to run");
+    logger.info("Usage: gitvan run <job-name>");
     return;
   }
   
@@ -18,10 +18,10 @@ export async function handleRun(args) {
   
   try {
     // Implementation would go here
-    console.log(`✅ Job '${jobName}' completed successfully`);
+    logger.info(`✅ Job '${jobName}' completed successfully`);
   } catch (error) {
     logger.error(`❌ Job execution failed: ${error.message}`);
-    console.error(`❌ Failed to run job '${jobName}': ${error.message}`);
-    process.exit(1);
+    logger.error(`❌ Failed to run job '${jobName}': ${error.message}`);
+    await exitWithError(new Error("Operation failed"), 1);
   }
 }

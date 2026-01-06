@@ -1,5 +1,7 @@
 import { existsSync } from 'node:fs'
 import { join } from 'pathe'
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("runtime:config");
 
 /**
  * Default GitVan configuration
@@ -49,7 +51,7 @@ export async function loadConfig(rootDir = process.cwd()) {
         userConfig = userConfig()
       }
     } catch (err) {
-      console.warn(`Error loading config from ${configPath}:`, err.message)
+      logger.warn(`Error loading config from ${configPath}:`, err.message)
       userConfig = {}
     }
   }

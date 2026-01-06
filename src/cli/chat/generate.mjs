@@ -29,7 +29,7 @@ export async function generateCommand(config, args) {
       throw new Error("Prompt required for generate command");
     }
 
-    console.log("🤖 Generating WORKING GitVan job with AI...");
+    logger.info("🤖 Generating WORKING GitVan job with AI...");
 
     const input = ChatInput.parse({
       prompt: prompt,
@@ -91,25 +91,25 @@ The generated code must be production-ready and functional.`;
     // Write the WORKING job to disk
     const outPath = writeFileSafe(config.rootDir, relPath, result.code);
 
-    console.log("✅ Generated WORKING GitVan job:");
-    console.log(`  File: ${outPath}`);
-    console.log(`  Mode: ${input.kind === "event" ? "event" : "on-demand"}`);
-    console.log(
+    logger.info("✅ Generated WORKING GitVan job:");
+    logger.info(`  File: ${outPath}`);
+    logger.info(`  Mode: ${input.kind === "event" ? "event" : "on-demand"}`);
+    logger.info(
       `  Summary: ${
         result.spec?.meta?.desc ||
         result.spec?.desc ||
         "Job generated successfully"
       }`
     );
-    console.log(`  Working: ${result.working ? "YES" : "NO"}`);
-    console.log();
-    console.log("📄 Generated source code:");
-    console.log(result.code);
+    logger.info(`  Working: ${result.working ? "YES" : "NO"}`);
+    logger.info();
+    logger.info("📄 Generated source code:");
+    logger.info(result.code);
 
-    console.log("\n🚀 Ready to use:");
-    console.log(`  • Run: gitvan job run ${relPath}`);
-    console.log(`  • Test: gitvan job test ${relPath}`);
-    console.log(`  • Explain: gitvan chat explain ${relPath}`);
+    logger.info("\n🚀 Ready to use:");
+    logger.info(`  • Run: gitvan job run ${relPath}`);
+    logger.info(`  • Test: gitvan job test ${relPath}`);
+    logger.info(`  • Explain: gitvan chat explain ${relPath}`);
   } catch (error) {
     logger.error("Failed to generate working files:", error.message);
     throw error;

@@ -46,7 +46,7 @@ export const marketplaceScanCommand = defineCommand({
           consola.info(
             "Create a config file or use --config to specify a different path"
           );
-          process.exit(1);
+          await exitWithError(new Error("Operation failed"), 1);
         }
 
         try {
@@ -54,7 +54,7 @@ export const marketplaceScanCommand = defineCommand({
 
           if (args["dry-run"]) {
             consola.info("Dry run mode - showing what would be scanned:");
-            console.log(JSON.stringify(config.scanConfig, null, 2));
+            logger.info(JSON.stringify(config.scanConfig, null, 2));
             return;
           }
 
@@ -72,20 +72,20 @@ export const marketplaceScanCommand = defineCommand({
 
           if (result.success) {
             consola.success("Marketplace index updated successfully");
-            console.log(`   Packs indexed: ${result.summary.packs.total}`);
-            console.log(`   Local packs: ${result.summary.packs.local}`);
-            console.log(`   Remote packs: ${result.summary.packs.remote}`);
-            console.log(`   Registry packs: ${result.summary.packs.registry}`);
-            console.log(
+            logger.info(`   Packs indexed: ${result.summary.packs.total}`);
+            logger.info(`   Local packs: ${result.summary.packs.local}`);
+            logger.info(`   Remote packs: ${result.summary.packs.remote}`);
+            logger.info(`   Registry packs: ${result.summary.packs.registry}`);
+            logger.info(
               `   Unplugin integrations: ${result.summary.unplugin.integrationsGenerated}`
             );
           } else {
             consola.error("Failed to update marketplace index");
-            process.exit(1);
+            await exitWithError(new Error("Operation failed"), 1);
           }
         } catch (error) {
           consola.error("Marketplace scan failed:", error.message);
-          process.exit(1);
+          await exitWithError(new Error("Operation failed"), 1);
         }
       },
     }),
@@ -124,7 +124,7 @@ export const marketplaceScanCommand = defineCommand({
           consola.info(
             "Example: gitvan marketplace-scan scan --source github --target unjs"
           );
-          process.exit(1);
+          await exitWithError(new Error("Operation failed"), 1);
         }
 
         const configPath =
@@ -179,17 +179,17 @@ export const marketplaceScanCommand = defineCommand({
 
           if (result.success) {
             consola.success(`Scan completed successfully`);
-            console.log(
+            logger.info(
               `   Total packs found: ${result.results.summary.totalPacks}`
             );
-            console.log(`   Errors: ${result.results.summary.errors}`);
+            logger.info(`   Errors: ${result.results.summary.errors}`);
           } else {
             consola.error("Scan failed");
-            process.exit(1);
+            await exitWithError(new Error("Operation failed"), 1);
           }
         } catch (error) {
           consola.error("Marketplace scan failed:", error.message);
-          process.exit(1);
+          await exitWithError(new Error("Operation failed"), 1);
         }
       },
     }),
@@ -218,12 +218,12 @@ export const marketplaceScanCommand = defineCommand({
             const index = JSON.parse(readFileSync(indexPath, "utf8"));
 
             consola.info("Marketplace Index Status:");
-            console.log(`   Last updated: ${index.generatedAt}`);
-            console.log(`   Total packs: ${index.packs.length}`);
-            console.log(`   Categories: ${index.categories.length}`);
-            console.log(`   Tags: ${index.tags.length}`);
-            console.log(`   Capabilities: ${index.capabilities.length}`);
-            console.log(`   Sources: ${index.sources.join(", ")}`);
+            logger.info(`   Last updated: ${index.generatedAt}`);
+            logger.info(`   Total packs: ${index.packs.length}`);
+            logger.info(`   Categories: ${index.categories.length}`);
+            logger.info(`   Tags: ${index.tags.length}`);
+            logger.info(`   Capabilities: ${index.capabilities.length}`);
+            logger.info(`   Sources: ${index.sources.join(", ")}`);
           } else {
             consola.warn(
               'No marketplace index found. Run "gitvan marketplace-scan index" to create one.'
@@ -233,15 +233,15 @@ export const marketplaceScanCommand = defineCommand({
           if (existsSync(resultsPath)) {
             const results = JSON.parse(readFileSync(resultsPath, "utf8"));
 
-            console.log();
+            logger.info();
             consola.info("Last Scan Results:");
-            console.log(`   Scan time: ${results.timestamp}`);
-            console.log(`   Total packs found: ${results.summary.totalPacks}`);
-            console.log(`   Errors: ${results.summary.errors}`);
+            logger.info(`   Scan time: ${results.timestamp}`);
+            logger.info(`   Total packs found: ${results.summary.totalPacks}`);
+            logger.info(`   Errors: ${results.summary.errors}`);
 
             if (results.scans) {
               Object.entries(results.scans).forEach(([source, scan]) => {
-                console.log(
+                logger.info(
                   `   ${source}: ${
                     scan.totalPacks ||
                     scan.totalRepos ||
@@ -254,7 +254,7 @@ export const marketplaceScanCommand = defineCommand({
           }
         } catch (error) {
           consola.error("Failed to get marketplace status:", error.message);
-          process.exit(1);
+          await exitWithError(new Error("Operation failed"), 1);
         }
       },
     }),
@@ -334,7 +334,7 @@ export const marketplaceScanCommand = defineCommand({
                 "Failed to create configuration file:",
                 error.message
               );
-              process.exit(1);
+              await exitWithError(new Error("Operation failed"), 1);
             }
           },
         }),
@@ -357,7 +357,7 @@ export const marketplaceScanCommand = defineCommand({
 
             if (!existsSync(configPath)) {
               consola.error(`Configuration file not found: ${configPath}`);
-              process.exit(1);
+              await exitWithError(new Error("Operation failed"), 1);
             }
 
             try {
@@ -393,14 +393,14 @@ export const marketplaceScanCommand = defineCommand({
 
               if (errors.length > 0) {
                 consola.error("Configuration validation failed:");
-                errors.forEach((error) => console.log(`   - ${error}`));
-                process.exit(1);
+                errors.forEach((error) => logger.info(`   - ${error}`));
+                await exitWithError(new Error("Operation failed"), 1);
               } else {
                 consola.success("Configuration is valid");
               }
             } catch (error) {
               consola.error("Failed to validate configuration:", error.message);
-              process.exit(1);
+              await exitWithError(new Error("Operation failed"), 1);
             }
           },
         }),

@@ -7,6 +7,8 @@ import { recentShas, sleep, eventFires } from "./utils.mjs";
 import { discoverJobs } from "./jobs.mjs";
 import { loadConfig } from "./config.mjs";
 import { join } from "pathe";
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("runtime:daemon");
 
 /**
  * Start daemon for specified worktrees
@@ -48,7 +50,7 @@ export async function startDaemon(opts = {}, registry = null, sel = "current") {
             },
           ];
 
-  console.log(`Starting daemon for ${wts.length} worktree(s)`);
+  logger.info(`Starting daemon for ${wts.length} worktree(s)`);
 
   // Start daemon loop for each worktree
   const promises = wts.map((wt) => loopWorktree(mergedOpts, registry, wt));
@@ -89,7 +91,7 @@ async function loopWorktree(opts, registry, wt) {
     worktree: { id: wt.path.replace(/[:/\\]/g, "-"), branch: wt.branch },
   };
 
-  console.log(`Starting daemon loop for worktree: ${wt.path} (${wt.branch})`);
+  logger.info(`Starting daemon loop for worktree: ${wt.path} (${wt.branch})`);
 
   await withGitVan(ctx, async () => {
     for (;;) {
@@ -118,11 +120,11 @@ async function loopWorktree(opts, registry, wt) {
 
               const acquired = acquireLock(lockRef, sha);
               if (!acquired) {
-                console.debug(`Lock already held for ${hook.id}@${sha}`);
+                logger.debug(`Lock already held for ${hook.id}@${sha}`);
                 continue;
               }
 
-              console.log(
+              logger.info(
                 `Processing ${hook.id} for commit ${sha.slice(0, 8)}`,
               );
 
@@ -136,7 +138,7 @@ async function loopWorktree(opts, registry, wt) {
                 // Run inline action
                 res = await runAction(hook.run);
               } else {
-                console.warn(`No action defined for hook ${hook.id}`);
+                logger.warn(`No action defined for hook ${hook.id}`);
                 continue;
               }
 
@@ -159,7 +161,7 @@ async function loopWorktree(opts, registry, wt) {
               releaseLock(lockRef);
               ran++;
             } catch (err) {
-              console.error(
+              logger.error(
                 `Error processing hook ${hook.id} for ${sha}:`,
                 err.message,
               );
@@ -169,7 +171,7 @@ async function loopWorktree(opts, registry, wt) {
 
         await sleep(opts.daemon?.pollMs || 1500);
       } catch (err) {
-        console.error(`Error in daemon loop for ${wt.path}:`, err.message);
+        logger.error(`Error in daemon loop for ${wt.path}:`, err.message);
         await sleep(5000); // Wait longer on errors
       }
     }
@@ -179,6 +181,7 @@ async function loopWorktree(opts, registry, wt) {
 // Legacy GitVanDaemon class for backward compatibility
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { execSync } from "node:child_process";
+import { exitWithError } from "../core/error-handler.mjs";
 
 export class GitVanDaemon {
   constructor(worktreePath) {
@@ -201,7 +204,7 @@ export class GitVanDaemon {
     process.on("SIGTERM", () => this.stop());
     process.on("SIGINT", () => this.stop());
 
-    console.log(
+    logger.info(
       `GitVan daemon started for worktree: ${this.worktreePath} (PID: ${pid})`,
     );
 
@@ -219,7 +222,7 @@ export class GitVanDaemon {
           process.exit(0);
         }
       } catch (err) {
-        console.warn("Error stopping daemon:", err.message);
+        logger.warn("Error stopping daemon:", err.message);
       }
     }
   }
@@ -239,7 +242,7 @@ export class GitVanDaemon {
           execSync(`rm -f ${this.pidFile}`);
         }
       } catch (cleanupErr) {
-        console.warn("Error cleaning up stale pid file:", cleanupErr.message);
+        logger.warn("Error cleaning up stale pid file:", cleanupErr.message);
       }
       return false;
     }
@@ -269,7 +272,7 @@ class WorktreeLock {
         execSync(`rm -f ${this.lockFile}`);
       }
     } catch (err) {
-      console.warn("Error releasing lock:", err.message);
+      logger.warn("Error releasing lock:", err.message);
     }
   }
 }
@@ -291,5 +294,5 @@ export async function daemonStatus() {
 
 export async function stopDaemon() {
   // Implementation for stopping daemon
-  console.log("Daemon stop functionality not fully implemented");
+  logger.info("Daemon stop functionality not fully implemented");
 }

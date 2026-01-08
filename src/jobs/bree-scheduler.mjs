@@ -165,18 +165,26 @@ export class BreeScheduler {
     }
 
     if (!this.jobs.has(name)) {
-      logger.warn(`Job ${name} does not exist`);
+      logger.warn(`Job ${name} does not exist in scheduler`);
       return;
     }
 
     try {
       await this.bree.remove(name);
-      this.jobs.delete(name);
       logger.info(`Job removed: ${name}`);
     } catch (error) {
-      logger.error(`Failed to remove job ${name}:`, error.message);
-      throw new Error(`Failed to remove job ${name}: ${error.message}`);
+      // Bree might not have the job registered yet due to timing issues
+      // If Bree says the job doesn't exist, just log a warning and clean up our tracking
+      if (error.message && error.message.includes("does not exist")) {
+        logger.warn(`Job ${name} not found in Bree (timing issue), cleaning up local tracking`);
+      } else {
+        logger.error(`Failed to remove job ${name}:`, error.message);
+        throw new Error(`Failed to remove job ${name}: ${error.message}`);
+      }
     }
+
+    // Always clean up our internal tracking
+    this.jobs.delete(name);
   }
 
   /**

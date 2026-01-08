@@ -9,18 +9,20 @@ import { useReceipt } from "./receipt.mjs";
 import { useLock } from "./lock.mjs";
 import { discoverJobs, loadJobDefinition } from "../runtime/jobs.mjs";
 import { JobRunner } from "../jobs/runner.mjs";
+import { getJobBridge } from "../jobs/job-bridge.mjs";
+import { getBreeScheduler } from "../jobs/bree-scheduler.mjs";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { existsSync, readFileSync } from "node:fs";
 import {
-import { createLogger } from "../utils/logger.mjs";
-const logger = createLogger("composables:job");
   unrouteJobId,
   getJobDirectory,
   isJobInDirectory,
   unrouteAll,
   createUnrouteMapping,
 } from "../utils/unrouting.mjs";
+import { createLogger } from "../utils/logger.mjs";
+const logger = createLogger("composables:job");
 
 export function useJob() {
   // Get context from unctx - this must be called synchronously
@@ -47,6 +49,8 @@ export function useJob() {
   const receipt = useReceipt();
   const lock = useLock();
   const runner = new JobRunner({ cwd: base.cwd });
+  const jobBridge = getJobBridge({ cwd: base.cwd });
+  const scheduler = getBreeScheduler({ cwd: base.cwd });
 
   return {
     // Context properties (exposed for testing)
@@ -493,6 +497,158 @@ export function useJob() {
 
     unrouteAll(jobIds) {
       return unrouteAll(jobIds, "job");
+    },
+
+    // === Bree Scheduler Management ===
+
+    /**
+     * Schedule a job with Bree
+     */
+    async schedule(jobId, options = {}) {
+      try {
+        const jobDef = await this.get(jobId);
+        if (!jobDef.definition) {
+          throw new Error(`Job definition not found: ${jobId}`);
+        }
+
+        await jobBridge.scheduleJob(jobDef.definition, options);
+        logger.info(`Job scheduled: ${jobId}`);
+
+        return { jobId, scheduled: true };
+      } catch (error) {
+        throw new Error(`Failed to schedule job ${jobId}: ${error.message}`);
+      }
+    },
+
+    /**
+     * Unschedule a job
+     */
+    async unschedule(jobId) {
+      try {
+        await jobBridge.unscheduleJob(jobId);
+        logger.info(`Job unscheduled: ${jobId}`);
+
+        return { jobId, unscheduled: true };
+      } catch (error) {
+        throw new Error(`Failed to unschedule job ${jobId}: ${error.message}`);
+      }
+    },
+
+    /**
+     * Start the scheduler
+     */
+    async startScheduler() {
+      try {
+        await jobBridge.start();
+        logger.info("Job scheduler started");
+
+        return { started: true };
+      } catch (error) {
+        throw new Error(`Failed to start scheduler: ${error.message}`);
+      }
+    },
+
+    /**
+     * Stop the scheduler
+     */
+    async stopScheduler() {
+      try {
+        await jobBridge.stop();
+        logger.info("Job scheduler stopped");
+
+        return { stopped: true };
+      } catch (error) {
+        throw new Error(`Failed to stop scheduler: ${error.message}`);
+      }
+    },
+
+    /**
+     * Get scheduler status
+     */
+    getSchedulerStatus() {
+      try {
+        return jobBridge.getStatus();
+      } catch (error) {
+        throw new Error(`Failed to get scheduler status: ${error.message}`);
+      }
+    },
+
+    /**
+     * List scheduled jobs
+     */
+    listScheduledJobs() {
+      try {
+        const status = jobBridge.getStatus();
+        return status.jobs || [];
+      } catch (error) {
+        throw new Error(`Failed to list scheduled jobs: ${error.message}`);
+      }
+    },
+
+    /**
+     * Run a job with Bree (for scheduled execution)
+     */
+    async runWithBree(jobId, options = {}) {
+      try {
+        const jobDef = await this.get(jobId);
+        if (!jobDef.definition) {
+          throw new Error(`Job definition not found: ${jobId}`);
+        }
+
+        const result = await jobBridge.executeJobWithLock(
+          jobDef.definition,
+          options
+        );
+
+        return result;
+      } catch (error) {
+        throw new Error(
+          `Failed to run job with Bree ${jobId}: ${error.message}`
+        );
+      }
+    },
+
+    /**
+     * Auto-schedule all cron jobs
+     */
+    async autoScheduleCronJobs() {
+      try {
+        const cronJobs = await this.getCronJobs();
+        const results = [];
+
+        for (const job of cronJobs) {
+          try {
+            await this.schedule(job.id, { cron: job.cron });
+            results.push({ jobId: job.id, scheduled: true });
+            logger.info(`Auto-scheduled cron job: ${job.id}`);
+          } catch (error) {
+            results.push({
+              jobId: job.id,
+              scheduled: false,
+              error: error.message,
+            });
+            logger.warn(`Failed to auto-schedule ${job.id}:`, error.message);
+          }
+        }
+
+        return results;
+      } catch (error) {
+        throw new Error(`Failed to auto-schedule cron jobs: ${error.message}`);
+      }
+    },
+
+    /**
+     * Shutdown scheduler gracefully
+     */
+    async shutdownScheduler() {
+      try {
+        await jobBridge.shutdown();
+        logger.info("Job scheduler shut down");
+
+        return { shutdown: true };
+      } catch (error) {
+        throw new Error(`Failed to shutdown scheduler: ${error.message}`);
+      }
     },
   };
 }

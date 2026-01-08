@@ -6,6 +6,3 @@ export { PackRegistry } from "./pack-registry-core.mjs";
 export { PackRegistrySearch } from "./pack-registry-search.mjs";
 export { PackCache } from "./pack-cache.mjs";
 export { PackInfoSchema, SearchFiltersSchema } from "./schemas.mjs";
-
-// Default export for backward compatibility
-export { PackRegistry as default } from "./pack-registry-core.mjs";

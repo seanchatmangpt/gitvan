@@ -17,6 +17,17 @@ import type {
   HookSubscription,
 } from '../types/index.js';
 
+// Simple logger for error reporting
+const logger = {
+  error: (...args: any[]) => {
+    if (typeof process !== 'undefined' && process.stderr) {
+      process.stderr.write(`[ERROR] ${args.join(' ')}\n`);
+    } else {
+      console.error(...args);
+    }
+  }
+};
+
 // =============================================================================
 // Internal State
 // =============================================================================
@@ -133,7 +144,7 @@ class SignalImpl<T> implements WritableSignal<T> {
       try {
         callback(this._value);
       } catch (error) {
-        console.error('Error in signal subscriber:', error);
+        logger.error('Error in signal subscriber:', error);
       }
     }
   }
@@ -258,7 +269,7 @@ class ComputedImpl<T> implements ComputedSignal<T> {
       try {
         callback(this._value!);
       } catch (error) {
-        console.error('Error in computed subscriber:', error);
+        logger.error('Error in computed subscriber:', error);
       }
     }
   }

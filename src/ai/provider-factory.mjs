@@ -7,7 +7,6 @@
 import { createLogger } from "../utils/logger.mjs";
 import { ProviderError, ConfigurationError } from "../core/errors.mjs";
 import { GITVAN_COMPLETE_CONTEXT } from "./prompts/gitvan-complete-context.mjs";
-import { experimental_customProvider } from "ai";
 
 const logger = createLogger("ai-provider-factory");
 

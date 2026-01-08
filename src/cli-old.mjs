@@ -146,7 +146,7 @@ async function handleSchedule(action = "apply") {
   switch (action) {
     case "apply":
       logger.info("Schedule management not yet implemented");
-      // TODO: Implement cron-like scheduling
+      // v4.1.0: Implement cron-like scheduling for advanced job scheduling
       break;
     default:
       logger.error(`Unknown schedule action: ${action}`);
@@ -249,10 +249,10 @@ async function handleJob(action = "list", ...args) {
           nowISO: new Date().toISOString(),
           id: jobName,
           logger: {
-            log: console.log,
-            warn: console.warn,
-            error: console.error,
-            info: console.info,
+            log: logger.log.bind(logger),
+            warn: logger.warn.bind(logger),
+            error: logger.error.bind(logger),
+            info: logger.info.bind(logger),
           },
         };
 

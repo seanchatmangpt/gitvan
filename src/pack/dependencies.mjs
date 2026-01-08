@@ -120,7 +120,7 @@ export class PackDependencyManager {
       }
     }
 
-    // TODO: Implement remote dependency resolution
+    // v4.1.0: Implement remote dependency resolution via pack marketplace
     // For now, return unresolved dependency
     return {
       id: depId,

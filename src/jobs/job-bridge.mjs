@@ -407,7 +407,8 @@ async function runJob() {
 
 // Run the job
 runJob().catch((error) => {
-  console.error('Worker execution failed:', error);
+  // Note: consola is not available in worker context, using process.stderr
+  process.stderr.write('Worker execution failed: ' + error.message + '\\n');
   process.exit(1);
 });
 `;

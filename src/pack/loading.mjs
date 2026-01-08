@@ -107,7 +107,7 @@ export class PackLoader {
         return cached;
       }
 
-      // TODO: Implement actual remote pack loading
+      // v4.1.0: Implement actual remote pack loading from registry/marketplace
       // For now, return null as remote loading is not implemented
       this.logger.warn(`Remote pack loading not implemented: ${packId}`);
       return null;

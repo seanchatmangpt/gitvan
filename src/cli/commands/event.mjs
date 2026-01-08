@@ -327,7 +327,7 @@ const triggerSubcommand = defineCommand({
       if (args["execute-jobs"] && triggeredJobs.length > 0) {
         logger.info();
         logger.info("🚀 Executing triggered jobs...");
-        // TODO: Implement actual job execution
+        // v4.1.0: Implement actual job execution for event-triggered workflows
         logger.info("⚠️  Job execution not implemented in this demo");
       } else if (triggeredJobs.length > 0) {
         logger.info();

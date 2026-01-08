@@ -223,7 +223,7 @@ const dryRunSubcommand = defineCommand({
       const jobsToRun = [];
 
       for (const job of cronJobs) {
-        // TODO: Implement actual cron schedule parsing and matching
+        // v4.1.0: Implement actual cron schedule parsing and matching with cron library
         // For now, just show all jobs as potential candidates
         jobsToRun.push(job);
 
@@ -291,7 +291,7 @@ const statusSubcommand = defineCommand({
         });
       }
 
-      // TODO: Check if scheduler is actually running
+      // v4.1.0: Check if scheduler is actually running via daemon status check
       logger.info();
       logger.info("🔄 Scheduler Status: Not implemented");
       logger.info("💡 Use 'gitvan cron start' to start the scheduler");

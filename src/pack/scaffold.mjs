@@ -5,7 +5,7 @@
 
 import { createLogger } from '../utils/logger.mjs';
 import { fingerprint, sha256Hex } from '../utils/crypto.mjs';
-import { join, resolve, dirname, basename } from 'pathe';
+import { join, resolve, dirname } from 'pathe';
 import { existsSync, mkdirSync, readFileSync, writeFileSync, statSync } from 'node:fs';
 import { z } from 'zod';
 

@@ -5,6 +5,7 @@
 import { parentPort, workerData } from "worker_threads";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import { consola } from "consola";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -160,7 +161,7 @@ if (workerData) {
       process.exit(0);
     })
     .catch((error) => {
-      console.error("Worker execution failed:", error);
+      consola.error("Worker execution failed:", error);
       process.exit(1);
     });
 }

@@ -3,7 +3,8 @@
 // Adapts between GitVan job interface and Bree scheduler
 
 import { join } from "pathe";
-import { writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { writeFileSync, mkdirSync, existsSync, rmSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { getBreeScheduler } from "./bree-scheduler.mjs";
 import { useLock } from "../composables/lock.mjs";
 import { useReceipt } from "../composables/receipt.mjs";
@@ -16,21 +17,57 @@ const logger = createLogger("jobs:bridge");
  * Job Bridge
  * Converts GitVan job definitions to Bree-compatible format
  * Handles context passing, locking, and receipts
+ *
+ * NOTE: Composables (lock, receipt, git) are initialized lazily to preserve unctx context
  */
 export class JobBridge {
   constructor(options = {}) {
     this.cwd = options.cwd || process.cwd();
     this.scheduler = getBreeScheduler({ cwd: this.cwd, ...options });
-    this.lock = useLock();
-    this.receipt = useReceipt();
-    this.git = useGit();
+
+    // Lazy initialization - composables will be created on first use
+    this._lock = null;
+    this._receipt = null;
+    this._git = null;
+
     this.workerDir = options.workerDir || join(this.cwd, ".gitvan", "workers");
     this.jobContexts = new Map();
+    this.createdWorkerFiles = new Set(); // Track generated worker files for cleanup
 
     // Ensure worker directory exists
     if (!existsSync(this.workerDir)) {
       mkdirSync(this.workerDir, { recursive: true });
     }
+  }
+
+  /**
+   * Get lock composable (lazy initialization)
+   */
+  get lock() {
+    if (!this._lock) {
+      this._lock = useLock();
+    }
+    return this._lock;
+  }
+
+  /**
+   * Get receipt composable (lazy initialization)
+   */
+  get receipt() {
+    if (!this._receipt) {
+      this._receipt = useReceipt();
+    }
+    return this._receipt;
+  }
+
+  /**
+   * Get git composable (lazy initialization)
+   */
+  get git() {
+    if (!this._git) {
+      this._git = useGit();
+    }
+    return this._git;
   }
 
   /**
@@ -87,8 +124,9 @@ const __dirname = dirname(__filename);
 
 async function runJob() {
   try {
-    // Import the job definition
-    const jobModule = await import('${jobDef.file.replace(/\\/g, "/")}');
+    // Import the job definition using file:// URL
+    const fileUrl = 'file://' + (process.platform === 'win32' ? '/' : '') + '${jobDef.file.replace(/\\\\/g, "/")}';
+    const jobModule = await import(fileUrl);
 
     // Get the job definition
     const jobDef = jobModule.default || jobModule;
@@ -145,6 +183,7 @@ runJob().catch((error) => {
 
     // Write worker file
     writeFileSync(workerPath, workerContent.trim(), "utf8");
+    this.createdWorkerFiles.add(workerPath); // Track for cleanup
     logger.debug(`Created worker file: ${workerPath}`);
 
     return workerPath;
@@ -221,31 +260,12 @@ runJob().catch((error) => {
         await this.scheduler.addJob(breeConfig);
       }
 
-      // Register message handler for job results
-      let jobResult = null;
-      let jobError = null;
-
-      this.scheduler.onWorkerMessage(jobId, (message) => {
-        if (message.type === "success") {
-          jobResult = message.result;
-        } else if (message.type === "error") {
-          jobError = new Error(message.error.message);
-          jobError.stack = message.error.stack;
-        }
-      });
-
-      // Run the job
-      await this.scheduler.runJob(jobId);
-
-      // Wait for job completion (check for result or error)
-      const maxWaitTime = 60000; // 1 minute timeout
-      const startWait = Date.now();
-      while (!jobResult && !jobError && Date.now() - startWait < maxWaitTime) {
-        await new Promise((resolve) => setTimeout(resolve, 100));
-      }
-
-      if (jobError) {
-        throw jobError;
+      // Run the job (Bree.run() waits for completion)
+      // Note: Bree's run() method is async and waits for the worker to complete
+      try {
+        await this.scheduler.runJob(jobId);
+      } catch (error) {
+        throw error;
       }
 
       const finishedAt = new Date().toISOString();
@@ -303,12 +323,11 @@ runJob().catch((error) => {
    * Generate execution fingerprint
    */
   generateFingerprint(jobId, head, payload) {
-    const crypto = await import("node:crypto");
     const payloadHash = payload
-      ? crypto.createHash("sha256").update(JSON.stringify(payload)).digest("hex")
+      ? createHash("sha256").update(JSON.stringify(payload)).digest("hex")
       : "";
     const data = `${jobId}@${head}@${payloadHash}`;
-    return crypto.createHash("sha256").update(data).digest("hex").slice(0, 16);
+    return createHash("sha256").update(data).digest("hex").slice(0, 16);
   }
 
   /**
@@ -336,33 +355,67 @@ runJob().catch((error) => {
    * Shutdown the bridge and scheduler
    */
   async shutdown() {
-    await this.scheduler.shutdown();
+    try {
+      await this.scheduler.shutdown();
+    } catch (error) {
+      logger.warn("Error shutting down scheduler:", error.message);
+    }
+
+    // Clean up created worker files
+    for (const workerFile of this.createdWorkerFiles) {
+      try {
+        if (existsSync(workerFile)) {
+          rmSync(workerFile);
+          logger.debug(`Cleaned up worker file: ${workerFile}`);
+        }
+      } catch (error) {
+        logger.warn(`Failed to cleanup worker file ${workerFile}:`, error.message);
+      }
+    }
+    this.createdWorkerFiles.clear();
+
+    // Clean up contexts
     this.jobContexts.clear();
   }
 }
 
-// Singleton instance
-let bridgeInstance = null;
+// Singleton instances keyed by cwd
+const bridgeInstances = new Map();
 
 /**
- * Get or create the JobBridge singleton
+ * Get or create the JobBridge singleton for a specific cwd
  */
 export function getJobBridge(options = {}) {
-  if (!bridgeInstance) {
-    bridgeInstance = new JobBridge(options);
+  const cwd = options.cwd || process.cwd();
+
+  if (!bridgeInstances.has(cwd)) {
+    bridgeInstances.set(cwd, new JobBridge(options));
   }
-  return bridgeInstance;
+
+  return bridgeInstances.get(cwd);
 }
 
 /**
- * Reset the bridge singleton (mainly for testing)
+ * Reset the bridge singleton for a specific cwd (mainly for testing)
  */
-export function resetJobBridge() {
-  if (bridgeInstance) {
-    bridgeInstance.shutdown().catch((error) => {
-      logger.error("Error resetting job bridge:", error.message);
-    });
-    bridgeInstance = null;
+export function resetJobBridge(cwd = null) {
+  if (cwd) {
+    // Reset specific cwd
+    if (bridgeInstances.has(cwd)) {
+      const instance = bridgeInstances.get(cwd);
+      instance.shutdown().catch((error) => {
+        logger.error("Error resetting job bridge:", error.message);
+      });
+      bridgeInstances.delete(cwd);
+    }
+  } else {
+    // Reset all instances
+    for (const [key, instance] of bridgeInstances.entries()) {
+      instance.shutdown().catch((error) => {
+        logger.error("Error resetting job bridge:", error.message);
+      });
+      bridgeInstances.delete(key);
+    }
   }
 }
 

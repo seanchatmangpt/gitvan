@@ -337,28 +337,43 @@ export class BreeScheduler {
   }
 }
 
-// Singleton instance
-let schedulerInstance = null;
+// Singleton instances keyed by cwd
+const schedulerInstances = new Map();
 
 /**
- * Get or create the BreeScheduler singleton
+ * Get or create the BreeScheduler singleton for a specific cwd
  */
 export function getBreeScheduler(options = {}) {
-  if (!schedulerInstance) {
-    schedulerInstance = new BreeScheduler(options);
+  const cwd = options.cwd || process.cwd();
+
+  if (!schedulerInstances.has(cwd)) {
+    schedulerInstances.set(cwd, new BreeScheduler(options));
   }
-  return schedulerInstance;
+
+  return schedulerInstances.get(cwd);
 }
 
 /**
- * Reset the scheduler singleton (mainly for testing)
+ * Reset the scheduler singleton for a specific cwd (mainly for testing)
  */
-export function resetBreeScheduler() {
-  if (schedulerInstance) {
-    schedulerInstance.shutdown().catch((error) => {
-      logger.error("Error resetting scheduler:", error.message);
-    });
-    schedulerInstance = null;
+export function resetBreeScheduler(cwd = null) {
+  if (cwd) {
+    // Reset specific cwd
+    if (schedulerInstances.has(cwd)) {
+      const instance = schedulerInstances.get(cwd);
+      instance.shutdown().catch((error) => {
+        logger.error("Error resetting scheduler:", error.message);
+      });
+      schedulerInstances.delete(cwd);
+    }
+  } else {
+    // Reset all instances
+    for (const [key, instance] of schedulerInstances.entries()) {
+      instance.shutdown().catch((error) => {
+        logger.error("Error resetting scheduler:", error.message);
+      });
+      schedulerInstances.delete(key);
+    }
   }
 }
 

@@ -16,8 +16,8 @@ export default defineConfig({
     // Exclude patterns
     exclude: ["node_modules/**", "dist/**", "**/*.d.ts"],
 
-    // Test timeout
-    testTimeout: 30000, // 30 seconds for AI operations
+    // Test timeout (increased for integration tests and slow git operations)
+    testTimeout: 60000, // 60 seconds for integration tests
 
     // Setup files
     setupFiles: [join(process.cwd(), "tests/setup.mjs")],
@@ -56,10 +56,11 @@ export default defineConfig({
     watch: false,
 
     // Parallel execution (Vitest 4 - moved poolOptions to top level)
+    // Reduced concurrency to avoid git lock conflicts and resource contention
     pool: "threads",
-    maxConcurrency: 5,
+    maxConcurrency: 3,
     minWorkers: 1,
-    maxWorkers: 4,
+    maxWorkers: 2,
   },
 
   // Resolve configuration

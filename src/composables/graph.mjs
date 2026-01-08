@@ -2,17 +2,12 @@
 // Provides a high-level, ergonomic API to operate on an in-memory RDF graph using unrdf.
 
 import {
-  Store,
-  Parser,
-  Writer,
-  DataFactory,
   query,
   validateShacl,
   isIsomorphic,
   canonicalize,
   reason,
   toJsonLd,
-  parseJsonLd,
   parseTurtle,
   toTurtle,
   toNQuads,

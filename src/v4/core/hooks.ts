@@ -26,6 +26,17 @@ import {
   type Signal,
   type ComputedSignal,
 } from './signals.js';
+// Simple logger for error reporting
+const logger = {
+  error: (...args: any[]) => {
+    if (typeof process !== 'undefined' && process.stderr) {
+      process.stderr.write(`[ERROR] ${args.join(' ')}\n`);
+    } else {
+      console.error(...args);
+    }
+  }
+};
+
 import {
   getCurrentContext,
   createContext,
@@ -546,7 +557,7 @@ export function useEvents<
       try {
         handler(payload);
       } catch (error) {
-        console.error(`Error in event handler for ${String(event)}:`, error);
+        logger.error(`Error in event handler for ${String(event)}:`, error);
       }
     });
   };

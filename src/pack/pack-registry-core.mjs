@@ -16,8 +16,6 @@ import {
 } from "node:fs";
 import { homedir } from "node:os";
 import { execSync } from "node:child_process";
-import { exec } from "node:child_process";
-import { setTimeout } from "node:timers/promises";
 import { PackCache } from "./pack-cache.mjs";
 import Fuse from "fuse.js";
 import { PackInfoSchema, SearchFiltersSchema } from "./schemas.mjs";

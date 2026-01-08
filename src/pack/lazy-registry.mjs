@@ -129,7 +129,7 @@ export class LazyPackRegistry {
    * Load remote pack (placeholder for future implementation)
    */
   async loadRemotePack(packId) {
-    // TODO: Implement remote pack loading
+    // v4.1.0: Implement remote pack loading from marketplace
     logger.info(`Remote pack loading not implemented yet: ${packId}`);
     return null;
   }
@@ -216,7 +216,7 @@ export class LazyPackRegistry {
 
     logger.info(`Installing pack: ${packId}`);
 
-    // TODO: Implement pack installation
+    // v4.1.0: Implement pack installation with dependency resolution
     logger.success(`Pack installed: ${packId}`);
 
     return pack;

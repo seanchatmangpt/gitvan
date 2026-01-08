@@ -45,7 +45,7 @@ export function useBatchProcessor(options = {}) {
     maxBatchSize: options.maxBatchSize || 100,
     maxWaitMs: options.maxWaitMs || 50,
     processFn: options.processFn || (async (items) => items),
-    onError: options.onError || console.error,
+    onError: options.onError || ((error) => logger.error("Batch processor error:", error)),
     concurrency: options.concurrency || 1,
   };
 

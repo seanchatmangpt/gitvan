@@ -1310,7 +1310,7 @@ export function useRepositoryState(
       stashes: stash.data ?? [],
       tags: tag.data,
       worktrees: wt.data,
-      submodules: [], // TODO: Implement submodule hook
+      submodules: [], // v4.1.0: Implement submodule hook for Git submodule support
       lastUpdated: new Date(),
     };
 

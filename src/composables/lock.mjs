@@ -5,15 +5,16 @@
 
 import { useGitVan, tryUseGitVan, withGitVan } from "../core/context.mjs";
 import { useGit } from "./git/index.mjs";
-import {
 import { createLogger } from "../utils/logger.mjs";
-const logger = createLogger("composables:lock");
+import {
   acquireLock,
   releaseLock,
   generateLockRef,
 } from "../runtime/locks.mjs";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
+
+const logger = createLogger("composables:lock");
 
 export function useLock() {
   // Get context from unctx - this must be called synchronously

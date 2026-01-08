@@ -16,6 +16,17 @@ import type {
 } from '../types/index.js';
 import { signal, type WritableSignal } from './signals.js';
 
+// Simple logger for debug output
+const logger = {
+  log: (...args: any[]) => {
+    if (typeof process !== 'undefined' && process.stdout) {
+      process.stdout.write(`[INFO] ${args.join(' ')}\n`);
+    } else {
+      console.log(...args);
+    }
+  }
+};
+
 // =============================================================================
 // Token Registry
 // =============================================================================
@@ -390,7 +401,7 @@ export function getContextDebugInfo(
 export function printContextHierarchy(context?: HookContext): void {
   const ctx = context ?? getCurrentContext();
   if (!ctx) {
-    console.log('No context available');
+    logger.log('No context available');
     return;
   }
 
@@ -404,9 +415,9 @@ export function printContextHierarchy(context?: HookContext): void {
     current = current.parent;
   }
 
-  console.log('Context Hierarchy:');
+  logger.log('Context Hierarchy:');
   hierarchy.forEach((line, i) => {
-    console.log(`${'  '.repeat(i)}${line}`);
+    logger.log(`${'  '.repeat(i)}${line}`);
   });
 }
 

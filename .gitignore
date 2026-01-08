@@ -109,7 +109,7 @@ Thumbs.db
 .yarn/
 .yarn-integrity
 yarn.lock
-package-lock.json
+# Note: package-lock.json should be committed for reproducible builds
 
 .lh/.telemetry/
 hooks-test/

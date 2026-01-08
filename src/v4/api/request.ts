@@ -24,6 +24,17 @@ import {
 } from '../core/context.js';
 import { createErrorBoundary, formatErrorResponse, getErrorStatusCode } from '../errors/boundaries.js';
 
+// Simple logger for error reporting
+const logger = {
+  error: (...args: any[]) => {
+    if (typeof process !== 'undefined' && process.stderr) {
+      process.stderr.write(`[ERROR] ${args.join(' ')}\n`);
+    } else {
+      console.error(...args);
+    }
+  }
+};
+
 // =============================================================================
 // Request ID Generation
 // =============================================================================
@@ -514,7 +525,7 @@ export function createHandler<TReq = unknown, TRes = unknown>(
 
     return runInContextAsync(context, async () => {
       const boundary = createErrorBoundary({
-        onError: (err) => console.error('Handler error:', err),
+        onError: (err) => logger.error('Handler error:', err),
       });
 
       try {

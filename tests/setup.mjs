@@ -1,17 +1,15 @@
 /**
- * Test Setup for GitVan AI Commands
- * Provides common utilities and mocks for AI testing
+ * Test Setup for GitVan
+ * Provides common utilities for testing
  */
 
 import { join } from "pathe";
 import { mkdirSync, rmSync, existsSync } from "node:fs";
-import { MockGitVanAIProvider, AITestUtils } from "./ai-mock-provider.mjs";
 
 // Test utilities
 export class TestUtils {
   constructor(testDir) {
     this.testDir = testDir;
-    this.aiUtils = new AITestUtils(testDir);
   }
 
   // Create test directory structure
@@ -33,14 +31,26 @@ export class TestUtils {
     }
   }
 
-  // Create mock AI provider
-  createMockProvider(responses = []) {
-    return new MockGitVanAIProvider({ responses });
+  // Create mock AI provider (lazy loaded)
+  async createMockProvider(responses = []) {
+    try {
+      const { MockGitVanAIProvider } = await import("./ai-mock-provider.mjs");
+      return new MockGitVanAIProvider({ responses });
+    } catch (error) {
+      console.warn("AI mock provider not available, skipping AI tests");
+      return null;
+    }
   }
 
-  // Create AI test utils
-  createAITestUtils() {
-    return this.aiUtils;
+  // Create AI test utils (lazy loaded)
+  async createAITestUtils() {
+    try {
+      const { AITestUtils } = await import("./ai-mock-provider.mjs");
+      return new AITestUtils(this.testDir);
+    } catch (error) {
+      console.warn("AI test utilities not available, skipping AI tests");
+      return null;
+    }
   }
 }
 

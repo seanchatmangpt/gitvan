@@ -3,7 +3,7 @@
  * Manages pack loading, validation, and lifecycle operations
  */
 
-import { loadPackManifest } from './simple-manifest.mjs';
+import { loadPackManifest } from './manifest.mjs';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, resolve, dirname } from 'pathe';
 import { createHash } from 'node:crypto';

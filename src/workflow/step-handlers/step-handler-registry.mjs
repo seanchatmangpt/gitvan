@@ -34,7 +34,7 @@ export class StepHandlerRegistry {
     this.register("cli", new CliStepHandler(handlerOptions));
     this.register("output", new OutputStepHandler(handlerOptions));
 
-    // TODO: Register additional handlers as they are created
+    // v4.1.0: Register additional handlers as they are created
     // this.register("database", new DatabaseStepHandler(handlerOptions));
     // this.register("filesystem", new FilesystemStepHandler(handlerOptions));
     // this.register("conditional", new ConditionalStepHandler(handlerOptions));

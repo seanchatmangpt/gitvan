@@ -24,12 +24,21 @@ export function createJobScheduler(deps) {
      */
     async schedule(jobId, options = {}) {
       try {
-        const jobDef = await discovery.get(jobId);
-        if (!jobDef.definition) {
+        const job = await discovery.get(jobId);
+        if (!job.definition) {
           throw new Error(`Job definition not found: ${jobId}`);
         }
 
-        await jobBridge.scheduleJob(jobDef.definition, options);
+        // Combine discovery metadata with loaded definition
+        // This ensures we have both the file path AND the job exports (meta, cron, etc.)
+        const fullJobDef = {
+          ...job.definition, // Exports from job module (meta, cron, run, etc.)
+          id: job.id,        // Job ID
+          name: job.name,    // Job name
+          file: job.file,    // File path (critical for execution)
+        };
+
+        await jobBridge.scheduleJob(fullJobDef, options);
         logger.info(`Job scheduled: ${jobId}`);
 
         return { jobId, scheduled: true };
@@ -117,13 +126,22 @@ export function createJobScheduler(deps) {
      */
     async runWithBree(jobId, options = {}) {
       try {
-        const jobDef = await discovery.get(jobId);
-        if (!jobDef.definition) {
+        const job = await discovery.get(jobId);
+        if (!job.definition) {
           throw new Error(`Job definition not found: ${jobId}`);
         }
 
+        // Combine discovery metadata with loaded definition
+        // This ensures we have both the file path AND the job exports (meta, cron, etc.)
+        const fullJobDef = {
+          ...job.definition, // Exports from job module
+          id: job.id,        // Job ID
+          name: job.name,    // Job name
+          file: job.file,    // File path (critical for execution)
+        };
+
         const result = await jobBridge.executeJobWithLock(
-          jobDef.definition,
+          fullJobDef,
           options
         );
 

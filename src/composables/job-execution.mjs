@@ -28,10 +28,19 @@ export function createJobExecution(base, deps) {
       const { payload = {}, context = {} } = options;
 
       try {
-        const jobDef = await discovery.get(jobId);
-        if (!jobDef.definition) {
+        const job = await discovery.get(jobId);
+        if (!job.definition) {
           throw new Error(`Job definition not found: ${jobId}`);
         }
+
+        // Combine discovery metadata with loaded definition
+        // This ensures we have both the file path AND the job exports
+        const fullJobDef = {
+          ...job.definition,
+          id: job.id,
+          name: job.name,
+          file: job.file, // File path (critical for execution)
+        };
 
         // Create execution context
         const execContext = {
@@ -43,7 +52,7 @@ export function createJobExecution(base, deps) {
 
         // Run the job with proper context
         const result = await withGitVan(execContext, async () => {
-          return await runner.runJob(jobDef.definition, {
+          return await runner.runJob(fullJobDef, {
             payload,
             context: execContext,
           });

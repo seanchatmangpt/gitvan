@@ -389,7 +389,7 @@ export async function gracefulShutdown(exitCode = 0) {
 export function setupGlobalErrorHandlers() {
   // Uncaught exception handler
   process.on("uncaughtException", (error) => {
-    handleUncaughtError(error).catch(() => {
+    handleUncaughtError(error).catch(async () => {
       // Last resort
       logger.error("Fatal error in error handler:", error);
       await exitWithError(new Error("Operation failed"), 1);
@@ -398,7 +398,7 @@ export function setupGlobalErrorHandlers() {
 
   // Unhandled rejection handler
   process.on("unhandledRejection", (error) => {
-    handleUnhandledRejection(error).catch(() => {
+    handleUnhandledRejection(error).catch(async () => {
       logger.error("Fatal error in rejection handler:", error);
       await exitWithError(new Error("Operation failed"), 1);
     });

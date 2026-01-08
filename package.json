@@ -25,7 +25,8 @@
     "hookable": "^6.0.1",
     "isomorphic-git": "^1.36.1",
     "pathe": "^2.0.3",
-    "unctx": "^2.5.0"
+    "unctx": "^2.5.0",
+    "unrdf": "^2.0.0"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^4.0.16",

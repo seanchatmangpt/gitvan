@@ -173,5 +173,20 @@ export default defineBuildConfig({
       input: "./types",
       outDir: "./dist/types",
     },
+    // Copy RDF ontologies (All Phases)
+    {
+      input: "./src/rdf/ontologies",
+      outDir: "./dist/rdf/ontologies",
+    },
+    // Copy SPARQL query libraries (All Phases)
+    {
+      input: "./src/git-native/queries",
+      outDir: "./dist/git-native/queries",
+    },
+    // Copy N3 rules (All Phases)
+    {
+      input: "./src/rdf/rules",
+      outDir: "./dist/rdf/rules",
+    },
   ],
 });

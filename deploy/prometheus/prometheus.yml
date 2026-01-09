@@ -1,0 +1,109 @@
+# Prometheus configuration for GitVan monitoring
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'gitvan-production'
+    environment: 'production'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+# Load alert rules
+rule_files:
+  - 'alerts.yml'
+
+# Scrape configurations
+scrape_configs:
+  # GitVan application metrics
+  - job_name: 'gitvan'
+    static_configs:
+      - targets: ['gitvan:9090']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+      - source_labels: [__address__]
+        target_label: __param_target
+      - target_label: __address__
+        replacement: gitvan:9090
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Node Exporter for system metrics
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  # AlertManager
+  - job_name: 'alertmanager'
+    static_configs:
+      - targets: ['alertmanager:9093']
+
+  # Grafana
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['grafana:3000']
+
+  # Phase 1: Git-Native I/O metrics
+  - job_name: 'gitvan-phase1-locks'
+    metrics_path: '/metrics/phase1/locks'
+    static_configs:
+      - targets: ['gitvan:9090']
+    scrape_interval: 10s
+
+  - job_name: 'gitvan-phase1-snapshots'
+    metrics_path: '/metrics/phase1/snapshots'
+    static_configs:
+      - targets: ['gitvan:9090']
+    scrape_interval: 30s
+
+  - job_name: 'gitvan-phase1-queues'
+    metrics_path: '/metrics/phase1/queues'
+    static_configs:
+      - targets: ['gitvan:9090']
+    scrape_interval: 10s
+
+  # Phase 2: Performance metrics
+  - job_name: 'gitvan-phase2-performance'
+    metrics_path: '/metrics/phase2/performance'
+    static_configs:
+      - targets: ['gitvan:9090']
+    scrape_interval: 15s
+
+  - job_name: 'gitvan-phase2-anomalies'
+    metrics_path: '/metrics/phase2/anomalies'
+    static_configs:
+      - targets: ['gitvan:9090']
+    scrape_interval: 60s
+
+  # Phase 3: RevOps metrics
+  - job_name: 'gitvan-phase3-churn'
+    metrics_path: '/metrics/phase3/churn'
+    static_configs:
+      - targets: ['gitvan:9090']
+    scrape_interval: 300s  # 5 minutes
+
+  - job_name: 'gitvan-phase3-expansion'
+    metrics_path: '/metrics/phase3/expansion'
+    static_configs:
+      - targets: ['gitvan:9090']
+    scrape_interval: 300s  # 5 minutes
+
+  # Phase 4: Pack System metrics
+  - job_name: 'gitvan-phase4-registry'
+    metrics_path: '/metrics/phase4/registry'
+    static_configs:
+      - targets: ['gitvan:9090']
+    scrape_interval: 60s
+
+  - job_name: 'gitvan-phase4-dependencies'
+    metrics_path: '/metrics/phase4/dependencies'
+    static_configs:
+      - targets: ['gitvan:9090']
+    scrape_interval: 60s

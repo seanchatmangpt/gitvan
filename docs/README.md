@@ -37,13 +37,17 @@ Welcome to the GitVan documentation! This guide will help you find what you need
 ```
 docs/
 ├── README.md                          # This file
+├── UNRDF-ARCHITECTURE.md              # ⭐ UnRDF integration & architecture
+├── HOOKS-AND-SPARQL-GUIDE.md          # ⭐ Reactive hooks & SPARQL patterns
+├── BUILD-AND-SUBMODULE-GUIDE.md       # ⭐ Build system & UnRDF submodule
 ├── quickstart.md                      # 5-10 minute tutorial
 ├── configuration.md                   # Configuration guide
 ├── errors-troubleshooting.md          # Error reference
 ├── api/
 │   ├── complete-reference.md          # Complete API docs
 │   ├── composables.md                 # Composables overview
-│   └── composables-quick-reference.md # Quick reference
+│   ├── composables-quick-reference.md # Quick reference
+│   └── unrdf-composables.md          # ⭐ UnRDF API reference (new)
 ├── cli/
 │   ├── complete-reference.md          # All CLI commands
 │   ├── README.md                      # CLI overview
@@ -54,6 +58,30 @@ docs/
 └── migration/
     └── v3-to-v4.md                    # Migration guide
 ```
+
+## ⭐ START HERE: Understanding UnRDF Integration
+
+GitVan v3.0.0 is the **first production implementation of UnRDF**, integrating semantic graph technology for reactive, SPARQL-driven automation.
+
+**New to UnRDF? Read in this order:**
+
+1. **[UNRDF-ARCHITECTURE.md](./UNRDF-ARCHITECTURE.md)** (15 min)
+   - What is UnRDF and why it matters
+   - How the reactive flow works (Git → RDF → SPARQL → Workflow)
+   - Architecture overview and integration points
+   - Build pipeline and submodule setup
+
+2. **[HOOKS-AND-SPARQL-GUIDE.md](./HOOKS-AND-SPARQL-GUIDE.md)** (30 min)
+   - The 8 hook predicate types (ASK, ResultDelta, CONSTRUCT, etc.)
+   - How to write SPARQL queries for hooks
+   - Real-world hook patterns and examples
+   - Best practices and troubleshooting
+
+3. **[BUILD-AND-SUBMODULE-GUIDE.md](./BUILD-AND-SUBMODULE-GUIDE.md)** (20 min)
+   - How the build system works
+   - Why UnRDF is a git submodule
+   - Complete build sequence with examples
+   - Troubleshooting common issues
 
 ---
 
@@ -167,6 +195,10 @@ Start here:
 
 | Composable | Purpose | Documentation |
 |------------|---------|---------------|
+| **RDF/SPARQL (NEW)** | | |
+| `useGraph()` | SPARQL query execution | [API](./UNRDF-ARCHITECTURE.md#usegraph--sparql-query-interface) |
+| `useTurtle()` | Turtle RDF file I/O | [API](./UNRDF-ARCHITECTURE.md#useturtle--turtlerdf-file-io) |
+| **Standard Operations** | | |
 | `useGit()` | Git operations | [API](./api/complete-reference.md#usegit) |
 | `useJob()` | Job management | [API](./api/complete-reference.md#usejob) |
 | `useEvent()` | Event system | [API](./api/complete-reference.md#useevent) |
@@ -191,6 +223,25 @@ Start here:
 ---
 
 ## Key Concepts
+
+### UnRDF & Semantic Graphs (NEW in v3.0.0)
+
+GitVan now uses **UnRDF** for semantic graph-driven automation. Your project structure, commits, and workflows are automatically stored as RDF triples and can be queried with SPARQL.
+
+```sparql
+-- Find all bugs with status "open"
+SELECT ?bug ?title ?severity WHERE {
+  ?bug rdf:type gv:Bug ;
+       gv:status "open" ;
+       gv:title ?title ;
+       gv:severity ?severity .
+}
+ORDER BY DESC(?severity)
+```
+
+Git events trigger **reactive hooks** that evaluate SPARQL predicates and execute workflows automatically.
+
+[Learn more](./UNRDF-ARCHITECTURE.md) · [Hook patterns](./HOOKS-AND-SPARQL-GUIDE.md) · [Build guide](./BUILD-AND-SUBMODULE-GUIDE.md)
 
 ### Context Management
 

@@ -1,0 +1,238 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitvan
+  namespace: gitvan
+  labels:
+    app: gitvan
+    version: v3.0.0
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: gitvan
+  template:
+    metadata:
+      labels:
+        app: gitvan
+        version: v3.0.0
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: gitvan
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+      initContainers:
+        # Initialize git submodules
+        - name: init-submodules
+          image: alpine/git:latest
+          command: ['sh', '-c']
+          args:
+            - |
+              git submodule update --init --recursive
+          volumeMounts:
+            - name: gitvan-data
+              mountPath: /data
+      containers:
+        - name: gitvan
+          image: gitvan:3.0.0
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: TZ
+              value: "UTC"
+            - name: LANG
+              value: "C"
+            - name: GITVAN_HOME
+              value: "/data"
+            - name: GITVAN_GRAPH_DIR
+              value: "/data/graph"
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: gitvan-secrets
+                  key: anthropic-api-key
+                  optional: true
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
+          livenessProbe:
+            exec:
+              command:
+                - node
+                - -e
+                - "console.log('healthy')"
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command:
+                - node
+                - -e
+                - "console.log('ready')"
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            - name: gitvan-data
+              mountPath: /data
+            - name: config
+              mountPath: /app/gitvan.config.js
+              subPath: gitvan.config.js
+              readOnly: true
+      volumes:
+        - name: gitvan-data
+          persistentVolumeClaim:
+            claimName: gitvan-pvc
+        - name: config
+          configMap:
+            name: gitvan-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gitvan
+  namespace: gitvan
+  labels:
+    app: gitvan
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http
+      protocol: TCP
+    - name: metrics
+      port: 9090
+      targetPort: metrics
+      protocol: TCP
+  selector:
+    app: gitvan
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: gitvan
+  namespace: gitvan
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: gitvan
+  namespace: gitvan
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps", "secrets"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: gitvan
+  namespace: gitvan
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: gitvan
+subjects:
+  - kind: ServiceAccount
+    name: gitvan
+    namespace: gitvan
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: gitvan-pvc
+  namespace: gitvan
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gitvan-config
+  namespace: gitvan
+data:
+  gitvan.config.js: |
+    export default {
+      jobs: {
+        dir: "jobs"
+      },
+      templates: {
+        dirs: ["templates"],
+        autoescape: false
+      },
+      graph: {
+        dir: "/data/graph",
+        autoLoad: true
+      },
+      receipts: {
+        ref: "refs/notes/gitvan/audit"
+      }
+    }
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: gitvan-pdb
+  namespace: gitvan
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: gitvan
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: gitvan-hpa
+  namespace: gitvan
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: gitvan
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80

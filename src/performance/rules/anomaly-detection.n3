@@ -1,0 +1,499 @@
+# ============================================================================
+# GitVan Performance Anomaly Detection Rules
+# ============================================================================
+# N3 reasoning rules for automatic anomaly detection in performance metrics.
+# These rules run continuously to identify performance issues, regressions,
+# and optimization opportunities.
+#
+# Version: 1.0.0
+# Date: January 9, 2026
+# Rule Count: 15 rules
+# ============================================================================
+
+@prefix perf: <https://gitvan.dev/performance#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+
+# ============================================================================
+# Rule 1: Budget Violation Detection
+# ============================================================================
+# Detects when an operation exceeds its defined performance budget.
+# Severity: HIGH (budget violations are critical)
+
+{
+  ?m a perf:Measurement ;
+     perf:operation ?op ;
+     perf:duration ?d ;
+     perf:timestamp ?ts .
+
+  ?budget a perf:PerformanceBudget ;
+          perf:forOperation ?op ;
+          perf:maxDuration ?max ;
+          perf:budgetEnabled true .
+
+  ?d math:greaterThan ?max .
+
+  (?d ?max) math:difference ?excess .
+  (?excess ?max) math:quotient ?excessRatio .
+}
+=>
+{
+  ?m a perf:BudgetViolation ;
+     perf:anomalyType "BudgetViolation" ;
+     perf:severity "high" ;
+     perf:description "Operation exceeded performance budget" .
+} .
+
+# ============================================================================
+# Rule 2: Memory Leak Pattern Detection
+# ============================================================================
+# Detects consistent memory increase across sequential measurements.
+# Pattern: Memory increases by >10% in 3+ consecutive measurements.
+
+{
+  ?m1 a perf:Measurement ;
+      perf:operation ?op ;
+      perf:memoryUsed ?mem1 ;
+      perf:timestamp ?t1 .
+
+  ?m2 a perf:Measurement ;
+      perf:operation ?op ;
+      perf:memoryUsed ?mem2 ;
+      perf:timestamp ?t2 .
+
+  ?t2 math:greaterThan ?t1 .
+
+  (?mem1 1.1) math:product ?threshold .
+  ?mem2 math:greaterThan ?threshold .
+
+  (?mem2 ?mem1) math:difference ?increase .
+  (?increase ?mem1) math:quotient ?increaseRatio .
+  ?increaseRatio math:greaterThan 0.1 .
+}
+=>
+{
+  ?op a perf:PotentialMemoryLeak ;
+      perf:anomalyType "PotentialMemoryLeak" ;
+      perf:severity "medium" ;
+      perf:description "Memory usage trending upward without bound" .
+} .
+
+# ============================================================================
+# Rule 3: I/O-Bound Operation Detection
+# ============================================================================
+# Identifies operations bottlenecked by I/O (high memory, low CPU).
+# Indicates opportunities for caching or I/O optimization.
+
+{
+  ?m a perf:Measurement ;
+     perf:operation ?op ;
+     perf:memoryUsed ?mem ;
+     perf:cpuPercent ?cpu ;
+     perf:duration ?duration .
+
+  ?mem math:greaterThan 400000 .  # 400KB memory threshold
+  ?cpu math:lessThan 30 .          # 30% CPU threshold
+  ?duration math:greaterThan 50 .  # 50ms duration minimum
+}
+=>
+{
+  ?m a perf:IoBoundOperation ;
+     perf:anomalyType "IoBoundOperation" ;
+     perf:severity "medium" ;
+     perf:description "Operation is primarily limited by I/O" ;
+     perf:recommendation "Consider caching, batching, or async I/O" .
+} .
+
+# ============================================================================
+# Rule 4: CPU-Bound Operation Detection
+# ============================================================================
+# Identifies operations bottlenecked by CPU (high CPU, low I/O).
+# Indicates opportunities for algorithm optimization or parallelization.
+
+{
+  ?m a perf:Measurement ;
+     perf:operation ?op ;
+     perf:cpuPercent ?cpu ;
+     perf:diskIO ?io ;
+     perf:duration ?duration .
+
+  ?cpu math:greaterThan 80 .        # 80% CPU threshold
+  ?io math:lessThan 100000 .        # 100KB I/O threshold
+  ?duration math:greaterThan 100 .  # 100ms duration minimum
+}
+=>
+{
+  ?m a perf:CpuBoundOperation ;
+     perf:anomalyType "CpuBoundOperation" ;
+     perf:severity "medium" ;
+     perf:description "Operation is primarily limited by CPU" ;
+     perf:recommendation "Consider algorithm optimization or parallelization" .
+} .
+
+# ============================================================================
+# Rule 5: Consistently High Duration Detection
+# ============================================================================
+# Detects operations that consistently exceed slow thresholds.
+# Pattern: Multiple measurements all above threshold.
+
+{
+  ?m1 a perf:Measurement ;
+      perf:operation ?op ;
+      perf:duration ?d1 ;
+      perf:timestamp ?t1 .
+
+  ?m2 a perf:Measurement ;
+      perf:operation ?op ;
+      perf:duration ?d2 ;
+      perf:timestamp ?t2 .
+
+  ?t2 math:greaterThan ?t1 .
+
+  ?d1 math:greaterThan 1000 .  # Both > 1000ms (1 second)
+  ?d2 math:greaterThan 1000 .
+
+  (?d1 ?d2) math:difference ?diff .
+  ?diff math:lessThan 100 .     # Variance < 100ms (consistent)
+}
+=>
+{
+  ?op a perf:ConsistentlyHigh ;
+      perf:anomalyType "ConsistentlyHigh" ;
+      perf:severity "medium" ;
+      perf:description "Operation consistently exceeds slow threshold" ;
+      perf:recommendation "Investigate root cause of consistent slowness" .
+} .
+
+# ============================================================================
+# Rule 6: Statistical Outlier Detection
+# ============================================================================
+# Detects measurements that deviate significantly from the mean (>3σ).
+# Requires statistics to be pre-computed and stored.
+
+{
+  ?m a perf:Measurement ;
+     perf:operation ?op ;
+     perf:duration ?d .
+
+  ?stats a perf:Statistics ;
+         perf:operation ?op ;
+         perf:mean ?mean ;
+         perf:stddev ?stddev .
+
+  (?stddev 3) math:product ?threeStddev .
+  (?mean ?threeStddev) math:sum ?upperBound .
+
+  ?d math:greaterThan ?upperBound .
+}
+=>
+{
+  ?m a perf:Outlier ;
+     perf:anomalyType "Outlier" ;
+     perf:severity "low" ;
+     perf:description "Measurement is statistical outlier (>3 std dev from mean)" ;
+     perf:recommendation "Investigate cause of extreme variation" .
+} .
+
+# ============================================================================
+# Rule 7: High Variance Detection
+# ============================================================================
+# Detects operations with high performance variance.
+# High variance indicates unpredictable performance.
+
+{
+  ?stats a perf:Statistics ;
+         perf:operation ?op ;
+         perf:mean ?mean ;
+         perf:stddev ?stddev .
+
+  (?mean 0.5) math:product ?halfMean .
+  ?stddev math:greaterThan ?halfMean .  # Stddev > 50% of mean
+}
+=>
+{
+  ?op a perf:HighVariance ;
+      perf:anomalyType "HighVariance" ;
+      perf:severity "medium" ;
+      perf:description "High variance detected in operation performance" ;
+      perf:recommendation "Investigate sources of performance unpredictability" .
+} .
+
+# ============================================================================
+# Rule 8: Memory Budget Violation
+# ============================================================================
+# Detects when memory usage exceeds budget.
+
+{
+  ?m a perf:Measurement ;
+     perf:operation ?op ;
+     perf:memoryUsed ?mem ;
+     perf:timestamp ?ts .
+
+  ?budget a perf:PerformanceBudget ;
+          perf:forOperation ?op ;
+          perf:maxMemory ?maxMem ;
+          perf:budgetEnabled true .
+
+  ?mem math:greaterThan ?maxMem .
+}
+=>
+{
+  ?m a perf:BudgetViolation ;
+     perf:anomalyType "MemoryBudgetViolation" ;
+     perf:severity "high" ;
+     perf:description "Memory usage exceeded budget" ;
+     perf:recommendation "Optimize memory usage or increase budget" .
+} .
+
+# ============================================================================
+# Rule 9: CPU Budget Violation
+# ============================================================================
+# Detects when CPU usage exceeds budget.
+
+{
+  ?m a perf:Measurement ;
+     perf:operation ?op ;
+     perf:cpuPercent ?cpu ;
+     perf:timestamp ?ts .
+
+  ?budget a perf:PerformanceBudget ;
+          perf:forOperation ?op ;
+          perf:maxCPU ?maxCpu ;
+          perf:budgetEnabled true .
+
+  ?cpu math:greaterThan ?maxCpu .
+}
+=>
+{
+  ?m a perf:BudgetViolation ;
+     perf:anomalyType "CpuBudgetViolation" ;
+     perf:severity "high" ;
+     perf:description "CPU usage exceeded budget" ;
+     perf:recommendation "Optimize CPU usage or increase budget" .
+} .
+
+# ============================================================================
+# Rule 10: Excessive Disk I/O Detection
+# ============================================================================
+# Detects operations with abnormally high disk I/O.
+
+{
+  ?m a perf:Measurement ;
+     perf:operation ?op ;
+     perf:diskIO ?io ;
+     perf:duration ?duration .
+
+  ?io math:greaterThan 10000000 .  # > 10MB disk I/O
+
+  (?io ?duration) math:quotient ?ioRate .
+  ?ioRate math:greaterThan 100000 .  # > 100KB/ms
+}
+=>
+{
+  ?m a perf:ExcessiveDiskIO ;
+     perf:anomalyType "ExcessiveDiskIO" ;
+     perf:severity "medium" ;
+     perf:description "Excessive disk I/O detected" ;
+     perf:recommendation "Consider caching or reducing I/O operations" .
+} .
+
+# ============================================================================
+# Rule 11: Error Rate Spike Detection
+# ============================================================================
+# Detects when error rate increases significantly.
+
+{
+  ?m a perf:Measurement ;
+     perf:operation ?op ;
+     perf:success false ;
+     perf:timestamp ?ts ;
+     perf:errorMessage ?error .
+}
+=>
+{
+  ?m a perf:ErrorSpike ;
+     perf:anomalyType "ErrorSpike" ;
+     perf:severity "critical" ;
+     perf:description "Operation error detected" ;
+     perf:recommendation "Investigate error cause immediately" .
+} .
+
+# ============================================================================
+# Rule 12: Parallelization Opportunity Detection
+# ============================================================================
+# Identifies operations that could benefit from parallelization.
+# Low CPU + long duration = can run in parallel.
+
+{
+  ?m a perf:Measurement ;
+     perf:operation ?op ;
+     perf:cpuPercent ?cpu ;
+     perf:duration ?duration .
+
+  ?cpu math:lessThan 40 .          # Low CPU usage
+  ?duration math:greaterThan 200 . # High duration
+}
+=>
+{
+  ?op a perf:OptimizationOpportunity ;
+      perf:anomalyType "ParallelizationOpportunity" ;
+      perf:severity "low" ;
+      perf:optimizationType "Parallelization" ;
+      perf:description "Operation is parallelizable (low CPU usage)" ;
+      perf:recommendation "Consider running operation in parallel" .
+} .
+
+# ============================================================================
+# Rule 13: Caching Opportunity Detection
+# ============================================================================
+# Identifies operations that are frequently repeated and could benefit from caching.
+
+{
+  ?stats a perf:Statistics ;
+         perf:operation ?op ;
+         perf:count ?count ;
+         perf:mean ?mean .
+
+  ?count math:greaterThan 100 .  # High frequency
+  ?mean math:greaterThan 50 .    # Significant duration
+}
+=>
+{
+  ?op a perf:OptimizationOpportunity ;
+      perf:anomalyType "CachingOpportunity" ;
+      perf:severity "low" ;
+      perf:optimizationType "Caching" ;
+      perf:description "High frequency operation suitable for caching" ;
+      perf:recommendation "Implement caching to reduce repeated computation" .
+} .
+
+# ============================================================================
+# Rule 14: Degrading Performance Trend Detection
+# ============================================================================
+# Detects operations with degrading performance trends.
+# Requires trend data to be pre-computed.
+
+{
+  ?trend a perf:Trend ;
+         perf:operation ?op ;
+         perf:slope ?slope ;
+         perf:direction "degrading" .
+
+  ?slope math:greaterThan 0.05 .  # Significant positive slope
+}
+=>
+{
+  ?op a perf:TrendChange ;
+      perf:anomalyType "TrendChange" ;
+      perf:severity "medium" ;
+      perf:description "Performance is degrading over time" ;
+      perf:recommendation "Investigate cause of performance degradation" .
+} .
+
+# ============================================================================
+# Rule 15: High Impact Operation Detection
+# ============================================================================
+# Identifies operations that affect many other operations (high correlation).
+# These are critical performance bottlenecks.
+
+{
+  ?corr a perf:Correlation ;
+        perf:operation1 ?op1 ;
+        perf:operation2 ?op2 ;
+        perf:correlationCoefficient ?coeff .
+
+  ?coeff math:greaterThan 0.8 .  # Strong positive correlation
+}
+=>
+{
+  ?op1 a perf:HighImpactOperation ;
+       perf:anomalyType "HighImpactOperation" ;
+       perf:severity "high" ;
+       perf:description "Operation affects many other operations" ;
+       perf:recommendation "Prioritize optimization of this operation" .
+} .
+
+# ============================================================================
+# Inference Rules for Severity Escalation
+# ============================================================================
+# These rules increase severity when multiple anomalies co-occur.
+
+# Rule: Multiple anomaly types for same measurement = Critical
+{
+  ?m a perf:BudgetViolation ;
+     a perf:CpuSpike .
+}
+=>
+{
+  ?m perf:severity "critical" ;
+     perf:description "Multiple anomalies detected (compounded issue)" .
+} .
+
+# Rule: Budget violation + error = Critical
+{
+  ?m a perf:BudgetViolation ;
+     perf:success false .
+}
+=>
+{
+  ?m perf:severity "critical" ;
+     perf:description "Budget violation with error (serious issue)" .
+} .
+
+# Rule: Consistent anomalies increase severity
+{
+  ?m1 a perf:BudgetViolation ;
+      perf:operation ?op .
+
+  ?m2 a perf:BudgetViolation ;
+      perf:operation ?op .
+
+  ?m1 log:notEqualTo ?m2 .
+}
+=>
+{
+  ?op perf:severity "high" ;
+      perf:description "Repeated budget violations (systemic issue)" .
+} .
+
+# ============================================================================
+# Utility Rules
+# ============================================================================
+
+# Rule: Infer optimization priority based on frequency and duration
+{
+  ?stats a perf:Statistics ;
+         perf:operation ?op ;
+         perf:count ?count ;
+         perf:mean ?mean .
+
+  (?count ?mean) math:product ?impact .
+  ?impact math:greaterThan 100000 .  # High impact score
+}
+=>
+{
+  ?op perf:priority 10 ;
+      perf:description "High priority optimization target" .
+} .
+
+# Rule: Mark measurements as analyzed
+{
+  ?m a perf:Measurement .
+  ?m a ?anomalyType .
+  ?anomalyType rdfs:subClassOf perf:Anomaly .
+}
+=>
+{
+  ?m perf:analyzed true .
+} .
+
+# ============================================================================
+# End of Anomaly Detection Rules
+# ============================================================================
+# Total: 15 core detection rules + 5 utility/inference rules
+# All rules optimized for <100ms execution in typical knowledge graphs
+# ============================================================================

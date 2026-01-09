@@ -1,0 +1,271 @@
+# Alert rules for GitVan monitoring
+groups:
+  # Phase 1: Git-Native I/O Alerts
+  - name: phase1_git_native_io
+    interval: 30s
+    rules:
+      - alert: HighLockContention
+        expr: rate(gitvan_lock_acquire_failures_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          phase: "1"
+          component: "lock-manager"
+        annotations:
+          summary: "High lock acquisition failures"
+          description: "Lock acquisition failure rate is {{ $value | humanizePercentage }} over the last 5 minutes"
+
+      - alert: DeadlockDetected
+        expr: gitvan_deadlock_detected_total > 0
+        for: 1m
+        labels:
+          severity: critical
+          phase: "1"
+          component: "lock-manager"
+        annotations:
+          summary: "Deadlock detected"
+          description: "{{ $value }} deadlock(s) detected in lock manager"
+
+      - alert: LongRunningLocks
+        expr: histogram_quantile(0.95, rate(gitvan_lock_duration_seconds_bucket[5m])) > 60
+        for: 5m
+        labels:
+          severity: warning
+          phase: "1"
+          component: "lock-manager"
+        annotations:
+          summary: "Long-running locks detected"
+          description: "P95 lock duration is {{ $value | humanizeDuration }} (> 60s)"
+
+      - alert: SnapshotStorageHigh
+        expr: (gitvan_snapshot_storage_bytes / gitvan_snapshot_storage_max_bytes) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+          phase: "1"
+          component: "snapshot-store"
+        annotations:
+          summary: "Snapshot storage usage high"
+          description: "Snapshot storage is {{ $value | humanizePercentage }} full"
+
+      - alert: QueueBacklogHigh
+        expr: gitvan_queue_size > 1000
+        for: 5m
+        labels:
+          severity: warning
+          phase: "1"
+          component: "queue-manager"
+        annotations:
+          summary: "Queue backlog is high"
+          description: "Queue has {{ $value }} pending jobs"
+
+  # Phase 2: Performance Monitoring Alerts
+  - name: phase2_performance
+    interval: 30s
+    rules:
+      - alert: PerformanceRegression
+        expr: rate(gitvan_performance_regression_total[10m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+          phase: "2"
+          component: "performance-monitor"
+        annotations:
+          summary: "Performance regression detected"
+          description: "{{ $value }} operations have regressed by >10%"
+
+      - alert: BudgetViolation
+        expr: rate(gitvan_budget_violation_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          phase: "2"
+          component: "performance-monitor"
+        annotations:
+          summary: "Performance budget violations"
+          description: "{{ $value | humanizePercentage }} of operations exceed performance budget"
+
+      - alert: AnomalyDetectionHigh
+        expr: rate(gitvan_anomaly_detected_total[10m]) > 10
+        for: 10m
+        labels:
+          severity: warning
+          phase: "2"
+          component: "anomaly-detector"
+        annotations:
+          summary: "High rate of anomalies detected"
+          description: "{{ $value }} anomalies detected in last 10 minutes"
+
+      - alert: SPARQLQuerySlow
+        expr: histogram_quantile(0.95, rate(gitvan_sparql_query_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+          phase: "2"
+          component: "sparql-engine"
+        annotations:
+          summary: "Slow SPARQL queries"
+          description: "P95 query duration is {{ $value | humanizeDuration }} (> 1s)"
+
+  # Phase 3: RevOps Alerts
+  - name: phase3_revops
+    interval: 60s
+    rules:
+      - alert: HighChurnRiskCustomers
+        expr: gitvan_customers_high_churn_risk > 10
+        for: 10m
+        labels:
+          severity: warning
+          phase: "3"
+          component: "revops"
+        annotations:
+          summary: "High number of customers at churn risk"
+          description: "{{ $value }} customers have high churn risk scores"
+
+      - alert: ChurnRateIncreasing
+        expr: rate(gitvan_customer_churned_total[7d]) > rate(gitvan_customer_churned_total[7d] offset 7d)
+        for: 1h
+        labels:
+          severity: critical
+          phase: "3"
+          component: "revops"
+        annotations:
+          summary: "Churn rate is increasing"
+          description: "Weekly churn rate has increased"
+
+      - alert: ExpansionOpportunitiesHigh
+        expr: gitvan_expansion_opportunities_total > 50
+        for: 1h
+        labels:
+          severity: info
+          phase: "3"
+          component: "revops"
+        annotations:
+          summary: "Many expansion opportunities available"
+          description: "{{ $value }} customers are ready for upsell"
+
+      - alert: LowFeatureAdoption
+        expr: gitvan_feature_adoption_rate < 0.3
+        for: 1h
+        labels:
+          severity: warning
+          phase: "3"
+          component: "revops"
+        annotations:
+          summary: "Low feature adoption rate"
+          description: "Feature adoption is {{ $value | humanizePercentage }}"
+
+      - alert: RevenueForecaslingError
+        expr: abs(gitvan_revenue_forecast_error) > 0.1
+        for: 1h
+        labels:
+          severity: warning
+          phase: "3"
+          component: "revops"
+        annotations:
+          summary: "Revenue forecasting error high"
+          description: "Forecast error is {{ $value | humanizePercentage }}"
+
+  # Phase 4: Pack System Alerts
+  - name: phase4_pack_system
+    interval: 60s
+    rules:
+      - alert: DependencyResolutionFailing
+        expr: rate(gitvan_dependency_resolution_failures_total[10m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          phase: "4"
+          component: "pack-registry"
+        annotations:
+          summary: "Dependency resolution failures"
+          description: "{{ $value | humanizePercentage }} of dependency resolutions are failing"
+
+      - alert: DependencyResolutionSlow
+        expr: histogram_quantile(0.95, rate(gitvan_dependency_resolution_duration_seconds_bucket[5m])) > 5
+        for: 5m
+        labels:
+          severity: warning
+          phase: "4"
+          component: "pack-registry"
+        annotations:
+          summary: "Slow dependency resolution"
+          description: "P95 resolution time is {{ $value | humanizeDuration }} (> 5s)"
+
+      - alert: LicenseConflictsDetected
+        expr: rate(gitvan_license_conflict_total[10m]) > 0
+        for: 5m
+        labels:
+          severity: critical
+          phase: "4"
+          component: "pack-registry"
+        annotations:
+          summary: "License conflicts detected"
+          description: "{{ $value }} license conflicts found"
+
+      - alert: CircularDependenciesDetected
+        expr: gitvan_circular_dependencies_total > 0
+        for: 1m
+        labels:
+          severity: critical
+          phase: "4"
+          component: "pack-registry"
+        annotations:
+          summary: "Circular dependencies detected"
+          description: "{{ $value }} circular dependency cycles found"
+
+      - alert: FederatedQueryFailing
+        expr: rate(gitvan_federated_query_failures_total[10m]) > 0.2
+        for: 5m
+        labels:
+          severity: warning
+          phase: "4"
+          component: "federated-discovery"
+        annotations:
+          summary: "Federated query failures"
+          description: "{{ $value | humanizePercentage }} of federated queries are failing"
+
+      - alert: PackRegistryUnavailable
+        expr: up{job="gitvan-phase4-registry"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          phase: "4"
+          component: "pack-registry"
+        annotations:
+          summary: "Pack registry unavailable"
+          description: "Pack registry has been unavailable for 2 minutes"
+
+  # System-wide alerts
+  - name: system
+    interval: 30s
+    rules:
+      - alert: HighMemoryUsage
+        expr: (process_resident_memory_bytes / node_memory_MemTotal_bytes) > 0.9
+        for: 5m
+        labels:
+          severity: critical
+          component: "system"
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value | humanizePercentage }}"
+
+      - alert: HighCPUUsage
+        expr: rate(process_cpu_seconds_total[5m]) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          component: "system"
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value | humanizePercentage }}"
+
+      - alert: GitVanDown
+        expr: up{job="gitvan"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: "system"
+        annotations:
+          summary: "GitVan is down"
+          description: "GitVan has been unavailable for 1 minute"

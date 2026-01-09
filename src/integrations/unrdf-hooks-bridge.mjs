@@ -120,9 +120,9 @@ export class UnrdfHooksBridge {
       const schedule = breeConfig.schedule || "immediate";
 
       // Create job configuration
+      // Note: Don't include path here - let BreeScheduler handle path resolution
       const jobConfig = {
         name: jobName,
-        path: `${this.jobsDir}/${jobName}.mjs`,
         ...(schedule === "cron" && breeConfig.cron ? { cron: breeConfig.cron } : {}),
         ...(schedule === "interval" && breeConfig.interval ? { interval: breeConfig.interval } : {}),
         ...(breeConfig.timeout ? { timeout: breeConfig.timeout } : { timeout: this.timeout }),

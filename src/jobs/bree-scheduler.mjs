@@ -133,9 +133,12 @@ export class BreeScheduler {
     }
 
     try {
+      // Use absolute path to job file
+      const jobPath = path || join(this.jobsDir, `${name}.mjs`);
+
       const breeJobConfig = {
         name,
-        path: path || join(this.jobsDir, `${name}.mjs`),
+        path: jobPath,
         ...(cron ? { cron } : {}),
         ...(interval ? { interval } : {}),
         ...(timeout ? { timeout } : {}),
@@ -200,6 +203,11 @@ export class BreeScheduler {
     }
 
     try {
+      // Ensure Bree is started before running a job
+      if (!this.isRunning) {
+        await this.start();
+      }
+
       await this.bree.run(name);
       logger.info(`Job executed: ${name}`);
     } catch (error) {

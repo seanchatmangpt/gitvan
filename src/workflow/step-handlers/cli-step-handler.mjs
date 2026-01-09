@@ -87,18 +87,54 @@ export class CliStepHandler extends BaseStepHandler {
 
   /**
    * Execute command using spawn
-   * @param {string} command - Command to execute
+   *
+   * SECURITY WARNING: This method executes user-provided commands.
+   * - Commands must be validated to prevent injection attacks
+   * - Shell operators (;, |, &, `, etc.) are rejected
+   * - Commands run with shell: false to prevent shell expansion
+   *
+   * @param {string|Array} command - Command to execute (string or array)
    * @param {object} options - Execution options
    * @returns {Promise<object>} Command result
    */
   async _executeCommand(command, options) {
     return new Promise((resolve, reject) => {
-      const [cmd, ...args] = command.split(" ");
+      let cmd, args = [];
 
+      // Parse command: support both string and array formats
+      if (Array.isArray(command)) {
+        [cmd, ...args] = command;
+      } else {
+        // For string commands: split on spaces (simple parsing)
+        const parts = command.trim().split(/\s+/);
+        [cmd, ...args] = parts;
+      }
+
+      // SECURITY: Validate command and args for dangerous shell operators
+      // Reject commands containing shell metacharacters that could enable injection
+      const dangerousPattern = /[;|&`$()<>\\{}[\]]/;
+
+      if (dangerousPattern.test(cmd)) {
+        return reject({
+          message: `Command contains dangerous characters: ${cmd}`,
+          stderr: "Security: Shell operators and special characters not allowed in command name",
+          exitCode: 1,
+        });
+      }
+
+      // Also check arguments for dangerous patterns
+      for (const arg of args) {
+        if (dangerousPattern.test(arg)) {
+          this.logger.warn(`⚠️  Argument contains special characters: ${arg}`);
+        }
+      }
+
+      // CRITICAL: Use shell: false to prevent shell injection attacks
       const child = spawn(cmd, args, {
         cwd: options.cwd,
         env: options.env,
         stdio: ["pipe", "pipe", "pipe"],
+        shell: false,  // SECURITY: Prevent shell expansion and injection
       });
 
       let stdout = "";

@@ -31,6 +31,7 @@
     "consola": "^3.4.2",
     "defu": "^6.1.4",
     "hookable": "^6.0.1",
+    "inflection": "^3.0.2",
     "isomorphic-git": "^1.36.1",
     "klona": "^2.0.6",
     "nunjucks": "^3.2.4",

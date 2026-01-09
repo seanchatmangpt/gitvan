@@ -20,11 +20,14 @@ test-results.json
 vitest.*.config.mjs
 vitest.config.mjs
 
-# Documentation (keep README.md, LICENSE, CHANGELOG.md)
+# Documentation (keep essential docs)
 docs/
 *.md
 !README.md
 !CHANGELOG.md
+!API_REFERENCE.md
+!MIGRATION_GUIDE.md
+!GETTING_STARTED.md
 
 # Examples
 examples/
@@ -104,3 +107,10 @@ jobs/
 # Misc
 *.orig
 .vscode-test/
+
+# Additional exclusions for npm publish
+.claude-flow/
+.lh/
+.test-state-new/
+.gitvan/
+playground/

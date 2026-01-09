@@ -92,9 +92,13 @@ async function bindContext(opts = {}) {
 export async function useTurtle(options = {}) {
   const { root, graphDir, uriRoots, config } = await bindContext(options);
 
-  // --- Internal loader using @unrdf/core ---
+  // --- Internal loader using @unrdf/core canonical pattern ---
   const load = async () => {
     try {
+      // Create empty store
+      const store = new UnrdfStore([]);
+
+      // Read all Turtle files from directory
       const fileNames = (await readdir(graphDir)).filter((f) =>
         f.endsWith(".ttl")
       );
@@ -105,14 +109,13 @@ export async function useTurtle(options = {}) {
         }))
       );
 
-      // Parse all Turtle files and collect quads
-      const allQuads = [];
+      // Load all Turtle files using canonical @unrdf/core pattern
+      // OxigraphStore.load() handles automatic format detection
       for (const file of files) {
         try {
-          const { Parser } = await import("n3");
-          const parser = new Parser({ baseIRI: `${uriRoots["graph://"]}${file.name}` });
-          const quads = parser.parse(file.content);
-          allQuads.push(...quads);
+          // Access the underlying OxigraphStore via _store property
+          // and use its load() method with explicit Turtle format
+          store._store.load(file.content, { format: "turtle" });
         } catch (error) {
           // Skip malformed turtle files gracefully
           logger.warn(
@@ -121,8 +124,6 @@ export async function useTurtle(options = {}) {
         }
       }
 
-      // Create UnrdfStore with all parsed quads
-      const store = new UnrdfStore(allQuads);
       return { core: store, store, files };
     } catch (error) {
       // If directory doesn't exist or can't be read, return empty core

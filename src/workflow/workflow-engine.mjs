@@ -44,23 +44,20 @@ export class WorkflowEngine {
         }))
       );
 
-      // Parse all Turtle files and collect quads
-      const allQuads = [];
+      // Create empty store and load Turtle files using @unrdf/core canonical pattern
+      this.core = new UnrdfStore([]);
+
+      // Load all Turtle files using OxigraphStore's load() method
       for (const file of files) {
         try {
-          const { Parser } = await import("n3");
-          const parser = new Parser();
-          const quads = parser.parse(file.content);
-          allQuads.push(...quads);
+          // Use canonical @unrdf/core pattern: OxigraphStore.load() with explicit format
+          this.core._store.load(file.content, { format: "turtle" });
         } catch (error) {
           this.logger.warn(
             `⚠️ Failed to parse ${file.name}: ${error.message}`
           );
         }
       }
-
-      // Create UnrdfStore with all parsed quads
-      this.core = new UnrdfStore(allQuads);
 
       this.logger.info(
         `📁 Loaded ${files.length} Turtle files from: ${this.graphDir}`

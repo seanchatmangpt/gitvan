@@ -25,6 +25,7 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@unrdf/kgn": "^5.0.1",
     "bree": "^9.0.0",
     "c12": "^3.3.3",
     "citty": "^0.1.6",
@@ -34,7 +35,6 @@
     "inflection": "^3.0.2",
     "isomorphic-git": "^1.36.1",
     "klona": "^2.0.6",
-    "nunjucks": "^3.2.4",
     "pathe": "^2.0.3",
     "unctx": "^2.5.0",
     "zod": "^4.3.5"

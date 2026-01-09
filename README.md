@@ -1,4 +1,4 @@
-# GitVan v3.1.0
+# GitVan v1.0.0
 
 **Git-native workflow automation. Simple to use. Powerful underneath.**
 

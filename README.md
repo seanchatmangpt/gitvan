@@ -147,6 +147,52 @@ gh:Deploy a gh:Hook ;
   perf:sloP99 360000 .         # p99 under 6 minutes
 ```
 
+### Hooks Integration (v3.0+)
+
+**What**: Complete integration of Husky + @unrdf/hooks + Bree for Git-native workflow automation.
+
+GitVan v3.0+ provides a powerful hooks system that combines three technologies:
+- **Husky**: Intercepts Git events (commit, push, merge)
+- **@unrdf/hooks**: RDF-based reactive hook system
+- **Bree**: Background job scheduler for async tasks
+
+**Quick Setup**:
+```bash
+# Set up hooks integration
+gitvan hooks setup
+
+# Register a hook
+gitvan hooks register hooks/pre-commit-quality.ttl
+
+# View hook status
+gitvan hooks status
+```
+
+**Example Hook Definition** (hooks/pre-commit-quality.ttl):
+```turtle
+@prefix : <http://example.com/hooks#> .
+@prefix git: <http://example.com/git#> .
+@prefix hook: <http://example.com/hook#> .
+
+:PreCommitQuality a hook:Hook ;
+  rdfs:label "Pre-commit code quality check" ;
+  hook:on [
+    a git:PreCommitEvent ;
+    hook:pathChanged "**/*.{js,ts}"
+  ] ;
+  hook:job [
+    hook:name "quality-check" ;
+    hook:schedule "immediate" ;
+    hook:timeout 60000
+  ] .
+```
+
+**Documentation**:
+- **[Integration Guide](docs/HOOKS_INTEGRATION_GUIDE.md)** - Step-by-step setup
+- **[Architecture](docs/HOOKS_ARCHITECTURE.md)** - System design
+- **[API Reference](docs/HOOKS_API_REFERENCE.md)** - Complete API docs
+- **[Examples](docs/HOOKS_EXAMPLES.md)** - Real-world use cases
+
 ---
 
 ## Common Tasks

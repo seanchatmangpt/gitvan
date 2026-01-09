@@ -17,6 +17,19 @@
 import { GitEventCapture } from "../git-lifecycle/GitEventCapture.mjs";
 import { HookOrchestrator } from "../hooks/HookOrchestrator.mjs";
 import { createLogger } from "../utils/logger.mjs";
+import {
+  ErrorTypes,
+  HookSystemError,
+  retryWithBackoff,
+  AuditLogger,
+  ErrorMetrics,
+  categorizeError,
+} from "./error-handling.mjs";
+import {
+  validateGitEventData,
+  validateHuskyBridgeConfig,
+  GitHookSchema,
+} from "../schemas/hooks.schema.mjs";
 
 const logger = createLogger("integrations:husky-bridge");
 
@@ -42,12 +55,24 @@ export class HuskyHookBridge {
    * @param {Object} [options.orchestrator] - HookOrchestrator options
    * @param {boolean} [options.autoEvaluate=true] - Auto-evaluate hooks after capture
    * @param {boolean} [options.enableAudit=true] - Enable audit logging
+   * @param {number} [options.maxRetries=3] - Maximum retry attempts
+   * @param {number} [options.retryDelay=100] - Initial retry delay in ms
    */
   constructor(options = {}) {
+    // Validate configuration
+    const validationResult = validateHuskyBridgeConfig(options);
+    if (!validationResult.success) {
+      throw new Error(
+        `Invalid HuskyHookBridge configuration: ${JSON.stringify(validationResult.error)}`
+      );
+    }
+
     this.cwd = options.cwd || process.cwd();
     this.logger = options.logger || logger;
     this.autoEvaluate = options.autoEvaluate !== false;
     this.enableAudit = options.enableAudit !== false;
+    this.maxRetries = options.maxRetries ?? 3;
+    this.retryDelay = options.retryDelay ?? 100;
 
     // Initialize components
     this.eventCapture = new GitEventCapture({
@@ -61,6 +86,10 @@ export class HuskyHookBridge {
       logger: this.logger,
       ...options.orchestrator,
     });
+
+    // Error handling components
+    this.auditLogger = new AuditLogger({ maxEntries: 1000 });
+    this.errorMetrics = new ErrorMetrics();
 
     this.initialized = false;
     this.eventCount = 0;
@@ -109,25 +138,59 @@ export class HuskyHookBridge {
     const startTime = performance.now();
     this.logger.info(`🪝 Processing Husky hook: ${hookName}`);
 
+    // Validate hook name
+    const hookNameValidation = GitHookSchema.safeParse(hookName);
+    if (!hookNameValidation.success) {
+      throw new Error(
+        `Invalid hook name '${hookName}'. Must be one of: ${GitHookSchema.options.join(", ")}`
+      );
+    }
+
+    // Validate event data structure (basic validation)
+    // Note: We don't strictly validate all fields since they may not be available yet
+    if (eventData && typeof eventData !== "object") {
+      throw new Error("Event data must be an object");
+    }
+
     try {
-      // Step 1: Capture the git event as RDF
-      const captureResult = await this.eventCapture.captureEvent(
-        hookName,
-        eventData
+      // Step 1: Capture the git event as RDF with retry logic
+      const captureResult = await retryWithBackoff(
+        async (attempt) => {
+          const result = await this.eventCapture.captureEvent(
+            hookName,
+            eventData
+          );
+
+          if (!result.success) {
+            throw new HookSystemError(
+              ErrorTypes.EVENT_CAPTURE_FAILED,
+              result.error || "Failed to capture event",
+              { hookName, attempt }
+            );
+          }
+
+          return result;
+        },
+        {
+          maxRetries: this.maxRetries,
+          initialDelay: this.retryDelay,
+          onRetry: (error, attempt, delay) => {
+            this.logger.warn(
+              `⚠️ Event capture attempt ${attempt + 1} failed, retrying in ${delay}ms: ${error.message}`
+            );
+          },
+        }
       );
 
-      if (!captureResult.success) {
-        throw new Error(
-          `Failed to capture event: ${captureResult.error || "Unknown error"}`
-        );
-      }
-
       this.eventCount++;
-      const eventUri = captureResult.eventUri;
+      const eventUri = captureResult.result.eventUri;
+      const retryCount = captureResult.retryCount;
 
-      this.logger.debug(`📸 Captured event: ${eventUri}`);
+      this.logger.debug(
+        `📸 Captured event: ${eventUri}${retryCount > 0 ? ` (${retryCount} retries)` : ""}`
+      );
 
-      // Step 2: Auto-evaluate hooks if enabled
+      // Step 2: Auto-evaluate hooks if enabled (non-blocking)
       let evaluationResult = null;
       if (this.autoEvaluate) {
         evaluationResult = await this._evaluateHooksForEvent(
@@ -143,8 +206,9 @@ export class HuskyHookBridge {
         success: true,
         hookName,
         eventUri,
-        eventId: captureResult.eventId,
+        eventId: captureResult.result.eventId,
         duration: Math.round(duration),
+        retryCount,
         eventCaptured: true,
         hooksEvaluated: evaluationResult?.hooksEvaluated || 0,
         hooksTriggered: evaluationResult?.triggeredHooks.length || 0,
@@ -153,7 +217,10 @@ export class HuskyHookBridge {
 
       // Step 4: Log audit trail if enabled
       if (this.enableAudit) {
-        await this._logAuditTrail(result);
+        this.auditLogger.log({
+          ...result,
+          hookId: hookName,
+        });
       }
 
       this.logger.info(
@@ -163,20 +230,30 @@ export class HuskyHookBridge {
       return result;
     } catch (error) {
       const duration = performance.now() - startTime;
+      const errorType = categorizeError(error);
+
       this.logger.error(
         `❌ Failed to process hook ${hookName}:`,
         error.message
       );
 
+      // Record error metrics
+      this.errorMetrics.recordError(error, hookName, { eventData });
+
       const result = {
         success: false,
         hookName,
         error: error.message,
+        errorType,
         duration: Math.round(duration),
+        stackTrace: error.stack,
       };
 
       if (this.enableAudit) {
-        await this._logAuditTrail(result);
+        this.auditLogger.log({
+          ...result,
+          hookId: hookName,
+        });
       }
 
       throw error;
@@ -185,6 +262,8 @@ export class HuskyHookBridge {
 
   /**
    * Evaluate all hooks for a specific event
+   *
+   * Gracefully handles failures to ensure git flow is not blocked
    *
    * @private
    * @param {string} eventUri - Event URI from RDF store
@@ -212,31 +291,42 @@ export class HuskyHookBridge {
         workflowsExecuted: evaluationResult.workflowsExecuted,
       };
     } catch (error) {
-      this.logger.warn(`⚠️ Hook evaluation failed: ${error.message}`);
+      // Log warning but don't fail - git flow should continue
+      const errorType = categorizeError(error);
+      this.logger.warn(
+        `⚠️ Hook evaluation failed (${errorType}): ${error.message}`
+      );
+
+      // Record error but continue
+      this.errorMetrics.recordError(error, hookName, { eventUri });
+
       return {
         eventUri,
         hooksEvaluated: 0,
         triggeredHooks: [],
         error: error.message,
+        errorType,
       };
     }
   }
 
   /**
-   * Log audit trail for hook processing
+   * Get audit log
    *
-   * @private
-   * @param {Object} result - Processing result
-   * @returns {Promise<void>}
+   * @param {Object} [filter={}] - Filter options
+   * @returns {Array<Object>} Audit log entries
    */
-  async _logAuditTrail(result) {
-    try {
-      // This would integrate with git notes for audit logging
-      // For now, just log to console
-      this.logger.info(`📝 Audit trail: ${JSON.stringify(result)}`);
-    } catch (error) {
-      this.logger.warn(`⚠️ Failed to log audit trail: ${error.message}`);
-    }
+  getAuditLog(filter = {}) {
+    return this.auditLogger.getLog(filter);
+  }
+
+  /**
+   * Get error metrics
+   *
+   * @returns {Object} Error metrics
+   */
+  getErrorMetrics() {
+    return this.errorMetrics.getMetrics();
   }
 
   /**

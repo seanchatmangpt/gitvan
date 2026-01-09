@@ -21,7 +21,8 @@
     "prepublishOnly": "npm run build && npm test",
     "setup-dev": "npm install && bash scripts/init-submodules.sh",
     "verify-deps": "node scripts/verify-submodule.mjs",
-    "update:submodule": "bash scripts/update-unrdf.sh"
+    "update:submodule": "bash scripts/update-unrdf.sh",
+    "prepare": "husky"
   },
   "dependencies": {
     "bree": "^9.0.0",
@@ -32,12 +33,14 @@
     "hookable": "^6.0.1",
     "isomorphic-git": "^1.36.1",
     "pathe": "^2.0.3",
-    "unctx": "^2.5.0"
+    "unctx": "^2.5.0",
+    "zod": "^4.3.5"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^4.0.16",
     "@vitest/ui": "^4.0.16",
     "eslint": "^9.39.2",
+    "husky": "^9.1.7",
     "prettier": "^3.7.4",
     "unbuild": "^3.6.1",
     "vitest": "^4.0.16"

@@ -174,6 +174,106 @@ Key files: `/src/pack/manager.mjs`, `/src/pack/planner.mjs`, `/src/pack/scaffold
 
 Location: `/src/ai/`
 
+### 8. Hooks Integration System (v3.0+)
+
+GitVan v3.0+ features a comprehensive hooks integration system combining three technologies:
+
+**Architecture**:
+```
+Git Event → Husky → HuskyHookBridge → GitEventCapture → RDF Storage
+                        ↓
+                 HookOrchestrator → Evaluate Predicates
+                        ↓
+                 UnrdfHooksBridge → Register Jobs
+                        ↓
+                 BreeScheduler → Execute Jobs (Worker Threads)
+```
+
+**Components**:
+
+- **Husky Hook Bridge** (`/src/integrations/husky-hook-bridge.mjs`)
+  - Captures Git events from Husky hooks
+  - Converts events to RDF triples
+  - Triggers hook evaluation automatically
+  - Logs audit trail to Git notes
+
+- **UnRDF Hooks Bridge** (`/src/integrations/unrdf-hooks-bridge.mjs`)
+  - Bridges @unrdf/hooks to Bree scheduler
+  - Registers hooks as background jobs
+  - Manages job execution lifecycle
+  - Tracks execution statistics
+
+- **Bree Scheduler** (`/src/jobs/bree-scheduler.mjs`)
+  - Background job scheduling (cron, interval, immediate)
+  - Worker thread pool for concurrent execution
+  - Job timeout and retry handling
+  - Worker lifecycle management
+
+**Key Features**:
+- **Git-Native**: All hook data stored in Git (refs, notes)
+- **Reactive**: Hooks trigger on RDF graph state changes
+- **Declarative**: Hook definitions in Turtle (.ttl) format
+- **Scalable**: Background processing via worker threads
+- **Auditable**: Complete execution history in Git notes
+
+**Hook Definition Example**:
+```turtle
+@prefix : <http://example.com/hooks#> .
+@prefix git: <http://example.com/git#> .
+@prefix hook: <http://example.com/hook#> .
+
+:PreCommitQuality a hook:Hook ;
+  rdfs:label "Pre-commit code quality" ;
+  hook:on [
+    a git:PreCommitEvent ;
+    hook:pathChanged "**/*.{js,ts}"
+  ] ;
+  hook:job [
+    hook:name "quality-check" ;
+    hook:schedule "immediate" ;
+    hook:timeout 60000
+  ] .
+```
+
+**Job File Example** (`jobs/quality-check.mjs`):
+```javascript
+export default async function qualityCheck(context = {}) {
+  // Run linting and tests
+  execSync('npm run lint', { stdio: 'inherit' })
+  execSync('npm test', { stdio: 'inherit' })
+  return { success: true }
+}
+```
+
+**Documentation**:
+- **[Integration Guide](docs/HOOKS_INTEGRATION_GUIDE.md)** - Setup and usage
+- **[Architecture](docs/HOOKS_ARCHITECTURE.md)** - System design
+- **[API Reference](docs/HOOKS_API_REFERENCE.md)** - Complete API
+- **[Examples](docs/HOOKS_EXAMPLES.md)** - Real-world use cases
+
+**Key Modules**:
+- `/src/integrations/husky-hook-bridge.mjs` - Husky integration
+- `/src/integrations/unrdf-hooks-bridge.mjs` - UnRDF integration
+- `/src/jobs/bree-scheduler.mjs` - Job scheduler
+- `/src/git-lifecycle/GitEventCapture.mjs` - Event capture
+- `/src/hooks/HookOrchestrator.mjs` - Hook orchestration
+- `/src/hooks/HookParser.mjs` - Turtle parsing
+- `/src/hooks/PredicateEvaluator.mjs` - Condition evaluation
+
+**Usage**:
+```javascript
+// Get bridge instance
+import { getHuskyHookBridge } from 'gitvan/integrations/husky-hook-bridge'
+const bridge = getHuskyHookBridge({ cwd: '/path/to/repo' })
+
+// Process Git hook
+await bridge.processHook('pre-commit', { files: ['src/index.js'] })
+
+// Get statistics
+const stats = await bridge.getStats()
+console.log(`Processed ${stats.totalEventsProcessed} events`)
+```
+
 ---
 
 ## Codebase Structure

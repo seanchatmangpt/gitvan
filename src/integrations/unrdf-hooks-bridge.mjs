@@ -14,8 +14,10 @@
  * @license Apache-2.0
  */
 
-import { getBreeScheduler } from "../jobs/bree-scheduler.mjs";
+import { getBreeScheduler, resetBreeScheduler } from "../jobs/bree-scheduler.mjs";
 import { createLogger } from "../utils/logger.mjs";
+// TODO: Re-enable validation once zod is installed
+// import { validateHookDefinition, validateUnrdfBridgeConfig } from "../schemas/hooks.schema.mjs";
 
 const logger = createLogger("integrations:unrdf-hooks-bridge");
 
@@ -42,6 +44,15 @@ export class UnrdfHooksBridge {
    * @param {boolean} [options.enableAudit=true] - Enable audit logging
    */
   constructor(options = {}) {
+    // TODO: Re-enable validation once zod is installed
+    // Validate configuration
+    // const validationResult = validateUnrdfBridgeConfig(options);
+    // if (!validationResult.success) {
+    //   throw new Error(
+    //     `Invalid UnrdfHooksBridge configuration: ${JSON.stringify(validationResult.error)}`
+    //   );
+    // }
+
     this.cwd = options.cwd || process.cwd();
     this.logger = options.logger || logger;
     this.jobsDir = options.jobsDir || "jobs";
@@ -105,6 +116,16 @@ export class UnrdfHooksBridge {
    */
   async registerHook(hookDef) {
     await this.initialize();
+
+    // TODO: Re-enable validation once zod is installed
+    // Validate hook definition
+    // const validationResult = validateHookDefinition(hookDef);
+    // if (!validationResult.success) {
+    //   const errorMsg = validationResult.issues
+    //     .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
+    //     .join("; ");
+    //   throw new Error(`Invalid hook definition: ${errorMsg}`);
+    // }
 
     const { id, name, breeConfig = {} } = hookDef;
 
@@ -430,11 +451,15 @@ export async function resetUnrdfHooksBridge(cwd = null) {
       await bridgeInstances.get(cwd).shutdown();
       bridgeInstances.delete(cwd);
     }
+    // Also reset the BreeScheduler singleton for this cwd
+    resetBreeScheduler(cwd);
   } else {
     for (const [key, instance] of bridgeInstances.entries()) {
       await instance.shutdown();
       bridgeInstances.delete(key);
     }
+    // Also reset all BreeScheduler singletons
+    resetBreeScheduler();
   }
 }
 

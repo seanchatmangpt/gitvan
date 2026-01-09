@@ -13,8 +13,6 @@ import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import {
-import { createLogger } from "../utils/logger.mjs";
-const logger = createLogger("composables:event");
   unrouteEventId,
   unrouteCronExpression,
   unrouteBranchName,
@@ -27,6 +25,9 @@ const logger = createLogger("composables:event");
   unrouteAll,
   createUnrouteMapping,
 } from "../utils/unrouting.mjs";
+import { createLogger } from "../utils/logger.mjs";
+
+const logger = createLogger("composables:event");
 
 export function useEvent() {
   // Get context from unctx - this must be called synchronously

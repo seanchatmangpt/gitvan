@@ -8,6 +8,7 @@ import { defineCommand } from "citty";
 import { startCronScheduler, scanJobs } from "../../jobs/cron.mjs";
 import { loadConfig } from "../../runtime/config.mjs";
 import { createLogger } from "../../utils/logger.mjs";
+import { exitWithError } from "../../core/error-handler.mjs";
 import consola from "consola";
 import cron from "node-cron";
 

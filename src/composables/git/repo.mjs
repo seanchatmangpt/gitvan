@@ -20,6 +20,11 @@ export default function makeRepo(base, run, runVoid, toArr) {
       return run(["rev-parse", "--show-toplevel"]);
     },
 
+    // Alias for worktreeRoot (test compatibility)
+    async topLevel() {
+      return this.worktreeRoot();
+    },
+
     // Current HEAD SHA
     async currentHead() {
       return run(["rev-parse", "HEAD"]);

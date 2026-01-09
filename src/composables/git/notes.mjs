@@ -24,7 +24,11 @@ export default function makeNotes(base, run, runVoid, toArr) {
 
     // Show note content
     async noteShow(ref = NOTES_REF, sha = "HEAD") {
-      return run(["notes", `--ref=${ref}`, "show", sha]);
+      try {
+        return await run(["notes", `--ref=${ref}`, "show", sha]);
+      } catch {
+        return "";
+      }
     },
 
     // List all notes
@@ -34,6 +38,23 @@ export default function makeNotes(base, run, runVoid, toArr) {
         return output.split("\n").filter(line => line.trim());
       } catch {
         return [];
+      }
+    },
+
+    // Simplified API for tests (default ref)
+    async notesAdd(sha, message) {
+      await this.noteAdd(NOTES_REF, message, sha);
+    },
+
+    async notesShow(sha) {
+      return this.noteShow(NOTES_REF, sha);
+    },
+
+    async notesRemove(sha) {
+      try {
+        await runVoid(["notes", `--ref=${NOTES_REF}`, "remove", sha]);
+      } catch {
+        // Ignore if note doesn't exist
       }
     },
   };

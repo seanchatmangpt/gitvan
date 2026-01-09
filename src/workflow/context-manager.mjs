@@ -50,7 +50,7 @@ export class ContextManager {
    * @param {string} key - Output key
    * @param {any} value - Output value
    */
-  async setOutput(key, value) {
+  setOutput(key, value) {
     if (!this.initialized) {
       throw new Error("Context manager not initialized");
     }
@@ -64,7 +64,7 @@ export class ContextManager {
    * @param {string} key - Output key
    * @returns {any} Output value
    */
-  async getOutput(key) {
+  getOutput(key) {
     if (!this.initialized) {
       throw new Error("Context manager not initialized");
     }
@@ -72,6 +72,23 @@ export class ContextManager {
     const value = this.context.get(key);
     this.logger.debug(`📥 Retrieved output: ${key}`);
     return value;
+  }
+
+  /**
+   * Get input value (alias for getOutput for compatibility)
+   * @param {string} key - Input key
+   * @returns {any} Input value
+   */
+  getInput(key) {
+    return this.getOutput(key);
+  }
+
+  /**
+   * Get workflow ID
+   * @returns {string} Workflow ID
+   */
+  getWorkflowId() {
+    return this.workflowId;
   }
 
   /**
@@ -131,12 +148,36 @@ export class ContextManager {
   }
 
   /**
+   * Cleanup context (alias for clear, returns promise for test compatibility)
+   * @returns {Promise<void>}
+   */
+  async cleanup() {
+    this.logger.info('Cleaning up context');
+    this.context.clear();
+    this.executionHistory = [];
+  }
+
+  /**
    * Record step execution
    * @param {object} stepResult - Step execution result
    */
   recordStepExecution(stepResult) {
     this.executionHistory.push({
       ...stepResult,
+      timestamp: new Date().toISOString(),
+      contextSize: this.context.size,
+    });
+  }
+
+  /**
+   * Record execution (alias for compatibility with tests)
+   * @param {string} stepId - Step ID
+   * @param {object} result - Execution result
+   */
+  recordExecution(stepId, result) {
+    this.executionHistory.push({
+      stepId,
+      ...result,
       timestamp: new Date().toISOString(),
       contextSize: this.context.size,
     });
@@ -184,6 +225,22 @@ export class ContextManager {
     }
 
     return stats;
+  }
+
+  /**
+   * Get metrics (alias for getExecutionStats for test compatibility)
+   * @returns {object} Execution metrics
+   */
+  getMetrics() {
+    const stats = this.getExecutionStats();
+    return {
+      stepsExecuted: stats.stepCount,
+      successRate: stats.stepCount > 0
+        ? (stats.successfulSteps / stats.stepCount) * 100
+        : 0,
+      totalDuration: stats.duration,
+      averageDuration: stats.averageStepDuration || 0,
+    };
   }
 
   /**

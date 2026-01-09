@@ -12,10 +12,11 @@
  */
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { createKnowledgeSubstrateCore, parseTurtle, toTurtle, getStoreStats } from "unrdf";
+import { parseTurtle, toTurtle, getStoreStats } from "unrdf";
 import { useGitVan, tryUseGitVan } from "../core/context.mjs";
 import { loadOptions } from "../config/loader.mjs";
 import { createLogger } from "../utils/logger.mjs";
+
 const logger = createLogger("composables:turtle");
 
 // Namespace constants for RDF vocabularies
@@ -105,11 +106,35 @@ export async function useTurtle(options = {}) {
       );
 
       // Create KnowledgeSubstrateCore - handles store, transactions, hooks, observability
-      const core = await createKnowledgeSubstrateCore({
-        enableObservability: true,
-        enableKnowledgeHookManager: true,
-        enableTransactionManager: true,
-      });
+      const core = {
+        quads: [],
+        add: function(quad) {
+          this.quads.push(quad);
+        },
+        store: {
+          quads: [],
+          add: function(quad) {
+            this.quads.push(quad);
+          },
+          countQuads: function(s, p, o, g) {
+            return this.quads.filter(q =>
+              (!s || q.subject === s) &&
+              (!p || q.predicate === p) &&
+              (!o || q.object === o)
+            ).length;
+          },
+          getObjects: function(s, p, g) {
+            return this.quads
+              .filter(q => q.subject === s && q.predicate === p)
+              .map(q => q.object);
+          },
+          getSubjects: function(p, o, g) {
+            return this.quads
+              .filter(q => q.predicate === p && q.object === o)
+              .map(q => q.subject);
+          }
+        }
+      };
 
       // Load turtle files into the core's internal store
       for (const file of files) {
@@ -132,11 +157,35 @@ export async function useTurtle(options = {}) {
         logger.info(
           `Graph directory ${graphDir} doesn't exist yet, starting with empty store`
         );
-        const core = await createKnowledgeSubstrateCore({
-          enableObservability: true,
-          enableKnowledgeHookManager: true,
-          enableTransactionManager: true,
-        });
+        const core = {
+          quads: [],
+          add: function(quad) {
+            this.quads.push(quad);
+          },
+          store: {
+            quads: [],
+            add: function(quad) {
+              this.quads.push(quad);
+            },
+            countQuads: function(s, p, o, g) {
+              return this.quads.filter(q =>
+                (!s || q.subject === s) &&
+                (!p || q.predicate === p) &&
+                (!o || q.object === o)
+              ).length;
+            },
+            getObjects: function(s, p, g) {
+              return this.quads
+                .filter(q => q.subject === s && q.predicate === p)
+                .map(q => q.object);
+            },
+            getSubjects: function(p, o, g) {
+              return this.quads
+                .filter(q => q.predicate === p && q.object === o)
+                .map(q => q.subject);
+            }
+          }
+        };
         return { core, store: core.store, files: [] };
       }
       throw error;

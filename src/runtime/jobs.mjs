@@ -108,10 +108,17 @@ export async function loadJobDefinition(jobFile) {
     const jobMod = await import(`file://${jobFile}`);
 
     // Job modules can export either:
-    // 1. A default function
-    // 2. A named export with metadata
-    // 3. Both
+    // 1. A default export with full job definition (from defineJob)
+    // 2. A default function
+    // 3. A named export with metadata
+    // 4. Both
 
+    // If default export is an object with run function, use it (from defineJob)
+    if (jobMod.default && typeof jobMod.default === "object" && typeof jobMod.default.run === "function") {
+      return jobMod.default;
+    }
+
+    // If default export is a function, wrap it
     if (jobMod.default && typeof jobMod.default === "function") {
       return {
         run: jobMod.default,

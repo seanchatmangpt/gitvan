@@ -4,6 +4,7 @@ import { join } from "pathe";
 import { mkdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 import { createLogger } from "../utils/logger.mjs";
+import { exitWithError } from "../core/error-handler.mjs";
 const logger = createLogger("cli:init");
 
 export const initCommand = defineCommand({

@@ -11,6 +11,7 @@ import {
   stopDaemon,
 } from "../../runtime/daemon.mjs";
 import { createLogger } from "../../utils/logger.mjs";
+import { exitWithError } from "../../core/error-handler.mjs";
 import consola from "consola";
 
 const logger = createLogger("daemon-cli");

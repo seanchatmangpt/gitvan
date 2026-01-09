@@ -11,6 +11,7 @@ import { defineCommand } from "citty";
 import { useGitVan, withGitVan } from "../../core/context.mjs";
 import { useWorktree } from "../../composables/worktree.mjs";
 import { createLogger } from "../../utils/logger.mjs";
+import { exitWithError } from "../../core/error-handler.mjs";
 import consola from "consola";
 
 const logger = createLogger("worktree-cli");

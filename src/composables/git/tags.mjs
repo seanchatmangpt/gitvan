@@ -17,11 +17,25 @@ export default function makeTags(base, run, runVoid, toArr) {
     },
 
     // Create a tag
-    async tagCreate(name, msg, options = {}) {
+    async tagCreate(name, ref = "HEAD", options = {}) {
       const args = ["tag"];
 
+      if (options.annotate || options.sign) args.push("-a");
       if (options.sign) args.push("-s");
-      if (msg) args.push("-m", msg);
+      if (options.message) args.push("-m", options.message);
+
+      args.push(name);
+      if (ref && ref !== "HEAD") args.push(ref);
+
+      await runVoid(args);
+    },
+
+    // Delete a tag
+    async tagDelete(name, options = {}) {
+      const args = ["tag"];
+
+      if (options.force) args.push("-f");
+      args.push("-d");
       args.push(name);
 
       await runVoid(args);

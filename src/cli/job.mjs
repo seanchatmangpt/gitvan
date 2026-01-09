@@ -2,6 +2,7 @@
 // Handles job management
 
 import { createLogger } from "../utils/logger.mjs";
+import { scanJobs, getJobById } from "../jobs/scan.mjs";
 
 const logger = createLogger("cli:job");
 
@@ -67,4 +68,47 @@ async function createJob(args) {
 async function deleteJob(args) {
   logger.info("📋 Job deletion not yet implemented");
   // Implementation would go here
+}
+
+/**
+ * Job CLI interface for testing and programmatic access
+ * @param {string} action - The action to perform (list, run, info, etc.)
+ * @param {object} options - Options for the action
+ * @returns {Promise<any>} Result of the action
+ */
+export async function jobCLI(action, options = {}) {
+  try {
+    switch (action) {
+      case "list":
+        const jobs = await scanJobs(options);
+        if (options.format === "json") {
+          return JSON.stringify(jobs, null, 2);
+        }
+        return jobs;
+
+      case "info":
+        if (!options.jobId) {
+          throw new Error("Job ID is required for info action");
+        }
+        const job = await getJobById(options.jobId, options);
+        if (options.format === "json") {
+          return JSON.stringify(job, null, 2);
+        }
+        return job;
+
+      case "run":
+        if (!options.jobId) {
+          throw new Error("Job ID is required for run action");
+        }
+        logger.info(`Running job: ${options.jobId}`);
+        // Implementation would go here
+        return { success: true, jobId: options.jobId };
+
+      default:
+        throw new Error(`Unknown action: ${action}`);
+    }
+  } catch (error) {
+    logger.error(`Job CLI error: ${error.message}`);
+    throw error;
+  }
 }

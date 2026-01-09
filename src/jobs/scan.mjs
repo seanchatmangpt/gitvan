@@ -61,21 +61,109 @@ export async function scanJobsWithCriteria(options = {}, criteria = {}) {
 }
 
 /**
- * Get job statistics
+ * Get job by ID
+ * @param {string} jobId - Job ID to find
  * @param {object} options - Scan options
- * @returns {Promise<object>} Job statistics
+ * @returns {Promise<object|null>} Job definition or null
  */
-export async function getJobStats(options = {}) {
+export async function getJobById(jobId, options = {}) {
   const jobs = await scanJobs(options);
+  return jobs.find((job) => job.id === jobId) || null;
+}
 
-  const stats = {
-    total: jobs.length,
-    withCron: jobs.filter((j) => j.cron).length,
-    withMeta: jobs.filter((j) => j.meta && Object.keys(j.meta).length > 0)
-      .length,
-    valid: jobs.filter((j) => j.hasRun).length,
-    invalid: jobs.filter((j) => !j.hasRun).length,
+/**
+ * Validate jobs
+ * @param {Array} jobs - Array of job definitions
+ * @returns {object} Validation result
+ */
+export function validateJobs(jobs) {
+  const errors = [];
+
+  for (const job of jobs) {
+    if (!job.id) {
+      errors.push({ job, error: "Missing job ID" });
+    }
+    if (!job.hasRun && job.definition && typeof job.definition.run !== "function") {
+      errors.push({ job, error: "Missing or invalid run function" });
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    count: jobs.length,
   };
+}
 
-  return stats;
+/**
+ * Get job statistics
+ * @param {Array|object} jobsOrOptions - Array of jobs or scan options
+ * @returns {Promise<object>|object} Job statistics
+ */
+export function getJobStats(jobsOrOptions) {
+  // Support both direct jobs array and options object
+  let jobs;
+
+  // If it's an array, use it directly (synchronous mode)
+  if (Array.isArray(jobsOrOptions)) {
+    jobs = jobsOrOptions;
+
+    // Count jobs by mode
+    const byMode = {
+      "on-demand": 0,
+      "cron": 0,
+      "event": 0,
+    };
+
+    for (const job of jobs) {
+      if (job.mode) {
+        byMode[job.mode] = (byMode[job.mode] || 0) + 1;
+      } else if (job.cron) {
+        byMode.cron++;
+      } else if (job.definition?.on) {
+        byMode.event++;
+      } else {
+        byMode["on-demand"]++;
+      }
+    }
+
+    return {
+      total: jobs.length,
+      byMode,
+      withCron: jobs.filter((j) => j.cron).length,
+      withMeta: jobs.filter((j) => j.meta && Object.keys(j.meta).length > 0).length,
+      valid: jobs.filter((j) => j.hasRun).length,
+      invalid: jobs.filter((j) => !j.hasRun).length,
+    };
+  }
+
+  // Otherwise, async scan and return Promise
+  return scanJobs(jobsOrOptions).then((scannedJobs) => {
+    const byMode = {
+      "on-demand": 0,
+      "cron": 0,
+      "event": 0,
+    };
+
+    for (const job of scannedJobs) {
+      if (job.mode) {
+        byMode[job.mode] = (byMode[job.mode] || 0) + 1;
+      } else if (job.cron) {
+        byMode.cron++;
+      } else if (job.definition?.on) {
+        byMode.event++;
+      } else {
+        byMode["on-demand"]++;
+      }
+    }
+
+    return {
+      total: scannedJobs.length,
+      byMode,
+      withCron: scannedJobs.filter((j) => j.cron).length,
+      withMeta: scannedJobs.filter((j) => j.meta && Object.keys(j.meta).length > 0).length,
+      valid: scannedJobs.filter((j) => j.hasRun).length,
+      invalid: scannedJobs.filter((j) => !j.hasRun).length,
+    };
+  });
 }

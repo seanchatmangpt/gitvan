@@ -2,6 +2,7 @@ import { defineCommand } from "citty";
 import { JTBDCLI } from "../jtbd.mjs";
 import { useGitVan, withGitVan } from "../../core/context.mjs";
 import { createLogger } from "../../utils/logger.mjs";
+import { exitWithError } from "../../core/error-handler.mjs";
 const logger = createLogger("cli:commands:jtbd");
 
 export const jtbdCommand = defineCommand({

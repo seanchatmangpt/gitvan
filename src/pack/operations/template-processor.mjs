@@ -264,7 +264,7 @@ export class TemplateProcessor {
     }
 
     if (!existsSync(src)) {
-      throw new Error(`Template file not found: ${src}`);
+      throw new Error(`Template not found: ${src}`);
     }
 
     // Ensure target directory exists
@@ -285,7 +285,7 @@ export class TemplateProcessor {
       return readFileSync(src, "utf8");
     } catch (error) {
       if (error.code === "ENOENT") {
-        throw new Error(`Template file not found: ${src}`);
+        throw new Error(`Template not found: ${src}`);
       }
       throw error;
     }

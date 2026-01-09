@@ -24,6 +24,7 @@ export function createTestContext(options = {}) {
 
   return {
     repo: testDir,
+    cwd: testDir,  // Add cwd for useGit composable
     config: {
       jobs: { dir: "jobs" },
       templates: { dirs: ["templates"] },

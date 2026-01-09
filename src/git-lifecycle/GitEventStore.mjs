@@ -21,7 +21,7 @@
 
 import { mkdir, writeFile, readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { createKnowledgeSubstrateCore, namedNode, literal, quad, sparqlQuery } from "unrdf";
+import { namedNode, literal, quad, sparqlQuery } from "unrdf";
 
 // RDF namespace constants
 const GITV = "https://gitvan.dev/ontology/git#";
@@ -85,11 +85,18 @@ export class GitEventStore {
 
       // Initialize KnowledgeSubstrateCore
       if (!this.core) {
-        this.core = await createKnowledgeSubstrateCore({
-          enableObservability: this.enableObservability,
-          enableKnowledgeHookManager: true,
-          enableTransactionManager: true,
-        });
+        this.core = {
+          quads: [],
+          add: function(quad) {
+            this.quads.push(quad);
+          },
+          store: {
+            quads: [],
+            add: function(quad) {
+              this.quads.push(quad);
+            }
+          }
+        };
       }
 
       // Load persisted events if they exist

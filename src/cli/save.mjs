@@ -7,6 +7,7 @@ import { defineCommand } from "citty";
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "pathe";
+import { exitWithError } from "../core/error-handler.mjs";
 import consola from "consola";
 
 export const saveCommand = defineCommand({

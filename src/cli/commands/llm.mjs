@@ -16,6 +16,7 @@ import {
   checkAIAvailability,
 } from "../../ai/provider.mjs";
 import { createLogger } from "../../utils/logger.mjs";
+import { exitWithError } from "../../core/error-handler.mjs";
 import consola from "consola";
 import { writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join } from "node:path";

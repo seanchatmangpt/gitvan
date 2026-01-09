@@ -5,13 +5,40 @@
 
 export default function makeCommits(base, run, runVoid, toArr) {
   return {
-    // Git log with custom format
-    async log(format = "%h%x09%s", extra = []) {
+    // Git log with custom format or options object
+    async log(formatOrOptions = "%h%x09%s", extra = []) {
+      // Support both old API and options object
+      if (typeof formatOrOptions === "object") {
+        const options = formatOrOptions;
+        const args = ["log"];
+
+        if (options.maxCount) args.push(`--max-count=${options.maxCount}`);
+        if (options.skip) args.push(`--skip=${options.skip}`);
+        if (options.since) args.push(`--since=${options.since}`);
+        if (options.until) args.push(`--until=${options.until}`);
+        if (options.author) args.push(`--author=${options.author}`);
+        if (options.grep) args.push(`--grep=${options.grep}`);
+        if (options.format) args.push(`--format=${options.format}`);
+        if (options.oneline) args.push("--oneline");
+        if (options.graph) args.push("--graph");
+        if (options.all) args.push("--all");
+
+        const output = await run(args);
+
+        // Parse output into array of commit objects
+        const lines = output.split("\n").filter(line => line.trim());
+        return lines.map(line => {
+          // Simple parsing for now - can be enhanced based on format
+          return { raw: line };
+        });
+      }
+
+      // Original API: format string
       const extraArgs =
         typeof extra === "string"
           ? extra.split(/\s+/).filter(Boolean)
           : toArr(extra);
-      return run(["log", `--pretty=${format}`, ...extraArgs]);
+      return run(["log", `--pretty=${formatOrOptions}`, ...extraArgs]);
     },
 
     // Log since last tag
@@ -184,6 +211,11 @@ export default function makeCommits(base, run, runVoid, toArr) {
       args.push(commit);
 
       return run(args);
+    },
+
+    // Alias for showCommit (test compatibility)
+    async show(commit = "HEAD", options = {}) {
+      return this.showCommit(commit, options);
     },
 
     // Get commit message

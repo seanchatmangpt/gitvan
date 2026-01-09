@@ -4,7 +4,6 @@
 import { createLogger } from "../utils/logger.mjs";
 import { sha256Hex, fingerprint } from "../utils/crypto.mjs";
 import { join, resolve, dirname } from "pathe";
-import {
 import { homedir } from "node:os";
 import { z } from "zod";
 import { execSync } from "node:child_process";

@@ -23,6 +23,8 @@ export async function initTestRepo(dir, options = {}) {
   // Configure git
   execSync('git config user.name "Test User"', { cwd: dir, stdio: "ignore" });
   execSync('git config user.email "test@example.com"', { cwd: dir, stdio: "ignore" });
+  execSync('git config commit.gpgsign false', { cwd: dir, stdio: "ignore" });
+  execSync('git config tag.gpgsign false', { cwd: dir, stdio: "ignore" });
 
   // Set default branch
   const branch = options.defaultBranch || "main";

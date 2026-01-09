@@ -16,6 +16,11 @@ export default function makeStash(base, run, runVoid, toArr) {
       await runVoid(args);
     },
 
+    // Alias for stashPush (test compatibility)
+    async stash(message = "", options = {}) {
+      await this.stashPush(message, options);
+    },
+
     // List stashes
     async stashList() {
       const output = await run(["stash", "list"]);
@@ -32,6 +37,11 @@ export default function makeStash(base, run, runVoid, toArr) {
       if (stash) args.push(stash);
 
       await runVoid(args);
+    },
+
+    // Pop stash (apply and remove)
+    async stashPop(stash = "stash@{0}") {
+      await this.stashApply(stash, { pop: true });
     },
 
     // Drop stash

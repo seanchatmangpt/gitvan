@@ -10,6 +10,7 @@ import { useNotes } from "../../composables/notes.mjs";
 import { writeFileSafe } from "../../utils/fs.mjs";
 import { loadOptions } from "../../config/loader.mjs";
 import { createLogger } from "../../utils/logger.mjs";
+import { exitWithError } from "../../core/error-handler.mjs";
 import { Receipt, ReceiptQuery } from "../../schemas/receipt.zod.mjs";
 import consola from "consola";
 import YAML from "js-yaml";

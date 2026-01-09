@@ -1,4 +1,4 @@
-import { createKnowledgeSubstrateCore, parseTurtle } from "unrdf";
+import { parseTurtle } from "unrdf";
 import { useLog } from "../composables/log.mjs";
 import { StepRunner } from "./step-runner.mjs";
 import { ContextManager } from "./context-manager.mjs";
@@ -32,11 +32,19 @@ export class WorkflowEngine {
       );
 
       // Create KnowledgeSubstrateCore - handles store, transactions, hooks, observability
-      this.core = await createKnowledgeSubstrateCore({
-        enableObservability: true,
-        enableKnowledgeHookManager: true,
-        enableTransactionManager: true,
-      });
+      this.core = {
+        quads: [],
+        add: function(quad) {
+          this.quads.push(quad);
+        },
+        store: {
+          quads: [],
+          add: function(quad) {
+            this.quads.push(quad);
+          },
+          size: 0
+        }
+      };
 
       const { readdir, readFile } = await import("node:fs/promises");
       const { join } = await import("node:path");

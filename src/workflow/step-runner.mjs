@@ -74,6 +74,7 @@ export class StepRunner {
         success: true,
         duration,
         outputs: result.data || {},
+        output: result.data || {},
         timestamp: new Date().toISOString(),
         stepType: step.type,
         handlerUsed: step.type,
@@ -94,6 +95,65 @@ export class StepRunner {
         handlerUsed: step.type,
       };
     }
+  }
+
+  /**
+   * Execute a step with retry logic
+   * @param {object} step - Step definition with retry config
+   * @param {object} contextManager - Context manager instance
+   * @param {object} graph - useGraph instance
+   * @param {object} turtle - useTurtle instance
+   * @param {object} [options] - Execution options
+   * @returns {Promise<object>} Step execution result
+   */
+  async executeStepWithRetry(step, contextManager, graph, turtle, options = {}) {
+    const maxAttempts = step.retry?.attempts || 1;
+    const delay = step.retry?.delay || 0;
+    let lastError = null;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        if (attempt > 1) {
+          this.logger.info(`🔄 Retry attempt ${attempt}/${maxAttempts} for step: ${step.id}`);
+        }
+
+        const result = await this.executeStep(step, contextManager, graph, turtle, options);
+
+        if (result.success) {
+          if (attempt > 1) {
+            this.logger.info(`✅ Step succeeded on attempt ${attempt}: ${step.id}`);
+          }
+          return result;
+        }
+
+        lastError = result.error;
+
+        // If this was the last attempt, return the failed result
+        if (attempt === maxAttempts) {
+          return result;
+        }
+
+        // Wait before retrying
+        if (delay > 0) {
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      } catch (error) {
+        lastError = error.message;
+
+        // If this was the last attempt, throw
+        if (attempt === maxAttempts) {
+          throw error;
+        }
+
+        // Wait before retrying
+        if (delay > 0) {
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+
+    // Should not reach here, but just in case
+    throw new Error(lastError || 'Step execution failed after retries');
   }
 
   /**

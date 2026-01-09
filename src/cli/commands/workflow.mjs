@@ -11,6 +11,7 @@ import { defineCommand } from "citty";
 import { WorkflowCLI } from "../workflow.mjs";
 import { useGitVan, withGitVan } from "../../core/context.mjs";
 import { createLogger } from "../../utils/logger.mjs";
+import { exitWithError } from "../../core/error-handler.mjs";
 const logger = createLogger("cli:commands:workflow");
 
 /**

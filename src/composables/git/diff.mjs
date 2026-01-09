@@ -7,9 +7,22 @@ import { minimatch } from "minimatch";
 
 export default function makeDiff(base, run, runVoid, toArr) {
   return {
-    // Git diff with various options
-    async diff(options = {}) {
+    // Git diff with various options or array of commits
+    async diff(optionsOrCommits = {}) {
       const args = ["diff"];
+
+      // Support array of commits: diff([commit1, commit2])
+      if (Array.isArray(optionsOrCommits)) {
+        if (optionsOrCommits.length === 2) {
+          args.push(`${optionsOrCommits[0]}..${optionsOrCommits[1]}`);
+        } else if (optionsOrCommits.length === 1) {
+          args.push(optionsOrCommits[0]);
+        }
+        return run(args);
+      }
+
+      // Original options object API
+      const options = optionsOrCommits;
 
       // Handle different diff types
       if (options.cached) args.push("--cached");

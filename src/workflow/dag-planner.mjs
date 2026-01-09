@@ -382,6 +382,82 @@ export class DAGPlanner {
   }
 
   /**
+   * Get critical path through the DAG
+   * @param {Array<object>} plan - Execution plan
+   * @returns {object} Critical path information
+   */
+  getCriticalPath(plan) {
+    // Build dependency graph from plan
+    const graph = new Map();
+
+    for (const step of plan) {
+      graph.set(step.id, {
+        step,
+        dependencies: step.dependsOn || step.depends || [],
+        estimatedTime: step.estimatedTime || step.estimatedDuration || 0,
+        earliestStart: 0,
+        earliestFinish: 0,
+      });
+    }
+
+    // Calculate earliest start/finish times (forward pass)
+    for (const step of plan) {
+      const node = graph.get(step.id);
+      let maxDependencyFinish = 0;
+
+      for (const depId of node.dependencies) {
+        const depNode = graph.get(depId);
+        if (depNode && depNode.earliestFinish > maxDependencyFinish) {
+          maxDependencyFinish = depNode.earliestFinish;
+        }
+      }
+
+      node.earliestStart = maxDependencyFinish;
+      node.earliestFinish = node.earliestStart + node.estimatedTime;
+    }
+
+    // Find the critical path (longest path)
+    let maxFinishTime = 0;
+    let lastStepId = null;
+
+    for (const [stepId, node] of graph) {
+      if (node.earliestFinish > maxFinishTime) {
+        maxFinishTime = node.earliestFinish;
+        lastStepId = stepId;
+      }
+    }
+
+    // Trace back the critical path
+    const criticalSteps = [];
+    let currentStepId = lastStepId;
+
+    while (currentStepId) {
+      criticalSteps.unshift(currentStepId);
+      const currentNode = graph.get(currentStepId);
+
+      // Find the dependency that determines the earliest start
+      let criticalDependency = null;
+      let maxDependencyFinish = 0;
+
+      for (const depId of currentNode.dependencies) {
+        const depNode = graph.get(depId);
+        if (depNode && depNode.earliestFinish >= maxDependencyFinish) {
+          maxDependencyFinish = depNode.earliestFinish;
+          criticalDependency = depId;
+        }
+      }
+
+      currentStepId = criticalDependency;
+    }
+
+    return {
+      totalTime: maxFinishTime,
+      steps: criticalSteps,
+      stepsCount: criticalSteps.length,
+    };
+  }
+
+  /**
    * Get execution statistics
    * @param {Array<object>} plan - Execution plan
    * @returns {object} Execution statistics

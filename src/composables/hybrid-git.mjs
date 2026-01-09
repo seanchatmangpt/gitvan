@@ -118,7 +118,8 @@ class GitBackend {
         author: defaultAuthor,
       });
     } else {
-      execSync(`git commit -m "${message}"`, { cwd: this.dir });
+      // Disable GPG signing with --no-gpg-sign to avoid signing server errors in test environments
+      execSync(`git commit --no-gpg-sign -m "${message}"`, { cwd: this.dir });
     }
   }
 

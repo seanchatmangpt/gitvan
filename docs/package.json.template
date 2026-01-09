@@ -1,0 +1,147 @@
+{
+  "name": "gitvan",
+  "version": "3.1.0",
+  "type": "module",
+  "description": "Git-native development automation platform with semantic graph technology",
+  "author": "GitVan Team",
+  "license": "MIT",
+  "homepage": "https://github.com/YOUR_ORG/gitvan#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YOUR_ORG/gitvan.git"
+  },
+  "bugs": {
+    "url": "https://github.com/YOUR_ORG/gitvan/issues"
+  },
+  "keywords": [
+    "git",
+    "workflow",
+    "automation",
+    "rdf",
+    "semantic",
+    "cicd",
+    "devops",
+    "turtle",
+    "sparql",
+    "git-native",
+    "knowledge-graph"
+  ],
+  "main": "./dist/cli.mjs",
+  "bin": {
+    "gitvan": "./dist/bin/gitvan.mjs"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/cli.mjs",
+      "types": "./types/index.d.ts"
+    },
+    "./composables": {
+      "import": "./dist/composables/index.mjs"
+    },
+    "./composables/*": {
+      "import": "./dist/composables/*.mjs"
+    },
+    "./workflow": {
+      "import": "./dist/workflow/workflow-engine.mjs"
+    },
+    "./pack": {
+      "import": "./dist/pack/index.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist/**",
+    "bin/**",
+    "types/**",
+    "templates/**",
+    "packs/**",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.0.0 <21.0.0"
+  },
+  "scripts": {
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "test:watch": "vitest --watch",
+    "lint": "eslint src/ tests/",
+    "lint:fix": "eslint src/ tests/ --fix",
+    "format": "prettier --write \"src/**/*.{js,mjs,json}\" \"tests/**/*.{js,mjs,json}\"",
+    "format:check": "prettier --check \"src/**/*.{js,mjs,json}\" \"tests/**/*.{js,mjs,json}\"",
+    "build": "unbuild",
+    "dev": "vitest --watch",
+    "prepublishOnly": "npm run lint && npm run build && npm test",
+    "postpublish": "git tag v$npm_package_version && git push --tags"
+  },
+  "dependencies": {
+    "bree": "^9.0.0",
+    "c12": "^3.3.3",
+    "citty": "^0.1.6",
+    "consola": "^3.4.2",
+    "defu": "^6.1.4",
+    "hookable": "^6.0.1",
+    "isomorphic-git": "^1.36.1",
+    "pathe": "^2.0.3",
+    "unctx": "^2.5.0",
+    "unrdf": "^2.0.0",
+    "nunjucks": "^3.2.4",
+    "node-cron": "^3.0.3",
+    "marked": "^12.0.0",
+    "giget": "^1.2.1",
+    "prompts": "^2.4.2",
+    "klona": "^2.0.6",
+    "lru-cache": "^10.2.0",
+    "zod": "^3.22.4",
+    "tinyglobby": "^0.2.0",
+    "gray-matter": "^4.0.3",
+    "js-yaml": "^4.1.0",
+    "json5": "^2.2.3",
+    "inflection": "^3.0.0",
+    "unrouting": "^0.1.0",
+    "minimatch": "^9.0.3",
+    "semver": "^7.6.0",
+    "fuse.js": "^7.0.0",
+    "p-queue": "^8.0.1",
+    "fdir": "^6.1.1",
+    "picomatch": "^4.0.1"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.0.16",
+    "@vitest/ui": "^4.0.16",
+    "eslint": "^9.39.2",
+    "prettier": "^3.7.4",
+    "unbuild": "^3.6.1",
+    "vitest": "^4.0.16",
+    "@types/node": "^20.11.0"
+  },
+  "peerDependencies": {
+    "ai": ">=3.0.0",
+    "@ai-sdk/anthropic": ">=0.0.39",
+    "ollama": ">=0.5.0"
+  },
+  "peerDependenciesMeta": {
+    "ai": {
+      "optional": true
+    },
+    "@ai-sdk/anthropic": {
+      "optional": true
+    },
+    "ollama": {
+      "optional": true
+    }
+  },
+  "optionalDependencies": {
+    "exceljs": "^4.4.0",
+    "cacache": "^18.0.2",
+    "toml": "^3.0.0"
+  },
+  "overrides": {
+    "esbuild": "^0.27.2",
+    "rollup": "^4.55.1",
+    "vite": "^7.3.1",
+    "unplugin": "^2.3.11"
+  }
+}

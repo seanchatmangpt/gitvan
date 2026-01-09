@@ -14,40 +14,46 @@
 import { appendFileSync, existsSync, mkdirSync } from "fs";
 import { dirname } from "path";
 import { randomUUID } from "crypto";
+import { AsyncLocalStorage } from "async_hooks";
 
 const LVL = (process.env.GITVAN_LOG_LEVEL || "info").toLowerCase();
 const LEVELS = { silent: 0, error: 1, warn: 2, info: 3, debug: 4 };
 const FORMAT = process.env.GITVAN_LOG_FORMAT || "text"; // "text" or "json"
 const LOG_FILE = process.env.GITVAN_LOG_FILE; // Optional log file path
 
-// Correlation context storage
-const correlationContext = new Map();
+// Correlation context storage using AsyncLocalStorage for proper async context tracking
+const correlationContext = new AsyncLocalStorage();
 
 /**
  * Get or create correlation ID for current async context
  */
 function getCorrelationId() {
-  const asyncId = process.pid; // Simplified - in production use async_hooks
-  if (!correlationContext.has(asyncId)) {
-    correlationContext.set(asyncId, randomUUID());
+  const store = correlationContext.getStore();
+  if (store?.correlationId) {
+    return store.correlationId;
   }
-  return correlationContext.get(asyncId);
+  // Generate new correlation ID if not in a context
+  return randomUUID();
 }
 
 /**
  * Set correlation ID for current context
  */
 export function setCorrelationId(id) {
-  const asyncId = process.pid;
-  correlationContext.set(asyncId, id);
+  const store = correlationContext.getStore();
+  if (store) {
+    store.correlationId = id;
+  }
 }
 
 /**
  * Clear correlation ID
  */
 export function clearCorrelationId() {
-  const asyncId = process.pid;
-  correlationContext.delete(asyncId);
+  const store = correlationContext.getStore();
+  if (store) {
+    delete store.correlationId;
+  }
 }
 
 /**
@@ -212,12 +218,7 @@ export function logError(error, tag = "gitvan", context = {}) {
  * Preserves correlation ID across async boundaries
  */
 export function withLogging(correlationId, fn) {
-  setCorrelationId(correlationId);
-  try {
-    return fn();
-  } finally {
-    clearCorrelationId();
-  }
+  return correlationContext.run({ correlationId }, fn);
 }
 
 /**

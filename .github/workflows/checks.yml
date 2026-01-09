@@ -5,6 +5,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: Initialize and update submodules
+        run: |
+          git submodule init
+          git submodule update --recursive
       - run: npm i -fg corepack && corepack enable
       - uses: actions/setup-node@v4
         with: { node-version: lts/*, cache: "pnpm" }

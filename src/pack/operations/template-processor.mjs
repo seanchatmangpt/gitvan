@@ -1,5 +1,5 @@
 /**
- * GitVan v2 Template Processor - Secure Nunjucks template processing
+ * GitVan v2 Template Processor - Secure KGEN template processing
  * Implements secure template rendering with sandboxing and validation
  */
 
@@ -13,7 +13,7 @@ import {
   statSync,
 } from "node:fs";
 import { dirname } from "pathe";
-import nunjucks from "nunjucks";
+import { GitVanTemplateEngine } from "../../lib/template-engine.mjs";
 import grayMatter from "../helpers/gray-matter.mjs";
 
 export class TemplateProcessor {
@@ -23,16 +23,13 @@ export class TemplateProcessor {
     this.maxTemplateSize = options.maxTemplateSize || 1024 * 1024; // 1MB
     this.maxOutputSize = options.maxOutputSize || 10 * 1024 * 1024; // 10MB
     this.timeout = options.timeout || 30000; // 30 seconds
-    this.setupNunjucks();
+    this.setupTemplateEngine();
   }
 
-  setupNunjucks() {
-    // Create a secure Nunjucks environment
-    this.env = new nunjucks.Environment(null, {
-      autoescape: false, // We'll handle escaping manually for code generation
-      throwOnUndefined: false, // Don't throw on undefined values, use defaults
-      trimBlocks: true,
-      lstripBlocks: true,
+  setupTemplateEngine() {
+    // Create a secure KGEN-based template engine
+    this.env = new GitVanTemplateEngine({
+      deterministicMode: true, // Deterministic for secure rendering
     });
 
     // Add custom filters
@@ -146,8 +143,8 @@ export class TemplateProcessor {
     // Store original method
     this._originalRenderString = this.env.renderString.bind(this.env);
 
-    // Override with security checks
-    this.env.renderString = (template, context) => {
+    // Override with security checks (async wrapper)
+    this.env.renderString = async (template, context) => {
       // Check template size
       if (template.length > this.maxTemplateSize) {
         throw new Error(
@@ -160,7 +157,7 @@ export class TemplateProcessor {
 
       // Set timeout
       const startTime = Date.now();
-      const result = this._originalRenderString(template, safeContext);
+      const result = await this._originalRenderString(template, safeContext);
 
       // Check rendering time
       const renderTime = Date.now() - startTime;

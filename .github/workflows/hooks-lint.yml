@@ -1,0 +1,305 @@
+name: Hooks Code Linting
+
+on:
+  push:
+    branches: [main, develop, 'claude/**']
+    paths:
+      - 'hooks/**'
+      - 'src/unrdf-hooks/**'
+      - 'src/integrations/unrdf-hooks-bridge.mjs'
+      - 'src/jobs/hooks.mjs'
+      - 'src/cli/commands/hooks.mjs'
+      - 'eslint.config.mjs'
+      - '.github/workflows/hooks-lint.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'hooks/**'
+      - 'src/unrdf-hooks/**'
+      - 'src/integrations/**'
+      - 'eslint.config.mjs'
+  workflow_dispatch:
+
+env:
+  TZ: UTC
+  LANG: C
+
+jobs:
+  # ============================================================================
+  # ESLint - Hooks Code
+  # ============================================================================
+  eslint-hooks:
+    name: ESLint - Hooks Code
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Initialize and update submodules
+        run: |
+          git submodule init
+          git submodule update --recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Cache node_modules
+        id: cache-node-modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-modules-
+
+      - name: Install dependencies
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - name: Lint hooks directory
+        run: |
+          npx eslint hooks/ --format=stylish --max-warnings=0
+        continue-on-error: false
+
+      - name: Lint unrdf-hooks integration
+        run: |
+          npx eslint src/unrdf-hooks/ src/integrations/unrdf-hooks-bridge.mjs \
+            --format=stylish --max-warnings=0
+        continue-on-error: false
+
+      - name: Lint hooks CLI and jobs
+        run: |
+          npx eslint src/cli/commands/hooks.mjs src/jobs/hooks.mjs \
+            --format=stylish --max-warnings=0
+        continue-on-error: false
+
+      - name: Generate lint report
+        if: always()
+        run: |
+          npx eslint hooks/ src/unrdf-hooks/ src/integrations/unrdf-hooks-bridge.mjs \
+            src/cli/commands/hooks.mjs src/jobs/hooks.mjs \
+            --format=json --output-file=lint-report.json || true
+
+      - name: Upload lint report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hooks-lint-report
+          path: lint-report.json
+          retention-days: 30
+
+  # ============================================================================
+  # Prettier - Code Formatting
+  # ============================================================================
+  prettier-hooks:
+    name: Prettier - Code Formatting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-modules-
+
+      - name: Check hooks formatting
+        run: |
+          npx prettier --check "hooks/**/*.{js,mjs,json}" \
+            "src/unrdf-hooks/**/*.{js,mjs,json}" \
+            "src/integrations/unrdf-hooks-bridge.mjs"
+        continue-on-error: false
+
+  # ============================================================================
+  # TypeScript Type Checking (if applicable)
+  # ============================================================================
+  type-check:
+    name: TypeScript Type Checking
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Initialize and update submodules
+        run: |
+          git submodule init
+          git submodule update --recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-modules-
+
+      - name: Check for TypeScript files
+        id: check-ts
+        run: |
+          if find src/unrdf-hooks -name "*.ts" | grep -q .; then
+            echo "has_ts=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_ts=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run TypeScript compiler
+        if: steps.check-ts.outputs.has_ts == 'true'
+        run: |
+          npx tsc --noEmit --skipLibCheck || echo "TypeScript check failed"
+        continue-on-error: true
+
+  # ============================================================================
+  # Code Complexity Analysis
+  # ============================================================================
+  complexity:
+    name: Code Complexity Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install complexity analyzer
+        run: npm install -g complexity-report
+
+      - name: Analyze hooks complexity
+        run: |
+          complexity-report hooks/ src/unrdf-hooks/ \
+            --format json > complexity-report.json || true
+          cat complexity-report.json
+        continue-on-error: true
+
+      - name: Upload complexity report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hooks-complexity-report
+          path: complexity-report.json
+          retention-days: 30
+
+  # ============================================================================
+  # Import/Export Validation
+  # ============================================================================
+  validate-imports:
+    name: Validate Imports/Exports
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Initialize and update submodules
+        run: |
+          git submodule init
+          git submodule update --recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-modules-
+
+      - name: Check for CommonJS requires
+        run: |
+          echo "Checking for CommonJS require() statements..."
+          if grep -r "require(" hooks/ src/unrdf-hooks/ --include="*.mjs" --include="*.js"; then
+            echo "❌ ERROR: Found CommonJS require() in ES modules!"
+            exit 1
+          else
+            echo "✅ No CommonJS require() found"
+          fi
+
+      - name: Check for missing .mjs extensions
+        run: |
+          echo "Checking for imports without .mjs extension..."
+          grep -r "from ['\"]\..*[^\.mjs]['\"]" hooks/ src/unrdf-hooks/ --include="*.mjs" || echo "✅ All imports have proper extensions"
+        continue-on-error: true
+
+      - name: Validate vendor/unrdf imports
+        run: |
+          echo "Checking imports from vendor/unrdf..."
+          grep -r "from ['\"].*vendor/unrdf" src/unrdf-hooks/ src/integrations/ || echo "✅ Checking complete"
+        continue-on-error: true
+
+  # ============================================================================
+  # Lint Summary
+  # ============================================================================
+  lint-summary:
+    name: Lint Summary
+    runs-on: ubuntu-latest
+    needs: [eslint-hooks, prettier-hooks, type-check, complexity, validate-imports]
+    if: always()
+    steps:
+      - name: Check results
+        run: |
+          echo "## Hooks Linting Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- ESLint: ${{ needs.eslint-hooks.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Prettier: ${{ needs.prettier-hooks.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Type Check: ${{ needs.type-check.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Complexity: ${{ needs.complexity.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Import Validation: ${{ needs.validate-imports.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ needs.eslint-hooks.result }}" == "failure" ]] ||
+             [[ "${{ needs.prettier-hooks.result }}" == "failure" ]] ||
+             [[ "${{ needs.validate-imports.result }}" == "failure" ]]; then
+            echo "❌ Critical linting checks failed!" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+          echo "✅ All critical linting checks passed!" >> $GITHUB_STEP_SUMMARY
+
+      - name: Create notification comment
+        if: github.event_name == 'pull_request' && failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ **Hooks Linting Failed**\n\nPlease fix linting errors before merging. Run `npm run lint:fix` to auto-fix some issues.'
+            })

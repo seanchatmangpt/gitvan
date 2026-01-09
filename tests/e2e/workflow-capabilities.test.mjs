@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll } from "vitest";
-import { createKnowledgeSubstrateCore, parseTurtle, toTurtle } from "unrdf";
+import { createKnowledgeSubstrateCore, parseTurtle, toTurtle } from "../../src/lib/unrdf-loader.mjs";
 import { WorkflowEngine } from "../../src/workflow/workflow-engine.mjs";
 import { WorkflowExecutor } from "../../src/workflow/workflow-executor.mjs";
 import { promises as fs } from "node:fs";

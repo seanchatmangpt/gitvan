@@ -2,7 +2,7 @@ import { Pack } from './pack.mjs';
 import { createLogger } from '../utils/logger.mjs';
 import { join, resolve, dirname } from 'pathe';
 import { existsSync, readFileSync, writeFileSync, mkdirSync, copyFileSync } from 'node:fs';
-import nunjucks from 'nunjucks';
+import { renderTemplate } from '../lib/template-engine.mjs';
 import grayMatter from './helpers/gray-matter.mjs';
 
 export class PackApplier {
@@ -147,8 +147,8 @@ export class PackApplier {
     // Merge inputs with front-matter data
     const renderData = { ...inputs, ...frontMatter };
 
-    // Render template
-    const rendered = nunjucks.renderString(templateContent, renderData);
+    // Render template using KGEN
+    const rendered = await renderTemplate(templateContent, renderData);
 
     // Check if target exists and handle mode
     if (existsSync(targetPath) && template.mode === 'skip') {

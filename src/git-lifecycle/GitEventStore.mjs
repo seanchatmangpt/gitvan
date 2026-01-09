@@ -21,7 +21,7 @@
 
 import { mkdir, writeFile, readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { createKnowledgeSubstrateCore, namedNode, literal, quad, sparqlQuery } from "unrdf";
+import { createKnowledgeSubstrateCore, namedNode, literal, quad, sparqlQuery } from "../lib/unrdf-loader.mjs";
 
 // RDF namespace constants
 const GITV = "https://gitvan.dev/ontology/git#";

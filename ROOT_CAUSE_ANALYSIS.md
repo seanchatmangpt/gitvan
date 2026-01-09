@@ -1,597 +1,375 @@
-# Root Cause Analysis: Test Failures, Security Vulnerabilities, and Missing Dependencies
+# ROOT_CAUSE_ANALYSIS.md
 
-**Date**: January 9, 2026
+**Generated**: 2026-01-09
 **Branch**: claude/deploy-agent-swarm-ZhuUw
-**Analysis Scope**: Dependencies, Security, Test Infrastructure
-**Status**: CRITICAL - Multiple blocking issues identified
+**Analyzed By**: Research & Analysis Agent
+**Status**: CRITICAL ISSUES IDENTIFIED
 
 ---
 
 ## Executive Summary
 
-The GitVan v4.0.0 codebase has three critical categories of issues preventing successful builds and testing:
+Analysis of the GitVan test suite on branch `claude/deploy-agent-swarm-ZhuUw` has identified **4 CRITICAL root causes** blocking test execution and deployment:
 
-1. **Dependency Resolution Failures** (CRITICAL) - 40+ missing/invalid dependencies
-2. **Version Incompatibilities** (CRITICAL) - Node.js version conflicts with package requirements
-3. **Corrupted Lock Files** (CRITICAL) - pnpm-lock.yaml is inconsistent with package.json
-4. **Security Vulnerabilities** (HIGH) - Multiple packages with known issues and dangerous patterns
-5. **Test Infrastructure** (CRITICAL) - Cannot run tests due to vitest not being installed
+| Severity | Category | Issue Count | Impact |
+|----------|----------|-------------|--------|
+| CRITICAL | Missing Test Utilities | 3 files deleted | 10+ tests cannot run |
+| HIGH | Test Performance | 22+ timeouts | 81% test pass rate |
+| HIGH | Missing Dependencies | 1 package | Coverage blocked |
+| MEDIUM | Async Context Issues | Potential multi-file | Context preservation failures |
 
----
-
-## 1. DEPENDENCY RESOLUTION FAILURES
-
-### 1.1 Missing Critical Dependencies
-
-The following **essential** dependencies are listed in `package.json` but not installed in `node_modules`:
-
-#### Testing & Build Infrastructure
-- **vitest@^4.0.16** - Test runner (BLOCKING for `npm test`)
-- **unbuild@^3.0.0** - Build tool (BLOCKING for `npm run build`)
-- **typescript@^5.3.3** - TypeScript compiler
-
-#### Core Runtime Dependencies
-- **unrdf@^4.1.1** - RDF library (core to GitVan architecture)
-- **nunjucks@^3.2.4** - Template engine
-- **tar@^7.4.3** - TAR archiving
-- **toml@^3.0.0** - TOML parsing
-
-#### AI Integration
-- **ollama@^0.5.11** - Ollama client
-- **ollama-ai-provider-v2@^2.0.0** - Ollama AI provider
-- **prompts@^2.4.2** - Interactive prompts
-
-#### Utilities
-- **pathe@^1.1.2** - Path utilities
-- **p-limit@^6.2.0** - Promise concurrency control
-- **p-queue@^9.1.0** - Promise queue
-- **marked@^17.0.0** - Markdown parser
-- **memfs@^4.14.0** - In-memory file system
-- **n3@^1.17.0** - N3 RDF parser
-- **node-cron@^3.0.3** - Cron scheduling
-- **zod@^4.3.5** - Schema validation
-
-#### Total Missing: 24 packages from direct dependencies
-
-### 1.2 Invalid Dependencies (Version Constraint Failures)
-
-These dependencies are installed but marked as "invalid" - the installed version doesn't match the package.json constraint:
-
-```
-UNMET DEPENDENCY @ai-sdk/anthropic@^3.0.9
-UNMET DEPENDENCY @babel/parser@^7.24.1
-UNMET DEPENDENCY @babel/traverse@^7.24.1
-UNMET DEPENDENCY @opentelemetry/api@^1.9.0
-UNMET DEPENDENCY @opentelemetry/auto-instrumentations-node@^0.67.2
-UNMET DEPENDENCY @opentelemetry/exporter-metrics-otlp-http@^0.208.0
-UNMET DEPENDENCY @opentelemetry/exporter-trace-otlp-http@^0.208.0
-UNMET DEPENDENCY @opentelemetry/resources@^2.2.0
-UNMET DEPENDENCY @opentelemetry/sdk-metrics@^2.2.0
-UNMET DEPENDENCY @opentelemetry/sdk-trace-base@^2.2.0
-UNMET DEPENDENCY @opentelemetry/semantic-conventions@^1.38.0
-```
-
-**Root Cause**: Lock file (pnpm-lock.yaml) has different versions than package.json constraints.
-
-### 1.3 Critical: tinyglobby Version Mismatch
-
-**Issue**: package.json requires `tinyglobby@^0.1.6`
-
-**Problem**: Version 0.1.6 **does not exist** on npm
-
-**Available versions**: 0.2.15 (latest, released Sept 2025)
-
-**Impact**: pnpm install fails with:
-```
-ERR_PNPM_NO_MATCHING_VERSION  No matching version found for tinyglobby@^0.1.6
-```
-
-**Root Cause**: Likely copied from an older dependency version that predates tinyglobby's 0.2.x release.
-
-**Fix Required**: Update package.json to `tinyglobby@^0.2.15`
-
-### 1.4 Extraneous Packages (500+)
-
-**Issue**: node_modules contains 500+ packages not listed in package.json
-
-Examples:
-- @comunica/* (100+ packages)
-- @opentelemetry/* (80+ packages)
-- memfs, unctx, untyped, etc.
-
-**Root Cause**:
-- Lock file from previous node_modules installation (vendor/unrdf submodule dependencies)
-- Residual dependencies from v3.0.0 → v4.0.0 migration
-- Corrupted pnpm-lock.yaml state
-
-**Impact**:
-- Disk space bloat (node_modules is very large)
-- Package.json/lock file inconsistency
-- npm ls reports hundreds of errors
+**Total Affected Test Files**: 23
+**Estimated Remediation Time**: 4-6 hours
+**Deployment Readiness**: BLOCKED
 
 ---
 
-## 2. VERSION INCOMPATIBILITIES
+## Root Cause #1: Missing Test Utility Files (CRITICAL)
 
-### 2.1 Node.js Engine Mismatch
+### Summary
+Three essential test utility files have been deleted but are still imported by active test files. This causes immediate import errors preventing test execution.
 
-**Current Environment**: Node.js v22.21.1, npm 10.9.4
+### Affected Files
 
-**Conflicting Dependencies**:
+**Deleted Files**:
+1. `tests/test-utils/context.mjs` (161 lines)
+2. `tests/test-utils/helpers.mjs` (339 lines)
+3. `tests/test-utils/job-bridge.mjs` (282 lines)
+
+**Importing Test Files** (10 files):
+```
+tests/integration/context-preservation.test.mjs
+tests/integration/error-handling.test.mjs
+tests/integration/job-bridge-git.test.mjs
+tests/integration/job-bridge-receipt.test.mjs
+tests/integration/job-bridge-scheduler.test.mjs
+tests/jobs-bree-integration-comprehensive.test.mjs
+tests/performance/integration-benchmarks.test.mjs
+tests/memfs-integration.test.mjs
+tests/test-pack-lifecycle.mjs
+(+1 additional reference)
+```
+
+### Import Error Chain
 
 ```
-@inrupt/universal-fetch@1.0.3
-  Required: node ^14.17.0 || ^16.0.0 || ^18.0.0 || ^20.0.0
-  Current: v22.21.1 (UNSUPPORTED)
-
-eslint-config-unjs@0.2.1
-  (also likely has Node 18-20 constraints)
+Test File Load
+  ↓
+Import Statement Fails
+  ↓
+Cannot find module '../test-utils/context.mjs'
+  ↓
+Test Runner Stops/Skips
+  ↓
+Test Execution Fails
 ```
 
-**npm Warning**:
+### Exported Functions by Deleted Files
+
+**context.mjs exported**:
+- createTestContext() - Creates isolated git test repositories
+- createTestJob() - Creates test job definitions
+- createTestJobs() - Creates multiple jobs in batch
+- writeTestJob() - Writes jobs to filesystem
+- withTestEnvironment() - Test environment wrapper
+- createTestContexts() / cleanupTestContexts() - Batch management
+
+**helpers.mjs exported**:
+- sleep(ms) - Promise-based delay
+- retry() - Exponential backoff retry logic
+- cleanupGitRefs() - Remove git refs by pattern
+- getGitLocks() - List active locks
+- getExpiredLocks() - Find expired locks
+- waitForLocksReleased() - Poll for lock release
+- verifyCleanTestEnv() - Environment validation
+- measureTime() - Performance measurement
+- createTestReport() - Test report builder
+
+**job-bridge.mjs exported**:
+- JobBridge class - Mock job execution
+- BreeScheduler class - Mock job scheduler
+- resetJobBridge() - Reset singleton
+- resetBreeScheduler() - Reset scheduler
+- resetTestInfrastructure() - Full reset
+
+### Root Cause of Deletion
+
+**Hypothesis 1**: Accidental deletion during refactoring
+- Files were deleted in recent commit but imports not updated
+- Indicates incomplete refactoring or mismerge
+
+**Hypothesis 2**: Intended cleanup with incomplete follow-through
+- Files deleted in recent commit eb79561 but imports remain
+- Test infrastructure changes not completed
+
+**Status**: Files existed in HEAD but were deleted in working directory
+
+---
+
+## Root Cause #2: Test Performance & Timeouts (HIGH)
+
+### Summary
+Multiple tests timeout at the 60-second threshold, with 22+ tests failing. This indicates performance bottlenecks and possible infinite loops or deadlocks.
+
+### Affected Test Categories
+
+**RDFLockManager Tests**:
 ```
-npm warn EBADENGINE Unsupported engine {
-  package: '@inrupt/universal-fetch@1.0.3',
-  required: { node: '^14.17.0 || ^16.0.0 || ^18.0.0 || ^20.0.0' },
-  current: { node: 'v22.21.1', npm: '10.9.4' }
+× should acquire lock with RDF storage (60618ms timeout)
+× should release lock and update RDF (60595ms timeout)
+× should get lock info from RDF layer (60559ms timeout)
+× should list all active locks (60505ms timeout)
+× should validate fingerprint correctly (60492ms timeout)
+× should handle lock operations under 10ms (60560ms timeout) ← CRITICAL
+× should detect circular dependencies (60560ms timeout)
+```
+
+**Phase1 Integration Tests**:
+```
+× Feature flag switching (dual-write → RDF-only) (60465ms timeout)
+× Dual-write consistency validation (60498ms timeout)
+× Job dependency resolution with locks (60464ms timeout)
+× Complex CI/CD pipeline scenario (60533ms timeout)
+× Stress tests (100+ concurrent locks) (timeout)
+```
+
+### Performance Degradation Pattern
+
+Expected: < 10ms for lock operations
+Actual: > 60,000ms (60+ second timeout)
+
+**Degradation Factor**: 6,000x slower than expected
+
+### Contributing Factors
+
+#### 2.1 RDF Layer Performance Issues
+- SPARQL queries not optimized
+- N+1 query problem in lock manager
+- Graph traversal inefficiency
+- No query result caching
+
+**Evidence**: Test "should handle lock operations under 10ms" times out at 60s
+
+#### 2.2 Async Context Preservation Issues
+- Context may be lost across await boundaries
+- Lock operations waiting indefinitely
+- Deadlock in RDF query execution
+- Context not being properly restored
+
+#### 2.3 Lock Manager Complexity
+- RDFLockManager inherits from LockManager
+- Additional RDF operations per lock action
+- Possible circular dependencies in RDF predicates
+- Missing timeout handling in queries
+
+### Test Timeout Configuration
+
+Current timeout: 60 seconds (default vitest)
+
+```javascript
+testTimeout: 60000  // ← All tests share this timeout
+```
+
+---
+
+## Root Cause #3: Missing Test Coverage Dependency (HIGH)
+
+### Summary
+The @vitest/coverage-v8 package is missing, preventing coverage analysis required for deployment validation.
+
+### Missing Package
+
+```json
+"@vitest/coverage-v8": "^4.0.16"
+```
+
+### Impact
+
+- Cannot run: npm test -- --coverage
+- Cannot generate coverage reports
+- Cannot verify 80%+ coverage requirement
+- Cannot sign off on deployment readiness
+
+### Coverage Targets (From CLAUDE.md)
+
+```
+Expected Coverage:
+- Statements: >80%
+- Branches: >75%
+- Functions: >80%
+- Lines: >80%
+
+Current Status: UNKNOWN (cannot measure)
+```
+
+---
+
+## Root Cause #4: Async Context Preservation Issues (MEDIUM)
+
+### Summary
+Tests may be failing due to improper async context preservation across await boundaries. This is a pervasive architectural issue.
+
+### The Context Problem
+
+GitVan uses unctx for async-safe context preservation via withGitVan() wrapper.
+
+#### ✗ WRONG Pattern (Context Lost):
+```javascript
+async function buggyCode() {
+  const git = useGit();
+  await someAsyncOperation();  // ✗ Context lost here!
+  await git.commit("msg");     // ✗ CRASH - git context gone!
 }
 ```
 
-**Root Cause**:
-- Package.json specifies Node >=18.0.0
-- @inrupt/universal-fetch hasn't been updated for Node 22
-- This is a known issue in the RDF/semantic web ecosystem (slow to update)
-
-**Impact**:
-- Warnings during install
-- Potential runtime errors with @inrupt packages
-- May affect RDF operations through @zazuko/env dependencies
-
-### 2.2 Package Compatibility Issues
-
-OpenTelemetry packages show inconsistent versioning:
-- Some v0.208.0, some v0.45.1, some v1.x, v2.2.0
-
-This suggests the lock file was created across multiple dependency resolution attempts.
-
----
-
-## 3. CORRUPTED/INCONSISTENT LOCK FILES
-
-### 3.1 Lock File Status
-
-**Files Present**:
-- `pnpm-lock.yaml` (EXISTS) - 437KB, appears valid YAML
-- `package-lock.json` (MISSING) - Expected by npm
-
-**Issue**: Lock file inconsistencies:
-
-```
-npm ls --depth=0
-gitvan@4.0.0 /home/user/gitvan
-+-- UNMET DEPENDENCY @ai-sdk/anthropic@^3.0.9
-+-- UNMET DEPENDENCY @babel/parser@^7.24.1
-[... 30+ more unmet dependencies ...]
-npm error code ENOLOCK
-npm error audit This command requires an existing lockfile.
-```
-
-### 3.2 Lock File Creation Issues
-
-**Symptoms**:
-- pnpm-lock.yaml has some packages at 0.2.15 (correct)
-- But package.json constrains to ^0.1.6 (impossible)
-- npm install fails with ENOTEMPTY errors in tar operations
-
-**Likely Cause**:
-1. Lock file created with different package.json version
-2. Submodule dependencies (vendor/unrdf) introduce conflicting versions
-3. Multiple attempts to regenerate lock file left it in inconsistent state
-
-### 3.3 Directory Lock Issues
-
-```
-npm error code ENOTEMPTY
-npm error syscall rmdir
-npm error path /home/user/gitvan/node_modules/@rdfjs
-npm error ENOTEMPTY: directory not empty, rmdir
-```
-
-Files are locked in node_modules, preventing clean reinstall.
-
----
-
-## 4. TEST INFRASTRUCTURE FAILURES
-
-### 4.1 Test Runner Not Installed
-
-**Command**: `npm test`
-**Result**:
-```
-$ vitest
-sh: 1: vitest: not found
-```
-
-**Root Cause**: vitest@^4.0.16 missing from node_modules (dependency resolution failed)
-
-**Blocking Impact**:
-- Cannot run any tests
-- Cannot validate code quality
-- Cannot measure test coverage
-
-### 4.2 Test Files Present But Unreachable
-
-**Found**: 310+ test files in `/home/user/gitvan/tests/`
-
-Examples:
-- tests/ai-commands-fixed.test.mjs
-- tests/autonomic/complete-workflow.test.mjs
-- tests/citty-cli-integration-e2e-360.test.mjs
-- tests/composables/*.test.mjs
-
-**Current State**: Test files exist but are unreachable due to missing test runner infrastructure.
-
-### 4.3 Build Tool Missing
-
-**Command**: `npm run build`
-**Required**: unbuild@^3.0.0
-**Status**: NOT INSTALLED
-
-**Blocking Impact**:
-- Cannot build distribution artifacts
-- Cannot prepare for npm publish
-- Cannot run prepublishOnly script
-
----
-
-## 5. SECURITY ANALYSIS
-
-### 5.1 Security Vulnerabilities by Category
-
-#### A. Dependency Supply Chain Risks (MEDIUM)
-
-**Issue**: 500+ extraneous packages in node_modules
-
-These packages introduce:
-- Increased attack surface
-- Unknown/untraceable dependencies
-- Maintenance burden
-- Potential license compliance issues
-
-**Affected Packages**:
-- @comunica/* (100+) - Comes from unrdf dependencies, not directly used
-- @opentelemetry/* (80+) - Instrumentation packages, many not listed in package.json
-- RDF ecosystem packages - Part of vendor/unrdf but not properly isolated
-
-#### B. Outdated Dependency Versions (MEDIUM-HIGH)
-
-**Critical Packages Not at Latest**:
-- isomorphic-git@1.27.1 (current: 1.36.1+) - 9+ versions behind
-- node-cron@^3.0.3 (check for CVEs in 3.0.x)
-- Various @babel packages pinned to 7.24.x
-
-**Recommendation**: Run `npm audit` once dependencies are fixed.
-
-#### C. Node.js Version Incompatibility (MEDIUM)
-
-@inrupt/universal-fetch@1.0.3 hasn't been tested on Node 22.
-
-**Risk**:
-- Unknown compatibility issues
-- May use deprecated Node APIs
-- Potential security patches missed
-
-#### D. Environment Variable Exposure (LOW)
-
-**Finding**: 92 instances of `process.env` usage in src/
-
-**Status**: No hardcoded secrets found
-**Safety**: All appear to be legitimate configuration reads
-**Risk**: LOW - follows best practices for environment-based config
-
-**Files Using process.env**:
-- src/ai/* - AI provider configuration
-- src/config/* - Configuration loading
-- src/cli/* - CLI flag/env handling
-
-#### E. Code Injection / Dangerous Patterns (LOW)
-
-**Search Results**:
-- NO `eval()` calls found
-- NO `Function()` constructor usage
-- NO `new Function()` patterns
-- NO `exec()` for dynamic code
-
-**Status**: Code appears safe from code injection vulnerabilities
-
-#### F. Template Injection Risks (MEDIUM)
-
-**Framework**: nunjucks (templating engine)
-
-**Status**: Not currently installed (missing dependency)
-
-**Risk**: If nunjucks is introduced without proper input validation:
-- Server-Side Template Injection (SSTI) possible
-- GitVan renders templates from .ttl workflows
-- User-supplied RDF data could contain template payloads
-
-**Recommendation**: Audit template rendering in workflow-engine.mjs for input validation.
-
-### 5.2 Security Recommendations
-
-1. **HIGH**: Fix tinyglobby version constraint (0.2.15 instead of 0.1.6)
-2. **HIGH**: Resolve all 24 missing critical dependencies
-3. **HIGH**: Update isomorphic-git to latest version
-4. **MEDIUM**: Run `npm audit` after fixing dependency resolution
-5. **MEDIUM**: Update @inrupt/universal-fetch or find alternative RDF library compatible with Node 22
-6. **MEDIUM**: Audit nunjucks template rendering for SSTI risks
-7. **LOW**: Document all environment variables used in .env.example
-
----
-
-## 6. ROOT CAUSES ANALYSIS
-
-### Chain of Failures
-
-```
-Event 1: tinyglobby version mismatch
-  ↓
-pnpm install fails to resolve dependencies
-  ↓
-Lock file gets partially updated with workarounds
-  ↓
-Multiple interdependent packages fail (citty → tinyglobby)
-  ↓
-40+ dependencies left uninstalled
-  ↓
-node_modules becomes corrupted with extraneous packages
-  ↓
-npm install/ci refuse to continue with lock file inconsistencies
-  ↓
-Tests cannot run (vitest missing)
-  ↓
-Build fails (unbuild missing)
-  ↓
-Current state: Branch is unbuildable
-```
-
-### Why This Happened
-
-1. **Submodule Complexity**: vendor/unrdf introduces 100+ transitive dependencies
-   - These are listed in pnpm-lock.yaml as extraneous
-   - Creates version conflicts with main package.json
-
-2. **Version Pinning Issues**:
-   - tinyglobby@^0.1.6 was pinned when version 0.1.6 existed
-   - NPM registry deleted/yanked 0.1.x versions
-   - Now only 0.2.x available
-   - Lock file tries to honor the constraint but can't find the version
-
-3. **Node Version Evolution**:
-   - Package.json specifies Node >=18
-   - Dependencies pinned for Node <=20
-   - Node 22 introduces breaking changes
-   - Package maintainers haven't updated yet
-
-4. **Incomplete Migration from v3 → v4**:
-   - v3 had different dependencies (unctx, different versions)
-   - v4 migration didn't fully clean up node_modules
-   - Lock file represents a hybrid state
-
----
-
-## 7. REMEDIATION ROADMAP
-
-### Phase 1: Fix Package Dependencies (1-2 hours)
-
-1. **Fix tinyglobby constraint**
-   ```diff
-   - "tinyglobby": "^0.1.6"
-   + "tinyglobby": "^0.2.15"
-   ```
-
-2. **Clean install**
-   ```bash
-   rm -rf node_modules pnpm-lock.yaml
-   pnpm install --force
-   ```
-
-3. **Verify critical packages installed**
-   ```bash
-   npm ls vitest unbuild unrdf nunjucks
-   ```
-
-### Phase 2: Resolve Version Conflicts (30 min - 1 hour)
-
-1. **Audit babel versions**
-   - Update to latest @babel/parser and @babel/traverse
-   - Verify compatibility with current Node
-
-2. **Update @inrupt/universal-fetch**
-   - Test with Node 22
-   - Or find alternative RDF library
-
-3. **Sync OpenTelemetry versions**
-   - All packages should be from same release cycle
-   - Currently mixing 0.45.1, 0.208.0, and 2.x
-
-### Phase 3: Test & Build Validation (1 hour)
-
-1. **Run test suite**
-   ```bash
-   npm test
-   ```
-
-2. **Build distribution**
-   ```bash
-   npm run build
-   ```
-
-3. **Run security audit**
-   ```bash
-   npm audit
-   ```
-
-### Phase 4: Documentation & Prevention (30 min)
-
-1. **Update CLAUDE.md** with Node version requirements
-2. **Create .npmrc** with registry settings
-3. **Add pre-commit hooks** to validate lock file
-
----
-
-## 8. DETAILED FINDINGS BY FILE
-
-### package.json Issues
-
-**Line 48**: `"citty": "^0.1.6"`
-- citty depends on tinyglobby@^0.1.6
-- This constraint propagates to root package.json
-- **Fix**: Wait for citty to update, OR relax constraint to ^0.2.15
-
-**Multiple OpenTelemetry packages** (lines 34-42)
-- Versions inconsistent: mix of ^0.208.0, ^1.9.0, ^2.2.0
-- **Fix**: Use single version constraint: ^0.208.0 for all
-
-### eslint.config.mjs (Recent Changes)
-
-**Current state**: Minimalist configuration
+#### ✓ CORRECT Pattern (Context Preserved):
 ```javascript
-import { unjs } from "eslint-config-unjs";
-export default unjs({...})
+async function correctCode(context) {
+  await withGitVan(context, async () => {
+    const git = useGit();
+    await someAsyncOperation();  // ✓ Context preserved!
+    await git.commit("msg");     // ✓ Works - context alive!
+  });
+}
 ```
 
-**Changes made**: Removed specific rule overrides
-**Impact**: ESLint config is now using upstream defaults (good for maintenance)
+### Files at Risk
+
+- tests/integration/context-preservation.test.mjs
+- tests/integration/error-handling.test.mjs
+- tests/integration/job-bridge-*.test.mjs
+- tests/performance/integration-benchmarks.test.mjs
+
+### Why This Affects Timeout Tests
+
+If async context is lost, operations that depend on context will fail and timeout waiting for context restoration.
 
 ---
 
-## 9. BLOCKERS PREVENTING PROGRESS
+## Test Failure Categories
 
-| Blocker | Severity | Impact | Est. Resolution |
-|---------|----------|--------|-----------------|
-| tinyglobby@^0.1.6 not available | CRITICAL | Blocks all dependency install | 30 min |
-| vitest not installed | CRITICAL | Blocks test execution | Auto-resolve with #1 |
-| unbuild not installed | CRITICAL | Blocks build process | Auto-resolve with #1 |
-| Node 22 compatibility | HIGH | Runtime errors possible | 1-2 hours |
-| Corrupted lock file | HIGH | Manual cleanup needed | 30 min |
-| Extraneous 500+ packages | HIGH | Disk space, maintainability | 1 hour |
+### Category A: Import Failures (IMMEDIATE BLOCKER)
 
----
+**Count**: 10 test files
+**Symptom**: Module not found errors
+**Root Cause**: Deleted test-utils files
+**Resolution**: Restore files (Priority 1)
 
-## 10. RECOMMENDATIONS FOR CLAUDE/DEPLOY-AGENT-SWARM BRANCH
+### Category B: Timeout Failures (PERFORMANCE)
 
-### Immediate Actions (Before Testing)
+**Count**: 22+ tests
+**Symptom**: Test timeout at 60 seconds
+**Root Cause**: RDFLockManager performance or async context loss
+**Resolution**: Optimize or refactor (Priority 2)
 
-1. Fix package.json dependency constraints
-2. Clean install dependencies
-3. Verify build succeeds
-4. Run test suite
+### Category C: Coverage Failures (VERIFICATION)
 
-### Before Merge to Main
+**Count**: All tests
+**Symptom**: Cannot run coverage tool
+**Root Cause**: Missing @vitest/coverage-v8 package
+**Resolution**: Install package (Priority 1)
 
-1. All tests passing
-2. npm audit clean
-3. No security vulnerabilities
-4. Build artifacts created
-5. Documentation updated
+### Category D: Context Issues (ARCHITECTURAL)
 
-### Before Release
-
-1. Update CHANGELOG.md with these fixes
-2. Tag as v4.0.1 (bug fix release)
-3. Update Node.js requirements if needed
-4. Document breaking changes (if any)
+**Count**: Unknown (requires audit)
+**Symptom**: Flaky tests, unexpected failures
+**Root Cause**: Improper withGitVan() wrapping
+**Resolution**: Audit and refactor tests (Priority 3)
 
 ---
 
-## 11. FILES & LOCATIONS REFERENCE
+## Git Status Analysis
 
-### Configuration Files
-- `/home/user/gitvan/package.json` - Dependency declarations
-- `/home/user/gitvan/pnpm-lock.yaml` - Lock file (437KB)
-- `/home/user/gitvan/vitest.config.mjs` - Test configuration
-- `/home/user/gitvan/build.config.ts` - Build configuration
-- `/home/user/gitvan/CLAUDE.md` - Developer guide (needs update)
-
-### Test Files
-- `/home/user/gitvan/tests/` - 310+ test files
-- Missing: vitest runner to execute them
-
-### Source Code
-- `/home/user/gitvan/src/` - 360 .mjs files
-- Critical modules: workflow-engine, composables, ai
-
-### Dependencies
-- `/home/user/gitvan/vendor/unrdf/` - Git submodule (not initialized?)
-
----
-
-## 12. CONCLUSION
-
-The `claude/deploy-agent-swarm-ZhuUw` branch is currently **UNBUILDABLE** due to:
-
-1. **Critical Missing Dependencies** - 24 packages needed for core functionality
-2. **Version Constraint Impossible** - tinyglobby@^0.1.6 doesn't exist
-3. **Corrupted Lock File State** - pnpm-lock.yaml inconsistent with package.json
-4. **Test Infrastructure Broken** - vitest not installed
-5. **Build Infrastructure Broken** - unbuild not installed
-
-**Status**: Requires immediate remediation before merging to main branch.
-
-**Estimated Fix Time**: 2-3 hours (dependency resolution + testing)
-
-**Risk Level**: CRITICAL - Current branch will not pass CI/CD pipeline.
-
----
-
-## Appendix A: Complete List of Missing Dependencies
+### Deleted Files Summary
 
 ```
-Missing from node_modules:
-1. @ai-sdk/anthropic@^3.0.9
-2. @babel/parser@^7.24.1
-3. @babel/traverse@^7.24.1
-4. @opentelemetry/api@^1.9.0
-5. @opentelemetry/auto-instrumentations-node@^0.67.2
-6. @opentelemetry/exporter-metrics-otlp-http@^0.208.0
-7. @opentelemetry/exporter-trace-otlp-http@^0.208.0
-8. @opentelemetry/resources@^2.2.0
-9. @opentelemetry/sdk-metrics@^2.2.0
-10. @opentelemetry/sdk-trace-base@^2.2.0
-11. @opentelemetry/semantic-conventions@^1.38.0
-12. ai@^6.0.23
-13. cacache@^20.0.3
-14. exceljs@^4.4.0
-15. fuse.js@^7.0.0
-16. giget@^2.0.0
-17. gray-matter@^4.0.3
-18. js-yaml@^4.1.0
-19. jsonld@^8.3.2
-20. lru-cache@^11.0.2
-21. marked@^17.0.0
-22. memfs@^4.14.0
-23. n3@^1.17.0
-24. node-cron@^3.0.3
-25. nunjucks@^3.2.4
-26. ollama@^0.5.11
-27. ollama-ai-provider-v2@^2.0.0
-28. p-limit@^6.2.0
-29. p-queue@^9.1.0
-30. pathe@^1.1.2
-31. prompts@^2.4.2
-32. tar@^7.4.3
-33. toml@^3.0.0
-34. unbuild@^3.0.0
-35. unrdf@^4.1.1
-36. vitest@^4.0.16
-37. zod@^4.3.5
-38. (+ dependencies of above)
+Modified Files (8):
+✓ TEST_FIX_LOG_PACK.md
+✓ pnpm-lock.yaml
+✓ src/pack/lazy-registry.mjs
+✓ tests/autonomic/*.test.mjs
+✓ tests/pack/*.test.mjs
+✓ vitest.config.mjs
+✗ tests/test-utils/context.mjs      (DELETED)
+✗ tests/test-utils/helpers.mjs      (DELETED)
+✗ tests/test-utils/job-bridge.mjs   (DELETED)
 ```
+
+### Deletion Timeline
+
+```
+eb79561: test: fix git lock tests with cleanup infrastructure
+         ↓ Likely point of deletion
+46d0cd5: test: fix Bree scheduler tests
+9f6fa33: docs: add comprehensive deliverables summary
+648d566: docs: add quick start guide (HEAD)
+```
+
+---
+
+## Deployment Blocker Status
+
+### Critical Blockers (Must Fix)
+
+1. **Missing test-utils files** ← Prevents test execution entirely
+2. **Test import errors** ← 10+ tests cannot load
+3. **Missing coverage dependency** ← Cannot verify coverage requirement
+
+### High Priority Issues
+
+4. **Test timeout failures** ← 22+ tests timing out
+5. **Async context issues** ← Architectural concerns
+
+### Deployment Decision
+
+**CURRENT STATUS**: CANNOT DEPLOY
+
+- Tests cannot execute (import errors)
+- Coverage cannot be measured (missing dependency)
+- 81% pass rate insufficient (22 timeouts)
+- Async context stability unknown
+
+**REQUIRED BEFORE DEPLOYMENT**:
+- Restore missing test-utils files
+- Install missing coverage dependency
+- Fix or increase timeout for integration tests
+- Audit and fix async context issues
+- Achieve 100% test pass rate
+- Achieve 80%+ coverage measurement
+
+---
+
+## Metrics Summary
+
+| Metric | Value | Status |
+|--------|-------|--------|
+| Tests Runnable | No | BLOCKED |
+| Tests Passing | 81% (partial) | PARTIAL |
+| Coverage Measurable | No | BLOCKED |
+| Coverage Achievable | >80% (unknown) | UNKNOWN |
+| Import Errors | 10 tests | CRITICAL |
+| Timeout Errors | 22+ tests | CRITICAL |
+| Async Context Safe | Unknown | QUESTIONABLE |
+| Deployment Ready | No | NO |
+
+---
+
+## Conclusion
+
+The branch `claude/deploy-agent-swarm-ZhuUw` has **4 CRITICAL root causes** preventing test execution and deployment:
+
+1. **Missing test-utils files** (BLOCKING) - 3 files deleted, 10 tests fail to import
+2. **Test timeouts** (CRITICAL) - 22+ tests timeout at 60 seconds
+3. **Missing coverage dependency** (BLOCKING) - Cannot verify coverage requirement
+4. **Async context issues** (HIGH) - Architectural concerns with context preservation
+
+**Estimated Remediation**: 4-6 hours
+**Deployment Status**: BLOCKED - Cannot Deploy
+
+See **COUNTERMEASURES.md** for detailed remediation steps.
 
 ---
 
 **Document Version**: 1.0
-**Last Updated**: 2026-01-09 19:45 UTC
-**Author**: Research & Analysis Agent
-**Status**: FINAL ANALYSIS
+**Created**: 2026-01-09
+**Classification**: INTERNAL - CRITICAL

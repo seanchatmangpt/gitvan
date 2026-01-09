@@ -536,6 +536,7 @@ describe('RDFLockManager', () => {
     await execAsync('git init', { cwd: testDir });
     await execAsync('git config user.email "test@example.com"', { cwd: testDir });
     await execAsync('git config user.name "Test User"', { cwd: testDir });
+    await execAsync('git config commit.gpgsign false', { cwd: testDir });
 
     // Create initial commit
     await fs.writeFile(join(testDir, 'README.md'), '# Test Repository');

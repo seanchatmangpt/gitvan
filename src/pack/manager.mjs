@@ -10,7 +10,7 @@ import { createLogger } from '../utils/logger.mjs';
 import { isUpdateAvailable, isGreaterThan, cleanVersion } from '../utils/version.mjs';
 import { RegistryClient } from '../utils/registry.mjs';
 import { join, resolve } from 'pathe';
-import { existsSync, readFileSync, writeFileSync, rmSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, rmSync, readdirSync, statSync } from 'node:fs';
 
 export class PackManager {
   constructor(options = {}) {
@@ -318,7 +318,7 @@ export class PackManager {
         try {
           // Only remove if it looks like it was created by this pack
           // This is a very basic heuristic
-          const stats = require('node:fs').statSync(path);
+          const stats = statSync(path);
           const receiptTime = new Date(receipt.applied);
           const pathTime = new Date(stats.birthtime);
 

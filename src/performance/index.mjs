@@ -113,13 +113,13 @@ export {
  * });
  * ```
  */
-export function createOptimizedContext(options = {}) {
+export async function createOptimizedContext(options = {}) {
   // Import dynamically to avoid circular dependencies
-  const { usePerformanceMonitor, createProfilingSession } = require("./monitoring.mjs");
-  const { useQueryCache, useCacheManager } = require("./cache-hooks.mjs");
-  const { useBatchProcessor } = require("./batch.mjs");
-  const { useMemo } = require("./memoization.mjs");
-  const { useDebounce, useThrottle } = require("./timing.mjs");
+  const { usePerformanceMonitor, createProfilingSession } = await import("./monitoring.mjs");
+  const { useQueryCache, useCacheManager } = await import("./cache-hooks.mjs");
+  const { useBatchProcessor } = await import("./batch.mjs");
+  const { useMemo } = await import("./memoization.mjs");
+  const { useDebounce, useThrottle } = await import("./timing.mjs");
 
   // Create components
   const monitor = usePerformanceMonitor(options.monitor || {});

@@ -1,327 +1,405 @@
 // tests/useGit-comprehensive.test.mjs
-// GitVan v2 — Comprehensive useGit() Tests with Hybrid Test Environment
-// Tests all functionality with proper context integration using hybrid test environment
+// GitVan v2 — Comprehensive useGit() Tests
+// Tests all functionality with proper context integration
 
-import { describe, it, expect } from "vitest";
-import {
-  withMemFSTestEnvironment,
-  withNativeGitTestEnvironment,
-} from "../src/composables/test-environment.mjs";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { promises as fs } from "node:fs";
+import { join } from "pathe";
+import { useGit } from "../src/composables/git.mjs";
+import { withGitVan } from "../src/composables/ctx.mjs";
 
-describe("useGit Comprehensive Tests with Hybrid Test Environment", () => {
-  describe("basic functionality with MemFS", () => {
-    it("should handle basic Git operations with MemFS backend", async () => {
-      await withMemFSTestEnvironment(
-        {
-          initialFiles: {
-            "README.md": "# Comprehensive Test Repository\n",
-            "src/index.js": 'console.log("Hello, World!");\n',
-          },
-        },
-        async (env) => {
-          // Verify backend type
-          expect(env.getBackendType()).toBe("memfs");
+describe("useGit Comprehensive Tests", () => {
+  let tempDir;
+  let git;
 
-          // Test Git status
-          const status = await env.gitStatus();
-          expect(status).toBeDefined();
+  beforeEach(async () => {
+    // Create temporary directory for testing
+    tempDir = join(process.cwd(), "test-git-temp");
+    await fs.mkdir(tempDir, { recursive: true });
+  });
 
-          // Test Git log
-          const log = await env.gitLog();
-          expect(log).toBeDefined();
-          expect(log[0].message).toContain("Initial commit");
+  afterEach(async () => {
+    // Clean up temporary directory
+    try {
+      await fs.rm(tempDir, { recursive: true, force: true });
+    } catch {
+      // Ignore cleanup errors
+    }
+  });
 
-          // Test Git branch
-          const branch = await env.gitCurrentBranch();
-          expect(branch).toBe("master");
+  describe("basic functionality", () => {
+    it("should create useGit instance without context", () => {
+      git = useGit();
 
-          // Test file operations
-          env.files.write("src/utils.js", "export const utils = {};\n");
-          await env.gitAdd("src/utils.js");
-          await env.gitCommit("Add utils module");
-
-          // Verify commit
-          const newLog = await env.gitLog();
-          expect(newLog[0].message).toContain("Add utils module");
-          expect(newLog[1].message).toContain("Initial commit");
-        }
-      );
+      expect(git).toBeDefined();
+      expect(git.cwd).toBe(process.cwd());
+      expect(git.env.TZ).toBe("UTC");
+      expect(git.env.LANG).toBe("C");
+      expect(typeof git.nowISO).toBe("function");
     });
 
-    it("should handle branch operations with MemFS backend", async () => {
-      await withMemFSTestEnvironment(
-        {
-          initialFiles: {
-            "README.md": "# Branch Test Repository\n",
-          },
+    it("should work with context", async () => {
+      const mockContext = {
+        cwd: tempDir,
+        env: {
+          CUSTOM_VAR: "test-value",
+          TZ: "America/New_York", // Should be overridden
         },
-        async (env) => {
-          // Verify backend type
-          expect(env.getBackendType()).toBe("memfs");
+        now: () => "2024-01-01T12:00:00.000Z",
+      };
 
-          // Create feature branch
-          await env.gitCheckoutBranch("feature/auth");
-          env.files.write("src/auth.js", "export const auth = {};\n");
-          await env.gitAdd("src/auth.js");
-          await env.gitCommit("Add authentication module");
+      await withGitVan(mockContext, async () => {
+        git = useGit();
 
-          // Switch back to main
-          await env.gitCheckout("master");
-
-          // Merge feature branch
-          await env.gitMerge("feature/auth");
-
-          // Verify merge
-          const log = await env.gitLog();
-          expect(log[0].message).toContain("Add authentication module");
-          expect(log[1].message).toContain("Initial commit");
-
-          // Note: Files might not exist in main branch after merge due to Git behavior
-          // This is expected for branch isolation in MemFS
-        }
-      );
-    });
-
-    it("should handle complex Git workflows with MemFS backend", async () => {
-      await withMemFSTestEnvironment(
-        {
-          initialFiles: {
-            "README.md": "# Complex Workflow Test\n",
-            "package.json": '{"name": "test-project", "version": "1.0.0"}\n',
-          },
-        },
-        async (env) => {
-          // Verify backend type
-          expect(env.getBackendType()).toBe("memfs");
-
-          // Create multiple branches
-          await env.gitCheckoutBranch("feature/database");
-          env.files.write("src/database.js", "export const db = {};\n");
-          await env.gitAdd("src/database.js");
-          await env.gitCommit("Add database module");
-
-          await env.gitCheckoutBranch("feature/api");
-          env.files.write("src/api.js", "export const api = {};\n");
-          await env.gitAdd("src/api.js");
-          await env.gitCommit("Add API module");
-
-          // Switch back to main
-          await env.gitCheckout("master");
-
-          // Merge both feature branches
-          await env.gitMerge("feature/database");
-          await env.gitMerge("feature/api");
-
-          // Verify final state
-          const log = await env.gitLog();
-          expect(log[0].message).toContain("Add API module");
-          expect(log[1].message).toContain("Add database module");
-          expect(log[2].message).toContain("Initial commit");
-
-          // Note: Files might not exist in main branch after merge due to Git behavior
-          // This is expected for branch isolation in MemFS
-        }
-      );
-    });
-
-    it("should demonstrate performance with MemFS backend", async () => {
-      const start = performance.now();
-
-      await withMemFSTestEnvironment(
-        {
-          initialFiles: {
-            "README.md": "# Performance Test\n",
-          },
-        },
-        async (env) => {
-          // Verify backend type
-          expect(env.getBackendType()).toBe("memfs");
-
-          // Create many files quickly
-          for (let i = 0; i < 50; i++) {
-            env.files.write(
-              `src/module${i}.js`,
-              `export const module${i} = {};\n`
-            );
-            await env.gitAdd(`src/module${i}.js`);
-            await env.gitCommit(`Add module ${i}`);
-          }
-
-          const duration = performance.now() - start;
-          expect(duration).toBeLessThan(5000); // Should complete within 5 seconds
-
-          console.log(
-            `✅ MemFS Performance test completed in ${duration.toFixed(2)}ms`
-          );
-
-          // Verify final state
-          const log = await env.gitLog();
-          expect(log.length).toBeGreaterThan(50); // Should have many commits
-
-          // Verify files exist
-          for (let i = 0; i < 50; i++) {
-            expect(env.files.exists(`src/module${i}.js`)).toBe(true);
-          }
-        }
-      );
+        expect(git.cwd).toBe(tempDir);
+        expect(git.env.TZ).toBe("UTC"); // Should override context
+        expect(git.env.LANG).toBe("C");
+        expect(git.env.CUSTOM_VAR).toBe("test-value");
+        expect(git.nowISO()).toBe("2024-01-01T12:00:00.000Z");
+      });
     });
   });
 
-  describe("integration functionality with native Git", () => {
-    it("should handle basic Git operations with native backend", async () => {
-      await withNativeGitTestEnvironment(
-        {
-          initialFiles: {
-            "README.md": "# Native Git Test Repository\n",
-            "src/index.js": 'console.log("Hello, World!");\n',
-          },
-        },
-        async (env) => {
-          // Verify backend type
-          expect(env.getBackendType()).toBe("native");
+  describe("repository operations", () => {
+    beforeEach(async () => {
+      // Initialize git repository
+      await fs.writeFile(join(tempDir, "README.md"), "# Test Repository\n");
 
-          // Test Git status
-          const status = await env.gitStatus();
-          expect(status).toBeDefined();
+      const mockContext = { cwd: tempDir };
+      await withGitVan(mockContext, async () => {
+        git = useGit();
 
-          // Test Git log
-          const log = await env.gitLog();
-          expect(log).toBeDefined();
-          expect(log[0].message).toContain("Initial commit");
-
-          // Test Git branch
-          const branch = await env.gitCurrentBranch();
-          expect(branch).toBe("master");
-
-          // Test file operations
-          env.files.write("src/utils.js", "export const utils = {};\n");
-          await env.gitAdd("src/utils.js");
-          await env.gitCommit("Add utils module");
-
-          // Verify commit
-          const newLog = await env.gitLog();
-          expect(newLog[0].message).toContain("Add utils module");
-          expect(newLog[1].message).toContain("Initial commit");
-        }
-      );
+        // Initialize git repo
+        await git.runVoid(["init"]);
+        await git.runVoid(["config", "user.name", "Test User"]);
+        await git.runVoid(["config", "user.email", "test@example.com"]);
+        await git.add("README.md");
+        await git.commit("Initial commit");
+      });
     });
 
-    it("should handle branch operations with native backend", async () => {
-      await withNativeGitTestEnvironment(
-        {
-          initialFiles: {
-            "README.md": "# Native Branch Test Repository\n",
-          },
-        },
-        async (env) => {
-          // Verify backend type
-          expect(env.getBackendType()).toBe("native");
+    it("should get repository information", async () => {
+      await withGitVan({ cwd: tempDir }, async () => {
+        git = useGit();
 
-          // Create feature branch
-          await env.gitCheckoutBranch("feature/auth");
-          env.files.write("src/auth.js", "export const auth = {};\n");
-          await env.gitAdd("src/auth.js");
-          await env.gitCommit("Add authentication module");
+        const branch = await git.branch();
+        const head = await git.head();
+        const repoRoot = await git.repoRoot();
+        const gitDir = await git.worktreeGitDir();
 
-          // Switch back to main
-          await env.gitCheckout("master");
-
-          // Merge feature branch
-          await env.gitMerge("feature/auth");
-
-          // Verify merge
-          const log = await env.gitLog();
-          expect(log[0].message).toContain("Add authentication module");
-          expect(log[1].message).toContain("Initial commit");
-
-          // Note: Files might not exist in main branch after merge due to Git behavior
-          // This is expected for branch isolation in MemFS
-        }
-      );
+        expect(branch).toBe("master"); // Default branch
+        expect(head).toMatch(/^[a-f0-9]{40}$/); // SHA hash
+        expect(repoRoot).toBe(tempDir);
+        expect(gitDir).toContain(".git");
+      });
     });
 
-    it("should handle complex Git workflows with native backend", async () => {
-      await withNativeGitTestEnvironment(
-        {
-          initialFiles: {
-            "README.md": "# Native Complex Workflow Test\n",
-            "package.json": '{"name": "test-project", "version": "1.0.0"}\n',
-          },
-        },
-        async (env) => {
-          // Verify backend type
-          expect(env.getBackendType()).toBe("native");
+    it("should handle status operations", async () => {
+      await withGitVan({ cwd: tempDir }, async () => {
+        git = useGit();
 
-          // Create multiple branches
-          await env.gitCheckoutBranch("feature/database");
-          env.files.write("src/database.js", "export const db = {};\n");
-          await env.gitAdd("src/database.js");
-          await env.gitCommit("Add database module");
+        // Check clean status
+        const isClean = await git.isClean();
+        expect(isClean).toBe(true);
 
-          await env.gitCheckoutBranch("feature/api");
-          env.files.write("src/api.js", "export const api = {};\n");
-          await env.gitAdd("src/api.js");
-          await env.gitCommit("Add API module");
+        const hasChanges = await git.hasUncommittedChanges();
+        expect(hasChanges).toBe(false);
 
-          // Switch back to main
-          await env.gitCheckout("master");
+        // Add a new file
+        await fs.writeFile(join(tempDir, "new-file.txt"), "content");
 
-          // Merge both feature branches
-          await env.gitMerge("feature/database");
-          await env.gitMerge("feature/api");
+        const status = await git.statusPorcelain();
+        expect(status).toContain("new-file.txt");
 
-          // Verify final state
-          const log = await env.gitLog();
-          expect(log[0].message).toContain("Add API module");
-          expect(log[1].message).toContain("Add database module");
-          expect(log[2].message).toContain("Initial commit");
-
-          // Note: Files might not exist in main branch after merge due to Git behavior
-          // This is expected for branch isolation in MemFS
-        }
-      );
+        const isCleanAfter = await git.isClean();
+        expect(isCleanAfter).toBe(false);
+      });
     });
 
-    it("should demonstrate performance with native backend", async () => {
-      const start = performance.now();
+    it("should handle log operations", async () => {
+      await withGitVan({ cwd: tempDir }, async () => {
+        git = useGit();
 
-      await withNativeGitTestEnvironment(
-        {
-          initialFiles: {
-            "README.md": "# Native Performance Test\n",
-          },
-        },
-        async (env) => {
-          // Verify backend type
-          expect(env.getBackendType()).toBe("native");
+        // Add another commit
+        await fs.writeFile(join(tempDir, "file2.txt"), "content");
+        await git.add("file2.txt");
+        await git.commit("Second commit");
 
-          // Create many files
-          for (let i = 0; i < 20; i++) {
-            env.files.write(
-              `src/module${i}.js`,
-              `export const module${i} = {};\n`
-            );
-            await env.gitAdd(`src/module${i}.js`);
-            await env.gitCommit(`Add module ${i}`);
-          }
+        const log = await git.log();
+        expect(log).toContain("Second commit");
+        expect(log).toContain("Initial commit");
 
-          const duration = performance.now() - start;
-          expect(duration).toBeLessThan(10000); // Should complete within 10 seconds
+        const commitCount = await git.getCommitCount();
+        expect(commitCount).toBe(2);
+      });
+    });
 
-          console.log(
-            `✅ Native Performance test completed in ${duration.toFixed(2)}ms`
-          );
+    it("should handle branch operations", async () => {
+      await withGitVan({ cwd: tempDir }, async () => {
+        git = useGit();
 
-          // Verify final state
-          const log = await env.gitLog();
-          expect(log.length).toBeGreaterThan(20); // Should have many commits
+        const currentBranch = await git.getCurrentBranch();
+        expect(currentBranch).toBe("master");
 
-          // Verify files exist
-          for (let i = 0; i < 20; i++) {
-            expect(env.files.exists(`src/module${i}.js`)).toBe(true);
-          }
-        }
-      );
+        // Create and switch to new branch
+        await git.runVoid(["checkout", "-b", "feature-branch"]);
+
+        const newBranch = await git.getCurrentBranch();
+        expect(newBranch).toBe("feature-branch");
+      });
+    });
+  });
+
+  describe("write operations", () => {
+    beforeEach(async () => {
+      const mockContext = { cwd: tempDir };
+      await withGitVan(mockContext, async () => {
+        git = useGit();
+
+        // Initialize git repo
+        await git.runVoid(["init"]);
+        await git.runVoid(["config", "user.name", "Test User"]);
+        await git.runVoid(["config", "user.email", "test@example.com"]);
+      });
+    });
+
+    it("should handle add and commit operations", async () => {
+      await withGitVan({ cwd: tempDir }, async () => {
+        git = useGit();
+
+        // Create and add files
+        await fs.writeFile(join(tempDir, "file1.txt"), "content1");
+        await fs.writeFile(join(tempDir, "file2.txt"), "content2");
+
+        await git.add(["file1.txt", "file2.txt"]);
+
+        const status = await git.statusPorcelain();
+        expect(status).toContain("file1.txt");
+        expect(status).toContain("file2.txt");
+
+        await git.commit("Add files");
+
+        const isClean = await git.isClean();
+        expect(isClean).toBe(true);
+      });
+    });
+
+    it("should handle tag operations", async () => {
+      await withGitVan({ cwd: tempDir }, async () => {
+        git = useGit();
+
+        // Create initial commit
+        await fs.writeFile(join(tempDir, "README.md"), "# Test");
+        await git.add("README.md");
+        await git.commit("Initial commit");
+
+        // Create tag
+        await git.tag("v1.0.0", "Version 1.0.0");
+
+        // Verify tag exists
+        const tags = await git.run(["tag", "-l"]);
+        expect(tags).toContain("v1.0.0");
+      });
+    });
+  });
+
+  describe("notes operations", () => {
+    beforeEach(async () => {
+      const mockContext = { cwd: tempDir };
+      await withGitVan(mockContext, async () => {
+        git = useGit();
+
+        // Initialize git repo
+        await git.runVoid(["init"]);
+        await git.runVoid(["config", "user.name", "Test User"]);
+        await git.runVoid(["config", "user.email", "test@example.com"]);
+
+        // Create initial commit
+        await fs.writeFile(join(tempDir, "README.md"), "# Test");
+        await git.add("README.md");
+        await git.commit("Initial commit");
+      });
+    });
+
+    it("should handle notes operations", async () => {
+      await withGitVan({ cwd: tempDir }, async () => {
+        git = useGit();
+
+        const notesRef = "refs/notes/gitvan/test";
+
+        // Add note
+        await git.noteAdd(notesRef, "Test note");
+
+        // Show note
+        const note = await git.noteShow(notesRef);
+        expect(note).toBe("Test note");
+
+        // Append to note
+        await git.noteAppend(notesRef, "\nAdditional info");
+
+        const updatedNote = await git.noteShow(notesRef);
+        expect(updatedNote).toContain("Test note");
+        expect(updatedNote).toContain("Additional info");
+      });
+    });
+  });
+
+  describe("atomic operations", () => {
+    beforeEach(async () => {
+      const mockContext = { cwd: tempDir };
+      await withGitVan(mockContext, async () => {
+        git = useGit();
+
+        // Initialize git repo
+        await git.runVoid(["init"]);
+        await git.runVoid(["config", "user.name", "Test User"]);
+        await git.runVoid(["config", "user.email", "test@example.com"]);
+
+        // Create initial commit
+        await fs.writeFile(join(tempDir, "README.md"), "# Test");
+        await git.add("README.md");
+        await git.commit("Initial commit");
+      });
+    });
+
+    it("should handle atomic ref creation", async () => {
+      await withGitVan({ cwd: tempDir }, async () => {
+        git = useGit();
+
+        const head = await git.head();
+        const lockRef = "refs/gitvan/locks/test-lock";
+
+        // First creation should succeed
+        const result1 = await git.updateRefCreate(lockRef, head);
+        expect(result1).toBe(true);
+
+        // Second creation should fail (ref exists)
+        const result2 = await git.updateRefCreate(lockRef, head);
+        expect(result2).toBe(false);
+
+        // Clean up
+        await git.runVoid(["update-ref", "-d", lockRef]);
+      });
+    });
+  });
+
+  describe("plumbing operations", () => {
+    beforeEach(async () => {
+      const mockContext = { cwd: tempDir };
+      await withGitVan(mockContext, async () => {
+        git = useGit();
+
+        // Initialize git repo
+        await git.runVoid(["init"]);
+        await git.runVoid(["config", "user.name", "Test User"]);
+        await git.runVoid(["config", "user.email", "test@example.com"]);
+
+        // Create initial commit
+        await fs.writeFile(join(tempDir, "README.md"), "# Test");
+        await git.add("README.md");
+        await git.commit("Initial commit");
+      });
+    });
+
+    it("should handle plumbing operations", async () => {
+      await withGitVan({ cwd: tempDir }, async () => {
+        git = useGit();
+
+        // Test hash-object
+        const hash = await git.hashObject("README.md");
+        expect(hash).toMatch(/^[a-f0-9]{40}$/);
+
+        // Test write-tree
+        const treeHash = await git.writeTree();
+        expect(treeHash).toMatch(/^[a-f0-9]{40}$/);
+
+        // Test cat-file
+        const head = await git.head();
+        const content = await git.catFilePretty(head);
+        expect(content).toContain("Initial commit");
+      });
+    });
+  });
+
+  describe("error handling", () => {
+    it("should handle empty repository gracefully", async () => {
+      const mockContext = { cwd: tempDir };
+      await withGitVan(mockContext, async () => {
+        git = useGit();
+
+        // Initialize empty repo
+        await git.runVoid(["init"]);
+
+        // These should handle empty repo gracefully
+        const revList = await git.revList();
+        expect(revList).toBe("");
+
+        const commitCount = await git.getCommitCount();
+        expect(commitCount).toBe(0);
+      });
+    });
+
+    it("should handle invalid operations gracefully", async () => {
+      const mockContext = { cwd: tempDir };
+      await withGitVan(mockContext, async () => {
+        git = useGit();
+
+        // Initialize git repo
+        await git.runVoid(["init"]);
+        await git.runVoid(["config", "user.name", "Test User"]);
+        await git.runVoid(["config", "user.email", "test@example.com"]);
+
+        // Create initial commit
+        await fs.writeFile(join(tempDir, "README.md"), "# Test");
+        await git.add("README.md");
+        await git.commit("Initial commit");
+
+        // Test invalid object
+        await expect(git.catFilePretty("invalid-sha")).rejects.toThrow();
+      });
+    });
+  });
+
+  describe("utility methods", () => {
+    beforeEach(async () => {
+      const mockContext = { cwd: tempDir };
+      await withGitVan(mockContext, async () => {
+        git = useGit();
+
+        // Initialize git repo
+        await git.runVoid(["init"]);
+        await git.runVoid(["config", "user.name", "Test User"]);
+        await git.runVoid(["config", "user.email", "test@example.com"]);
+
+        // Create initial commit
+        await fs.writeFile(join(tempDir, "README.md"), "# Test");
+        await git.add("README.md");
+        await git.commit("Initial commit");
+      });
+    });
+
+    it("should provide utility methods", async () => {
+      await withGitVan({ cwd: tempDir }, async () => {
+        git = useGit();
+
+        // Test isClean
+        expect(await git.isClean()).toBe(true);
+
+        // Test hasUncommittedChanges
+        expect(await git.hasUncommittedChanges()).toBe(false);
+
+        // Test getCurrentBranch
+        expect(await git.getCurrentBranch()).toBe("master");
+
+        // Test getCommitCount
+        expect(await git.getCommitCount()).toBe(1);
+
+        // Add uncommitted changes
+        await fs.writeFile(join(tempDir, "new-file.txt"), "content");
+
+        expect(await git.isClean()).toBe(false);
+        expect(await git.hasUncommittedChanges()).toBe(true);
+      });
     });
   });
 });

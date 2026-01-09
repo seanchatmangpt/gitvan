@@ -9,6 +9,7 @@ import { vol } from "memfs";
 import git from "isomorphic-git";
 import { execSync } from "child_process";
 import { mkdtemp, rm } from "fs/promises";
+import { mkdirSync, writeFileSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 
@@ -434,11 +435,11 @@ class HybridGitEnvironment {
           const nativeEntryPath = `${nativeDir}/${entry}`;
 
           if (vol.statSync(memfsEntryPath).isDirectory()) {
-            require("fs").mkdirSync(nativeEntryPath, { recursive: true });
+            mkdirSync(nativeEntryPath, { recursive: true });
             syncDir(memfsEntryPath, nativeEntryPath);
           } else {
             const content = vol.readFileSync(memfsEntryPath, "utf8");
-            require("fs").writeFileSync(nativeEntryPath, content);
+            writeFileSync(nativeEntryPath, content);
           }
         }
       } catch (error) {

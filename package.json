@@ -1,6 +1,6 @@
 {
   "name": "gitvan",
-  "version": "3.0.1",
+  "version": "1.0.0",
   "description": "Git-native development automation built on unrdf knowledge graphs",
   "author": "GitVan Team",
   "license": "MIT",
@@ -39,6 +39,7 @@
     "@opentelemetry/semantic-conventions": "^1.38.0",
     "@zazuko/env": "^2.2.0",
     "ai": "^3.0.0",
+    "bree": "^9.2.7",
     "c12": "^1.11.0",
     "cacache": "^20.0.3",
     "citty": "^0.1.6",
@@ -70,17 +71,20 @@
   "devDependencies": {
     "vitest": "^2.0.0"
   },
+  "overrides": {
+    "@inrupt/universal-fetch": "1.0.3"
+  },
   "engines": {
     "node": ">=18.0.0"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/gitvan/gitvan.git"
+    "url": "git+https://github.com/seanchatmangpt/gitvan.git"
   },
   "bugs": {
-    "url": "https://github.com/gitvan/gitvan/issues"
+    "url": "https://github.com/seanchatmangpt/gitvan/issues"
   },
-  "homepage": "https://github.com/gitvan/gitvan#readme",
+  "homepage": "https://github.com/seanchatmangpt/gitvan#readme",
   "keywords": [
     "git",
     "automation",

@@ -11,6 +11,7 @@
 import { vol } from "memfs";
 import { execSync } from "child_process";
 import { mkdtemp, rm } from "fs/promises";
+import { mkdirSync, writeFileSync, readFileSync, existsSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 import { withGitVan } from "../core/context.mjs";
@@ -159,9 +160,9 @@ function createHybridTestEnvironment(hybridGit, realTestDir, memfsTestDir, testN
           const realPath = `${realTestDir}/${path}`;
           const dir = realPath.substring(0, realPath.lastIndexOf("/"));
           if (dir !== realTestDir) {
-            require("fs").mkdirSync(dir, { recursive: true });
+            mkdirSync(dir, { recursive: true });
           }
-          require("fs").writeFileSync(realPath, content);
+          writeFileSync(realPath, content);
         }
       },
 
@@ -170,7 +171,7 @@ function createHybridTestEnvironment(hybridGit, realTestDir, memfsTestDir, testN
           return hybridGit.readFile(path);
         } else {
           const realPath = `${realTestDir}/${path}`;
-          return require("fs").readFileSync(realPath, "utf8");
+          return readFileSync(realPath, "utf8");
         }
       },
 
@@ -179,7 +180,7 @@ function createHybridTestEnvironment(hybridGit, realTestDir, memfsTestDir, testN
           return hybridGit.exists(path);
         } else {
           const realPath = `${realTestDir}/${path}`;
-          return require("fs").existsSync(realPath);
+          return existsSync(realPath);
         }
       },
 
@@ -190,7 +191,7 @@ function createHybridTestEnvironment(hybridGit, realTestDir, memfsTestDir, testN
           vol.mkdirSync(memfsPath, { recursive: true });
         } else {
           const realPath = `${realTestDir}/${path}`;
-          require("fs").mkdirSync(realPath, { recursive: true });
+          mkdirSync(realPath, { recursive: true });
         }
       },
 
@@ -246,9 +247,9 @@ function createHybridTestEnvironment(hybridGit, realTestDir, memfsTestDir, testN
       // Create in real file system
       const dir = realPath.substring(0, realPath.lastIndexOf("/"));
       if (dir !== realTestDir) {
-        require("fs").mkdirSync(dir, { recursive: true });
+        mkdirSync(dir, { recursive: true });
       }
-      require("fs").writeFileSync(realPath, content);
+      writeFileSync(realPath, content);
 
       // Create in MemFS
       const memfsDir = memfsPath.substring(0, memfsPath.lastIndexOf("/"));
@@ -264,7 +265,7 @@ function createHybridTestEnvironment(hybridGit, realTestDir, memfsTestDir, testN
       const realPath = `${realTestDir}/${path}`;
       const memfsPath = `${memfsTestDir}/${path}`;
 
-      require("fs").mkdirSync(realPath, { recursive: true });
+      mkdirSync(realPath, { recursive: true });
       vol.mkdirSync(memfsPath, { recursive: true });
 
       return realPath;
@@ -272,12 +273,12 @@ function createHybridTestEnvironment(hybridGit, realTestDir, memfsTestDir, testN
 
     readFile: (path) => {
       const realPath = `${realTestDir}/${path}`;
-      return require("fs").readFileSync(realPath, "utf8");
+      return readFileSync(realPath, "utf8");
     },
 
     exists: (path) => {
       const realPath = `${realTestDir}/${path}`;
-      return require("fs").existsSync(realPath);
+      return existsSync(realPath);
     },
 
     // Git operations (use hybrid Git instance)
@@ -307,7 +308,7 @@ function createHybridTestEnvironment(hybridGit, realTestDir, memfsTestDir, testN
 
     // Safety validation
     assertRealFileSystemSafe: (realPath) => {
-      if (require("fs").existsSync(realPath)) {
+      if (existsSync(realPath)) {
         throw new Error(
           `Real file system path ${realPath} exists - this should not happen in tests!`
         );
@@ -332,21 +333,21 @@ function createFileStructure(basePath, structure, fsType = "real") {
       if (dir !== basePath) {
         // Create directory
         if (fsType === "real") {
-          require("fs").mkdirSync(dir, { recursive: true });
+          mkdirSync(dir, { recursive: true });
         } else {
           vol.mkdirSync(dir, { recursive: true });
         }
       }
       // Write file
       if (fsType === "real") {
-        require("fs").writeFileSync(fullPath, content);
+        writeFileSync(fullPath, content);
       } else {
         vol.writeFileSync(fullPath, content);
       }
     } else if (typeof content === "object" && content !== null) {
       // It's a directory
       if (fsType === "real") {
-        require("fs").mkdirSync(fullPath, { recursive: true });
+        mkdirSync(fullPath, { recursive: true });
       } else {
         vol.mkdirSync(fullPath, { recursive: true });
       }

@@ -550,7 +550,7 @@ describe("DevOps JTBD Validation - Workflow Reliability & Debugging", () => {
       expect(failure.failedAt).toBe("step-3");
       expect(failure.rootCause).toBeDefined();
       expect(failure.suggestion).toBeDefined();
-      expect(failure.errorStack).toBeDefined();
+      expect(failure.failedStep.errorStack).toBeDefined();
 
       validationReport.results["root_cause_analysis"] = {
         status: "PASS",

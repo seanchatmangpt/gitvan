@@ -616,112 +616,149 @@ describe("VALIDATION 3: Churn Prediction Accuracy (Target ≥90%)", () => {
 describe("VALIDATION 4: Churn Intervention", () => {
   let predictor;
   let metrics;
+  let testDir;
+  let context;
 
   beforeEach(() => {
-    predictor = useChurnPredictor();
+    // Set up test context for Git operations
+    testDir = mkdtempSync(join(tmpdir(), "churn-test-"));
+    execSync("git init", { cwd: testDir, stdio: "pipe" });
+    execSync('git config user.email "test@test.com"', { cwd: testDir, stdio: "pipe" });
+    execSync('git config user.name "Test User"', { cwd: testDir, stdio: "pipe" });
+    writeFileSync(join(testDir, "README.md"), "test");
+    execSync("git add .", { cwd: testDir, stdio: "pipe" });
+    execSync('git commit -m "init"', { cwd: testDir, stdio: "pipe" });
+
+    context = {
+      cwd: testDir,
+      env: { TZ: "UTC", LANG: "C" },
+    };
+
     metrics = useRevenueMetrics();
   });
 
-  it("should recommend immediate outreach for critical churn risk", () => {
-    const customers = [
-      { id: "cust_critical", ltv: 10000, mrr: 500, health: 10 },
-    ];
-
-    const churnScores = {
-      cust_critical: 85, // 85% churn probability
-    };
-
-    const flagged = predictor.flagForRetention(customers, churnScores);
-
-    expect(flagged).toHaveLength(1);
-    expect(flagged[0].priority).toBe("critical");
-    expect(flagged[0].recommendedAction).toBe("immediate_outreach");
-  });
-
-  it("should provide intervention recommendations with estimated revenue impact", () => {
-    const customers = [
-      {
-        id: "cust_1",
-        ltv: 5000,
-        mrr: 100,
-      },
-      {
-        id: "cust_2",
-        ltv: 10000,
-        mrr: 300,
-      },
-    ];
-
-    const churnScores = {
-      cust_1: 60,
-      cust_2: 75,
-    };
-
-    const flagged = predictor.flagForRetention(customers, churnScores);
-
-    for (const flag of flagged) {
-      expect(flag).toHaveProperty("customerId");
-      expect(flag).toHaveProperty("priority");
-      expect(flag).toHaveProperty("churnScore");
-      expect(flag).toHaveProperty("recommendedAction");
-      expect(flag).toHaveProperty("estimatedLoss");
-      expect(flag.estimatedLoss).toBeGreaterThan(0);
+  afterEach(() => {
+    if (testDir && existsSync(testDir)) {
+      rmSync(testDir, { recursive: true, force: true });
     }
   });
 
-  it("should track intervention outcomes and ROI", () => {
-    const intervention = {
-      id: "int_001",
-      customerId: "cust_1",
-      type: "discount",
-      cost: 200, // $200 discount offered
-    };
+  it("should recommend immediate outreach for critical churn risk", async () => {
+    await withGitVan(context, async () => {
+      predictor = useChurnPredictor();
 
-    const outcome = {
-      result: "success",
-      retained: true,
-      revenue: 1200, // $1200 in retained annual revenue
-    };
+      const customers = [
+        { id: "cust_critical", ltv: 10000, mrr: 500, health: 10 },
+      ];
 
-    const roi = predictor.trackInterventionOutcome(intervention, outcome);
+      const churnScores = {
+        cust_critical: 85, // 85% churn probability
+      };
 
-    // ROI = (Retained Revenue - Cost) = 1200 - 200 = 1000
-    // ROI % = (1000 / 200) * 100 = 500%
-    expect(roi.roiValue).toBe(1000);
-    expect(roi.roiPercent).toBe("500.00");
-    expect(roi.retainedRevenue).toBe(1200);
+      const flagged = predictor.flagForRetention(customers, churnScores);
+
+      expect(flagged).toHaveLength(1);
+      expect(flagged[0].priority).toBe("critical");
+      expect(flagged[0].recommendedAction).toBe("immediate_outreach");
+    });
   });
 
-  it("should identify upsell opportunities in engaged customers", () => {
-    const customers = [
-      {
-        id: "cust_upsell",
-        engagement: 0.9,
-        usage: {
-          currentUsage: 950,
-          planLimit: 1000,
+  it("should provide intervention recommendations with estimated revenue impact", async () => {
+    await withGitVan(context, async () => {
+      predictor = useChurnPredictor();
+
+      const customers = [
+        {
+          id: "cust_1",
+          ltv: 5000,
+          mrr: 100,
         },
-      },
-    ];
+        {
+          id: "cust_2",
+          ltv: 10000,
+          mrr: 300,
+        },
+      ];
 
-    const subscriptions = {
-      cust_upsell: {
-        plan: "plan_pro",
-        mrr: 100,
-      },
-    };
+      const churnScores = {
+        cust_1: 60,
+        cust_2: 75,
+      };
 
-    const upsellCandidates = predictor.identifyUpsellCandidates(
-      customers,
-      subscriptions
-    );
+      const flagged = predictor.flagForRetention(customers, churnScores);
 
-    // High usage (95%) should trigger upsell
-    expect(upsellCandidates.length).toBeGreaterThan(0);
-    const candidate = upsellCandidates[0];
-    expect(candidate.type).toBe("upsell");
-    expect(candidate.reason).toBe("high_usage");
-    expect(candidate.usagePercent).toBeGreaterThanOrEqual(90);
+      for (const flag of flagged) {
+        expect(flag).toHaveProperty("customerId");
+        expect(flag).toHaveProperty("priority");
+        expect(flag).toHaveProperty("churnScore");
+        expect(flag).toHaveProperty("recommendedAction");
+        expect(flag).toHaveProperty("estimatedLoss");
+        expect(flag.estimatedLoss).toBeGreaterThan(0);
+      }
+    });
+  });
+
+  it("should track intervention outcomes and ROI", async () => {
+    await withGitVan(context, async () => {
+      predictor = useChurnPredictor();
+
+      const intervention = {
+        id: "int_001",
+        customerId: "cust_1",
+        type: "discount",
+        cost: 200, // $200 discount offered
+      };
+
+      const outcome = {
+        result: "success",
+        retained: true,
+        revenue: 1200, // $1200 in retained annual revenue
+      };
+
+      const roi = predictor.trackInterventionOutcome(intervention, outcome);
+
+      // ROI = (Retained Revenue - Cost) = 1200 - 200 = 1000
+      // ROI % = (1000 / 200) * 100 = 500%
+      expect(roi.roiValue).toBe(1000);
+      expect(roi.roiPercent).toBe("500.00");
+      expect(roi.retainedRevenue).toBe(1200);
+    });
+  });
+
+  it("should identify upsell opportunities in engaged customers", async () => {
+    await withGitVan(context, async () => {
+      predictor = useChurnPredictor();
+
+      const customers = [
+        {
+          id: "cust_upsell",
+          engagement: 0.9,
+          usage: {
+            currentUsage: 950,
+            planLimit: 1000,
+          },
+        },
+      ];
+
+      const subscriptions = {
+        cust_upsell: {
+          plan: "plan_pro",
+          mrr: 100,
+        },
+      };
+
+      const upsellCandidates = predictor.identifyUpsellCandidates(
+        customers,
+        subscriptions
+      );
+
+      // High usage (95%) should trigger upsell
+      expect(upsellCandidates.length).toBeGreaterThan(0);
+      const candidate = upsellCandidates[0];
+      expect(candidate.type).toBe("upsell");
+      expect(candidate.reason).toBe("high_usage");
+      expect(candidate.usagePercent).toBeGreaterThanOrEqual(90);
+    });
   });
 });
 

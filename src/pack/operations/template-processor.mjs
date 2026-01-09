@@ -223,14 +223,14 @@ export class TemplateProcessor {
       // Check if this is actually a template or just a file copy
       if (!this.isTemplate(template)) {
         this.logger.debug(`File is not a template, copying: ${src}`);
-        return this.copyFile(src, target, backup, action);
+        return await this.copyFile(src, target, backup, action);
       }
 
       // Parse front-matter for return data
       const { data: frontMatter } = grayMatter.default(template);
 
       // Render template
-      const rendered = this.renderTemplate(template, context);
+      const rendered = await this.renderTemplate(template, context);
 
       // Write output based on action
       if (action === "merge") {
@@ -299,7 +299,7 @@ export class TemplateProcessor {
     return templatePatterns.some((pattern) => pattern.test(content));
   }
 
-  renderTemplate(template, context) {
+  async renderTemplate(template, context) {
     try {
       // Parse front-matter if present
       const { data: frontMatter, content: templateContent } =
@@ -338,7 +338,7 @@ export class TemplateProcessor {
         },
       };
 
-      return this.env.renderString(templateContent, fullContext);
+      return await this.env.renderString(templateContent, fullContext);
     } catch (error) {
       if (error.message.includes("filter not found")) {
         throw new Error(`Template error: ${error.message}`);
@@ -350,7 +350,7 @@ export class TemplateProcessor {
     }
   }
 
-  copyFile(src, target, backup, action = "write") {
+  async copyFile(src, target, backup, action = "write") {
     if (backup && existsSync(target)) {
       const backupPath = `${target}.bak.${Date.now()}`;
       copyFileSync(target, backupPath);

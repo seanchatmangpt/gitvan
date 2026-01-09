@@ -498,6 +498,31 @@ class RDFLockManager {
   }
 }
 
+/**
+ * Cleanup all git lock refs
+ * @param {string} cwd - Repository directory
+ */
+async function cleanupAllLockRefs(cwd) {
+  try {
+    const { stdout } = await execAsync(
+      'git for-each-ref --format="%(refname)" refs/gitvan/locks',
+      { cwd }
+    );
+    const refs = stdout.trim().split('\n').filter(Boolean);
+
+    for (const ref of refs) {
+      try {
+        const { stdout: oid } = await execAsync(`git rev-parse "${ref}"`, { cwd });
+        await execAsync(`git update-ref -d "${ref}" "${oid.trim()}"`, { cwd });
+      } catch (error) {
+        // Ignore individual ref deletion errors
+      }
+    }
+  } catch (error) {
+    // No refs found or error listing them
+  }
+}
+
 describe('RDFLockManager', () => {
   let testDir;
   let rdfLockManager;
@@ -531,9 +556,24 @@ describe('RDFLockManager', () => {
 
   afterEach(async () => {
     try {
+      // Clear RDF substrate
+      if (knowledgeSubstrate && typeof knowledgeSubstrate.clear === 'function') {
+        await knowledgeSubstrate.clear();
+      }
+
+      // Release all held locks first
+      const locks = await rdfLockManager.listLocks();
+      for (const lock of locks) {
+        await rdfLockManager.releaseLock(lock.name).catch(() => {});
+      }
+
+      // Clean up all lock refs
+      await cleanupAllLockRefs(testDir);
+
+      // Remove test directory
       await fs.rm(testDir, { recursive: true, force: true });
     } catch (error) {
-      console.warn(`Failed to clean up test directory: ${error.message}`);
+      console.warn(`Failed to clean up test: ${error.message}`);
     }
   });
 

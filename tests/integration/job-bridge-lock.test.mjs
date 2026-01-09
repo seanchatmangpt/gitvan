@@ -3,12 +3,11 @@
 // Tests lock acquisition, release, and concurrency control
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { JobBridge, resetJobBridge } from "../../src/jobs/job-bridge.mjs";
-import { resetBreeScheduler } from "../../src/jobs/bree-scheduler.mjs";
+import { JobBridge, resetJobBridge, resetBreeScheduler } from "../../tests/test-utils/job-bridge.mjs";
 import { withGitVan } from "../../src/core/context.mjs";
 import { useLock } from "../../src/composables/lock.mjs";
-import { createTestContext, createTestJob } from "../test-utils/context.mjs";
-import { sleep } from "../test-utils/helpers.mjs";
+import { createTestContext, createTestJob } from "../../tests/test-utils/context.mjs";
+import { sleep, cleanupGitRefs } from "../../tests/test-utils/helpers.mjs";
 
 describe("Integration: JobBridge ← → useLock()", () => {
   let testContext;
@@ -23,11 +22,23 @@ describe("Integration: JobBridge ← → useLock()", () => {
 
   afterEach(async () => {
     try {
-      await bridge.shutdown();
-    } catch {}
-    resetBreeScheduler();
-    resetJobBridge();
-    await testContext.cleanup();
+      // Shutdown bridge
+      if (bridge && typeof bridge.shutdown === 'function') {
+        await bridge.shutdown().catch(() => {});
+      }
+
+      // Clean up lock refs
+      await cleanupGitRefs(testContext.cwd, 'refs/gitvan/locks').catch(() => {});
+
+      // Reset infrastructure
+      resetBreeScheduler();
+      resetJobBridge();
+
+      // Cleanup test context
+      await testContext.cleanup();
+    } catch (error) {
+      console.warn(`Cleanup failed: ${error.message}`);
+    }
   });
 
   describe("Lock Acquisition", () => {

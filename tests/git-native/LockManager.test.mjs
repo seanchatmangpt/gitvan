@@ -4,40 +4,67 @@ import { join } from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { LockManager } from '../../src/git-native/LockManager.mjs';
+import { createTestContext } from '../test-utils/context.mjs';
+import { cleanupGitRefs, getGitLocks } from '../test-utils/helpers.mjs';
 
 const execAsync = promisify(exec);
+
+/**
+ * Cleanup all git lock refs
+ * @param {string} cwd - Repository directory
+ */
+async function cleanupAllLockRefs(cwd) {
+  try {
+    const { stdout } = await execAsync(
+      'git for-each-ref --format="%(refname)" refs/gitvan/locks',
+      { cwd }
+    );
+    const refs = stdout.trim().split('\n').filter(Boolean);
+
+    for (const ref of refs) {
+      try {
+        const { stdout: oid } = await execAsync(`git rev-parse "${ref}"`, { cwd });
+        await execAsync(`git update-ref -d "${ref}" "${oid.trim()}"`, { cwd });
+      } catch (error) {
+        // Ignore individual ref deletion errors
+      }
+    }
+  } catch (error) {
+    // No refs found or error listing them
+  }
+}
 
 describe('LockManager Tests', () => {
   let testDir;
   let lockManager;
 
   beforeEach(async () => {
-    testDir = join(process.cwd(), 'test-locks-' + Date.now());
-    await fs.mkdir(testDir, { recursive: true });
-    
-    // Initialize git repository
-    await execAsync('git init', { cwd: testDir });
-    await execAsync('git config user.email "test@example.com"', { cwd: testDir });
-    await execAsync('git config user.name "Test User"', { cwd: testDir });
-    
-    // Create initial commit
-    await fs.writeFile(join(testDir, 'README.md'), '# Test Repository');
-    await execAsync('git add README.md', { cwd: testDir });
-    await execAsync('git commit -m "Initial commit"', { cwd: testDir });
-    
+    const testContext = await createTestContext();
+    testDir = testContext.cwd;
+
     lockManager = new LockManager({
       cwd: testDir,
       logger: console
     });
-    
+
     await lockManager.initialize();
   });
 
   afterEach(async () => {
     try {
+      // Release all held locks first
+      const locks = await lockManager.listLocks();
+      for (const lock of locks) {
+        await lockManager.releaseLock(lock.name).catch(() => {});
+      }
+
+      // Clean up all lock refs
+      await cleanupAllLockRefs(testDir);
+
+      // Remove test directory
       await fs.rm(testDir, { recursive: true, force: true });
     } catch (error) {
-      console.warn(`Failed to clean up test directory: ${error.message}`);
+      console.warn(`Failed to clean up test: ${error.message}`);
     }
   });
 

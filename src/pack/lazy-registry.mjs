@@ -1,6 +1,6 @@
 import { createLogger } from "../utils/logger.mjs";
 import { join } from "pathe";
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, rmSync } from "node:fs";
 
 const logger = createLogger("pack:lazy-registry");
 
@@ -10,11 +10,20 @@ const logger = createLogger("pack:lazy-registry");
  */
 export class LazyPackRegistry {
   constructor(options = {}) {
+    this.packsDir = options.packsDir || join(process.cwd(), "packs");
     this.cacheDir = options.cacheDir || join(process.cwd(), ".gitvan", "cache");
     this.registryUrl = options.registryUrl || "https://registry.gitvan.dev";
     this.packs = new Map(); // Cache loaded packs
     this.initialized = false;
     this.scanning = false;
+    this.loadPromise = null; // For concurrent request deduplication
+  }
+
+  /**
+   * Check if registry is ready (initialized and loaded)
+   */
+  isReady() {
+    return this.initialized && this.packs.size > 0;
   }
 
   /**
@@ -135,6 +144,54 @@ export class LazyPackRegistry {
   }
 
   /**
+   * Load packs (scans and loads all available packs)
+   * Returns {success, packs, error?}
+   */
+  async loadPacks() {
+    // Handle concurrent requests with deduplication
+    if (this.loadPromise) {
+      return this.loadPromise;
+    }
+
+    this.loadPromise = this._loadPacksInternal();
+    try {
+      return await this.loadPromise;
+    } finally {
+      this.loadPromise = null;
+    }
+  }
+
+  /**
+   * Internal pack loading implementation
+   */
+  async _loadPacksInternal() {
+    try {
+      await this.initialize();
+
+      if (!this.scanning) {
+        this.scanning = true;
+        try {
+          await this.scanPacks();
+        } finally {
+          this.scanning = false;
+        }
+      }
+
+      return {
+        success: true,
+        packs: Array.from(this.packs.values()),
+      };
+    } catch (error) {
+      logger.error(`Failed to load packs: ${error.message}`);
+      return {
+        success: false,
+        error: error.message,
+        packs: Array.from(this.packs.values()), // Return any partially loaded packs
+      };
+    }
+  }
+
+  /**
    * List available packs (lazy scan)
    */
   async listPacks() {
@@ -150,17 +207,30 @@ export class LazyPackRegistry {
   }
 
   /**
+   * Clear cache
+   */
+  clearCache() {
+    this.packs.clear();
+    this.scanning = false;
+    logger.info("Pack cache cleared");
+  }
+
+  /**
    * Scan packs directories (only when needed)
    */
   async scanPacks() {
     logger.info("Scanning packs directories...");
 
     const scanDirs = [
+      this.packsDir, // Use configured packsDir
       join(process.cwd(), "packs"),
       join(process.cwd(), ".gitvan", "packs"),
     ];
 
-    for (const dir of scanDirs) {
+    // Remove duplicates while preserving order
+    const uniqueDirs = Array.from(new Set(scanDirs));
+
+    for (const dir of uniqueDirs) {
       if (existsSync(dir)) {
         await this.scanDirectory(dir);
       }
@@ -174,7 +244,10 @@ export class LazyPackRegistry {
    */
   async scanDirectory(dir) {
     try {
-      const { readdirSync, statSync } = await import("node:fs");
+      if (!existsSync(dir)) {
+        return;
+      }
+
       const entries = readdirSync(dir, { withFileTypes: true });
 
       for (const entry of entries) {

@@ -15,7 +15,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { createKnowledgeSubstrateCore, parseTurtle } from "unrdf";
+import { createKnowledgeSubstrateCore, parseTurtle } from "../../src/lib/unrdf-loader.mjs";
 
 describe.skip("KnowledgeSubstrateCore E2E Validation", () => {
   let core;

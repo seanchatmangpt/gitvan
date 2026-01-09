@@ -1,0 +1,3 @@
+# GitVan Commit-msg Hook
+# Validates commit messages using @unrdf/hooks and HuskyHookBridge
+node hooks/commit-msg.mjs "$1"

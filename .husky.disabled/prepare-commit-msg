@@ -1,0 +1,3 @@
+# GitVan Prepare-commit-msg Hook
+# Prepares commit messages using @unrdf/hooks and HuskyHookBridge
+node hooks/prepare-commit-msg.mjs "$1" "$2" "$3"

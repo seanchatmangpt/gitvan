@@ -31,6 +31,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Initialize and update submodules
+        run: |
+          git submodule init
+          git submodule update --recursive
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -83,6 +91,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Initialize and update submodules
+        run: |
+          git submodule init
+          git submodule update --recursive
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -132,6 +148,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Initialize and update submodules
+        run: |
+          git submodule init
+          git submodule update --recursive
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -169,6 +193,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Initialize and update submodules
+        run: |
+          git submodule init
+          git submodule update --recursive
 
       - name: Download all documentation
         uses: actions/download-artifact@v4

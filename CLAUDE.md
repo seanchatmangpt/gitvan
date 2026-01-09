@@ -34,12 +34,33 @@ This document provides comprehensive guidance for AI assistants working on the G
 - **Context**: unctx (async context preservation - **critical**)
 - **Configuration**: c12 (Nitro-style config loading)
 - **RDF/Semantic**: unrdf (RDF parsing and SPARQL queries)
+  - **Important**: unrdf is managed as a **git submodule** at `vendor/unrdf/`
+  - Allows active co-development and source-level debugging
+  - Must be initialized: `git submodule update --init --recursive`
+  - See [Submodule Setup Guide](docs/SUBMODULE_SETUP.md) for details
 - **Templating**: nunjucks (template rendering)
 - **Hooks**: hookable (extensibility system)
 - **AI**: ai package (multi-provider support: Anthropic, Ollama)
 - **Git**: isomorphic-git (programmatic Git operations)
 - **Testing**: vitest (unit testing)
 - **Build**: unbuild (bundling)
+
+#### Why UnRDF is a Git Submodule
+
+GitVan uses UnRDF as a git submodule rather than an npm dependency for several strategic reasons:
+
+1. **Active Co-Development**: UnRDF is being developed in tandem with GitVan. Changes in one often require changes in the other.
+2. **Source-Level Integration**: Having the full source allows for deeper integration and debugging across repository boundaries.
+3. **Version Control**: Pin to specific commits for stability while easily updating when ready.
+4. **Build Pipeline**: UnRDF must be built before GitVan during the build process.
+5. **No Publish Cycle**: Test changes immediately without publish/install overhead.
+
+**For AI Agents**: When working with GitVan:
+- Always run `npm run setup-dev` first to initialize submodules
+- If modifying UnRDF code, work in `vendor/unrdf/` directory
+- Build UnRDF before building GitVan: `npm run build:unrdf && npm run build`
+- Test integration after UnRDF changes: `npm test`
+- See [Submodule Setup Guide](docs/SUBMODULE_SETUP.md) for complete workflow
 
 ### Key Statistics
 
@@ -152,6 +173,106 @@ Key files: `/src/pack/manager.mjs`, `/src/pack/planner.mjs`, `/src/pack/scaffold
 - **Feedback Integration**: Improves over time
 
 Location: `/src/ai/`
+
+### 8. Hooks Integration System (v3.0+)
+
+GitVan v3.0+ features a comprehensive hooks integration system combining three technologies:
+
+**Architecture**:
+```
+Git Event → Husky → HuskyHookBridge → GitEventCapture → RDF Storage
+                        ↓
+                 HookOrchestrator → Evaluate Predicates
+                        ↓
+                 UnrdfHooksBridge → Register Jobs
+                        ↓
+                 BreeScheduler → Execute Jobs (Worker Threads)
+```
+
+**Components**:
+
+- **Husky Hook Bridge** (`/src/integrations/husky-hook-bridge.mjs`)
+  - Captures Git events from Husky hooks
+  - Converts events to RDF triples
+  - Triggers hook evaluation automatically
+  - Logs audit trail to Git notes
+
+- **UnRDF Hooks Bridge** (`/src/integrations/unrdf-hooks-bridge.mjs`)
+  - Bridges @unrdf/hooks to Bree scheduler
+  - Registers hooks as background jobs
+  - Manages job execution lifecycle
+  - Tracks execution statistics
+
+- **Bree Scheduler** (`/src/jobs/bree-scheduler.mjs`)
+  - Background job scheduling (cron, interval, immediate)
+  - Worker thread pool for concurrent execution
+  - Job timeout and retry handling
+  - Worker lifecycle management
+
+**Key Features**:
+- **Git-Native**: All hook data stored in Git (refs, notes)
+- **Reactive**: Hooks trigger on RDF graph state changes
+- **Declarative**: Hook definitions in Turtle (.ttl) format
+- **Scalable**: Background processing via worker threads
+- **Auditable**: Complete execution history in Git notes
+
+**Hook Definition Example**:
+```turtle
+@prefix : <http://example.com/hooks#> .
+@prefix git: <http://example.com/git#> .
+@prefix hook: <http://example.com/hook#> .
+
+:PreCommitQuality a hook:Hook ;
+  rdfs:label "Pre-commit code quality" ;
+  hook:on [
+    a git:PreCommitEvent ;
+    hook:pathChanged "**/*.{js,ts}"
+  ] ;
+  hook:job [
+    hook:name "quality-check" ;
+    hook:schedule "immediate" ;
+    hook:timeout 60000
+  ] .
+```
+
+**Job File Example** (`jobs/quality-check.mjs`):
+```javascript
+export default async function qualityCheck(context = {}) {
+  // Run linting and tests
+  execSync('npm run lint', { stdio: 'inherit' })
+  execSync('npm test', { stdio: 'inherit' })
+  return { success: true }
+}
+```
+
+**Documentation**:
+- **[Integration Guide](docs/HOOKS_INTEGRATION_GUIDE.md)** - Setup and usage
+- **[Architecture](docs/HOOKS_ARCHITECTURE.md)** - System design
+- **[API Reference](docs/HOOKS_API_REFERENCE.md)** - Complete API
+- **[Examples](docs/HOOKS_EXAMPLES.md)** - Real-world use cases
+
+**Key Modules**:
+- `/src/integrations/husky-hook-bridge.mjs` - Husky integration
+- `/src/integrations/unrdf-hooks-bridge.mjs` - UnRDF integration
+- `/src/jobs/bree-scheduler.mjs` - Job scheduler
+- `/src/git-lifecycle/GitEventCapture.mjs` - Event capture
+- `/src/hooks/HookOrchestrator.mjs` - Hook orchestration
+- `/src/hooks/HookParser.mjs` - Turtle parsing
+- `/src/hooks/PredicateEvaluator.mjs` - Condition evaluation
+
+**Usage**:
+```javascript
+// Get bridge instance
+import { getHuskyHookBridge } from 'gitvan/integrations/husky-hook-bridge'
+const bridge = getHuskyHookBridge({ cwd: '/path/to/repo' })
+
+// Process Git hook
+await bridge.processHook('pre-commit', { files: ['src/index.js'] })
+
+// Get statistics
+const stats = await bridge.getStats()
+console.log(`Processed ${stats.totalEventsProcessed} events`)
+```
 
 ---
 
@@ -327,13 +448,38 @@ Plugin-like system for bundled functionality:
 
 ### Setup
 
+#### Quick Setup (Recommended)
+
 ```bash
 # Clone the repository
 git clone <repo-url>
 cd gitvan
 
+# Run automated setup (handles submodules, dependencies, and build)
+npm run setup-dev
+```
+
+**What `setup-dev` does:**
+1. Initializes and clones all git submodules (`git submodule update --init --recursive`)
+2. Installs GitVan's dependencies
+3. Installs and builds UnRDF submodule at `vendor/unrdf/`
+4. Builds GitVan
+
+#### Manual Setup
+
+```bash
+# Clone the repository
+git clone <repo-url>
+cd gitvan
+
+# Initialize submodules (IMPORTANT!)
+git submodule update --init --recursive
+
 # Install dependencies
 npm install
+
+# Build UnRDF submodule
+npm run build:unrdf
 
 # Build the project
 npm run build
@@ -341,6 +487,8 @@ npm run build
 # Run tests
 npm test
 ```
+
+**Critical**: GitVan uses UnRDF as a git submodule at `vendor/unrdf/`. You **must** initialize submodules before building. See [Submodule Setup Guide](docs/SUBMODULE_SETUP.md) for troubleshooting.
 
 ### Development Process
 

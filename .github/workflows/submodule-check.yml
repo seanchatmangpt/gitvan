@@ -1,0 +1,222 @@
+name: Submodule Health Check
+
+on:
+  push:
+    branches: [main, develop, 'claude/**']
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Run daily at 3 AM UTC
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+env:
+  TZ: UTC
+  LANG: C
+
+jobs:
+  # ============================================================================
+  # Submodule Verification
+  # ============================================================================
+  verify-submodules:
+    name: Verify Git Submodules
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Verify .gitmodules exists
+        run: |
+          if [ ! -f .gitmodules ]; then
+            echo "❌ .gitmodules file not found!"
+            exit 1
+          fi
+          echo "✅ .gitmodules file exists"
+
+      - name: Validate .gitmodules syntax
+        run: |
+          echo "Validating .gitmodules syntax..."
+          git config --file .gitmodules --list || {
+            echo "❌ .gitmodules syntax is invalid!"
+            exit 1
+          }
+          echo "✅ .gitmodules syntax is valid"
+
+      - name: Check submodule configuration
+        run: |
+          echo "Checking submodule configuration..."
+          git config --get-regexp '^submodule\.' || {
+            echo "⚠️ No submodules configured in git config"
+          }
+
+      - name: Verify submodule paths exist
+        run: |
+          echo "Verifying submodule paths..."
+          git config --file .gitmodules --get-regexp path | while read -r key value; do
+            if [ ! -e "$value" ]; then
+              echo "❌ Submodule path does not exist: $value"
+              exit 1
+            fi
+            echo "✅ Submodule path exists: $value"
+          done
+
+      - name: Check vendor/unrdf submodule
+        run: |
+          if [ ! -d "vendor/unrdf" ]; then
+            echo "❌ vendor/unrdf directory not found!"
+            exit 1
+          fi
+
+          if [ ! -f "vendor/unrdf/package.json" ]; then
+            echo "❌ vendor/unrdf/package.json not found - submodule may not be initialized!"
+            exit 1
+          fi
+
+          echo "✅ vendor/unrdf submodule is properly initialized"
+
+      - name: Verify submodule URLs are accessible
+        run: |
+          echo "Verifying submodule URLs..."
+          git config --file .gitmodules --get-regexp url | while read -r key value; do
+            submodule_name=$(echo "$key" | sed 's/submodule\.\(.*\)\.url/\1/')
+            echo "Checking URL for $submodule_name: $value"
+
+            # Check if URL is accessible (using git ls-remote)
+            if git ls-remote --exit-code "$value" HEAD > /dev/null 2>&1; then
+              echo "✅ URL is accessible: $value"
+            else
+              echo "❌ URL is not accessible: $value"
+              exit 1
+            fi
+          done
+
+      - name: Check submodule commits
+        run: |
+          echo "Checking submodule commits..."
+          git submodule status
+
+      - name: Verify submodule integrity
+        run: |
+          echo "Verifying submodule integrity..."
+          git submodule foreach --recursive 'git fsck --full || exit 1'
+          echo "✅ All submodules passed integrity check"
+
+      - name: Check for uncommitted submodule changes
+        run: |
+          echo "Checking for uncommitted submodule changes..."
+          if git submodule foreach --recursive 'git diff --quiet || exit 1'; then
+            echo "✅ No uncommitted changes in submodules"
+          else
+            echo "⚠️ Warning: Uncommitted changes found in submodules"
+            git submodule foreach --recursive 'git status'
+          fi
+
+      - name: Generate submodule report
+        if: always()
+        run: |
+          echo "## Submodule Health Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Configured Submodules" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          git config --file .gitmodules --list >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Submodule Status" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          git submodule status >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+  # ============================================================================
+  # Run Validation Script
+  # ============================================================================
+  run-validation-script:
+    name: Run Submodule Validation Script
+    runs-on: ubuntu-latest
+    needs: verify-submodules
+    steps:
+      - name: Checkout with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Initialize and update submodules
+        run: |
+          git submodule init
+          git submodule update --recursive
+
+      - name: Run validation script
+        run: |
+          if [ -f scripts/validate-submodules.sh ]; then
+            chmod +x scripts/validate-submodules.sh
+            ./scripts/validate-submodules.sh
+          else
+            echo "⚠️ Validation script not found at scripts/validate-submodules.sh"
+            echo "Skipping validation script execution"
+          fi
+
+  # ============================================================================
+  # Check Submodule Updates
+  # ============================================================================
+  check-updates:
+    name: Check for Submodule Updates
+    runs-on: ubuntu-latest
+    needs: verify-submodules
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Check for available updates
+        run: |
+          echo "Checking for submodule updates..."
+          git submodule foreach --recursive 'git fetch origin'
+
+          echo "## Submodule Update Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          git submodule foreach --recursive '
+            current_commit=$(git rev-parse HEAD)
+            latest_commit=$(git rev-parse origin/HEAD)
+
+            if [ "$current_commit" != "$latest_commit" ]; then
+              echo "⚠️ Update available for $name" >> $GITHUB_STEP_SUMMARY
+              echo "  Current: $current_commit" >> $GITHUB_STEP_SUMMARY
+              echo "  Latest: $latest_commit" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "✅ $name is up to date" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+            fi
+          '
+
+  # ============================================================================
+  # Summary
+  # ============================================================================
+  summary:
+    name: Submodule Check Summary
+    runs-on: ubuntu-latest
+    needs: [verify-submodules, run-validation-script]
+    if: always()
+    steps:
+      - name: Check results
+        run: |
+          echo "## Submodule Check Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Verification: ${{ needs.verify-submodules.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Validation Script: ${{ needs.run-validation-script.result }}" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ needs.verify-submodules.result }}" == "failure" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "❌ Submodule verification failed!" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ All submodule checks passed!" >> $GITHUB_STEP_SUMMARY

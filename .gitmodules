@@ -1,0 +1,9 @@
+# Git submodules configuration
+# This file defines external repositories included as submodules
+
+[submodule "vendor/unrdf"]
+	path = vendor/unrdf
+	url = https://github.com/seanchatmangpt/unrdf.git
+	branch = main
+	# Shallow clone to reduce download size
+	shallow = true

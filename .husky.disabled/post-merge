@@ -1,0 +1,3 @@
+# GitVan Post-merge Hook
+# Calls the HuskyHookBridge to process git event and trigger @unrdf/hooks
+node hooks/post-merge.mjs

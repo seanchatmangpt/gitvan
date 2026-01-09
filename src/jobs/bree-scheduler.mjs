@@ -117,10 +117,6 @@ export class BreeScheduler {
    * Add a job to the scheduler
    */
   async addJob(jobConfig) {
-    if (!this.bree) {
-      await this.init();
-    }
-
     const { name, path, cron, interval, timeout, date, worker } = jobConfig;
 
     if (!name) {
@@ -133,9 +129,13 @@ export class BreeScheduler {
     }
 
     try {
+      // CRITICAL: Bree requires absolute paths
+      // Ensure job path is absolute by joining with cwd
+      const jobPath = path || join(this.cwd, this.jobsDir, `${name}.mjs`);
+
       const breeJobConfig = {
         name,
-        path: path || join(this.jobsDir, `${name}.mjs`),
+        path: jobPath,
         ...(cron ? { cron } : {}),
         ...(interval ? { interval } : {}),
         ...(timeout ? { timeout } : {}),
@@ -143,8 +143,13 @@ export class BreeScheduler {
         ...(worker ? { worker } : {}),
       };
 
-      this.bree.add(breeJobConfig);
+      // Track it in our jobs map
       this.jobs.set(name, breeJobConfig);
+
+      // CRITICAL FIX: Recreate Bree with all jobs
+      // Bree's add() method is unreliable - jobs added dynamically
+      // are not available for bree.run(). We must recreate the instance.
+      await this._recreateBree();
 
       logger.info(`Job added: ${name}`);
 
@@ -159,32 +164,73 @@ export class BreeScheduler {
    * Remove a job from the scheduler
    */
   async removeJob(name) {
-    if (!this.bree) {
-      logger.warn("Bree not initialized");
-      return;
-    }
-
     if (!this.jobs.has(name)) {
       logger.warn(`Job ${name} does not exist in scheduler`);
       return;
     }
 
     try {
-      await this.bree.remove(name);
+      // Remove from our tracking
+      this.jobs.delete(name);
+
+      // Recreate Bree with remaining jobs
+      await this._recreateBree();
+
       logger.info(`Job removed: ${name}`);
     } catch (error) {
-      // Bree might not have the job registered yet due to timing issues
-      // If Bree says the job doesn't exist, just log a warning and clean up our tracking
-      if (error.message && error.message.includes("does not exist")) {
-        logger.warn(`Job ${name} not found in Bree (timing issue), cleaning up local tracking`);
-      } else {
-        logger.error(`Failed to remove job ${name}:`, error.message);
-        throw new Error(`Failed to remove job ${name}: ${error.message}`);
+      logger.error(`Failed to remove job ${name}:`, error.message);
+      throw new Error(`Failed to remove job ${name}: ${error.message}`);
+    }
+  }
+
+  /**
+   * Recreate Bree instance with current jobs
+   *
+   * This is necessary because Bree's add()/remove() methods are unreliable.
+   * Jobs added after initialization are not available for run().
+   *
+   * @private
+   */
+  async _recreateBree() {
+    const wasRunning = this.isRunning;
+
+    // Stop and clean up existing Bree
+    if (this.bree) {
+      try {
+        if (wasRunning) {
+          await this.bree.stop();
+        }
+      } catch (error) {
+        logger.warn("Error stopping Bree during recreate:", error.message);
       }
     }
 
-    // Always clean up our internal tracking
-    this.jobs.delete(name);
+    // Create new Bree with all current jobs
+    this.bree = new Bree({
+      ...this.config,
+      jobs: Array.from(this.jobs.values()),
+    });
+
+    // Restore event handlers
+    this.bree.on("worker created", (name) => {
+      logger.info(`Worker created: ${name}`);
+    });
+
+    this.bree.on("worker deleted", (name) => {
+      logger.info(`Worker deleted: ${name}`);
+    });
+
+    this.bree.on("worker error", (error, workerMetadata) => {
+      logger.error(`Worker error in ${workerMetadata.name}:`, error.message);
+    });
+
+    // Start if it was running before
+    if (wasRunning) {
+      await this.bree.start();
+      this.isRunning = true;
+    } else {
+      this.isRunning = false;
+    }
   }
 
   /**
@@ -200,6 +246,12 @@ export class BreeScheduler {
     }
 
     try {
+      // Ensure Bree is started before running a job
+      if (!this.isRunning) {
+        await this.start();
+      }
+
+      // Run the job immediately (one-time execution)
       await this.bree.run(name);
       logger.info(`Job executed: ${name}`);
     } catch (error) {

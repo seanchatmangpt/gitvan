@@ -1,4 +1,4 @@
-import { createKnowledgeSubstrateCore, parseTurtle } from "unrdf";
+import { createKnowledgeSubstrateCore, parseTurtle } from "../lib/unrdf-loader.mjs";
 import { useLog } from "../composables/log.mjs";
 import { StepRunner } from "./step-runner.mjs";
 import { ContextManager } from "./context-manager.mjs";

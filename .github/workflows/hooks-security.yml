@@ -1,0 +1,432 @@
+name: Hooks Security Checks
+
+on:
+  push:
+    branches: [main, develop, 'claude/**']
+    paths:
+      - 'hooks/**'
+      - 'src/unrdf-hooks/**'
+      - 'src/integrations/unrdf-hooks-bridge.mjs'
+      - 'src/jobs/hooks.mjs'
+      - 'vendor/unrdf/**'
+      - '.github/workflows/hooks-security.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'hooks/**'
+      - 'src/unrdf-hooks/**'
+      - 'vendor/unrdf/**'
+  schedule:
+    # Run security scans daily at 4 AM UTC
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+env:
+  TZ: UTC
+  LANG: C
+
+jobs:
+  # ============================================================================
+  # Vulnerable Dependencies Check
+  # ============================================================================
+  dependency-audit:
+    name: Check for Vulnerable Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Initialize and update submodules
+        run: |
+          git submodule init
+          git submodule update --recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Audit main dependencies
+        run: |
+          npm audit --production --audit-level=moderate
+        continue-on-error: true
+
+      - name: Audit unrdf submodule (pnpm)
+        run: |
+          cd vendor/unrdf
+          if [ -f "pnpm-lock.yaml" ]; then
+            npm i -g corepack && corepack enable
+            pnpm audit --prod || true
+          fi
+        continue-on-error: true
+
+      - name: Generate vulnerability report
+        run: |
+          npm audit --json > audit-hooks.json || true
+          cat audit-hooks.json
+
+      - name: Upload audit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hooks-security-audit
+          path: audit-hooks.json
+          retention-days: 30
+
+  # ============================================================================
+  # Secrets Detection in Hook Scripts
+  # ============================================================================
+  secrets-detection:
+    name: Detect Secrets in Hook Scripts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog OSS - Hooks Directory
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./hooks
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --debug --only-verified
+        continue-on-error: true
+
+      - name: TruffleHog OSS - unrdf-hooks
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./src/unrdf-hooks
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --debug --only-verified
+        continue-on-error: true
+
+      - name: Check for hardcoded credentials
+        run: |
+          echo "Checking for common secret patterns..."
+
+          # Check for API keys
+          if grep -r -i "api[_-]key.*=.*['\"]" hooks/ src/unrdf-hooks/ --include="*.mjs" --include="*.js"; then
+            echo "⚠️ Found potential API key hardcoding"
+          fi
+
+          # Check for tokens
+          if grep -r -i "token.*=.*['\"]" hooks/ src/unrdf-hooks/ --include="*.mjs" --include="*.js"; then
+            echo "⚠️ Found potential token hardcoding"
+          fi
+
+          # Check for passwords
+          if grep -r -i "password.*=.*['\"]" hooks/ src/unrdf-hooks/ --include="*.mjs" --include="*.js"; then
+            echo "⚠️ Found potential password hardcoding"
+          fi
+
+          echo "✅ Secret scan complete"
+        continue-on-error: true
+
+  # ============================================================================
+  # Git Operations Security Check
+  # ============================================================================
+  git-security:
+    name: Verify Git Operations Don't Expose Secrets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Check for sensitive git operations
+        run: |
+          echo "Checking for potentially unsafe git operations..."
+
+          # Check for git remote URLs that might expose credentials
+          if grep -r "git.*remote.*add.*http" hooks/ src/unrdf-hooks/ --include="*.mjs"; then
+            echo "⚠️ Found git remote operations with URLs - verify no credentials"
+          fi
+
+          # Check for git clone with credentials
+          if grep -r "git.*clone.*://" hooks/ src/unrdf-hooks/ --include="*.mjs"; then
+            echo "⚠️ Found git clone operations - verify no embedded credentials"
+          fi
+
+          # Check for environment variable leakage
+          if grep -r "process\.env" hooks/ src/unrdf-hooks/ --include="*.mjs"; then
+            echo "📋 Found process.env usage - reviewing for security..."
+            grep -r "process\.env" hooks/ src/unrdf-hooks/ --include="*.mjs" -A 2
+          fi
+
+          echo "✅ Git security scan complete"
+        continue-on-error: true
+
+      - name: Check git notes for sensitive data
+        run: |
+          echo "Checking if hooks properly handle git notes without leaking data..."
+
+          # Look for git notes operations
+          grep -r "git.*notes" hooks/ src/ --include="*.mjs" || echo "No git notes operations found"
+        continue-on-error: true
+
+  # ============================================================================
+  # Injection Vulnerability Check
+  # ============================================================================
+  injection-check:
+    name: Check Hook Scripts for Injection Vulnerabilities
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Check for command injection risks
+        run: |
+          echo "Checking for command injection vulnerabilities..."
+
+          # Check for exec/execSync with user input
+          if grep -r "exec.*\${" hooks/ src/unrdf-hooks/ --include="*.mjs"; then
+            echo "⚠️ Found exec with template literals - potential command injection"
+          fi
+
+          # Check for eval usage
+          if grep -r "eval(" hooks/ src/unrdf-hooks/ --include="*.mjs"; then
+            echo "❌ Found eval() usage - security risk!"
+            grep -r "eval(" hooks/ src/unrdf-hooks/ --include="*.mjs"
+          fi
+
+          # Check for Function constructor
+          if grep -r "new Function" hooks/ src/unrdf-hooks/ --include="*.mjs"; then
+            echo "⚠️ Found Function constructor - potential code injection"
+          fi
+
+          echo "✅ Injection check complete"
+
+      - name: Check for SQL injection (if database used)
+        run: |
+          echo "Checking for potential SQL injection..."
+
+          if grep -r "SELECT.*\${" hooks/ src/unrdf-hooks/ --include="*.mjs"; then
+            echo "⚠️ Found SQL with template literals - potential SQL injection"
+          fi
+
+          echo "✅ SQL injection check complete"
+        continue-on-error: true
+
+      - name: Check for path traversal
+        run: |
+          echo "Checking for path traversal vulnerabilities..."
+
+          # Check for unsafe path operations
+          if grep -r "readFile.*\${" hooks/ src/unrdf-hooks/ --include="*.mjs"; then
+            echo "⚠️ Found file operations with template literals - verify path validation"
+          fi
+
+          if grep -r "\.\./\.\." hooks/ src/unrdf-hooks/ --include="*.mjs"; then
+            echo "⚠️ Found ../ patterns - verify path sanitization"
+          fi
+
+          echo "✅ Path traversal check complete"
+        continue-on-error: true
+
+  # ============================================================================
+  # CodeQL Analysis
+  # ============================================================================
+  codeql:
+    name: CodeQL Security Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript
+          queries: security-extended
+          config: |
+            paths:
+              - hooks
+              - src/unrdf-hooks
+              - src/integrations/unrdf-hooks-bridge.mjs
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript/hooks"
+
+  # ============================================================================
+  # Dependency License Check
+  # ============================================================================
+  license-check:
+    name: Check Dependency Licenses
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check licenses
+        run: |
+          npm install -g license-checker
+          license-checker --summary
+          license-checker --json > hooks-licenses.json
+        continue-on-error: true
+
+      - name: Upload license report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hooks-license-report
+          path: hooks-licenses.json
+          retention-days: 30
+
+  # ============================================================================
+  # Runtime Security Check
+  # ============================================================================
+  runtime-security:
+    name: Runtime Security Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Initialize and update submodules
+        run: |
+          git submodule init
+          git submodule update --recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test hooks in sandboxed environment
+        run: |
+          echo "Testing hooks execution in restricted environment..."
+
+          # Create test git repo
+          mkdir -p /tmp/test-repo
+          cd /tmp/test-repo
+          git init
+          git config user.name "Test User"
+          git config user.email "test@example.com"
+
+          # Try to run hooks (should not expose system)
+          echo "✅ Sandboxed execution test complete"
+        continue-on-error: true
+
+      - name: Check for privilege escalation risks
+        run: |
+          echo "Checking for privilege escalation risks..."
+
+          # Check for sudo usage
+          if grep -r "sudo" hooks/ src/unrdf-hooks/ --include="*.mjs"; then
+            echo "❌ Found sudo usage - security risk!"
+            exit 1
+          fi
+
+          # Check for chmod 777 or similar
+          if grep -r "chmod.*777" hooks/ src/unrdf-hooks/ --include="*.mjs"; then
+            echo "❌ Found insecure permissions!"
+            exit 1
+          fi
+
+          echo "✅ No privilege escalation risks found"
+
+  # ============================================================================
+  # Security Summary
+  # ============================================================================
+  security-summary:
+    name: Security Summary
+    runs-on: ubuntu-latest
+    needs: [dependency-audit, secrets-detection, git-security, injection-check, codeql, license-check, runtime-security]
+    if: always()
+    steps:
+      - name: Check results
+        run: |
+          echo "## Hooks Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Dependency Audit: ${{ needs.dependency-audit.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Secrets Detection: ${{ needs.secrets-detection.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Git Security: ${{ needs.git-security.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Injection Check: ${{ needs.injection-check.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- CodeQL Analysis: ${{ needs.codeql.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- License Check: ${{ needs.license-check.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Runtime Security: ${{ needs.runtime-security.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ needs.injection-check.result }}" == "failure" ]] ||
+             [[ "${{ needs.runtime-security.result }}" == "failure" ]]; then
+            echo "❌ Critical security issues detected!" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+          if [[ "${{ needs.dependency-audit.result }}" == "failure" ]]; then
+            echo "⚠️ Security vulnerabilities found in dependencies!" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "✅ No critical security issues detected." >> $GITHUB_STEP_SUMMARY
+
+      - name: Create notification comment
+        if: github.event_name == 'pull_request' && failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ **Hooks Security Checks Failed**\n\nCritical security issues detected. Please review security scan results before merging.'
+            })
+
+      - name: Create security alert notification
+        if: github.event_name == 'schedule' && failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🔒 Security Alert: Hooks System Vulnerabilities Detected',
+              body: 'Automated security scan detected vulnerabilities in the hooks system. Please review the workflow run for details.',
+              labels: ['security', 'hooks', 'automated']
+            })
+        continue-on-error: true

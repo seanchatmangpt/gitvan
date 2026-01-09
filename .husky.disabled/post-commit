@@ -1,0 +1,3 @@
+# GitVan Post-commit Hook
+# Calls the HuskyHookBridge to process git event and trigger @unrdf/hooks
+node hooks/post-commit.mjs

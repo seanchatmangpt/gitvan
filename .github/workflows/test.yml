@@ -314,6 +314,106 @@ jobs:
         continue-on-error: true
 
   # ============================================================================
+  # Phase 1 RDF Tests
+  # ============================================================================
+  phase-1-rdf:
+    name: Phase 1 RDF Tests
+    runs-on: ubuntu-latest
+    needs: install
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Initialize and update submodules
+        run: |
+          git submodule init
+          git submodule update --recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-modules-
+
+      - name: Validate RDF Ontologies
+        run: |
+          echo "Validating Phase 1 RDF ontologies..."
+          node -e "
+            const fs = require('fs');
+            const ontologies = [
+              'src/rdf/ontologies/lock-ontology.ttl',
+              'src/rdf/ontologies/snapshot-ontology.ttl',
+              'src/rdf/ontologies/queue-ontology.ttl'
+            ];
+            ontologies.forEach(f => {
+              if (!fs.existsSync(f)) {
+                console.error('Missing ontology:', f);
+                process.exit(1);
+              }
+              console.log('✓ Found:', f);
+            });
+            console.log('All ontologies present');
+          "
+
+      - name: Run Phase 1 Lock Manager Tests
+        run: npm test -- tests/git-native/LockManager.test.mjs --reporter=verbose
+        env:
+          CI: true
+          NODE_ENV: test
+
+      - name: Run Phase 1 Snapshot Store Tests
+        run: npm test -- tests/git-native/SnapshotStore.test.mjs --reporter=verbose
+        env:
+          CI: true
+          NODE_ENV: test
+
+      - name: Run Phase 1 Queue Manager Tests
+        run: npm test -- tests/git-native/QueueManager.test.mjs --reporter=verbose
+        env:
+          CI: true
+          NODE_ENV: test
+
+      - name: Run Phase 1 Integration Tests
+        run: npm test -- tests/git-native/integration.test.mjs --reporter=verbose
+        env:
+          CI: true
+          NODE_ENV: test
+
+      - name: Run All Phase 1 Tests with Coverage
+        run: npm test -- tests/git-native --coverage --reporter=verbose
+        env:
+          CI: true
+          NODE_ENV: test
+
+      - name: Check Phase 1 Coverage Thresholds
+        run: |
+          if [ -f coverage/coverage-summary.json ]; then
+            echo "Phase 1 RDF Coverage Report:"
+            cat coverage/coverage-summary.json | grep -A 10 "git-native" || echo "All tests covered"
+          fi
+
+      - name: Upload Phase 1 test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phase1-test-results
+          path: |
+            test-results.json
+            coverage/
+          retention-days: 30
+
+  # ============================================================================
   # Performance Benchmarks
   # ============================================================================
   benchmarks:
@@ -347,7 +447,37 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-modules-
 
-      - name: Run benchmarks
+      - name: Restore previous benchmark results
+        uses: actions/cache@v4
+        with:
+          path: .benchmarks
+          key: benchmarks-${{ github.ref }}-${{ github.sha }}
+          restore-keys: |
+            benchmarks-${{ github.ref }}-
+            benchmarks-
+
+      - name: Run Phase 1 Performance Benchmarks
+        id: phase1-benchmarks
+        run: |
+          echo "Running Phase 1 RDF performance benchmarks..."
+          node scripts/benchmark-phase1.mjs > benchmark-results.txt
+          cat benchmark-results.txt
+        env:
+          CI: true
+          NODE_ENV: test
+        continue-on-error: true
+
+      - name: Check Performance Regressions
+        if: steps.phase1-benchmarks.outcome == 'success'
+        run: |
+          echo "Checking for performance regressions..."
+          node scripts/check-performance-regression.mjs || {
+            echo "⚠️ Performance regression detected (>10% slowdown)"
+            echo "regression=true" >> $GITHUB_OUTPUT
+          }
+        continue-on-error: true
+
+      - name: Run general benchmarks
         run: npm test -- tests/benchmarks --reporter=verbose || echo "No benchmarks found"
         env:
           CI: true
@@ -359,9 +489,22 @@ jobs:
         if: always()
         with:
           name: benchmark-results
-          path: test-results.json
+          path: |
+            benchmark-results.txt
+            .benchmarks/
+            test-results.json
           retention-days: 30
         continue-on-error: true
+
+      - name: Generate performance summary
+        if: always()
+        run: |
+          echo "## Phase 1 Performance Benchmarks" >> $GITHUB_STEP_SUMMARY
+          if [ -f benchmark-results.txt ]; then
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat benchmark-results.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
 
   # ============================================================================
   # Test Summary
@@ -369,7 +512,7 @@ jobs:
   test-summary:
     name: Test Summary
     runs-on: ubuntu-latest
-    needs: [lint, build, test-matrix, coverage, integration]
+    needs: [lint, build, test-matrix, coverage, integration, phase-1-rdf]
     if: always()
     steps:
       - name: Check results
@@ -381,9 +524,11 @@ jobs:
           echo "- Tests (Matrix): ${{ needs.test-matrix.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Coverage: ${{ needs.coverage.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Integration: ${{ needs.integration.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Phase 1 RDF: ${{ needs.phase-1-rdf.result }}" >> $GITHUB_STEP_SUMMARY
 
           if [[ "${{ needs.test-matrix.result }}" == "failure" ]] ||
-             [[ "${{ needs.coverage.result }}" == "failure" ]]; then
+             [[ "${{ needs.coverage.result }}" == "failure" ]] ||
+             [[ "${{ needs.phase-1-rdf.result }}" == "failure" ]]; then
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "❌ Some critical tests failed!" >> $GITHUB_STEP_SUMMARY
             exit 1

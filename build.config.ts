@@ -173,5 +173,10 @@ export default defineBuildConfig({
       input: "./types",
       outDir: "./dist/types",
     },
+    // Copy RDF ontologies (Phase 1)
+    {
+      input: "./src/rdf/ontologies",
+      outDir: "./dist/rdf/ontologies",
+    },
   ],
 });

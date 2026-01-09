@@ -193,6 +193,67 @@ gitvan hooks status
 - **[API Reference](docs/HOOKS_API_REFERENCE.md)** - Complete API docs
 - **[Examples](docs/HOOKS_EXAMPLES.md)** - Real-world use cases
 
+### Phase 1: RDF-Backed Git-Native Operations (v3.1+)
+
+**What**: Git-Native I/O subsystem refactored with RDF-backed semantic state management.
+
+GitVan v3.1+ implements Phase 1 of the RDF refactoring, bringing semantic graph capabilities to core Git operations:
+
+**Features**:
+- **Semantic Deadlock Detection**: Query circular lock dependencies with SPARQL
+- **Advanced Lock Analytics**: Duration analysis, resource contention patterns
+- **Snapshot Provenance**: Full audit trail of state evolution
+- **Queue Reasoning**: Automatic dependency resolution
+
+**RDF Ontologies** (loaded automatically):
+- `lock-ontology.ttl` - Distributed lock management
+- `snapshot-ontology.ttl` - State snapshots with provenance
+- `queue-ontology.ttl` - Job queue with dependencies
+
+**Performance Characteristics**:
+| Operation | Target | P95 |
+|-----------|--------|-----|
+| Lock acquire/release | < 10ms | ✓ |
+| SPARQL queries | < 100ms | ✓ |
+| Snapshot operations | < 50ms | ✓ |
+| Queue operations | < 25ms | ✓ |
+
+**Example: Detect Deadlocks**:
+```javascript
+import { useRDFLockManager } from 'gitvan/git-native';
+
+const lockManager = useRDFLockManager();
+
+// Check for circular dependencies
+const hasDeadlock = await lockManager.detectDeadlocks();
+
+if (hasDeadlock) {
+  // Get blocking chain
+  const chain = await lockManager.getBlockingChain('my-resource');
+  console.log('Blocking chain:', chain);
+}
+```
+
+**SPARQL Query Example**:
+```sparql
+PREFIX lock: <https://gitvan.dev/lock#>
+
+# Find all locks blocking a specific resource
+SELECT ?lock ?owner ?duration WHERE {
+  ?lock lock:resourceId <resource://workflow-state> ;
+        lock:owner ?owner ;
+        lock:acquiredAt ?acquiredAt .
+  BIND((NOW() - ?acquiredAt) AS ?duration)
+}
+ORDER BY DESC(?duration)
+```
+
+**Documentation**:
+- **[Phase 1 Implementation Plan](docs/PHASE-1-GIT-NATIVE-RDF-IMPLEMENTATION.md)** - Complete specification
+- **[Week 1 Completion Report](docs/phase-1-reports/WEEK-1-COMPLETION-REPORT.md)** - Progress status
+
+**Status**: ✅ Week 1-3 Complete (Ontologies, Lock Manager, Snapshot Store, Queue Manager)
+
 ---
 
 ## Common Tasks

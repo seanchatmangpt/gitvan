@@ -1,0 +1,10 @@
+# Benchmark Results Directory
+
+This directory stores performance benchmark results for GitVan Phase 1.
+
+Files:
+- `latest.json` - Most recent benchmark results
+- `baseline.json` - Baseline for regression detection
+- `benchmark-*.json` - Historical results
+
+See docs/PHASE-1-PERFORMANCE-TRACKING.md for details.

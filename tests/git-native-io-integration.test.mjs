@@ -32,6 +32,10 @@ describe("Git-Native I/O Integration", () => {
       cwd: testDir,
       stdio: "inherit",
     });
+    execSync('git config commit.gpgsign false', {
+      cwd: testDir,
+      stdio: "inherit",
+    });
 
     // Create gitvan config
     writeFileSync(

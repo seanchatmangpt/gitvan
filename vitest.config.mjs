@@ -56,9 +56,10 @@ export default defineConfig({
     watch: false,
 
     // Parallel execution (Vitest 4 - moved poolOptions to top level)
+    // Use 'forks' instead of 'threads' to avoid process.chdir() issues
     // Reduced concurrency to avoid git lock conflicts and resource contention
-    pool: "threads",
-    maxConcurrency: 3,
+    pool: "forks",
+    maxConcurrency: 2,
     minWorkers: 1,
     maxWorkers: 2,
   },

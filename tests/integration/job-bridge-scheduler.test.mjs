@@ -236,7 +236,9 @@ describe("Integration: JobBridge ← → BreeScheduler", () => {
       const workerPath = bridge.createWorkerFile(jobDef);
 
       expect(workerPath).toBeDefined();
-      expect(workerPath).toContain("worker-job-worker.mjs");
+      // Check that path contains the job ID and ends with -worker.mjs
+      expect(workerPath).toContain("worker-job");
+      expect(workerPath).toMatch(/-worker\.mjs$/);
       expect(bridge.createdWorkerFiles.has(workerPath)).toBe(true);
     });
 

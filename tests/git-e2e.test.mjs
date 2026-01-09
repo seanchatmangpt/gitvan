@@ -45,6 +45,7 @@ describe('Git E2E Integration Tests - Real Repository', () => {
     execSync('git config user.email "test@gitvan.dev"', { cwd: tempDir });
     execSync('git config init.defaultBranch main', { cwd: tempDir });
     execSync('git config advice.defaultBranchName false', { cwd: tempDir });
+    execSync('git config commit.gpgsign false', { cwd: tempDir });
 
     // Ensure we're on main branch
     try {

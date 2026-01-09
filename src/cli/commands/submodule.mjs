@@ -18,7 +18,7 @@
 
 import { defineCommand } from "citty";
 import { createLogger } from "../../utils/logger.mjs";
-import consola from "consola";
+import { consola } from "consola";
 import {
   getAllSubmodulesStatus,
   getUnrdfStatus,
@@ -81,7 +81,7 @@ const statusSubcommand = defineCommand({
       const statuses = getAllSubmodulesStatus(cwd);
 
       if (args.json) {
-        console.log(JSON.stringify(statuses, null, 2));
+        consola.log(JSON.stringify(statuses, null, 2));
         return;
       }
 
@@ -185,7 +185,7 @@ const checkSubcommand = defineCommand({
       }
 
       if (args.json) {
-        console.log(JSON.stringify(result, null, 2));
+        consola.log(JSON.stringify(result, null, 2));
         return;
       }
 
@@ -419,7 +419,7 @@ const verifySubcommand = defineCommand({
         const methods = listUnrdfMethods(cwd);
 
         if (args.json) {
-          console.log(JSON.stringify(methods, null, 2));
+          consola.log(JSON.stringify(methods, null, 2));
           return;
         }
 
@@ -449,7 +449,7 @@ const verifySubcommand = defineCommand({
       const report = await generateValidationReport(cwd);
 
       if (args.json) {
-        console.log(JSON.stringify(report, null, 2));
+        consola.log(JSON.stringify(report, null, 2));
         return;
       }
 

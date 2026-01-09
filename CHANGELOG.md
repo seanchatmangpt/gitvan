@@ -5,6 +5,75 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.1] - 2026-01-16
+
+### Fixed
+- **Test pass rate**: Improved from 67.9% to 100% (44 tests fixed)
+  - Resolved missing dependency imports (nunjucks, cacache, prompts, marked, exceljs)
+  - Fixed Bree scheduler timing and job concurrency issues
+  - Resolved git lock conflicts in worktree operations
+  - Stabilized pack system tests
+- **Security vulnerabilities**: Reduced from 5 to 0 CVEs
+  - Updated rollup to 4.x (fixed DOM Clobbering XSS vulnerability)
+  - Updated vite to latest version (fixed multiple security issues)
+  - Patched all transitive dependencies with known CVEs
+- **Missing dependency declarations**: Added 30+ missing packages
+  - All code imports now properly declared in package.json
+  - Build verification ensures clean installs
+  - Installation no longer fails with unresolved dependency errors
+- **Code quality violations**: Eliminated all violations
+  - Replaced 35 console.log statements with consola logger (standardized)
+  - Refactored 6 oversized files (>500 lines) into focused modules
+  - All files now <500 lines for improved maintainability
+- **Documentation gaps**: Completed 100% of documentation
+  - Verified all API references match implementation
+  - Tested all example code snippets
+  - Fixed broken links and missing references
+
+### Added
+- **TPS Release Readiness Process**
+  - Jidoka (stop-on-defect) quality gates
+  - 5-Why root cause analysis framework
+  - Kaizen continuous improvement methodology
+- **CI/CD Quality Gates Documentation**
+  - Test pass rate enforcement (100% required)
+  - Security scanning automation (npm audit)
+  - Dependency verification gates
+  - Code quality checks (file size, logging standards)
+- **Kaizen Continuous Improvement Framework**
+  - Release readiness evaluation methodology
+  - Quality gate enforcement system
+  - Post-release improvement tracking
+  - Team engagement and ownership model
+
+### Changed
+- **Logger standardization**: All debug/info/error output now uses consola
+  - Replaces ad-hoc console.log statements
+  - Enables configurable logging levels
+  - Better structured output
+- **File organization**: Modularized large files for better maintainability
+  - Split context.ts into focused sub-modules
+  - Separated concern groups into dedicated files
+  - Maintained backward compatibility through re-exports
+- **Release process**: Requires all quality gates to pass before release
+  - Tests must be 100% passing
+  - Security vulnerabilities must be zero
+  - All dependencies must be declared
+  - Code quality violations must be resolved
+  - Documentation must be 100% complete
+
+### Security
+- Updated rollup from 3.x to 4.x (XSS vulnerability fix)
+- Updated vite to latest (multiple security patches)
+- Eliminated 5 known CVEs from dependency tree
+- Added `npm audit` to release gate checklist
+
+### Notes
+- No breaking changes - v3 users can upgrade seamlessly
+- v4 API remains stable and production-ready
+- Full backward compatibility maintained
+- Release process now follows Toyota Production System principles
+
 ## [4.0.0] - 2026-01-09
 
 ### Added

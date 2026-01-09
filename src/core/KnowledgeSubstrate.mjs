@@ -6,6 +6,7 @@
  */
 
 import { promises as fs } from 'fs';
+import { consola } from 'consola';
 
 export class KnowledgeSubstrate {
   constructor(options = {}) {
@@ -44,7 +45,7 @@ export class KnowledgeSubstrate {
       // For now, we just track that it was loaded
       return { loaded: true, path: ontologyPath };
     } catch (error) {
-      console.warn(`Warning: Could not load ontology ${ontologyPath}: ${error.message}`);
+      consola.warn(`Warning: Could not load ontology ${ontologyPath}: ${error.message}`);
       return { loaded: false, path: ontologyPath, error: error.message };
     }
   }

@@ -26,13 +26,15 @@ import {
   type Signal,
   type ComputedSignal,
 } from './signals.js';
+import { consola } from 'consola';
+
 // Simple logger for error reporting
 const logger = {
   error: (...args: any[]) => {
     if (typeof process !== 'undefined' && process.stderr) {
       process.stderr.write(`[ERROR] ${args.join(' ')}\n`);
     } else {
-      console.error(...args);
+      consola.error(...args);
     }
   }
 };

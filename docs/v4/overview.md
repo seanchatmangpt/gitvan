@@ -354,12 +354,12 @@ V4 is designed for performance:
 
 ## Next Steps
 
-- [Signals API Reference](./signals-api.md)
-- [Hooks API Reference](./hooks-api.md)
-- [Context & DI Guide](./context-di.md)
-- [Error Handling Guide](./error-handling.md)
-- [Middleware Guide](./middleware.md)
-- [Migration Guide](../migration/v3-to-v4.md)
+- [Hook Reference](./api/HOOK-REFERENCE.md)
+- [Getting Started Tutorial](./tutorials/GETTING-STARTED.md)
+- [Advanced Patterns](./tutorials/ADVANCED-PATTERNS.md)
+- [Migration Guide](./migration/V3-TO-V4-MIGRATION.md)
+- [API Best Practices](./api/BEST-PRACTICES.md)
+- [Security Guide](./security/SECURITY-GUIDE.md)
 
 ## Support
 

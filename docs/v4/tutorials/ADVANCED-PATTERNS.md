@@ -617,6 +617,7 @@ These advanced patterns enable:
 
 ## Next Steps
 
-- [Performance Optimization](PERFORMANCE-OPTIMIZATION.md)
+- [API Best Practices](../api/BEST-PRACTICES.md) - Performance and design guidelines
 - [Security Best Practices](../security/SECURITY-GUIDE.md)
 - [Testing Strategies](../testing/TESTING-GUIDE.md)
+- [Migration Guide](../migration/V3-TO-V4-MIGRATION.md)

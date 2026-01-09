@@ -359,10 +359,10 @@ ex:create-tag rdf:type op:CLIStep ;
 
 ## Next Steps
 
-1. **[Building with Hooks](BUILDING-WITH-HOOKS.md)** - Deep dive into hook development
-2. **[Advanced Patterns](ADVANCED-PATTERNS.md)** - Complex hook architectures
-3. **[API Reference](../api/HOOK-REFERENCE.md)** - Complete API documentation
-4. **[Best Practices](../api/BEST-PRACTICES.md)** - Guidelines and recommendations
+1. **[Advanced Patterns](ADVANCED-PATTERNS.md)** - Complex hook architectures and patterns
+2. **[API Reference](../api/HOOK-REFERENCE.md)** - Complete API documentation
+3. **[Best Practices](../api/BEST-PRACTICES.md)** - Guidelines and recommendations
+4. **[Usage Examples](../api/USAGE-EXAMPLES.md)** - Practical code examples
 
 ---
 

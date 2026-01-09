@@ -86,15 +86,15 @@
     "unbuild": "^3.0.0",
     "unctx": "^2.5.0",
     "unplugin": "^2.3.11",
-    "unrouting": "^0.0.1",
     "unrdf": "^4.1.1",
+    "unrouting": "^0.0.1",
     "xml2js": "^0.6.2",
     "zod": "^4.3.5"
   },
   "devDependencies": {
     "eslint-config-unjs": "^0.2.1",
     "typescript": "^5.3.3",
-    "vitest": "^4.0.16"
+    "vitest": "4.0.16"
   },
   "overrides": {
     "@inrupt/universal-fetch": "1.0.3"

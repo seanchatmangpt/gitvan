@@ -4,8 +4,8 @@ import { join } from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { LockManager } from '../../src/git-native/LockManager.mjs';
-import { createTestContext } from '../test-utils/context.mjs';
-import { cleanupGitRefs, getGitLocks } from '../test-utils/helpers.mjs';
+import { createTestContext } from '../helpers/context.mjs';
+import { cleanupGitRefs, getGitLocks } from '../helpers/helpers.mjs';
 
 const execAsync = promisify(exec);
 

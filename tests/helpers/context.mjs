@@ -1,139 +1,161 @@
 /**
- * GitVan Context Test Helpers
- * Utilities for testing with unctx context preservation
+ * Test Utilities - Context Creation
+ * Provides helpers for creating test contexts, jobs, and environments
  */
 
-import { createContext } from "unctx";
-import { join } from "pathe";
-import { mkdirSync, rmSync, existsSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { promises as fs } from 'fs';
+import { join } from 'path';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import { tmpdir } from 'os';
+import { randomUUID } from 'crypto';
+
+const execAsync = promisify(exec);
 
 /**
- * Create a test GitVan context
+ * Create an isolated test context with a git repository
  * @param {Object} options - Configuration options
- * @returns {Object} Test context
+ * @returns {Promise<Object>} Test context
  */
-export function createTestContext(options = {}) {
-  const testId = `test-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-  const testDir = options.dir || join(tmpdir(), "gitvan-test", testId);
+export async function createTestContext(options = {}) {
+  const testId = options.testId || `test-${Date.now()}-${randomUUID().slice(0, 8)}`;
+  const cwd = options.cwd || join(tmpdir(), 'gitvan-test', testId);
 
-  // Ensure test directory exists
-  if (!existsSync(testDir)) {
-    mkdirSync(testDir, { recursive: true });
+  // Create directory
+  await fs.mkdir(cwd, { recursive: true });
+
+  // Initialize git repository
+  try {
+    await execAsync('git init', { cwd });
+    await execAsync('git config user.email "test@example.com"', { cwd });
+    await execAsync('git config user.name "Test User"', { cwd });
+
+    // Create initial commit to ensure repository is usable
+    await fs.writeFile(join(cwd, 'README.md'), '# Test Repository\n');
+    await execAsync('git add README.md', { cwd });
+    await execAsync('git commit -m "Initial commit"', { cwd });
+  } catch (error) {
+    throw new Error(`Failed to initialize test git repository: ${error.message}`);
   }
 
   return {
-    repo: testDir,
-    config: {
-      jobs: { dir: "jobs" },
-      templates: { dirs: ["templates"] },
-      receipts: { ref: "refs/notes/gitvan/audit" },
-      graph: { dir: "graph", autoLoad: true },
-      ...options.config,
-    },
-    env: {
-      TZ: "UTC",
-      LANG: "C",
-      NODE_ENV: "test",
-      GITVAN_TEST_MODE: "true",
-      ...options.env,
-    },
+    cwd,
     testId,
-    testDir,
-    cleanup: () => {
-      if (existsSync(testDir)) {
-        rmSync(testDir, { recursive: true, force: true });
+    cleanup: async () => {
+      try {
+        await fs.rm(cwd, { recursive: true, force: true });
+      } catch (error) {
+        console.warn(`Failed to cleanup test context: ${error.message}`);
       }
-    },
+    }
   };
 }
 
 /**
- * Create a test environment with proper context isolation
- * @param {Function} fn - Function to execute in test environment
- * @param {Object} options - Configuration options
+ * Create a test job definition
+ * @param {string} cwd - Repository directory
+ * @param {string} jobName - Name of the job
+ * @param {Object} options - Job options
+ * @returns {Promise<Object>} Job definition
+ */
+export async function createTestJob(cwd, jobName, options = {}) {
+  const jobId = `job-${jobName}`;
+  const runFunction = options.runFunction || `
+export default async function run({ payload = {} } = {}) {
+  return {
+    success: true,
+    job: '${jobName}',
+    payload
+  };
+}
+  `.trim();
+
+  return {
+    id: jobId,
+    name: jobName,
+    description: options.description || `Test job: ${jobName}`,
+    runFunction,
+    timeout: options.timeout || 30000,
+    ttl: options.ttl || 300000,
+    payload: options.payload || {}
+  };
+}
+
+/**
+ * Create multiple test jobs
+ * @param {string} cwd - Repository directory
+ * @param {string[]} jobNames - Job names
+ * @returns {Promise<Object[]>} Array of job definitions
+ */
+export async function createTestJobs(cwd, jobNames = []) {
+  return Promise.all(jobNames.map(name => createTestJob(cwd, name)));
+}
+
+/**
+ * Write a test job to the filesystem
+ * @param {string} cwd - Repository directory
+ * @param {string} jobName - Job name
+ * @param {Object} options - Job options
+ * @returns {Promise<string>} Path to job file
+ */
+export async function writeTestJob(cwd, jobName, options = {}) {
+  const jobsDir = join(cwd, 'jobs');
+  await fs.mkdir(jobsDir, { recursive: true });
+
+  const jobPath = join(jobsDir, `${jobName}.mjs`);
+  const job = await createTestJob(cwd, jobName, options);
+
+  await fs.writeFile(jobPath, job.runFunction);
+  return jobPath;
+}
+
+/**
+ * Create a deterministic test environment
+ * @param {Function} fn - Test function to run
+ * @param {Object} options - Configuration
+ * @returns {Promise<*>} Function result
  */
 export async function withTestEnvironment(fn, options = {}) {
-  const context = createTestContext(options);
-
-  // Set environment variables
-  const originalEnv = { ...process.env };
-  Object.assign(process.env, context.env);
+  const context = await createTestContext(options);
 
   try {
-    // Execute test function
-    const result = await fn(context);
-    return result;
+    return await fn(context);
   } finally {
-    // Restore environment
-    process.env = originalEnv;
+    await context.cleanup();
+  }
+}
 
-    // Cleanup test directory
-    if (!options.keepDir) {
-      context.cleanup();
+/**
+ * Create a test batch of contexts (for multi-context tests)
+ * @param {number} count - Number of contexts to create
+ * @param {Object} options - Configuration
+ * @returns {Promise<Object[]>} Array of contexts
+ */
+export async function createTestContexts(count = 2, options = {}) {
+  const contexts = [];
+
+  for (let i = 0; i < count; i++) {
+    const context = await createTestContext({
+      ...options,
+      testId: `batch-${Date.now()}-${i}`
+    });
+    contexts.push(context);
+  }
+
+  return contexts;
+}
+
+/**
+ * Cleanup multiple test contexts
+ * @param {Object[]} contexts - Array of contexts
+ * @returns {Promise<void>}
+ */
+export async function cleanupTestContexts(contexts = []) {
+  for (const context of contexts) {
+    if (context && typeof context.cleanup === 'function') {
+      await context.cleanup().catch(error => {
+        console.warn(`Failed to cleanup context: ${error.message}`);
+      });
     }
   }
-}
-
-/**
- * Create a mock GitVan context for unctx testing
- * This mimics the actual GitVan context structure
- */
-export function createMockGitVanContext() {
-  const context = createContext({
-    asyncContext: true,
-    AsyncLocalStorage: true,
-  });
-
-  return {
-    context,
-    use: () => context.use(),
-    set: (key, value) => context.set(key, value),
-    call: async (instance, fn) => {
-      return await context.call(instance, fn);
-    },
-  };
-}
-
-/**
- * Wait for async operations with timeout
- * @param {Function} fn - Async function to execute
- * @param {number} timeout - Timeout in milliseconds
- */
-export async function withTimeout(fn, timeout = 5000) {
-  return Promise.race([
-    fn(),
-    new Promise((_, reject) =>
-      setTimeout(() => reject(new Error(`Timeout after ${timeout}ms`)), timeout)
-    ),
-  ]);
-}
-
-/**
- * Assert context is available (for debugging)
- */
-export function assertContextAvailable(context) {
-  if (!context) {
-    throw new Error("Context not available - are you within withGitVan()?");
-  }
-}
-
-/**
- * Create deterministic test data
- * Ensures reproducible test results
- */
-export function createDeterministicData(seed = "test") {
-  let counter = 0;
-
-  return {
-    nextId: () => `${seed}-${counter++}`,
-    timestamp: () => new Date("2024-01-01T00:00:00.000Z"),
-    random: (min = 0, max = 100) => {
-      // Simple deterministic "random" based on counter
-      return min + (counter++ % (max - min));
-    },
-    reset: () => {
-      counter = 0;
-    },
-  };
 }

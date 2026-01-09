@@ -3,11 +3,11 @@
 // Tests lock acquisition, release, and concurrency control
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { JobBridge, resetJobBridge, resetBreeScheduler } from "../../tests/test-utils/job-bridge.mjs";
+import { JobBridge, resetJobBridge, resetBreeScheduler } from "../../tests/helpers/job-bridge.mjs";
 import { withGitVan } from "../../src/core/context.mjs";
 import { useLock } from "../../src/composables/lock.mjs";
-import { createTestContext, createTestJob } from "../../tests/test-utils/context.mjs";
-import { sleep, cleanupGitRefs } from "../../tests/test-utils/helpers.mjs";
+import { createTestContext, createTestJob } from "../../tests/helpers/context.mjs";
+import { sleep, cleanupGitRefs } from "../../tests/helpers/helpers.mjs";
 
 describe("Integration: JobBridge ← → useLock()", () => {
   let testContext;

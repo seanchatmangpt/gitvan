@@ -12,7 +12,7 @@
  */
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { parseTurtle, toTurtle, getStoreStats } from "unrdf";
+import { UnrdfStore, namedNode, literal, quad } from "@unrdf/core";
 import { useGitVan, tryUseGitVan } from "../core/context.mjs";
 import { loadOptions } from "../config/loader.mjs";
 import { createLogger } from "../utils/logger.mjs";
@@ -92,7 +92,7 @@ async function bindContext(opts = {}) {
 export async function useTurtle(options = {}) {
   const { root, graphDir, uriRoots, config } = await bindContext(options);
 
-  // --- Internal loader using KnowledgeSubstrateCore ---
+  // --- Internal loader using @unrdf/core ---
   const load = async () => {
     try {
       const fileNames = (await readdir(graphDir)).filter((f) =>
@@ -105,44 +105,14 @@ export async function useTurtle(options = {}) {
         }))
       );
 
-      // Create KnowledgeSubstrateCore - handles store, transactions, hooks, observability
-      const core = {
-        quads: [],
-        add: function(quad) {
-          this.quads.push(quad);
-        },
-        store: {
-          quads: [],
-          add: function(quad) {
-            this.quads.push(quad);
-          },
-          countQuads: function(s, p, o, g) {
-            return this.quads.filter(q =>
-              (!s || q.subject === s) &&
-              (!p || q.predicate === p) &&
-              (!o || q.object === o)
-            ).length;
-          },
-          getObjects: function(s, p, g) {
-            return this.quads
-              .filter(q => q.subject === s && q.predicate === p)
-              .map(q => q.object);
-          },
-          getSubjects: function(p, o, g) {
-            return this.quads
-              .filter(q => q.predicate === p && q.object === o)
-              .map(q => q.subject);
-          }
-        }
-      };
-
-      // Load turtle files into the core's internal store
+      // Parse all Turtle files and collect quads
+      const allQuads = [];
       for (const file of files) {
         try {
-          const fileStore = parseTurtle(file.content);
-          for (const quad of fileStore) {
-            core.store.add(quad);
-          }
+          const { Parser } = await import("n3");
+          const parser = new Parser({ baseIRI: `${uriRoots["graph://"]}${file.name}` });
+          const quads = parser.parse(file.content);
+          allQuads.push(...quads);
         } catch (error) {
           // Skip malformed turtle files gracefully
           logger.warn(
@@ -150,43 +120,18 @@ export async function useTurtle(options = {}) {
           );
         }
       }
-      return { core, store: core.store, files };
+
+      // Create UnrdfStore with all parsed quads
+      const store = new UnrdfStore(allQuads);
+      return { core: store, store, files };
     } catch (error) {
       // If directory doesn't exist or can't be read, return empty core
       if (error.code === "ENOENT") {
         logger.info(
           `Graph directory ${graphDir} doesn't exist yet, starting with empty store`
         );
-        const core = {
-          quads: [],
-          add: function(quad) {
-            this.quads.push(quad);
-          },
-          store: {
-            quads: [],
-            add: function(quad) {
-              this.quads.push(quad);
-            },
-            countQuads: function(s, p, o, g) {
-              return this.quads.filter(q =>
-                (!s || q.subject === s) &&
-                (!p || q.predicate === p) &&
-                (!o || q.object === o)
-              ).length;
-            },
-            getObjects: function(s, p, g) {
-              return this.quads
-                .filter(q => q.subject === s && q.predicate === p)
-                .map(q => q.object);
-            },
-            getSubjects: function(p, o, g) {
-              return this.quads
-                .filter(q => q.predicate === p && q.object === o)
-                .map(q => q.subject);
-            }
-          }
-        };
-        return { core, store: core.store, files: [] };
+        const store = new UnrdfStore([]);
+        return { core: store, store, files: [] };
       }
       throw error;
     }
@@ -217,23 +162,27 @@ export async function useTurtle(options = {}) {
 
     /** Checks if a subject has a specific rdf:type. */
     isA(subject, type) {
-      return store.countQuads(subject, RDF + "type", type, null) > 0;
+      const matches = store.match(subject, namedNode(RDF + "type"), namedNode(type), null);
+      return matches.length > 0;
     },
 
     /** Gets a single object for a given subject and predicate. */
     getOne(subject, predicate) {
-      return store.getObjects(subject, predicate, null)[0];
+      const matches = store.match(subject, namedNode(predicate), null, null);
+      return matches.length > 0 ? matches[0].object : null;
     },
 
     /** Gets all objects for a given subject and predicate. */
     getAll(subject, predicate) {
-      return store.getObjects(subject, predicate, null);
+      const matches = store.match(subject, namedNode(predicate), null, null);
+      return matches.map(quad => quad.object);
     },
 
     /** Finds all defined Knowledge Hooks in the graph. */
     getHooks() {
-      const hooks = store.getSubjects(RDF + "type", GH + "Hook", null);
-      return hooks.map((hookNode) => {
+      const typeQuads = store.match(null, namedNode(RDF + "type"), namedNode(GH + "Hook"), null);
+      return typeQuads.map((quad) => {
+        const hookNode = quad.subject;
         const id = hookNode.value;
         const title = asStr(this.getOne(hookNode, DCT + "title")) || id;
         const pred = this.getOne(hookNode, GH + "hasPredicate");

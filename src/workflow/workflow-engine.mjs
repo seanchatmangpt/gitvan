@@ -1,4 +1,4 @@
-import { parseTurtle } from "unrdf";
+import { UnrdfStore } from "@unrdf/core";
 import { useLog } from "../composables/log.mjs";
 import { StepRunner } from "./step-runner.mjs";
 import { ContextManager } from "./context-manager.mjs";
@@ -6,11 +6,11 @@ import { ContextManager } from "./context-manager.mjs";
 /**
  * WorkflowEngine - Loads and executes workflows defined in Turtle files
  *
- * Uses unrdf's KnowledgeSubstrateCore for:
+ * Uses @unrdf/core's UnrdfStore for:
  * - Federated queries across all workflow definitions
- * - SHACL validation of workflow schemas
- * - Knowledge hooks for reactive workflow management
- * - Built-in OTEL observability
+ * - SPARQL query support via Oxigraph
+ * - Reactive workflow management
+ * - Synchronous and async query execution
  * - Transaction-based changes with audit receipts
  */
 export class WorkflowEngine {
@@ -23,28 +23,13 @@ export class WorkflowEngine {
   }
 
   /**
-   * Initialize the engine by loading Turtle files into KnowledgeSubstrateCore
+   * Initialize the engine by loading Turtle files into UnrdfStore
    */
   async initialize() {
     try {
       this.logger.info(
         `🚀 Initializing WorkflowEngine with graphDir: ${this.graphDir}`
       );
-
-      // Create KnowledgeSubstrateCore - handles store, transactions, hooks, observability
-      this.core = {
-        quads: [],
-        add: function(quad) {
-          this.quads.push(quad);
-        },
-        store: {
-          quads: [],
-          add: function(quad) {
-            this.quads.push(quad);
-          },
-          size: 0
-        }
-      };
 
       const { readdir, readFile } = await import("node:fs/promises");
       const { join } = await import("node:path");
@@ -59,13 +44,14 @@ export class WorkflowEngine {
         }))
       );
 
-      // Load turtle files into the core's internal store
+      // Parse all Turtle files and collect quads
+      const allQuads = [];
       for (const file of files) {
         try {
-          const fileStore = await parseTurtle(file.content);
-          for (const quad of fileStore) {
-            this.core.store.add(quad);
-          }
+          const { Parser } = await import("n3");
+          const parser = new Parser();
+          const quads = parser.parse(file.content);
+          allQuads.push(...quads);
         } catch (error) {
           this.logger.warn(
             `⚠️ Failed to parse ${file.name}: ${error.message}`
@@ -73,10 +59,13 @@ export class WorkflowEngine {
         }
       }
 
+      // Create UnrdfStore with all parsed quads
+      this.core = new UnrdfStore(allQuads);
+
       this.logger.info(
         `📁 Loaded ${files.length} Turtle files from: ${this.graphDir}`
       );
-      this.logger.info(`📊 Knowledge graph initialized with ${this.core.store.size} quads`);
+      this.logger.info(`📊 Knowledge graph initialized with ${this.core.size()} quads`);
 
       return this;
     } catch (error) {

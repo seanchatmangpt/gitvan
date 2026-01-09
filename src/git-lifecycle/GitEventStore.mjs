@@ -21,7 +21,7 @@
 
 import { mkdir, writeFile, readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { namedNode, literal, quad, sparqlQuery } from "unrdf";
+import { UnrdfStore, namedNode, literal, quad } from "@unrdf/core";
 
 // RDF namespace constants
 const GITV = "https://gitvan.dev/ontology/git#";
@@ -83,20 +83,9 @@ export class GitEventStore {
       // Create store directory
       await mkdir(this.storePath, { recursive: true });
 
-      // Initialize KnowledgeSubstrateCore
+      // Initialize UnrdfStore
       if (!this.core) {
-        this.core = {
-          quads: [],
-          add: function(quad) {
-            this.quads.push(quad);
-          },
-          store: {
-            quads: [],
-            add: function(quad) {
-              this.quads.push(quad);
-            }
-          }
-        };
+        this.core = new UnrdfStore([]);
       }
 
       // Load persisted events if they exist

@@ -20,7 +20,7 @@
 
 import { execSync } from "node:child_process";
 import { readFileSync, statSync } from "node:fs";
-import { namedNode, literal, quad } from "unrdf";
+import { UnrdfStore, namedNode, literal, quad } from "@unrdf/core";
 
 // Git event types mapping to hook names
 const GIT_EVENT_TYPES = {
@@ -89,19 +89,8 @@ export class GitEventCapture {
 
     try {
       if (!this.core) {
-        // Create a simple in-memory store for event capture
-        this.core = {
-          quads: [],
-          add: function(quad) {
-            this.quads.push(quad);
-          },
-          store: {
-            quads: [],
-            add: function(quad) {
-              this.quads.push(quad);
-            }
-          }
-        };
+        // Create UnrdfStore for event capture
+        this.core = new UnrdfStore([]);
       }
 
       this.initialized = true;

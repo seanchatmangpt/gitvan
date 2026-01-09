@@ -8,17 +8,17 @@ import { StepRunner } from "./step-runner.mjs";
 import { ContextManager } from "./context-manager.mjs";
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
-import { parseTurtle } from "unrdf";
+import { UnrdfStore } from "@unrdf/core";
 
 /**
  * Main workflow executor that orchestrates the entire workflow lifecycle
  *
- * Uses KnowledgeSubstrateCore for:
+ * Uses @unrdf/core's UnrdfStore for:
  * - Transaction-based workflow changes
- * - OTEL observability on all operations
- * - Knowledge hooks for reactive behavior
+ * - Synchronous and async SPARQL queries
+ * - Reactive workflow management
  * - Federated queries across workflow definitions
- * - SHACL validation of workflow schemas
+ * - Validated RDF operations with Oxigraph
  */
 export class WorkflowExecutor {
   /**
@@ -121,26 +121,14 @@ export class WorkflowExecutor {
   }
 
   /**
-   * Initialize KnowledgeSubstrateCore with full capabilities
+   * Initialize UnrdfStore with full capabilities
    * @private
    */
   async _initializeRDFComponents() {
     if (!this.core) {
-      // Create KnowledgeSubstrateCore - handles store, transactions, hooks, observability
-      this.core = {
-        quads: [],
-        add: function(quad) {
-          this.quads.push(quad);
-        },
-        store: {
-          quads: [],
-          add: function(quad) {
-            this.quads.push(quad);
-          },
-          size: 0
-        }
-      };
-      this.logger.info(`📊 Initialized KnowledgeSubstrateCore`);
+      // Create UnrdfStore - handles SPARQL queries, transactions, observability
+      this.core = new UnrdfStore([]);
+      this.logger.info(`📊 Initialized UnrdfStore`);
     }
   }
 

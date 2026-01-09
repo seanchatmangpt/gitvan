@@ -7,18 +7,18 @@
   "type": "module",
   "exports": {
     ".": {
-      "import": "./src/index.mjs"
+      "import": "./dist/cli.mjs"
     }
   },
-  "main": "./src/index.mjs",
+  "main": "./dist/cli.mjs",
   "bin": {
-    "gitvan": "./src/cli.mjs"
+    "gitvan": "./dist/bin/gitvan.mjs"
   },
   "files": [
-    "src",
-    "hooks",
-    "workflows",
-    "packs"
+    "dist",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "start": "node src/cli.mjs",

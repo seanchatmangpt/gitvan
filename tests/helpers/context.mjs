@@ -29,6 +29,8 @@ export async function createTestContext(options = {}) {
     await execAsync('git init', { cwd });
     await execAsync('git config user.email "test@example.com"', { cwd });
     await execAsync('git config user.name "Test User"', { cwd });
+    // Disable signing for test commits
+    await execAsync('git config commit.gpgsign false', { cwd });
 
     // Create initial commit to ensure repository is usable
     await fs.writeFile(join(cwd, 'README.md'), '# Test Repository\n');

@@ -17,7 +17,7 @@ export default defineConfig({
     exclude: ["node_modules/**", "dist/**", "**/*.d.ts"],
 
     // Test timeout (increased for integration tests and slow git operations)
-    testTimeout: 60000, // 60 seconds for integration tests
+    testTimeout: 120000, // 120 seconds for integration tests
 
     // Setup files
     setupFiles: [join(process.cwd(), "tests/setup.mjs")],

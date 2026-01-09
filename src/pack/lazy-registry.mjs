@@ -221,11 +221,22 @@ export class LazyPackRegistry {
   async scanPacks() {
     logger.info("Scanning packs directories...");
 
-    const scanDirs = [
-      this.packsDir, // Use configured packsDir
-      join(process.cwd(), "packs"),
-      join(process.cwd(), ".gitvan", "packs"),
-    ];
+    // If a custom packsDir was provided in options, only scan that
+    // Otherwise, scan default locations
+    const defaultPacksDir = join(process.cwd(), "packs");
+    const isCustomPacksDir = this.packsDir !== defaultPacksDir;
+
+    let scanDirs;
+    if (isCustomPacksDir) {
+      // Custom directory provided - only scan that
+      scanDirs = [this.packsDir];
+    } else {
+      // No custom directory - scan defaults
+      scanDirs = [
+        this.packsDir,
+        join(process.cwd(), ".gitvan", "packs"),
+      ];
+    }
 
     // Remove duplicates while preserving order
     const uniqueDirs = Array.from(new Set(scanDirs));

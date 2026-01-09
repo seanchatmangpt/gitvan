@@ -1,0 +1,372 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix revops: <http://gitvan.org/ontology/revops#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+
+# ============================================================================
+# N3 Rules for Churn Prediction and Business Intelligence
+# ============================================================================
+# Purpose: Inference rules for automatic churn risk calculation,
+#          expansion opportunity identification, and business intelligence
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# Rule 1: High Churn Risk from Failed Payments
+# ----------------------------------------------------------------------------
+# If a customer has failed their last payment AND has consecutive failures,
+# mark them as high risk
+
+{
+  ?customer a revops:Customer ;
+            revops:isActive true ;
+            revops:lastPaymentFailed true ;
+            revops:consecutiveFailedPayments ?failures .
+
+  ?failures math:greaterThan 1 .
+}
+=>
+{
+  ?customer revops:churnRiskScore 85 ;
+            a revops:HighRiskCustomer .
+}.
+
+# ----------------------------------------------------------------------------
+# Rule 2: Churn Risk from Low Engagement
+# ----------------------------------------------------------------------------
+# If customer has low feature usage and hasn't been active recently,
+# increase churn risk
+
+{
+  ?customer a revops:Customer ;
+            revops:isActive true ;
+            revops:featureUsagePercent ?usage ;
+            revops:daysSinceLastActivity ?days .
+
+  ?usage math:lessThan 30 .
+  ?days math:greaterThan 30 .
+}
+=>
+{
+  ?customer revops:churnRiskScore 70 ;
+            a revops:HighRiskCustomer .
+}.
+
+# ----------------------------------------------------------------------------
+# Rule 3: Churn Risk from High Support Ticket Volume
+# ----------------------------------------------------------------------------
+# Many support tickets indicate dissatisfaction or product issues
+
+{
+  ?customer a revops:Customer ;
+            revops:isActive true ;
+            revops:supportTicketCount ?tickets .
+
+  ?tickets math:greaterThan 5 .
+}
+=>
+{
+  ?customer revops:churnRiskScore 65 ;
+            a revops:HighRiskCustomer .
+}.
+
+# ----------------------------------------------------------------------------
+# Rule 4: Expansion Candidate - High Usage
+# ----------------------------------------------------------------------------
+# Customers with high feature usage are ready to upgrade
+
+{
+  ?customer a revops:Customer ;
+            revops:isActive true ;
+            revops:featureUsagePercent ?usage ;
+            revops:hasPlan ?plan .
+
+  ?usage math:greaterThan 75 .
+}
+=>
+{
+  ?customer revops:expansionLikelihood 80 ;
+            a revops:ExpansionCandidate .
+}.
+
+# ----------------------------------------------------------------------------
+# Rule 5: Expansion Candidate - Using Features Not in Plan
+# ----------------------------------------------------------------------------
+# If customer uses features not included in their plan, they need an upgrade
+
+{
+  ?customer a revops:Customer ;
+            revops:isActive true ;
+            revops:usesFeature ?feature ;
+            revops:hasPlan ?plan .
+
+  ?plan revops:includesFeature ?includedFeature .
+
+  # Feature is NOT in their plan
+  ?feature log:notEqualTo ?includedFeature .
+}
+=>
+{
+  ?customer revops:expansionLikelihood 70 ;
+            a revops:ExpansionCandidate .
+}.
+
+# ----------------------------------------------------------------------------
+# Rule 6: Healthy Customer Classification
+# ----------------------------------------------------------------------------
+# Low churn risk + high engagement = healthy customer
+
+{
+  ?customer a revops:Customer ;
+            revops:isActive true ;
+            revops:featureUsagePercent ?usage ;
+            revops:daysSinceLastActivity ?days ;
+            revops:lastPaymentFailed false .
+
+  ?usage math:greaterThan 50 .
+  ?days math:lessThan 7 .
+}
+=>
+{
+  ?customer revops:churnRiskScore 15 ;
+            a revops:HealthyCustomer .
+}.
+
+# ----------------------------------------------------------------------------
+# Rule 7: Calculate Days Since Last Activity
+# ----------------------------------------------------------------------------
+# Automatically compute days since last activity
+
+{
+  ?customer a revops:Customer ;
+            revops:lastActivityDate ?lastActivity .
+
+  # Get current time and calculate difference
+  ?now log:dtlit "NOW" .
+  (?now ?lastActivity) math:difference ?seconds .
+  (?seconds 86400) math:quotient ?days .
+}
+=>
+{
+  ?customer revops:daysSinceLastActivity ?days .
+}.
+
+# ----------------------------------------------------------------------------
+# Rule 8: Payment Velocity Risk
+# ----------------------------------------------------------------------------
+# Slow payment is an early churn indicator
+
+{
+  ?customer a revops:Customer ;
+            revops:isActive true ;
+            revops:averagePaymentDays ?avgDays .
+
+  ?avgDays math:greaterThan 45 .
+}
+=>
+{
+  ?customer revops:churnRiskScore 55 .
+}.
+
+# ----------------------------------------------------------------------------
+# Rule 9: Calculate Feature Usage Percentage
+# ----------------------------------------------------------------------------
+# Compute percentage of plan features actually used
+
+{
+  ?customer a revops:Customer ;
+            revops:hasPlan ?plan ;
+            revops:usesFeature ?usedFeature .
+
+  ?plan revops:includesFeature ?availableFeature .
+
+  # Count used vs available
+  (?usedFeatures {?customer revops:usesFeature ?f} ?usedCount) log:collectAllIn _:scope .
+  (?availableFeatures {?plan revops:includesFeature ?f} ?availableCount) log:collectAllIn _:scope .
+
+  (?usedCount ?availableCount) math:quotient ?ratio .
+  (?ratio 100) math:product ?percentage .
+}
+=>
+{
+  ?customer revops:featureUsagePercent ?percentage .
+}.
+
+# ----------------------------------------------------------------------------
+# Rule 10: Churn Risk Escalation
+# ----------------------------------------------------------------------------
+# Combine multiple risk factors for compound risk
+
+{
+  ?customer a revops:Customer ;
+            revops:isActive true .
+
+  # Has multiple risk factors
+  ?customer revops:lastPaymentFailed true .
+  ?customer revops:daysSinceLastActivity ?days .
+  ?days math:greaterThan 14 .
+}
+=>
+{
+  ?customer revops:churnRiskScore 90 ;
+            a revops:HighRiskCustomer .
+}.
+
+# ----------------------------------------------------------------------------
+# Rule 11: New Customer Onboarding Risk
+# ----------------------------------------------------------------------------
+# New customers with low engagement are at risk
+
+{
+  ?customer a revops:Customer ;
+            revops:isActive true ;
+            revops:signupDate ?signup ;
+            revops:featureUsagePercent ?usage .
+
+  # Within first 90 days
+  ?now log:dtlit "NOW" .
+  (?now ?signup) math:difference ?secondsSinceSignup .
+  (?secondsSinceSignup 7776000) math:lessThan true .  # 90 days in seconds
+
+  # Low usage
+  ?usage math:lessThan 40 .
+}
+=>
+{
+  ?customer revops:churnRiskScore 60 .
+}.
+
+# ----------------------------------------------------------------------------
+# Rule 12: Identify Power Users (Expansion + Retention Target)
+# ----------------------------------------------------------------------------
+# High usage + long tenure = power user
+
+{
+  ?customer a revops:Customer ;
+            revops:isActive true ;
+            revops:signupDate ?signup ;
+            revops:featureUsagePercent ?usage .
+
+  # Active for 6+ months
+  ?now log:dtlit "NOW" .
+  (?now ?signup) math:difference ?secondsSinceSignup .
+  (?secondsSinceSignup 15552000) math:greaterThan true .  # 180 days
+
+  # High usage
+  ?usage math:greaterThan 70 .
+}
+=>
+{
+  ?customer a revops:PowerUser ;
+            revops:expansionLikelihood 85 ;
+            revops:churnRiskScore 10 .
+}.
+
+# ----------------------------------------------------------------------------
+# Rule 13: Estimate LTV Based on Plan and Lifespan
+# ----------------------------------------------------------------------------
+# Calculate lifetime value from MRR and average lifespan
+
+{
+  ?customer a revops:Customer ;
+            revops:monthlyRecurringRevenue ?mrr ;
+            revops:hasPlan ?plan .
+
+  # Get average lifespan for this plan (would be from historical data)
+  ?plan revops:planName ?planName .
+
+  # Use industry standard: 24 months average lifespan
+  (24 ?mrr) math:product ?ltv .
+}
+=>
+{
+  ?customer revops:lifetimeValue ?ltv .
+}.
+
+# ----------------------------------------------------------------------------
+# Rule 14: Feature Value Correlation
+# ----------------------------------------------------------------------------
+# Features used by high-value customers are valuable
+
+{
+  ?feature a revops:Feature ;
+           revops:featureName ?featureName .
+
+  ?customer revops:usesFeature ?feature ;
+            revops:monthlyRecurringRevenue ?mrr .
+
+  # High MRR customer (>$500/month)
+  ?mrr math:greaterThan 500 .
+}
+=>
+{
+  ?feature revops:revenueCorrelation 0.8 .  # Strong positive correlation
+}.
+
+# ----------------------------------------------------------------------------
+# Rule 15: Cohort Assignment by Signup Date
+# ----------------------------------------------------------------------------
+# Automatically assign customers to monthly cohorts
+
+{
+  ?customer a revops:Customer ;
+            revops:signupDate ?signup .
+
+  # Extract year-month from signup date
+  ?signup string:scrape "^(\\d{4}-\\d{2})" ?cohortName .
+}
+=>
+{
+  ?customer revops:belongsToCohort ?cohort .
+  ?cohort a revops:Cohort ;
+          revops:cohortName ?cohortName .
+}.
+
+# ----------------------------------------------------------------------------
+# Rule 16: Churn Prevention Recommendation
+# ----------------------------------------------------------------------------
+# Generate actionable recommendations for high-risk customers
+
+{
+  ?customer a revops:HighRiskCustomer ;
+            revops:churnRiskScore ?score ;
+            revops:customerId ?customerId .
+
+  ?score math:greaterThan 80 .
+}
+=>
+{
+  # Would trigger an alert or action in production system
+  ?customer revops:requiresImmediateAttention true ;
+            revops:recommendedAction "urgent_outreach" .
+}.
+
+# ----------------------------------------------------------------------------
+# Rule 17: Expansion Revenue Opportunity
+# ----------------------------------------------------------------------------
+# Calculate potential revenue from expansion
+
+{
+  ?customer a revops:ExpansionCandidate ;
+            revops:hasPlan ?currentPlan ;
+            revops:monthlyRecurringRevenue ?currentMRR .
+
+  ?currentPlan revops:planTier ?currentTier .
+
+  # Suggest next tier up
+  ?nextPlan revops:planTier ?nextTier ;
+            revops:monthlyPrice ?nextPrice .
+
+  # Calculate expansion opportunity
+  (?nextPrice ?currentMRR) math:difference ?expansionRevenue .
+}
+=>
+{
+  ?customer revops:potentialExpansionRevenue ?expansionRevenue .
+}.
+
+# ============================================================================
+# End of Churn Prediction Rules
+# ============================================================================

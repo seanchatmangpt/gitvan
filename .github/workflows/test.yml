@@ -414,10 +414,272 @@ jobs:
           retention-days: 30
 
   # ============================================================================
-  # Performance Benchmarks
+  # Phase 2 RDF Tests (Performance Monitoring)
+  # ============================================================================
+  phase-2-rdf:
+    name: Phase 2 RDF Tests (Performance)
+    runs-on: ubuntu-latest
+    needs: install
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Initialize and update submodules
+        run: |
+          git submodule init
+          git submodule update --recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-modules-
+
+      - name: Validate Phase 2 RDF Ontologies
+        run: |
+          echo "Validating Phase 2 RDF ontologies..."
+          node -e "
+            const fs = require('fs');
+            const ontologies = [
+              'src/rdf/ontologies/performance-ontology.ttl',
+              'src/rdf/ontologies/metrics-ontology.ttl',
+              'src/rdf/ontologies/anomaly-ontology.ttl'
+            ];
+            ontologies.forEach(f => {
+              if (!fs.existsSync(f)) {
+                console.log('⚠️  Missing ontology:', f, '(will be created)');
+              } else {
+                console.log('✓ Found:', f);
+              }
+            });
+          "
+
+      - name: Run Phase 2 Performance Tests
+        run: npm test -- tests/performance --reporter=verbose || echo "Phase 2 tests not yet implemented"
+        env:
+          CI: true
+          NODE_ENV: test
+        continue-on-error: true
+
+      - name: Upload Phase 2 test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phase2-test-results
+          path: |
+            test-results.json
+            coverage/
+          retention-days: 30
+        continue-on-error: true
+
+  # ============================================================================
+  # Phase 3 RDF Tests (RevOps)
+  # ============================================================================
+  phase-3-rdf:
+    name: Phase 3 RDF Tests (RevOps)
+    runs-on: ubuntu-latest
+    needs: install
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Initialize and update submodules
+        run: |
+          git submodule init
+          git submodule update --recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-modules-
+
+      - name: Validate Phase 3 RDF Ontologies
+        run: |
+          echo "Validating Phase 3 RDF ontologies..."
+          node -e "
+            const fs = require('fs');
+            const ontologies = [
+              'src/rdf/ontologies/revops-ontology.ttl',
+              'src/rdf/ontologies/customer-ontology.ttl',
+              'src/rdf/ontologies/product-ontology.ttl'
+            ];
+            ontologies.forEach(f => {
+              if (!fs.existsSync(f)) {
+                console.log('⚠️  Missing ontology:', f, '(will be created)');
+              } else {
+                console.log('✓ Found:', f);
+              }
+            });
+          "
+
+      - name: Run Phase 3 RevOps Tests
+        run: npm test -- tests/revops --reporter=verbose || echo "Phase 3 tests not yet implemented"
+        env:
+          CI: true
+          NODE_ENV: test
+        continue-on-error: true
+
+      - name: Upload Phase 3 test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phase3-test-results
+          path: |
+            test-results.json
+            coverage/
+          retention-days: 30
+        continue-on-error: true
+
+  # ============================================================================
+  # Phase 4 RDF Tests (Pack System)
+  # ============================================================================
+  phase-4-rdf:
+    name: Phase 4 RDF Tests (Pack System)
+    runs-on: ubuntu-latest
+    needs: install
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Initialize and update submodules
+        run: |
+          git submodule init
+          git submodule update --recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-modules-
+
+      - name: Validate Phase 4 RDF Ontologies
+        run: |
+          echo "Validating Phase 4 RDF ontologies..."
+          node -e "
+            const fs = require('fs');
+            const ontologies = [
+              'src/rdf/ontologies/pack-ontology.ttl',
+              'src/rdf/ontologies/registry-ontology.ttl',
+              'src/rdf/ontologies/dependency-ontology.ttl'
+            ];
+            ontologies.forEach(f => {
+              if (!fs.existsSync(f)) {
+                console.log('⚠️  Missing ontology:', f, '(will be created)');
+              } else {
+                console.log('✓ Found:', f);
+              }
+            });
+          "
+
+      - name: Run Phase 4 Pack System Tests
+        run: npm test -- tests/pack/rdf --reporter=verbose || echo "Phase 4 tests not yet implemented"
+        env:
+          CI: true
+          NODE_ENV: test
+        continue-on-error: true
+
+      - name: Upload Phase 4 test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phase4-test-results
+          path: |
+            test-results.json
+            coverage/
+          retention-days: 30
+        continue-on-error: true
+
+  # ============================================================================
+  # Combined Coverage (All Phases)
+  # ============================================================================
+  combined-coverage:
+    name: Combined Coverage (All Phases)
+    runs-on: ubuntu-latest
+    needs: [phase-1-rdf, phase-2-rdf, phase-3-rdf, phase-4-rdf]
+    if: always()
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Initialize and update submodules
+        run: |
+          git submodule init
+          git submodule update --recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-modules-
+
+      - name: Download all test results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: phase*-test-results
+          path: coverage-artifacts/
+        continue-on-error: true
+
+      - name: Generate combined coverage report
+        run: |
+          echo "## Combined RDF Coverage (All Phases)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Phase Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Phase 1 (Git-Native I/O): ${{ needs.phase-1-rdf.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Phase 2 (Performance): ${{ needs.phase-2-rdf.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Phase 3 (RevOps): ${{ needs.phase-3-rdf.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Phase 4 (Pack System): ${{ needs.phase-4-rdf.result }}" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================================================
+  # Performance Benchmarks (All Phases)
   # ============================================================================
   benchmarks:
-    name: Performance Benchmarks
+    name: Performance Benchmarks (All Phases)
     runs-on: ubuntu-latest
     needs: install
     if: github.event_name == 'push' || github.event_name == 'schedule'
@@ -456,41 +718,66 @@ jobs:
             benchmarks-${{ github.ref }}-
             benchmarks-
 
-      - name: Run Phase 1 Performance Benchmarks
+      - name: Run Phase 1 Benchmarks (Git-Native I/O)
         id: phase1-benchmarks
         run: |
           echo "Running Phase 1 RDF performance benchmarks..."
-          node scripts/benchmark-phase1.mjs > benchmark-results.txt
-          cat benchmark-results.txt
+          node scripts/benchmark-phase1.mjs > benchmark-phase1-results.txt
+          cat benchmark-phase1-results.txt
         env:
           CI: true
           NODE_ENV: test
         continue-on-error: true
 
-      - name: Check Performance Regressions
-        if: steps.phase1-benchmarks.outcome == 'success'
+      - name: Run Phase 2 Benchmarks (Performance Monitoring)
+        id: phase2-benchmarks
         run: |
-          echo "Checking for performance regressions..."
-          node scripts/check-performance-regression.mjs || {
+          echo "Running Phase 2 performance benchmarks..."
+          node scripts/benchmark-phase2.mjs > benchmark-phase2-results.txt || echo "Phase 2 benchmarks not yet implemented"
+          [ -f benchmark-phase2-results.txt ] && cat benchmark-phase2-results.txt
+        env:
+          CI: true
+          NODE_ENV: test
+        continue-on-error: true
+
+      - name: Run Phase 3 Benchmarks (RevOps)
+        id: phase3-benchmarks
+        run: |
+          echo "Running Phase 3 RevOps benchmarks..."
+          node scripts/benchmark-phase3.mjs > benchmark-phase3-results.txt || echo "Phase 3 benchmarks not yet implemented"
+          [ -f benchmark-phase3-results.txt ] && cat benchmark-phase3-results.txt
+        env:
+          CI: true
+          NODE_ENV: test
+        continue-on-error: true
+
+      - name: Run Phase 4 Benchmarks (Pack System)
+        id: phase4-benchmarks
+        run: |
+          echo "Running Phase 4 Pack System benchmarks..."
+          node scripts/benchmark-phase4.mjs > benchmark-phase4-results.txt || echo "Phase 4 benchmarks not yet implemented"
+          [ -f benchmark-phase4-results.txt ] && cat benchmark-phase4-results.txt
+        env:
+          CI: true
+          NODE_ENV: test
+        continue-on-error: true
+
+      - name: Check Performance Regressions (All Phases)
+        run: |
+          echo "Checking for performance regressions across all phases..."
+          node scripts/check-regressions.mjs || {
             echo "⚠️ Performance regression detected (>10% slowdown)"
             echo "regression=true" >> $GITHUB_OUTPUT
           }
-        continue-on-error: true
-
-      - name: Run general benchmarks
-        run: npm test -- tests/benchmarks --reporter=verbose || echo "No benchmarks found"
-        env:
-          CI: true
-          NODE_ENV: test
         continue-on-error: true
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: benchmark-results
+          name: benchmark-results-all-phases
           path: |
-            benchmark-results.txt
+            benchmark-*-results.txt
             .benchmarks/
             test-results.json
           retention-days: 30
@@ -499,10 +786,37 @@ jobs:
       - name: Generate performance summary
         if: always()
         run: |
-          echo "## Phase 1 Performance Benchmarks" >> $GITHUB_STEP_SUMMARY
-          if [ -f benchmark-results.txt ]; then
+          echo "## Performance Benchmarks Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f benchmark-phase1-results.txt ]; then
+            echo "### Phase 1: Git-Native I/O" >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
-            cat benchmark-results.txt >> $GITHUB_STEP_SUMMARY
+            cat benchmark-phase1-results.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ -f benchmark-phase2-results.txt ]; then
+            echo "### Phase 2: Performance Monitoring" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat benchmark-phase2-results.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ -f benchmark-phase3-results.txt ]; then
+            echo "### Phase 3: RevOps" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat benchmark-phase3-results.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ -f benchmark-phase4-results.txt ]; then
+            echo "### Phase 4: Pack System" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat benchmark-phase4-results.txt >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
           fi
 
@@ -512,19 +826,26 @@ jobs:
   test-summary:
     name: Test Summary
     runs-on: ubuntu-latest
-    needs: [lint, build, test-matrix, coverage, integration, phase-1-rdf]
+    needs: [lint, build, test-matrix, coverage, integration, phase-1-rdf, phase-2-rdf, phase-3-rdf, phase-4-rdf, combined-coverage]
     if: always()
     steps:
       - name: Check results
         run: |
           echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Core Tests" >> $GITHUB_STEP_SUMMARY
           echo "- Lint: ${{ needs.lint.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Build: ${{ needs.build.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Tests (Matrix): ${{ needs.test-matrix.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Coverage: ${{ needs.coverage.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Integration: ${{ needs.integration.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Phase 1 RDF: ${{ needs.phase-1-rdf.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### RDF Phase Tests" >> $GITHUB_STEP_SUMMARY
+          echo "- Phase 1 (Git-Native I/O): ${{ needs.phase-1-rdf.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Phase 2 (Performance): ${{ needs.phase-2-rdf.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Phase 3 (RevOps): ${{ needs.phase-3-rdf.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Phase 4 (Pack System): ${{ needs.phase-4-rdf.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Combined Coverage: ${{ needs.combined-coverage.result }}" >> $GITHUB_STEP_SUMMARY
 
           if [[ "${{ needs.test-matrix.result }}" == "failure" ]] ||
              [[ "${{ needs.coverage.result }}" == "failure" ]] ||

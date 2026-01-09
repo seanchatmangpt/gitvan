@@ -1,0 +1,128 @@
+# AlertManager configuration for GitVan
+global:
+  resolve_timeout: 5m
+  slack_api_url: 'YOUR_SLACK_WEBHOOK_URL'  # Set in secrets
+
+# Templates for notifications
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Route alerts to different receivers
+route:
+  group_by: ['alertname', 'cluster', 'service', 'phase']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+  receiver: 'default'
+
+  routes:
+    # Critical alerts - immediate notification
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 0s
+      repeat_interval: 5m
+
+    # Warning alerts - batched notifications
+    - match:
+        severity: warning
+      receiver: 'warning-alerts'
+      group_wait: 30s
+      repeat_interval: 1h
+
+    # Info alerts - low priority
+    - match:
+        severity: info
+      receiver: 'info-alerts'
+      group_wait: 5m
+      repeat_interval: 24h
+
+    # Phase-specific routes
+    - match:
+        phase: "1"
+      receiver: 'phase1-team'
+
+    - match:
+        phase: "2"
+      receiver: 'phase2-team'
+
+    - match:
+        phase: "3"
+      receiver: 'phase3-team'
+
+    - match:
+        phase: "4"
+      receiver: 'phase4-team'
+
+# Receivers define notification destinations
+receivers:
+  - name: 'default'
+    slack_configs:
+      - channel: '#gitvan-alerts'
+        title: 'GitVan Alert'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        send_resolved: true
+
+  - name: 'critical-alerts'
+    slack_configs:
+      - channel: '#gitvan-critical'
+        title: '🚨 CRITICAL: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        send_resolved: true
+    # Add PagerDuty integration
+    # pagerduty_configs:
+    #   - service_key: 'YOUR_PAGERDUTY_KEY'
+
+  - name: 'warning-alerts'
+    slack_configs:
+      - channel: '#gitvan-warnings'
+        title: '⚠️  WARNING: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        send_resolved: true
+
+  - name: 'info-alerts'
+    slack_configs:
+      - channel: '#gitvan-info'
+        title: 'ℹ️  INFO: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        send_resolved: true
+
+  - name: 'phase1-team'
+    slack_configs:
+      - channel: '#gitvan-phase1'
+        title: 'Phase 1 Alert: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+
+  - name: 'phase2-team'
+    slack_configs:
+      - channel: '#gitvan-phase2'
+        title: 'Phase 2 Alert: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+
+  - name: 'phase3-team'
+    slack_configs:
+      - channel: '#gitvan-phase3'
+        title: 'Phase 3 Alert: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+
+  - name: 'phase4-team'
+    slack_configs:
+      - channel: '#gitvan-phase4'
+        title: 'Phase 4 Alert: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+
+# Inhibition rules suppress notifications for certain alerts
+inhibit_rules:
+  # Suppress warnings when critical alert is firing
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'phase', 'component']
+
+  # Suppress downstream alerts when upstream is down
+  - source_match:
+      alertname: 'GitVanDown'
+    target_match_re:
+      alertname: '.*'
+    equal: ['cluster']

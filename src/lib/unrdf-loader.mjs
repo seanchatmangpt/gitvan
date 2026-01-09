@@ -13,8 +13,10 @@
  * @version 3.0.0
  */
 
-// Import all unrdf exports from the vendor submodule
-// The vendor/unrdf directory is a git submodule, not an npm package
+// Import all unrdf exports from the vendor submodule monorepo
+// The vendor/unrdf directory is a git submodule containing a monorepo with multiple packages
+// We import from the core package which provides the main RDF functionality
+
 export {
   // Core Knowledge Substrate
   createKnowledgeSubstrateCore,
@@ -53,8 +55,8 @@ export {
 
   // Store class (if exported)
   Store,
-} from "../../vendor/unrdf/index.js";
+} from "../../vendor/unrdf/packages/core/src/index.mjs";
 
 // Re-export everything as default for convenience
-import * as unrdf from "../../vendor/unrdf/index.js";
+import * as unrdf from "../../vendor/unrdf/packages/core/src/index.mjs";
 export default unrdf;

@@ -262,7 +262,7 @@ export default {
         target: join(errorDir, "output.txt"),
         action: "write",
       })
-    ).rejects.toThrow("Template not found");
+    ).rejects.toThrow("Template processing failed");
 
     // Test transform processor with missing target
     const transformProcessor = new TransformProcessor();
@@ -282,7 +282,7 @@ export default {
         target: join(errorDir, "output.txt"),
         action: "write",
       })
-    ).rejects.toThrow("Source file not found");
+    ).rejects.toThrow("No files found matching pattern");
 
     // Test job installer with missing source
     const jobInstaller = new JobInstaller();

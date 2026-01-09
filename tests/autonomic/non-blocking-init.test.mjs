@@ -50,6 +50,7 @@ describe("Non-Blocking Initialization - Performance", () => {
     execSync("git init", { cwd: testDir });
     execSync('git config user.name "Test User"', { cwd: testDir });
     execSync('git config user.email "test@example.com"', { cwd: testDir });
+    execSync('git config commit.gpgsign false', { cwd: testDir });
 
     vi.clearAllMocks();
   });

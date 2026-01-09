@@ -914,6 +914,681 @@ const code = await ai.generate({
 
 ---
 
+### useGraph()
+
+RDF graph operations and SPARQL queries.
+
+#### Methods
+
+##### `load(uri: string): Promise<Graph>`
+
+Load RDF graph.
+
+```javascript
+const graph = useGraph();
+const rdf = await graph.load('graph://workflows');
+
+// Query graph
+const results = await rdf.query(`
+  SELECT ?workflow WHERE {
+    ?workflow a :Workflow .
+  }
+`);
+```
+
+**Parameters**:
+- `uri` (string): Graph URI
+
+**Returns**: `Promise<Graph>` - RDF graph instance
+
+##### `query(sparql: string): Promise<any[]>`
+
+Execute SPARQL query.
+
+```javascript
+const results = await graph.query(`
+  SELECT ?workflow ?name WHERE {
+    ?workflow a :Workflow ;
+      rdfs:label ?name .
+  }
+`);
+
+results.forEach(row => {
+  console.log(`${row.workflow}: ${row.name}`);
+});
+```
+
+**Parameters**:
+- `sparql` (string): SPARQL query
+
+**Returns**: `Promise<any[]>` - Query results
+
+##### `insert(triples: Triple[]): Promise<void>`
+
+Insert RDF triples.
+
+```javascript
+const triples = [
+  {
+    subject: 'workflow://my-workflow',
+    predicate: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type',
+    object: 'workflow://Workflow'
+  }
+];
+
+await graph.insert(triples);
+```
+
+---
+
+### useHybridGit()
+
+Hybrid Git backend (MemFS or native).
+
+#### Methods
+
+##### `auto(): Promise<GitBackend>`
+
+Auto-select backend based on environment.
+
+```javascript
+const git = useHybridGit();
+const backend = await git.auto();
+
+console.log('Using backend:', backend.type);  // 'memfs' or 'native'
+```
+
+**Returns**: `Promise<GitBackend>`
+
+##### `setBackend(type: 'memfs' | 'native'): void`
+
+Manually select backend.
+
+```javascript
+const git = useHybridGit();
+git.setBackend('memfs');  // Use MemFS (testing)
+git.setBackend('native'); // Use native Git (production)
+```
+
+##### `getBackend(): GitBackend`
+
+Get current backend.
+
+```javascript
+const git = useHybridGit();
+const backend = git.getBackend();
+console.log('Current backend:', backend.type);
+```
+
+---
+
+### useJobDiscovery()
+
+Discover available jobs in configured directories.
+
+#### Methods
+
+##### `list(options?: ListOptions): Promise<JobInfo[]>`
+
+List all discovered jobs.
+
+```javascript
+const discovery = useJobDiscovery();
+const jobs = await discovery.list();
+
+jobs.forEach(job => {
+  console.log(`${job.name}: ${job.description}`);
+  console.log(`  Path: ${job.path}`);
+});
+```
+
+**Returns**: `Promise<JobInfo[]>`
+
+##### `find(query: string): Promise<JobInfo[]>`
+
+Find jobs by name or description.
+
+```javascript
+const matches = await discovery.find('deploy');
+// Returns all jobs matching 'deploy'
+```
+
+**Parameters**:
+- `query` (string): Search query
+
+**Returns**: `Promise<JobInfo[]>`
+
+##### `getStats(): Promise<JobStats>`
+
+Get discovery statistics.
+
+```javascript
+const stats = await discovery.getStats();
+console.log(`Found ${stats.total} jobs`);
+console.log(`From ${stats.directories.length} directories`);
+```
+
+---
+
+### useJobExecution()
+
+Execute jobs with proper context and error handling.
+
+#### Methods
+
+##### `execute(name: string, context?: object): Promise<JobResult>`
+
+Execute job with context.
+
+```javascript
+const execution = useJobExecution();
+
+const result = await execution.execute('build', {
+  NODE_ENV: 'production',
+  VERSION: '1.0.0'
+});
+
+console.log('Status:', result.status);
+console.log('Output:', result.output);
+```
+
+**Parameters**:
+- `name` (string): Job name
+- `context` (object): Job context
+
+**Returns**: `Promise<JobResult>`
+
+##### `withTimeout(name: string, timeout: number): Promise<JobResult>`
+
+Execute job with timeout.
+
+```javascript
+const result = await execution.withTimeout('sync', 30000);
+```
+
+##### `withRetry(name: string, options: RetryOptions): Promise<JobResult>`
+
+Execute job with retry logic.
+
+```javascript
+const result = await execution.withRetry('deploy', {
+  maxAttempts: 3,
+  delay: 1000,
+  backoff: 'exponential'
+});
+```
+
+---
+
+### useJobManagement()
+
+Manage job lifecycle and state.
+
+#### Methods
+
+##### `start(name: string): Promise<string>`
+
+Start job asynchronously.
+
+```javascript
+const jobId = await management.start('background-sync');
+console.log('Job ID:', jobId);
+```
+
+**Returns**: `Promise<string>` - Job ID
+
+##### `stop(jobId: string): Promise<void>`
+
+Stop running job.
+
+```javascript
+await management.stop(jobId);
+```
+
+##### `getStatus(jobId: string): Promise<JobStatus>`
+
+Get job status.
+
+```javascript
+const status = await management.getStatus(jobId);
+console.log('Progress:', status.progress, '%');
+console.log('Status:', status.state);
+```
+
+##### `wait(jobId: string, timeout?: number): Promise<JobResult>`
+
+Wait for job completion.
+
+```javascript
+const result = await management.wait(jobId, 60000);
+```
+
+---
+
+### useJobScheduler()
+
+Schedule recurring job execution.
+
+#### Methods
+
+##### `schedule(name: string, cron: string): Promise<string>`
+
+Schedule job with cron expression.
+
+```javascript
+const scheduler = useJobScheduler();
+
+const id = await scheduler.schedule('daily-cleanup', '0 2 * * *');
+// Runs daily at 2 AM
+```
+
+**Returns**: `Promise<string>` - Schedule ID
+
+##### `at(name: string, date: Date): Promise<string>`
+
+Schedule job for specific time.
+
+```javascript
+const tomorrow = new Date();
+tomorrow.setDate(tomorrow.getDate() + 1);
+
+const id = await scheduler.at('deploy', tomorrow);
+```
+
+##### `cancel(id: string): Promise<void>`
+
+Cancel scheduled job.
+
+```javascript
+await scheduler.cancel(id);
+```
+
+##### `list(): Promise<ScheduledJob[]>`
+
+List all scheduled jobs.
+
+```javascript
+const scheduled = await scheduler.list();
+scheduled.forEach(job => {
+  console.log(`${job.name}: ${job.schedule}`);
+});
+```
+
+---
+
+### useJobUtilities()
+
+Utility functions for job development.
+
+#### Methods
+
+##### `parseArgs(argv: string[]): ParsedArgs`
+
+Parse command-line arguments.
+
+```javascript
+const utils = useJobUtilities();
+const args = utils.parseArgs(['--env', 'production', '--verbose']);
+
+console.log(args.env);      // 'production'
+console.log(args.verbose);  // true
+```
+
+##### `formatOutput(data: any, format: string): string`
+
+Format job output.
+
+```javascript
+const output = utils.formatOutput(data, 'json');
+// or 'text', 'csv', 'table'
+```
+
+##### `createLogger(name: string): Logger`
+
+Create job logger.
+
+```javascript
+const logger = utils.createLogger('my-job');
+logger.info('Starting job');
+logger.error('Job failed');
+```
+
+---
+
+### useLog()
+
+Logging utilities for GitVan operations.
+
+#### Methods
+
+##### `debug(message: string, data?: object): void`
+
+Log debug message.
+
+```javascript
+const log = useLog();
+log.debug('Processing file', { file: 'index.js' });
+```
+
+##### `info(message: string, data?: object): void`
+
+Log info message.
+
+```javascript
+log.info('Workflow started', { workflow: 'build' });
+```
+
+##### `warn(message: string, data?: object): void`
+
+Log warning.
+
+```javascript
+log.warn('Deprecated function', { function: 'old_api' });
+```
+
+##### `error(message: string, error?: Error): void`
+
+Log error.
+
+```javascript
+log.error('Operation failed', err);
+```
+
+##### `setLevel(level: 'debug' | 'info' | 'warn' | 'error'): void`
+
+Set log level.
+
+```javascript
+log.setLevel('debug');  // Show all messages
+```
+
+---
+
+### useNativeIO()
+
+Git-native file I/O using refs and notes.
+
+#### Methods
+
+##### `writeRef(ref: string, sha: string): Promise<void>`
+
+Write ref (branch/tag).
+
+```javascript
+const io = useNativeIO();
+await io.writeRef('refs/heads/main', 'abc123def456...');
+```
+
+##### `readRef(ref: string): Promise<string>`
+
+Read ref value.
+
+```javascript
+const sha = await io.readRef('refs/heads/main');
+```
+
+##### `writeNote(ref: string, data: object): Promise<void>`
+
+Write Git note.
+
+```javascript
+await io.writeNote('refs/notes/gitvan/metadata', {
+  timestamp: new Date().toISOString(),
+  user: 'alice@example.com'
+});
+```
+
+##### `readNote(ref: string): Promise<object>`
+
+Read Git note.
+
+```javascript
+const note = await io.readNote('refs/notes/gitvan/metadata');
+```
+
+---
+
+### useNotes()
+
+Advanced Git notes operations.
+
+#### Methods
+
+##### `create(commit: string, message: string): Promise<void>`
+
+Create note for commit.
+
+```javascript
+const notes = useNotes();
+await notes.create('abc123', 'This commit fixes bug #42');
+```
+
+##### `read(commit: string): Promise<string>`
+
+Read commit note.
+
+```javascript
+const note = await notes.read('abc123');
+```
+
+##### `list(ref?: string): Promise<NoteEntry[]>`
+
+List all notes.
+
+```javascript
+const allNotes = await notes.list('refs/notes/gitvan/audit');
+```
+
+---
+
+### useRegistry()
+
+Component registry for extensibility.
+
+#### Methods
+
+##### `register(name: string, component: any): void`
+
+Register component.
+
+```javascript
+const registry = useRegistry();
+registry.register('my-handler', {
+  handle: async (data) => { /* ... */ }
+});
+```
+
+##### `get(name: string): any`
+
+Get registered component.
+
+```javascript
+const handler = registry.get('my-handler');
+await handler.handle(data);
+```
+
+##### `list(): string[]`
+
+List registered components.
+
+```javascript
+const components = registry.list();
+console.log('Registered:', components);
+```
+
+---
+
+### useSchedule()
+
+Low-level job scheduling.
+
+#### Methods
+
+##### `schedule(options: ScheduleOptions): Promise<string>`
+
+Schedule operation.
+
+```javascript
+const schedule = useSchedule();
+
+const id = await schedule.schedule({
+  type: 'cron',
+  expression: '0 * * * *',
+  handler: async () => {
+    // Job code
+  }
+});
+```
+
+**Returns**: `Promise<string>` - Schedule ID
+
+##### `unschedule(id: string): Promise<void>`
+
+Remove schedule.
+
+```javascript
+await schedule.unschedule(id);
+```
+
+---
+
+### useTestEnvironment()
+
+Test environment setup and utilities.
+
+#### Methods
+
+##### `createRepo(options?: RepoOptions): Promise<TestRepo>`
+
+Create isolated test repository.
+
+```javascript
+const env = useTestEnvironment();
+
+const repo = await env.createRepo({
+  name: 'test-repo',
+  bare: false
+});
+
+console.log('Repo path:', repo.path);
+```
+
+**Returns**: `Promise<TestRepo>`
+
+##### `cleanup(): Promise<void>`
+
+Clean up test resources.
+
+```javascript
+await env.cleanup();
+```
+
+---
+
+### useTurtle()
+
+RDF Turtle format parsing and generation.
+
+#### Methods
+
+##### `parse(content: string): Promise<RDFGraph>`
+
+Parse Turtle content.
+
+```javascript
+const turtle = useTurtle();
+
+const ttl = `
+@prefix : <http://example.org#> .
+:subject :predicate :object .
+`;
+
+const graph = await turtle.parse(ttl);
+```
+
+**Parameters**:
+- `content` (string): Turtle content
+
+**Returns**: `Promise<RDFGraph>`
+
+##### `generate(graph: RDFGraph): string`
+
+Generate Turtle from graph.
+
+```javascript
+const ttl = turtle.generate(graph);
+console.log(ttl);
+```
+
+---
+
+### useUnifiedHooks()
+
+Unified hooks interface for Git and workflow events.
+
+#### Methods
+
+##### `on(event: string, handler: Function): void`
+
+Register event handler.
+
+```javascript
+const hooks = useUnifiedHooks();
+
+hooks.on('git:commit', async (commit) => {
+  console.log('Commit:', commit.sha);
+});
+
+hooks.on('workflow:complete', async (result) => {
+  console.log('Workflow:', result.status);
+});
+```
+
+##### `emit(event: string, data: any): Promise<void>`
+
+Emit event.
+
+```javascript
+await hooks.emit('custom:event', { data: 'value' });
+```
+
+##### `off(event: string, handler?: Function): void`
+
+Unregister handler.
+
+```javascript
+hooks.off('git:commit', handler);
+```
+
+---
+
+### useUnrouting()
+
+URL/path routing utilities for job discovery.
+
+#### Methods
+
+##### `resolve(jobId: string): Promise<string>`
+
+Resolve job path from ID.
+
+```javascript
+const routing = useUnrouting();
+const path = await routing.resolve('my-job');
+// Returns: '/path/to/jobs/my-job.mjs'
+```
+
+##### `unresolve(path: string): string`
+
+Get job ID from path.
+
+```javascript
+const id = routing.unresolve('/path/to/jobs/my-job.mjs');
+// Returns: 'my-job'
+```
+
+---
+
 ## CLI Commands
 
 ### General Options

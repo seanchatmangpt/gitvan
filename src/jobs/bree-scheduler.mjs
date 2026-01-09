@@ -4,6 +4,7 @@
 
 import Bree from "bree";
 import { join } from "pathe";
+import { mkdir } from "node:fs/promises";
 import { createLogger } from "../utils/logger.mjs";
 
 const logger = createLogger("jobs:bree-scheduler");
@@ -46,6 +47,9 @@ export class BreeScheduler {
     }
 
     try {
+      // Ensure jobs directory exists (Bree requires this)
+      await mkdir(this.jobsDir, { recursive: true });
+
       this.bree = new Bree({
         ...this.config,
         jobs: [],

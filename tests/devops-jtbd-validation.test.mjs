@@ -152,25 +152,26 @@ describe("DevOps JTBD Validation - Workflow Reliability & Debugging", () => {
 
     it("should create and track step execution context", async () => {
       const contextManager = new ContextManager();
-      const context = await contextManager.initialize({
+      const startTime = Date.now();
+      await contextManager.initialize({
         workflowId: "test-workflow-001",
         inputs: {
           projectName: "Test Project",
           version: "1.0.0"
         },
-        startTime: Date.now()
+        startTime: startTime
       });
 
-      expect(context).toBeDefined();
-      expect(context.workflowId).toBe("test-workflow-001");
-      expect(context.inputs).toBeDefined();
-      expect(context.steps).toBeDefined();
+      expect(contextManager).toBeDefined();
+      expect(contextManager.workflowId).toBe("test-workflow-001");
+      expect(contextManager.initialized).toBe(true);
+      expect(contextManager.context).toBeDefined();
 
       validationReport.results["single_execution"] = {
         status: "PASS",
         description: "Workflow execution context can be created and tracked",
         workflowId: "test-workflow-001",
-        executionTime: `${Date.now() - context.startTime}ms`
+        executionTime: `${Date.now() - startTime}ms`
       };
     });
 

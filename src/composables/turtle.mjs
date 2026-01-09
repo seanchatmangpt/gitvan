@@ -12,7 +12,7 @@
  */
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { createKnowledgeSubstrateCore, parseTurtle, toTurtle, getStoreStats } from "unrdf";
+import { createKnowledgeSubstrateCore, parseTurtle, toTurtle, getStoreStats } from "../lib/unrdf-loader.mjs";
 import { useGitVan, tryUseGitVan } from "../core/context.mjs";
 import { loadOptions } from "../config/loader.mjs";
 import { createLogger } from "../utils/logger.mjs";

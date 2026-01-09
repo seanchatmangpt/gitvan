@@ -20,7 +20,7 @@
 
 import { execSync } from "node:child_process";
 import { readFileSync, statSync } from "node:fs";
-import { createKnowledgeSubstrateCore, namedNode, literal, quad } from "unrdf";
+import { createKnowledgeSubstrateCore, namedNode, literal, quad } from "../lib/unrdf-loader.mjs";
 
 // Git event types mapping to hook names
 const GIT_EVENT_TYPES = {

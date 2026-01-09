@@ -15,7 +15,7 @@ import {
   mergeStores,
   differenceStores,
   intersectStores,
-} from "unrdf";
+} from "../lib/unrdf-loader.mjs";
 
 /**
  * Creates an operational interface for a given RDF graph store.

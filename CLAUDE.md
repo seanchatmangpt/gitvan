@@ -34,12 +34,33 @@ This document provides comprehensive guidance for AI assistants working on the G
 - **Context**: unctx (async context preservation - **critical**)
 - **Configuration**: c12 (Nitro-style config loading)
 - **RDF/Semantic**: unrdf (RDF parsing and SPARQL queries)
+  - **Important**: unrdf is managed as a **git submodule** at `vendor/unrdf/`
+  - Allows active co-development and source-level debugging
+  - Must be initialized: `git submodule update --init --recursive`
+  - See [Submodule Setup Guide](docs/SUBMODULE_SETUP.md) for details
 - **Templating**: nunjucks (template rendering)
 - **Hooks**: hookable (extensibility system)
 - **AI**: ai package (multi-provider support: Anthropic, Ollama)
 - **Git**: isomorphic-git (programmatic Git operations)
 - **Testing**: vitest (unit testing)
 - **Build**: unbuild (bundling)
+
+#### Why UnRDF is a Git Submodule
+
+GitVan uses UnRDF as a git submodule rather than an npm dependency for several strategic reasons:
+
+1. **Active Co-Development**: UnRDF is being developed in tandem with GitVan. Changes in one often require changes in the other.
+2. **Source-Level Integration**: Having the full source allows for deeper integration and debugging across repository boundaries.
+3. **Version Control**: Pin to specific commits for stability while easily updating when ready.
+4. **Build Pipeline**: UnRDF must be built before GitVan during the build process.
+5. **No Publish Cycle**: Test changes immediately without publish/install overhead.
+
+**For AI Agents**: When working with GitVan:
+- Always run `npm run setup-dev` first to initialize submodules
+- If modifying UnRDF code, work in `vendor/unrdf/` directory
+- Build UnRDF before building GitVan: `npm run build:unrdf && npm run build`
+- Test integration after UnRDF changes: `npm test`
+- See [Submodule Setup Guide](docs/SUBMODULE_SETUP.md) for complete workflow
 
 ### Key Statistics
 
@@ -327,13 +348,38 @@ Plugin-like system for bundled functionality:
 
 ### Setup
 
+#### Quick Setup (Recommended)
+
 ```bash
 # Clone the repository
 git clone <repo-url>
 cd gitvan
 
+# Run automated setup (handles submodules, dependencies, and build)
+npm run setup-dev
+```
+
+**What `setup-dev` does:**
+1. Initializes and clones all git submodules (`git submodule update --init --recursive`)
+2. Installs GitVan's dependencies
+3. Installs and builds UnRDF submodule at `vendor/unrdf/`
+4. Builds GitVan
+
+#### Manual Setup
+
+```bash
+# Clone the repository
+git clone <repo-url>
+cd gitvan
+
+# Initialize submodules (IMPORTANT!)
+git submodule update --init --recursive
+
 # Install dependencies
 npm install
+
+# Build UnRDF submodule
+npm run build:unrdf
 
 # Build the project
 npm run build
@@ -341,6 +387,8 @@ npm run build
 # Run tests
 npm test
 ```
+
+**Critical**: GitVan uses UnRDF as a git submodule at `vendor/unrdf/`. You **must** initialize submodules before building. See [Submodule Setup Guide](docs/SUBMODULE_SETUP.md) for troubleshooting.
 
 ### Development Process
 

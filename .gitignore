@@ -39,6 +39,14 @@ yarn-error.log*
 gitvan.local.config.js
 .gitvan-cache/
 
+# Vendor submodules - ignore build artifacts but not the submodule itself
+# The vendor/unrdf directory is tracked as a git submodule
+vendor/unrdf/node_modules/
+vendor/unrdf/dist/
+vendor/unrdf/*.log
+vendor/unrdf/coverage/
+vendor/unrdf/.turbo/
+
 # Claude Flow generated files
 .claude/settings.local.json
 .mcp.json

@@ -300,21 +300,72 @@ See [Poka-Yoke](docs/POKA-YOKE.md) for 10 error-prevention mechanisms.
 
 ## Development
 
+### Quick Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/gitvan/gitvan.git
+cd gitvan
+
+# Run automated setup (recommended)
+npm run setup-dev
+```
+
+**What `setup-dev` does:**
+- Initializes git submodules (including UnRDF at `vendor/unrdf/`)
+- Installs all dependencies
+- Builds the UnRDF submodule
+- Builds GitVan
+
+**Note**: GitVan uses git submodules for some dependencies. The `setup-dev` script handles everything automatically. See [Submodule Setup Guide](docs/SUBMODULE_SETUP.md) for details.
+
+### Manual Setup
+
 ```bash
 # Clone and install
 git clone https://github.com/gitvan/gitvan.git
 cd gitvan
+
+# Initialize submodules
+git submodule update --init --recursive
+
+# Install dependencies
 npm install
 
+# Build
+npm run build
+```
+
+### Common Development Tasks
+
+```bash
 # Run tests
 npm test
+
+# Run tests with coverage
+npm test -- --coverage
 
 # Build
 npm run build
 
+# Build UnRDF submodule
+npm run build:unrdf
+
 # Local CLI
 node src/cli.mjs --help
+
+# Watch mode for development
+npm run dev
 ```
+
+### Working with Submodules
+
+GitVan uses UnRDF as a git submodule at `vendor/unrdf/`. This allows for:
+- Active co-development between GitVan and UnRDF
+- Source-level debugging
+- Pinning to specific versions
+
+For detailed information about working with the submodule, see [Submodule Setup Guide](docs/SUBMODULE_SETUP.md).
 
 ---
 

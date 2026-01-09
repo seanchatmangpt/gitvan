@@ -8,7 +8,7 @@ import { StepRunner } from "./step-runner.mjs";
 import { ContextManager } from "./context-manager.mjs";
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
-import { createKnowledgeSubstrateCore, parseTurtle } from "unrdf";
+import { createKnowledgeSubstrateCore, parseTurtle } from "../lib/unrdf-loader.mjs";
 
 /**
  * Main workflow executor that orchestrates the entire workflow lifecycle

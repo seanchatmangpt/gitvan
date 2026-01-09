@@ -16,6 +16,7 @@ import type {
   Disposer,
   HookSubscription,
 } from '../types/index.js';
+import { consola } from 'consola';
 
 // Simple logger for error reporting
 const logger = {
@@ -23,7 +24,7 @@ const logger = {
     if (typeof process !== 'undefined' && process.stderr) {
       process.stderr.write(`[ERROR] ${args.join(' ')}\n`);
     } else {
-      console.error(...args);
+      consola.error(...args);
     }
   }
 };

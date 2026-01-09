@@ -15,6 +15,7 @@ import type {
   CleanupRegistry,
 } from '../types/index.js';
 import { signal, type WritableSignal } from './signals.js';
+import { consola } from 'consola';
 
 // Simple logger for debug output
 const logger = {
@@ -22,7 +23,7 @@ const logger = {
     if (typeof process !== 'undefined' && process.stdout) {
       process.stdout.write(`[INFO] ${args.join(' ')}\n`);
     } else {
-      console.log(...args);
+      consola.log(...args);
     }
   }
 };

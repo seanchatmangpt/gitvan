@@ -1,13 +1,13 @@
 /**
  * @fileoverview GitVan Turtle/RDF Composable
  *
- * Simplified RDF store composable using unrdf core API.
+ * RDF store composable using @unrdf/core API.
  * Provides basic store creation and quad operations.
  *
- * @version 4.0.0
+ * @version 5.0.0
  * @license Apache-2.0
  */
-import { createStore } from "unrdf";
+import { createStore, addQuad, removeQuad } from "@unrdf/core";
 
 const RDF = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
 
@@ -38,14 +38,14 @@ export async function useTurtle(options = {}) {
      * Add a quad to the store
      */
     addQuad(quad) {
-      store.addQuad(quad);
+      addQuad(store, quad);
     },
 
     /**
      * Remove a quad from the store
      */
     removeQuad(quad) {
-      store.removeQuad(quad);
+      removeQuad(store, quad);
     },
 
     /**

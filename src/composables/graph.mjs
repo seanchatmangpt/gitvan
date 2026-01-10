@@ -1,18 +1,13 @@
 // src/composables/graph.mjs
-// Provides a high-level, ergonomic API to operate on an in-memory RDF graph using unrdf.
+// Provides a high-level, ergonomic API to operate on an in-memory RDF graph using @unrdf/core.
 
 import {
   executeQuery,
-  executeSelect,
-  executeAsk,
-  executeConstruct,
-  isIsomorphic,
   canonicalize,
-  toNTriples,
-  getQuads,
   addQuad,
   removeQuad,
-} from "unrdf";
+  countQuads,
+} from "@unrdf/core";
 import { useQueryOptimizer } from "./useQueryOptimizer.mjs";
 import { useQueryPlanner } from "./useQueryPlanner.mjs";
 
@@ -21,7 +16,7 @@ import { useQueryPlanner } from "./useQueryPlanner.mjs";
  * This is the primary composable for performing SPARQL queries, SHACL validation,
  * set operations, and other graph manipulations.
  *
- * @param {Store} store - An unrdf Store instance, typically loaded via `useTurtle`.
+ * @param {Store} store - An @unrdf Store instance
  * @returns {object} An API object for operating on the graph.
  */
 export function useGraph(store) {
@@ -43,34 +38,7 @@ export function useGraph(store) {
     },
 
     /**
-     * Executes a SPARQL SELECT query.
-     * @param {string} sparql - The SPARQL SELECT query string.
-     * @returns {Promise<Array<object>>} An array of result bindings.
-     */
-    async select(sparql) {
-      return executeSelect(store, sparql);
-    },
-
-    /**
-     * Executes a SPARQL ASK query.
-     * @param {string} sparql - The SPARQL ASK query string.
-     * @returns {Promise<boolean>} The boolean result of the query.
-     */
-    async ask(sparql) {
-      return executeAsk(store, sparql);
-    },
-
-    /**
-     * Executes a SPARQL CONSTRUCT query.
-     * @param {string} sparql - The SPARQL CONSTRUCT query string.
-     * @returns {Promise<Store>} A new store with the constructed quads.
-     */
-    async construct(sparql) {
-      return executeConstruct(store, sparql);
-    },
-
-    /**
-     * Executes a generic SPARQL query.
+     * Executes a SPARQL query.
      * @param {string} sparql - The SPARQL query string.
      * @returns {Promise<object>} Query result object.
      */
@@ -84,7 +52,13 @@ export function useGraph(store) {
      * @returns {Array} Matching quads.
      */
     findQuads(pattern) {
-      return getQuads(store, pattern);
+      if (!pattern) return store.getQuads();
+      return store.getQuads(
+        pattern.subject,
+        pattern.predicate,
+        pattern.object,
+        pattern.graph
+      );
     },
 
     /**
@@ -106,16 +80,6 @@ export function useGraph(store) {
     },
 
     /**
-     * Checks if the graph is logically equivalent (isomorphic) to another graph.
-     * @param {object} otherGraph - Another `useGraph` instance or a raw Store.
-     * @returns {boolean}
-     */
-    isIsomorphic(otherGraph) {
-      const otherStore = otherGraph.store || otherGraph;
-      return isIsomorphic(store, otherStore);
-    },
-
-    /**
      * Returns a canonical representation of the graph.
      * @returns {string} Canonical N-Triples string
      */
@@ -124,11 +88,13 @@ export function useGraph(store) {
     },
 
     /**
-     * Serializes the graph to N-Triples format.
-     * @returns {string} N-Triples representation
+     * Count quads matching a pattern.
+     * @param {object} pattern - Optional quad pattern
+     * @returns {number} Count of matching quads
      */
-    toNTriples() {
-      return toNTriples(store);
+    countQuads(pattern) {
+      if (!pattern) return countQuads(store);
+      return countQuads(store, pattern.subject, pattern.predicate, pattern.object, pattern.graph);
     },
 
     /**

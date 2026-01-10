@@ -9,7 +9,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   UnrdfHooksBridge,
   resetUnrdfHooksBridge,
-} from "../../src/integrations/unrdf-hooks-bridge.mjs";
+} from "../../src/integrations/bree-hook-adapter.mjs";
 
 describe("UnrdfHooksBridge", () => {
   let bridge;

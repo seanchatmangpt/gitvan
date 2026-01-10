@@ -1,14 +1,19 @@
 /**
- * @fileoverview GitVan v3.0.0 — Unrdf Hooks Bridge
+ * @fileoverview GitVan Bree Hook Adapter
  *
- * Bridges @unrdf/hooks to Bree background job scheduler
- * Converts hook definitions to scheduled Bree jobs
+ * Adapts custom hook system to Bree background job scheduler.
+ *
+ * MIGRATION NOTE (v4.0):
+ * This adapter bridges custom hooks to Bree. In v5.0, this will be refactored
+ * to wrap @unrdf/hooks executor and delegate to Bree for background execution.
  *
  * Features:
  * - Hook-to-job registration
  * - Job scheduling and execution
  * - Audit trail logging
  * - Error handling and retry logic
+ *
+ * See: docs/HOOKS_MIGRATION_STRATEGY.md for migration plan
  *
  * @version 1.0.0
  * @license Apache-2.0

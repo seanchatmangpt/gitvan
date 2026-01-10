@@ -13,7 +13,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { ReactiveSubscriptionSystem } from "../../src/hooks/reactive-triggers.mjs";
 import { StateChangeDetector } from "../../src/hooks/state-change-detector.mjs";
-import { UnrdfHooksBridge } from "../../src/integrations/unrdf-hooks-bridge.mjs";
+import { UnrdfHooksBridge } from "../../src/integrations/bree-hook-adapter.mjs";
 import { RdfEngine } from "../../src/engines/RdfEngine.mjs";
 
 // Mock logger for testing

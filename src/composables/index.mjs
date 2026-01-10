@@ -26,5 +26,10 @@ export { useLock } from "./lock.mjs";
 export { useRegistry } from "./registry.mjs";
 export { usePack } from "./pack.mjs";
 
+// Federation composables (v3.2.0+)
+export { useFederationDiscovery } from "./federation-discovery.mjs";
+export { useFederatedQuery } from "./federated-query.mjs";
+export { useFederationEvents } from "./federation-events.mjs";
+
 // Re-export context utilities for convenience
 export { withGitVan, useGitVan, tryUseGitVan } from "../core/context.mjs";

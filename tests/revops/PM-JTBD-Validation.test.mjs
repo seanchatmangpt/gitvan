@@ -398,6 +398,7 @@ describe("VALIDATION 3: Churn Prediction Accuracy (Target ≥90%)", () => {
     execSync("git init", { cwd: testDir, stdio: "pipe" });
     execSync('git config user.email "test@test.com"', { cwd: testDir, stdio: "pipe" });
     execSync('git config user.name "Test User"', { cwd: testDir, stdio: "pipe" });
+    execSync("git config commit.gpgsign false", { cwd: testDir, stdio: "pipe" });
     writeFileSync(join(testDir, "README.md"), "test");
     execSync("git add .", { cwd: testDir, stdio: "pipe" });
     execSync('git commit -m "init"', { cwd: testDir, stdio: "pipe" });
@@ -625,6 +626,7 @@ describe("VALIDATION 4: Churn Intervention", () => {
     execSync("git init", { cwd: testDir, stdio: "pipe" });
     execSync('git config user.email "test@test.com"', { cwd: testDir, stdio: "pipe" });
     execSync('git config user.name "Test User"', { cwd: testDir, stdio: "pipe" });
+    execSync("git config commit.gpgsign false", { cwd: testDir, stdio: "pipe" });
     writeFileSync(join(testDir, "README.md"), "test");
     execSync("git add .", { cwd: testDir, stdio: "pipe" });
     execSync('git commit -m "init"', { cwd: testDir, stdio: "pipe" });

@@ -1,7 +1,7 @@
 # Session Memory Storage
 
 ## Purpose
-This directory stores session-based memory data, conversation history, and contextual information for development sessions using the Ollama-Flow orchestration system.
+This directory stores session-based memory data, conversation history, and contextual information for development sessions using the Claude-Flow orchestration system.
 
 ## Structure
 Sessions are organized by date and session ID for easy retrieval:
@@ -29,4 +29,4 @@ memory/sessions/
 5. **State Preservation**: Snapshot coordination state regularly
 
 ## Last Updated
-2025-09-16T05:18:37.863Z
+2025-12-18T06:07:17.835Z

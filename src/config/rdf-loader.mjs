@@ -1,67 +1,26 @@
 // src/config/rdf-loader.mjs
 // RDF configuration loader with SPARQL query support and SHACL validation
+// CRITICAL: This module requires unrdf. It will FAIL FAST if unrdf is unavailable.
+// No fallbacks. No n3. Either unrdf works or the system fails clearly.
 
-import n3 from "n3";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { dirname } from "node:path";
 import { configToQuads, envToQuads, CONFIG_NS } from "./config-parser.mjs";
 
-// Import only what we need from unrdf (avoiding the problematic modules)
-let parseTurtle = null;
-let toTurtle = null;
-
-// Lazy load these functions only if needed
-async function loadUnrdfFunctions() {
-  if (!parseTurtle || !toTurtle) {
-    try {
-      const unrdf = await import("unrdf/knowledge-engine");
-      parseTurtle = unrdf.parseTurtle;
-      toTurtle = unrdf.toTurtle;
-    } catch (error) {
-      // Fallback: use n3 directly
-      console.warn("Could not load unrdf functions, using n3 directly");
-    }
-  }
-}
-
-// Fallback Turtle parser using n3
-async function parseTurtleWithN3(ttl, baseIRI = "http://example.org/") {
-  const parser = new n3.Parser({ baseIRI });
-  const store = new n3.Store();
-  const quads = parser.parse(ttl);
-  for (const quad of quads) {
-    store.add(quad);
-  }
-  return store;
-}
-
-// Fallback Turtle serializer using n3
-async function toTurtleWithN3(store) {
-  // Define common prefixes for better readability
-  const prefixes = {
-    rdf: "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
-    rdfs: "http://www.w3.org/2000/01/rdf-schema#",
-    owl: "http://www.w3.org/2002/07/owl#",
-    xsd: "http://www.w3.org/2001/XMLSchema#",
-    dct: "http://purl.org/dc/terms/",
-    sh: "http://www.w3.org/ns/shacl#",
-    gv: "https://gitvan.dev/ontology#",
-    gvc: "https://gitvan.dev/ontology/config#",
-  };
-
-  const writer = new n3.Writer({ prefixes });
-  const quads = store.getQuads();
-  for (const quad of quads) {
-    writer.addQuad(quad);
-  }
-  return new Promise((resolve, reject) => {
-    writer.end((err, result) => {
-      if (err) reject(err);
-      else resolve(result);
-    });
-  });
+// FAIL FAST: Import unrdf or die
+let unrdf = null;
+try {
+  unrdf = await import("unrdf");
+} catch (error) {
+  throw new Error(
+    `CRITICAL STARTUP ERROR: unrdf module not available.\n` +
+    `GitVan RDF layer requires unrdf@4.2.3+ to be fully functional.\n` +
+    `Error details: ${error.message}\n` +
+    `Fix: npm install unrdf --save or resolve npm dependency issues\n` +
+    `Do not attempt to use GitVan without working unrdf support.`
+  );
 }
 
 const __filename = fileURLToPath(import.meta.url);
@@ -71,7 +30,7 @@ const RDF_NS = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
 const XSD_NS = "http://www.w3.org/2001/XMLSchema#";
 
 /**
- * Load and parse the configuration ontology
+ * Load and parse the configuration ontology using unrdf
  * @returns {Promise<Store>} Store containing ontology definitions
  */
 async function loadConfigOntology() {
@@ -79,16 +38,12 @@ async function loadConfigOntology() {
     const ontologyPath = join(__dirname, "config-ontology.ttl");
     const content = await readFile(ontologyPath, "utf-8");
 
-    // Try to load with unrdf first, then fallback to n3
-    if (!parseTurtle) {
-      await loadUnrdfFunctions();
+    // Use unrdf to parse Turtle
+    if (!unrdf.parseTurtle) {
+      throw new Error("unrdf does not export parseTurtle function");
     }
 
-    if (parseTurtle) {
-      return await parseTurtle(content);
-    } else {
-      return await parseTurtleWithN3(content);
-    }
+    return await unrdf.parseTurtle(content);
   } catch (error) {
     throw new Error(`Failed to load config ontology: ${error.message}`);
   }
@@ -111,11 +66,11 @@ export async function loadRDFConfig(options = {}) {
     configUri = "urn:gitvan:config",
   } = options;
 
-  // Load ontology
+  // Load ontology via unrdf
   const ontologyStore = await loadConfigOntology();
 
   // Create main config store
-  const configStore = new n3.Store();
+  const configStore = unrdf.createStore ? unrdf.createStore() : ontologyStore;
 
   // Add ontology quads to config store
   for (const quad of ontologyStore.match()) {
@@ -147,7 +102,7 @@ export async function loadRDFConfig(options = {}) {
 function createConfigObject(store, configUri = "urn:gitvan:config") {
   return {
     /**
-     * Get configuration value by path
+     * Get configuration value by path via SPARQL query
      * @param {string} path - Path like "ai.provider" or "runtime.timezone"
      * @returns {Promise<any>} Configuration value
      */
@@ -158,15 +113,21 @@ function createConfigObject(store, configUri = "urn:gitvan:config") {
       }
 
       try {
-        const quads = store.getQuads(
-          n3.DataFactory.namedNode(configUri),
-          n3.DataFactory.namedNode(predicate)
-        );
+        // Use unrdf to execute SPARQL query
+        if (!unrdf.query) {
+          throw new Error("unrdf does not export query function");
+        }
 
-        if (quads.length === 0) return undefined;
+        const sparql = `
+          SELECT ?value WHERE {
+            <${configUri}> <${predicate}> ?value
+          }
+        `;
 
-        const value = termToValue(quads[0].object);
-        return value;
+        const results = await unrdf.query(sparql, store);
+        if (results.length === 0) return undefined;
+
+        return termToValue(results[0].value);
       } catch (error) {
         console.error(`Error getting config value for ${path}:`, error.message);
         return undefined;
@@ -174,22 +135,19 @@ function createConfigObject(store, configUri = "urn:gitvan:config") {
     },
 
     /**
-     * Execute basic SPARQL-like query on config store
-     * Note: This is a simplified implementation that handles basic patterns
+     * Execute SPARQL query against config store
      * @param {string} sparql - SPARQL query string
      * @returns {Promise<Object>} Query results
      */
     async query(sparql) {
+      if (!unrdf.query) {
+        throw new Error("unrdf query engine not available");
+      }
+
       try {
-        // For now, return a simple response indicating SPARQL is limited
-        // In production, this would use a full SPARQL engine
-        return {
-          head: { vars: [] },
-          results: { bindings: [] },
-          message: "Basic query support - full SPARQL support requires unrdf",
-        };
+        return await unrdf.query(sparql, store);
       } catch (error) {
-        throw new Error(`Query failed: ${error.message}`);
+        throw new Error(`SPARQL query failed: ${error.message}`);
       }
     },
 
@@ -198,42 +156,32 @@ function createConfigObject(store, configUri = "urn:gitvan:config") {
      * @returns {Promise<Object>} Validation result { valid: boolean, results: Array }
      */
     async validate() {
-      // SHACL validation requires full RDF engine (Phase 2+)
-      // For now, return basic validation that config is structurally sound
-      try {
-        // Verify that config store has expected properties
-        const quads = store.getQuads(n3.DataFactory.namedNode(configUri));
-        if (quads.length === 0) {
-          return {
-            valid: false,
-            results: [{
-              focusNode: configUri,
-              resultPath: "rdf:type",
-              resultMessage: "Configuration has no properties defined"
-            }]
-          };
-        }
+      if (!unrdf.validate) {
+        throw new Error("unrdf validation engine not available");
+      }
 
-        // Config has properties, validation passes
-        return { valid: true, results: [] };
+      try {
+        const result = await unrdf.validate(store);
+        return {
+          valid: result.conforms,
+          results: result.results || [],
+        };
       } catch (error) {
-        // If validation fails, return valid (non-blocking in Phase 1)
-        console.warn("Config validation not available:", error.message);
-        return { valid: true, results: [] };
+        throw new Error(`SHACL validation failed: ${error.message}`);
       }
     },
 
     /**
-     * Export configuration as Turtle
+     * Export configuration as Turtle using unrdf
      * @returns {Promise<string>} Turtle representation
      */
     async toTurtle() {
+      if (!unrdf.toTurtle) {
+        throw new Error("unrdf Turtle export not available");
+      }
+
       try {
-        if (!toTurtle) {
-          return await toTurtleWithN3(store);
-        } else {
-          return await toTurtle(store);
-        }
+        return await unrdf.toTurtle(store);
       } catch (error) {
         throw new Error(`Failed to convert to Turtle: ${error.message}`);
       }
@@ -246,7 +194,7 @@ function createConfigObject(store, configUri = "urn:gitvan:config") {
     async toPOJO() {
       try {
         const obj = {};
-        const quads = store.getQuads(n3.DataFactory.namedNode(configUri));
+        const quads = store.match(unrdf.namedNode(configUri));
 
         for (const quad of quads) {
           const predUri = quad.predicate.value;
@@ -265,7 +213,7 @@ function createConfigObject(store, configUri = "urn:gitvan:config") {
     },
 
     /**
-     * Get the underlying RDF store
+     * Get the underlying RDF store (unrdf)
      * @returns {Store} The unrdf store
      */
     getStore() {
@@ -279,7 +227,7 @@ function createConfigObject(store, configUri = "urn:gitvan:config") {
     async paths() {
       try {
         const paths = new Set();
-        const quads = store.getQuads(n3.DataFactory.namedNode(configUri));
+        const quads = store.match(unrdf.namedNode(configUri));
 
         for (const quad of quads) {
           const predUri = quad.predicate.value;
@@ -315,7 +263,7 @@ function createConfigObject(store, configUri = "urn:gitvan:config") {
  */
 function pathToPredicate(path) {
   const map = {
-    "rootDir": `${CONFIG_NS}hasRootDir`,
+    rootDir: `${CONFIG_NS}hasRootDir`,
     "jobs.dir": `${CONFIG_NS}jobsDir`,
     "jobs.scan.patterns": `${CONFIG_NS}jobScanPatterns`,
     "jobs.scan.ignore": `${CONFIG_NS}jobIgnorePatterns`,
@@ -403,21 +351,7 @@ function predicateToPath(predicateUri) {
     [`${CONFIG_NS}graphValidateOnLoad`]: "graph.validateOnLoad",
   };
 
-  // Check if it's in the known map
-  if (reverseMap[predicateUri]) {
-    return reverseMap[predicateUri];
-  }
-
-  // Handle dynamic predicates (unmapped config keys)
-  // Dynamic predicates are in format: https://gitvan.dev/ontology/config#<path-with-dashes>
-  if (predicateUri && predicateUri.startsWith(CONFIG_NS)) {
-    const suffix = predicateUri.slice(CONFIG_NS.length);
-    // Convert dashes back to dots to reconstruct the path
-    const path = suffix.replace(/-/g, ".");
-    return path;
-  }
-
-  return null;
+  return reverseMap[predicateUri] || null;
 }
 
 /**

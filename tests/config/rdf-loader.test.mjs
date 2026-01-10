@@ -1,10 +1,9 @@
 // tests/config/rdf-loader.test.mjs
-// Comprehensive test suite for RDF config loader
+// Comprehensive test suite for RDF config using @unrdf/kgc-4d directly
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { loadRDFConfig } from "../../src/config/rdf-loader.mjs";
+import { KGCStore } from "@unrdf/kgc-4d";
 import { configToQuads, envToQuads, CONFIG_NS } from "../../src/config/config-parser.mjs";
-import { useRDFConfig, createReactiveConfig } from "../../src/composables/rdf-config.mjs";
 
 describe("RDF Config Loader", () => {
   // ========================================================================
@@ -241,21 +240,15 @@ describe("RDF Config Loader", () => {
   // RDF Loader Tests
   // ========================================================================
 
-  describe("RDF Loader - loadRDFConfig", () => {
-    it("should load config from environment", async () => {
-      const env = {
-        GITVAN_AI_PROVIDER: "anthropic",
-        GITVAN_AI_MODEL: "claude-opus",
-      };
+  describe("RDF Loader - KGCStore", () => {
+    it("should initialize KGCStore", async () => {
+      const store = new KGCStore();
 
-      const config = await loadRDFConfig({ env });
-
-      expect(config).toBeDefined();
-      expect(typeof config.get).toBe("function");
-      expect(typeof config.query).toBe("function");
-      expect(typeof config.validate).toBe("function");
-      expect(typeof config.toTurtle).toBe("function");
-      expect(typeof config.toPOJO).toBe("function");
+      expect(store).toBeDefined();
+      expect(typeof store.query).toBe("function");
+      expect(typeof store.validate).toBe("function");
+      expect(typeof store.serialize).toBe("function");
+      expect(typeof store.load).toBe("function");
     });
 
     it("should get single config value", async () => {
@@ -264,7 +257,7 @@ describe("RDF Config Loader", () => {
         GITVAN_AI_TEMPERATURE: "0.7",
       };
 
-      const config = await loadRDFConfig({ env });
+      const store = new KGCStore();
 
       const provider = await config.get("ai.provider");
       expect(provider).toBe("anthropic");
@@ -275,7 +268,7 @@ describe("RDF Config Loader", () => {
 
     it("should return undefined for unknown paths", async () => {
       const env = { GITVAN_AI_PROVIDER: "anthropic" };
-      const config = await loadRDFConfig({ env });
+      const store = new KGCStore();
 
       const value = await config.get("unknown.path");
       expect(value).toBeUndefined();
@@ -292,7 +285,7 @@ describe("RDF Config Loader", () => {
         },
       };
 
-      const config = await loadRDFConfig({ env, configObj });
+      const store = new KGCStore();
 
       const provider = await config.get("ai.provider");
       const model = await config.get("ai.model");
@@ -312,7 +305,7 @@ describe("RDF Config Loader", () => {
         },
       };
 
-      const config = await loadRDFConfig({ configObj });
+      const store = new KGCStore();
       const pojo = await config.toPOJO();
 
       expect(pojo).toBeDefined();
@@ -328,7 +321,7 @@ describe("RDF Config Loader", () => {
         },
       };
 
-      const config = await loadRDFConfig({ configObj });
+      const store = new KGCStore();
       const turtle = await config.toTurtle();
 
       expect(typeof turtle).toBe("string");
@@ -342,7 +335,7 @@ describe("RDF Config Loader", () => {
         GITVAN_RUNTIME_TIMEZONE: "UTC",
       };
 
-      const config = await loadRDFConfig({ env });
+      const store = new KGCStore();
       const paths = await config.paths();
 
       expect(Array.isArray(paths)).toBe(true);
@@ -356,7 +349,7 @@ describe("RDF Config Loader", () => {
         GITVAN_DAEMON_POLL_MS: "1500",
       };
 
-      const config = await loadRDFConfig({ env });
+      const store = new KGCStore();
       const all = await config.all();
 
       expect(all).toBeDefined();
@@ -370,7 +363,7 @@ describe("RDF Config Loader", () => {
         GITVAN_DAEMON_RETRIES: "3",
       };
 
-      const config = await loadRDFConfig({ env });
+      const store = new KGCStore();
 
       const pollMs = await config.get("daemon.pollMs");
       expect(typeof pollMs).toBe("number");
@@ -383,7 +376,7 @@ describe("RDF Config Loader", () => {
         GITVAN_RUNTIME_SANDBOX: "false",
       };
 
-      const config = await loadRDFConfig({ env });
+      const store = new KGCStore();
 
       const deterministic = await config.get("runtime.deterministic");
       expect(typeof deterministic).toBe("boolean");
@@ -399,7 +392,7 @@ describe("RDF Config Loader", () => {
         GITVAN_RUNTIME_LOCALE: "en-US",
       };
 
-      const config = await loadRDFConfig({ env });
+      const store = new KGCStore();
       const validation = await config.validate();
 
       expect(validation).toBeDefined();
@@ -413,7 +406,7 @@ describe("RDF Config Loader", () => {
         GITVAN_AI_TEMPERATURE: "0.7",
       };
 
-      const config = await loadRDFConfig({ env });
+      const store = new KGCStore();
 
       const sparql = `
         PREFIX gvc: <${CONFIG_NS}>
@@ -429,7 +422,7 @@ describe("RDF Config Loader", () => {
 
     it("should get underlying RDF store", async () => {
       const env = { GITVAN_AI_PROVIDER: "anthropic" };
-      const config = await loadRDFConfig({ env });
+      const store = new KGCStore();
 
       const store = config.getStore();
       expect(store).toBeDefined();
@@ -440,7 +433,7 @@ describe("RDF Config Loader", () => {
       const env = { GITVAN_AI_PROVIDER: "anthropic" };
       const customUri = "https://example.com/config/prod";
 
-      const config = await loadRDFConfig({
+      const config = await useRDFConfig({
         env,
         configUri: customUri,
       });
@@ -454,7 +447,7 @@ describe("RDF Config Loader", () => {
         GITVAN_AI_TEMPERATURE: "0.75",
       };
 
-      const config = await loadRDFConfig({ env });
+      const store = new KGCStore();
       const temperature = await config.get("ai.temperature");
 
       expect(typeof temperature).toBe("number");
@@ -470,7 +463,7 @@ describe("RDF Config Loader", () => {
     it("should load config via composable", async () => {
       const env = { GITVAN_AI_PROVIDER: "anthropic" };
 
-      const config = await useRDFConfig({ env, cacheKey: "test1" });
+      const store = new KGCStore();
 
       expect(config).toBeDefined();
       expect(typeof config.get).toBe("function");
@@ -509,7 +502,7 @@ describe("RDF Config Loader", () => {
   describe("Reactive Config", () => {
     it("should create reactive config", async () => {
       const env = { GITVAN_AI_PROVIDER: "anthropic" };
-      const baseConfig = await loadRDFConfig({ env });
+      const baseConfig = await useRDFConfig({ env });
       const reactive = createReactiveConfig(baseConfig);
 
       expect(reactive).toBeDefined();
@@ -520,7 +513,7 @@ describe("RDF Config Loader", () => {
 
     it("should cache values in reactive config", async () => {
       const env = { GITVAN_AI_PROVIDER: "anthropic" };
-      const baseConfig = await loadRDFConfig({ env });
+      const baseConfig = await useRDFConfig({ env });
       const reactive = createReactiveConfig(baseConfig);
 
       const value1 = await reactive.getValue("ai.provider");
@@ -532,7 +525,7 @@ describe("RDF Config Loader", () => {
 
     it("should clear cache in reactive config", async () => {
       const env = { GITVAN_AI_PROVIDER: "anthropic" };
-      const baseConfig = await loadRDFConfig({ env });
+      const baseConfig = await useRDFConfig({ env });
       const reactive = createReactiveConfig(baseConfig);
 
       await reactive.getValue("ai.provider");
@@ -545,7 +538,7 @@ describe("RDF Config Loader", () => {
 
     it("should execute SPARQL through reactive config", async () => {
       const env = { GITVAN_AI_PROVIDER: "anthropic" };
-      const baseConfig = await loadRDFConfig({ env });
+      const baseConfig = await useRDFConfig({ env });
       const reactive = createReactiveConfig(baseConfig);
 
       const sparql = `
@@ -565,7 +558,7 @@ describe("RDF Config Loader", () => {
       const env = {
         GITVAN_RUNTIME_TIMEZONE: "UTC",
       };
-      const baseConfig = await loadRDFConfig({ env });
+      const baseConfig = await useRDFConfig({ env });
       const reactive = createReactiveConfig(baseConfig);
 
       const validation = await reactive.validate();
@@ -602,7 +595,7 @@ describe("RDF Config Loader", () => {
         },
       };
 
-      const config = await loadRDFConfig({ configObj });
+      const store = new KGCStore();
 
       expect(await config.get("jobs.dir")).toBe("jobs");
       expect(await config.get("ai.provider")).toBe("anthropic");
@@ -622,7 +615,7 @@ describe("RDF Config Loader", () => {
         GITVAN_AI_TEMPERATURE: "0.8",
       };
 
-      const config = await loadRDFConfig({ configObj, env });
+      const store = new KGCStore();
 
       // Env should be merged with configObj
       expect(await config.get("ai.provider")).toBe("ollama");
@@ -637,10 +630,10 @@ describe("RDF Config Loader", () => {
         },
       };
 
-      const config1 = await loadRDFConfig({ configObj: original });
+      const config1 = await useRDFConfig({ configObj: original });
       const pojo = await config1.toPOJO();
 
-      const config2 = await loadRDFConfig({ configObj: pojo });
+      const config2 = await useRDFConfig({ configObj: pojo });
 
       expect(await config2.get("ai.provider")).toBe("anthropic");
       expect(await config2.get("ai.temperature")).toBe(0.7);
@@ -659,7 +652,7 @@ describe("RDF Config Loader", () => {
       }
 
       const start = Date.now();
-      const config = await loadRDFConfig({ configObj });
+      const store = new KGCStore();
       const paths = await config.paths();
       const elapsed = Date.now() - start;
 

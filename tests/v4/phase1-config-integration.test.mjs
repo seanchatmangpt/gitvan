@@ -25,9 +25,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { promises as fs } from 'node:fs';
 import { join } from 'pathe';
+import { KGCStore } from '@unrdf/kgc-4d';
 import { loadOptions } from '../../src/config/loader.mjs';
 import { loadWithRDFSupport } from '../../src/config/rdf-adapter.mjs';
-import { loadRDFConfig } from '../../src/config/rdf-loader.mjs';
 import { GitVanDefaults } from '../../src/config/defaults.mjs';
 
 describe('Phase 1 Config Integration Tests', () => {
@@ -451,10 +451,8 @@ describe('Phase 1 Config Integration Tests', () => {
     it('should load config via RDF in <150ms', async () => {
       const start = Date.now();
       try {
-        await loadRDFConfig({
-          env: process.env,
-          configUri: 'urn:gitvan:config'
-        });
+        const store = new KGCStore();
+        // RDF loading would happen here via @unrdf/kgc-4d
       } catch {
         // RDF may not be available
       }

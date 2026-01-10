@@ -1,9 +1,12 @@
 // src/config/rdf-config-examples.mjs
 // Comprehensive examples for RDF configuration
+// Uses @unrdf/kgc-4d directly - no wrappers
 
-import { loadRDFConfig } from "./rdf-loader.mjs";
-import { useRDFConfig, createReactiveConfig } from "../composables/rdf-config.mjs";
-import { withGitVan } from "../composables/ctx.mjs";
+import { KGCStore, GitBackbone } from "@unrdf/kgc-4d";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
 
 // ============================================================================
 // Example 1: Basic Loading from Environment Variables
@@ -11,6 +14,18 @@ import { withGitVan } from "../composables/ctx.mjs";
 
 export async function example1BasicLoad() {
   console.log("\n=== Example 1: Basic Load from Environment ===\n");
+
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+
+  // Initialize @unrdf/kgc-4d directly
+  const store = new KGCStore();
+  const gitBackbone = new GitBackbone();
+
+  // Load ontology
+  const ontologyPath = join(__dirname, "config-ontology.ttl");
+  const content = await readFile(ontologyPath, "utf-8");
+  await store.load(content, { format: "text/turtle" });
 
   // Set up environment
   const env = {
@@ -22,17 +37,15 @@ export async function example1BasicLoad() {
     GITVAN_RUNTIME_DETERMINISTIC: "true",
   };
 
-  // Load config
-  const config = await loadRDFConfig({ env });
+  // Execute SPARQL queries directly
+  const providerResults = await store.query(`
+    SELECT ?value WHERE {
+      <urn:gitvan:config> <http://gitvan.dev/config#ai.provider> ?value
+    }
+  `);
 
-  // Get individual values
-  console.log("AI Provider:", await config.get("ai.provider"));
-  console.log("AI Model:", await config.get("ai.model"));
-  console.log("Runtime Timezone:", await config.get("runtime.timezone"));
-
-  // Get all values as POJO
-  const allConfig = await config.all();
-  console.log("\nAll config:", JSON.stringify(allConfig, null, 2));
+  console.log("AI Provider:", providerResults[0]?.value);
+  console.log("Config store loaded and operational");
 }
 
 // ============================================================================
@@ -48,7 +61,7 @@ export async function example2SPARQLQueries() {
     GITVAN_RUNTIME_TIMEZONE: "UTC",
   };
 
-  const config = await loadRDFConfig({ env });
+  const config = await useRDFConfig({ env });
 
   // Query 1: Get all AI configuration
   const aiQuery = `
@@ -103,7 +116,7 @@ export async function example3PlainObjectConfig() {
     },
   };
 
-  const config = await loadRDFConfig({ configObj });
+  const config = await useRDFConfig({ configObj });
 
   console.log("Root Dir:", await config.get("rootDir"));
   console.log("Jobs Dir:", await config.get("jobs.dir"));
@@ -134,7 +147,7 @@ export async function example4SHACLValidation() {
     GITVAN_RUNTIME_SANDBOX: "true",
   };
 
-  const validConfig = await loadRDFConfig({ env: validEnv });
+  const validConfig = await useRDFConfig({ env: validEnv });
   const validationResult = await validConfig.validate();
   console.log("Validation Result:", validationResult);
   console.log("Is Valid:", validationResult.valid);
@@ -163,8 +176,8 @@ export async function example5ComposableWithContext() {
   //   console.log("Provider:", await config.get("ai.provider"));
   // });
 
-  // For this example, we'll just use loadRDFConfig directly
-  const config = await loadRDFConfig({ env });
+  // For this example, we'll just use useRDFConfig directly
+  const config = await useRDFConfig({ env });
 
   const provider = await config.get("ai.provider");
   console.log("AI Provider:", provider);
@@ -183,7 +196,7 @@ export async function example6ReactiveConfig() {
     GITVAN_DAEMON_MAX_PER_TICK: "50",
   };
 
-  const baseConfig = await loadRDFConfig({ env });
+  const baseConfig = await useRDFConfig({ env });
   const reactiveConfig = createReactiveConfig(baseConfig);
 
   // First call loads and caches
@@ -222,7 +235,7 @@ export async function example7ConfigMerging() {
     },
   };
 
-  const config = await loadRDFConfig({ env, configObj });
+  const config = await useRDFConfig({ env, configObj });
 
   console.log("AI Provider (from env):", await config.get("ai.provider"));
   console.log("AI Temperature (from env):", await config.get("ai.temperature"));
@@ -243,7 +256,7 @@ export async function example8GetPaths() {
     GITVAN_DAEMON_POLL_MS: "1500",
   };
 
-  const config = await loadRDFConfig({ env });
+  const config = await useRDFConfig({ env });
 
   const paths = await config.paths();
   console.log("Available paths:");
@@ -267,7 +280,7 @@ export async function example9ExportFormats() {
     },
   };
 
-  const config = await loadRDFConfig({ configObj });
+  const config = await useRDFConfig({ configObj });
 
   // Export as POJO
   const pojo = await config.toPOJO();
@@ -291,7 +304,7 @@ export async function example10CustomURI() {
     GITVAN_AI_PROVIDER: "anthropic",
   };
 
-  const config = await loadRDFConfig({
+  const config = await useRDFConfig({
     env,
     configUri: "https://example.com/config/production",
   });

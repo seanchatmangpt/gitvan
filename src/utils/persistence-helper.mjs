@@ -9,6 +9,7 @@
 import { promises as fs } from "node:fs";
 import { join, dirname } from "pathe";
 import { parseTurtle, toTurtle } from "unrdf";
+import { namespaceManager } from "./namespace-manager.mjs";
 
 /**
  * Persistence Helper Class
@@ -207,17 +208,94 @@ export class PersistenceHelper {
   }
 
   /**
-   * Validate Turtle content
+   * Validate Turtle content with enhanced error reporting
    * @param {string} content - Turtle content to validate
+   * @param {string} filePath - Optional file path for error context
    * @returns {Promise<void>}
    */
-  async validateTurtleContent(content) {
+  async validateTurtleContent(content, filePath = null) {
     try {
       // Use unrdf's parseTurtle to validate
       parseTurtle(content);
     } catch (error) {
-      throw new Error(`Invalid Turtle content: ${error.message}`);
+      // Extract line information from error if available
+      const lineMatch = error.message.match(/line (\d+)/i);
+      const lineNumber = lineMatch ? parseInt(lineMatch[1]) : null;
+
+      // Generate context lines for error message
+      let context = "";
+      if (lineNumber) {
+        const lines = content.split("\n");
+        const contextStart = Math.max(0, lineNumber - 3);
+        const contextEnd = Math.min(lines.length, lineNumber + 2);
+        context = "\nContext:\n" + lines.slice(contextStart, contextEnd).join("\n");
+      }
+
+      const errorMsg = `Invalid Turtle content${filePath ? ` in ${filePath}` : ""}${lineNumber ? ` at line ${lineNumber}` : ""}: ${error.message}${context}`;
+      throw new Error(errorMsg);
     }
+  }
+
+  /**
+   * Validate namespace prefixes in Turtle content
+   * @param {string} content - Turtle content to validate
+   * @param {string} filePath - Optional file path for error context
+   * @returns {object} Validation result
+   */
+  validateNamespacePrefixes(content, filePath = null) {
+    const result = namespaceManager.validatePrefixDeclarations(content);
+
+    if (!result.valid) {
+      this.logger.warn(
+        `Namespace validation issues in ${filePath || "Turtle content"}:`,
+        result.issues
+      );
+    }
+
+    return {
+      valid: result.valid,
+      issues: result.issues,
+      file: filePath,
+      summary: result.summary,
+    };
+  }
+
+  /**
+   * Comprehensive Turtle file validation
+   * @param {string} content - Turtle content
+   * @param {string} filePath - Optional file path for error context
+   * @param {object} options - Validation options
+   * @returns {Promise<object>} Comprehensive validation result
+   */
+  async validateTurtleFile(content, filePath = null, options = {}) {
+    const { checkNamespaces = true, checkSyntax = true } = options;
+
+    const result = {
+      valid: true,
+      errors: [],
+      warnings: [],
+      file: filePath,
+    };
+
+    // Syntax validation
+    if (checkSyntax) {
+      try {
+        await this.validateTurtleContent(content, filePath);
+      } catch (error) {
+        result.valid = false;
+        result.errors.push(error.message);
+      }
+    }
+
+    // Namespace validation
+    if (checkNamespaces) {
+      const nsResult = this.validateNamespacePrefixes(content, filePath);
+      if (!nsResult.valid) {
+        result.warnings.push(...nsResult.issues.map((i) => i.message));
+      }
+    }
+
+    return result;
   }
 
   /**

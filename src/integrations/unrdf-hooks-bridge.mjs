@@ -16,6 +16,8 @@
 
 import { getBreeScheduler, resetBreeScheduler } from "../jobs/bree-scheduler.mjs";
 import { createLogger } from "../utils/logger.mjs";
+import { ReactiveSubscriptionSystem } from "../hooks/reactive-triggers.mjs";
+import { StateChangeDetector } from "../hooks/state-change-detector.mjs";
 // TODO: Re-enable validation once zod is installed
 // import { validateHookDefinition, validateUnrdfBridgeConfig } from "../schemas/hooks.schema.mjs";
 
@@ -71,6 +73,24 @@ export class UnrdfHooksBridge {
     this.registeredHooks = new Map();
     this.executionLog = [];
     this.jobExecutions = new Map();
+
+    // Reactive hooks support (v4.0.0+)
+    this.reactiveSubscriptions = new ReactiveSubscriptionSystem({
+      logger: this.logger,
+      debounceMs: options.debounceMs || 10,
+      batchSize: options.batchSize || 50,
+      enableMetrics: options.enableMetrics !== false,
+    });
+
+    this.stateChangeDetector = new StateChangeDetector({
+      logger: this.logger,
+      trackHistory: true,
+      historyLimit: options.historyLimit || 1000,
+      enableCompression: true,
+    });
+
+    this.graphSnapshots = new Map();
+    this.reactiveHooks = new Map();
 
     this.initialized = false;
   }
@@ -396,6 +416,216 @@ export class UnrdfHooksBridge {
   }
 
   /**
+   * Register a reactive hook
+   *
+   * Reactive hooks subscribe to graph state changes and trigger
+   * automatically when specified conditions are met.
+   *
+   * @async
+   * @param {Object} hookDef - Hook definition
+   * @param {string} hookDef.id - Hook ID
+   * @param {string} hookDef.name - Hook name
+   * @param {Function} hookDef.callback - Callback function to execute on change
+   * @param {Object} [hookDef.filter] - Change filter options
+   * @returns {Promise<Object>} Registration result
+   */
+  async registerReactiveHook(hookDef) {
+    await this.initialize();
+
+    const { id, name, callback, filter = {} } = hookDef;
+
+    if (!id) {
+      throw new Error("Reactive hook definition must have an id");
+    }
+    if (typeof callback !== "function") {
+      throw new Error("Reactive hook definition must have a callback function");
+    }
+
+    try {
+      this.logger.info(`🔴 Registering reactive hook: ${id}`);
+
+      // Subscribe to changes
+      const subscriptionId = this.reactiveSubscriptions.subscribe(callback, {
+        id: `reactive_${id}`,
+        filter,
+      });
+
+      // Track reactive hook
+      this.reactiveHooks.set(id, {
+        hookDef,
+        subscriptionId,
+        registeredAt: new Date(),
+      });
+
+      this.logger.info(
+        `✅ Reactive hook registered: ${id} (subscription: ${subscriptionId})`
+      );
+
+      return {
+        success: true,
+        hookId: id,
+        subscriptionId,
+        filter,
+      };
+    } catch (error) {
+      this.logger.error(`❌ Failed to register reactive hook ${id}:`, error.message);
+      throw new Error(`Failed to register reactive hook ${id}: ${error.message}`);
+    }
+  }
+
+  /**
+   * Unregister a reactive hook
+   *
+   * @async
+   * @param {string} hookId - Hook ID to unregister
+   * @returns {Promise<Object>} Unregistration result
+   */
+  async unregisterReactiveHook(hookId) {
+    if (!this.reactiveHooks.has(hookId)) {
+      this.logger.warn(`⚠️ Reactive hook ${hookId} not found`);
+      return { success: false, message: "Reactive hook not found" };
+    }
+
+    try {
+      const reactiveHook = this.reactiveHooks.get(hookId);
+      this.reactiveSubscriptions.unsubscribe(reactiveHook.subscriptionId);
+      this.reactiveHooks.delete(hookId);
+
+      this.logger.info(`✅ Reactive hook unregistered: ${hookId}`);
+      return { success: true, hookId };
+    } catch (error) {
+      this.logger.error(`❌ Failed to unregister reactive hook ${hookId}:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Notify reactive hooks of graph state changes
+   *
+   * Creates a snapshot of the graph and detects changes since the last snapshot.
+   * Notifies registered reactive hooks of any changes.
+   *
+   * @async
+   * @param {Object} graph - Current graph state
+   * @param {string} [previousSnapshotId] - Previous snapshot ID (optional)
+   * @returns {Promise<Object>} Notification result
+   */
+  async notifyGraphChanges(graph, previousSnapshotId) {
+    await this.initialize();
+
+    const startTime = performance.now();
+
+    try {
+      // Create current snapshot
+      const currentSnapshotId = this.stateChangeDetector.createSnapshot(graph);
+
+      // Detect changes
+      let detectionResult;
+      if (previousSnapshotId && previousSnapshotId !== currentSnapshotId) {
+        detectionResult = this.stateChangeDetector.detectChanges(
+          previousSnapshotId,
+          currentSnapshotId
+        );
+      } else {
+        // Use latest previous snapshot if available
+        const snapshots = this.stateChangeDetector.getSnapshots();
+        if (snapshots.length > 1) {
+          const latest = snapshots[snapshots.length - 2];
+          detectionResult = this.stateChangeDetector.detectChanges(
+            latest.id,
+            currentSnapshotId
+          );
+        } else {
+          detectionResult = {
+            changes: [],
+            affectedSubjects: [],
+            changeCount: 0,
+            detectionTime: 0,
+            deltaSize: 0,
+            currentSnapshotId,
+          };
+        }
+      }
+
+      // Notify subscriptions of each change
+      let notificationCount = 0;
+      for (const change of detectionResult.changes) {
+        const changeNotification = {
+          subject: change.subject,
+          predicate: change.predicate,
+          object: change.newValue || change.oldValue || "",
+          type: change.type,
+          oldValue: change.oldValue,
+          newValue: change.newValue,
+        };
+
+        const notified = await this.reactiveSubscriptions.notifyChange(
+          changeNotification
+        );
+        notificationCount += notified;
+      }
+
+      const duration = performance.now() - startTime;
+
+      const result = {
+        success: true,
+        currentSnapshotId,
+        previousSnapshotId: detectionResult.previousSnapshotId || previousSnapshotId,
+        changeCount: detectionResult.changeCount,
+        affectedSubjects: detectionResult.affectedSubjects,
+        notificationCount,
+        detectionTime: detectionResult.detectionTime,
+        notificationTime: duration,
+        totalTime: duration,
+      };
+
+      if (detectionResult.changeCount > 0) {
+        this.logger.info(
+          `🔔 Notified reactive hooks: ${detectionResult.changeCount} changes, ${notificationCount} notifications`
+        );
+      }
+
+      return result;
+    } catch (error) {
+      const duration = performance.now() - startTime;
+      this.logger.error(`❌ Failed to notify graph changes:`, error.message);
+
+      return {
+        success: false,
+        error: error.message,
+        notificationTime: duration,
+      };
+    }
+  }
+
+  /**
+   * Get reactive hook subscriptions
+   *
+   * @returns {Array<Object>} List of reactive hook subscriptions
+   */
+  listReactiveHooks() {
+    return Array.from(this.reactiveHooks.values()).map((hook) => ({
+      hookId: hook.hookDef.id,
+      hookName: hook.hookDef.name,
+      subscriptionId: hook.subscriptionId,
+      registeredAt: hook.registeredAt,
+    }));
+  }
+
+  /**
+   * Get reactive subscription metrics
+   *
+   * @returns {Object} Subscription metrics
+   */
+  getReactiveMetrics() {
+    return {
+      subscriptions: this.reactiveSubscriptions.getMetrics(),
+      stateChanges: this.stateChangeDetector.getMetrics(),
+      registeredReactiveHooks: this.reactiveHooks.size,
+    };
+  }
+
+  /**
    * Gracefully shutdown the bridge
    *
    * @async
@@ -408,6 +638,11 @@ export class UnrdfHooksBridge {
       if (this.scheduler.isRunning) {
         await this.scheduler.shutdown();
       }
+
+      // Clean up reactive resources
+      this.reactiveSubscriptions.clear();
+      this.stateChangeDetector.reset();
+
       this.initialized = false;
       this.logger.info("✅ UnrdfHooksBridge shutdown complete");
     } catch (error) {

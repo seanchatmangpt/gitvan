@@ -4,6 +4,8 @@
 
 import { useGraph } from "../composables/graph.mjs";
 import { useGraphCache } from "../composables/useGraphCache.mjs";
+import { CompositePredicates } from "./CompositePredicates.mjs";
+import { ContextEnricher } from "./ContextEnricher.mjs";
 
 /**
  * Predicate evaluator that determines if hook conditions are met
@@ -20,6 +22,9 @@ export class PredicateEvaluator {
    * @param {object} [options.logger] - Logger instance
    * @param {object} [options.cache] - Optional pre-configured cache instance
    * @param {boolean} [options.enableCache=true] - Enable query result caching
+   * @param {number} [options.asyncTimeoutMs=5000] - Async predicate timeout
+   * @param {string} [options.cwd=process.cwd()] - Working directory for context enricher
+   * @param {boolean} [options.enableContextEnrichment=true] - Enable Git context enrichment
    */
   constructor(options = {}) {
     this.logger = options.logger || console;
@@ -29,6 +34,22 @@ export class PredicateEvaluator {
       maxSize: 50 * 1024 * 1024, // 50MB
       ttlMs: 5 * 60 * 1000, // 5 minutes
     }) : null);
+
+    // Initialize composite predicates support
+    this.compositePredicates = new CompositePredicates({
+      timeoutMs: options.asyncTimeoutMs || 5000,
+      logger: this.logger,
+    });
+
+    // Initialize context enricher for Git metadata
+    this.contextEnricher = new ContextEnricher({
+      cwd: options.cwd || process.cwd(),
+      logger: this.logger,
+      enableCache: options.enableCache !== false,
+    });
+
+    this.asyncTimeoutMs = options.asyncTimeoutMs || 5000;
+    this.enableContextEnrichment = options.enableContextEnrichment !== false;
   }
 
   /**
@@ -50,6 +71,11 @@ export class PredicateEvaluator {
       const predicate = hook.predicateDefinition;
       let result = false;
       let context = {};
+
+      // Enrich context with Git metadata
+      if (this.enableContextEnrichment) {
+        context = await this.contextEnricher.enrich(context);
+      }
 
       switch (predicate.type) {
         case "resultDelta":
@@ -793,6 +819,108 @@ export class PredicateEvaluator {
         },
       };
     }
+  }
+
+  /**
+   * Evaluate async predicate with timeout protection
+   * Supports both sync and async predicate functions
+   *
+   * @async
+   * @param {Function} predicateFn - Predicate function (sync or async)
+   * @param {object} context - Evaluation context with Git metadata
+   * @returns {Promise<object>} Evaluation result
+   */
+  async evaluateAsync(predicateFn, context = {}) {
+    if (typeof predicateFn !== "function") {
+      throw new Error("Predicate must be a function");
+    }
+
+    try {
+      // Enrich context if not already done
+      let enrichedContext = context;
+      if (this.enableContextEnrichment && !context.gitMetadata) {
+        enrichedContext = await this.contextEnricher.enrich(context);
+      }
+
+      // Execute with timeout
+      const result = await Promise.race([
+        Promise.resolve(predicateFn(enrichedContext)),
+        new Promise((_, reject) =>
+          setTimeout(
+            () =>
+              reject(
+                new Error(`Async predicate timeout after ${this.asyncTimeoutMs}ms`)
+              ),
+            this.asyncTimeoutMs
+          )
+        ),
+      ]);
+
+      return {
+        result: !!result,
+        success: true,
+        context: enrichedContext,
+      };
+    } catch (error) {
+      this.logger.error(`❌ Async predicate evaluation failed: ${error.message}`);
+      return {
+        result: false,
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Evaluate composite predicate (AND/OR/NOT/VOTE)
+   *
+   * @async
+   * @param {string} operator - Operator type (AND, OR, NOT, VOTE)
+   * @param {Array|Function} predicates - Predicates to combine
+   * @param {object} context - Evaluation context
+   * @returns {Promise<object>} Composite evaluation result
+   */
+  async evaluateComposite(operator, predicates, context = {}) {
+    // Enrich context if not already done
+    let enrichedContext = context;
+    if (this.enableContextEnrichment && !context.gitMetadata) {
+      enrichedContext = await this.contextEnricher.enrich(context);
+    }
+
+    switch (operator.toUpperCase()) {
+      case "AND":
+        return await this.compositePredicates.AND(predicates, enrichedContext);
+      case "OR":
+        return await this.compositePredicates.OR(predicates, enrichedContext);
+      case "NOT":
+        if (typeof predicates === "function") {
+          return await this.compositePredicates.NOT(predicates, enrichedContext);
+        }
+        throw new Error("NOT operator requires a single predicate function");
+      case "VOTE":
+        if (Array.isArray(predicates)) {
+          return await this.compositePredicates.VOTE(
+            predicates,
+            enrichedContext,
+            0.5
+          );
+        }
+        throw new Error("VOTE operator requires an array of weighted predicates");
+      default:
+        throw new Error(`Unknown composite operator: ${operator}`);
+    }
+  }
+
+  /**
+   * Get enriched context with Git metadata
+   * Useful for manual context building
+   *
+   * @async
+   * @param {object} baseContext - Base context to enrich
+   * @returns {Promise<object>} Enriched context
+   */
+  async getEnrichedContext(baseContext = {}) {
+    return await this.contextEnricher.enrich(baseContext);
   }
 
   /**

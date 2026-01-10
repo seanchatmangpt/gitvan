@@ -33,6 +33,121 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - v3.0.0 rewrite - complete dependency resolution and cleanup
 
 ### Changed
+- Use unrdf directly without compatibility layer
+- Replace unrdf-loader abstraction with direct npm package imports
+- split large PerformanceQueries.mjs and improve code quality
+- hide RDF graph CLI command from public API
+
+### Fixed
+- agent swarm improvements - dependency updates, docs, and infrastructure
+- finalize dependency versions for v4.0.0 npm publication
+- add 7 missing dependencies (@babel/traverse, @ai-sdk/anthropic, ollama-ai-provider-v2, p-queue, marked, exceljs, and re-verify isomorphic-git)
+- correct package.json entry points for npm distribution
+- update unrdf-loader.mjs to import from submodule monorepo structure
+- create placeholder job files and improve Bree scheduler integration
+- complete 10-agent Toyota Production System refactoring initiative
+- resolve 2 critical blockers blocking v4.0.0 release
+- make job removal more robust to handle timing issues
+- resolve job definition file path missing in composables
+- resolve critical issues in Bree job system implementation
+- resolve test suite failures and improve test reliability
+- resolve @types/semver build issue by disabling TypeScript declarations
+- convert next.config.js to ES module and force dynamic routes for studio pages
+- integrate API routes with aiEngineSelector for actual engine switching
+
+### Security
+- patch vulnerabilities and achieve npm audit clean
+- fix command injection vulnerability in CLI steps
+- fix 4 critical vulnerabilities in Bree job system
+
+### Documentation
+- Add UnRDF integration status document
+- update CHANGELOG.md for v4.0.1
+- compress CLAUDE.md to Sparse Priming Representation format
+- update CHANGELOG.md for v4.0.1
+- add v4.0.2 TPS gap analysis and comprehensive release readiness assessment
+- add comprehensive v4.0.2 JTBD + TPS readiness analysis
+- add research deliverables summary
+- add comprehensive v4.0.2 readiness assessment
+- update CHANGELOG.md for v4.0.1
+- add final status document - 100% documentation coverage achieved
+- close remaining 10-15% documentation gaps and achieve 100% coverage
+- add quick start guide for Bree scheduler test fixes
+- add comprehensive deliverables summary for Bree scheduler test fixes
+- Complete Phase 1 documentation improvements - 15% gap closure
+- comprehensive root cause analysis - test failures, security, dependencies
+- update CHANGELOG.md for v4.0.0
+- update CHANGELOG.md for v4.0.1 release
+- agent swarm deployment status report - 10 agents working in parallel
+- update CHANGELOG.md for v4.0.0
+- Add comprehensive TPS release readiness evaluation for v4.0.0
+- Phase 1 agent completion summary - 10 agents, 95% complete
+- update CHANGELOG.md for v4.0.0
+- add comprehensive release documentation for v4.0.0
+- comprehensive UnRDF packages survey with subsystem refactoring roadmap
+- comprehensive UnRDF architecture and integration documentation
+- update CHANGELOG.md for v1.0.0
+- add comprehensive npm publish preparation and 10-agent analysis
+- update CHANGELOG.md for v1.0.0
+- add comprehensive v4.0.0 release coordination artifacts from TPS initiative
+- Add comprehensive TPS quality analysis and production readiness documentation
+- update CHANGELOG.md for v1.0.0
+- completion summary - 10 agents, 30+ documents, 60,000+ lines, ready for implementation
+- comprehensive project management plan for test coverage initiative
+- executive summary - 5 documents, 2900+ lines, action plan ready
+- before/after comparison - original analysis vs PM-reviewed approach
+- adversarial PM review exposing capability gaps with 80/20 closure plan
+- comprehensive test coverage analysis with improvement roadmap
+- update CHANGELOG.md for v1.0.0
+- add comprehensive all-phases completion report
+- add generated analysis documents from 10-agent evaluation
+- add 10-agent evaluation report with comprehensive capability assessment
+- add comprehensive CLAUDE.md developer guide for AI assistants
+- add v4 architecture blueprints and complete refactoring documentation
+- add comprehensive GitVan v4 documentation with @unrdf/hooks
+- add FMEA completion report and project summary
+- add FMEA executive summary with compliance roadmap
+- add comprehensive FMEA (Failure Mode & Effects Analysis) for Lean Six Sigma compliance
+- add comprehensive gap analysis report (80/20 optimization complete)
+- add comprehensive autonomic NextJS delivery summary
+- add v3.2.0 git lifecycle knowledge hooks exploration
+- add comprehensive gap analysis for v3.0.1
+- rewrite README for v3.0.0
+
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [4.0.1] - 2026-01-10
+
+### Added
+- add 35 missing dependencies to package.json
+- replace nunjucks with KGEN-based template engine
+- phase 2 execution - 10-agent npm publish validation complete
+- complete @unrdf/hooks + Husky + Bree integration system
+- phase 1 execution - 10-agent npm publish preparation complete
+- convert unrdf to git submodule with comprehensive integration (10-agent system)
+- implement @unrdf/hooks + Husky + Bree integration system
+- refactor job system to use Bree scheduler
+- revops core system - payments, subscriptions, metrics, churn, economics
+- execute Phase 1 migration - error handling and input validation
+- complete implementation of all three improvement phases
+- implement @unrdf/hooks state management layer for GitVan v4
+- complete all remaining gaps with 80/20 optimization
+- add data-testid attributes to Studio pages for E2E test compatibility
+- add comprehensive enterprise features for production deployments
+- integrate GitVan knowledge hooks and automation into Studio
+- build GitVan Studio with Playwright E2E tests and JTBD scenario engine
+- integrate Zod, Ollama, and Nunjucks into autonomic NextJS app
+- implement fully autonomous self-generating NextJS application with semantic analysis
+- add comprehensive Diataxis examples directory with 4 frameworks
+- implement v3.2.0 & v3.3.0 git lifecycle knowledge hooks
+- refactor to KnowledgeSubstrateCore, comprehensive documentation, 59/59 E2E tests passing
+- v3.0.0 rewrite - complete dependency resolution and cleanup
+
+### Changed
 - split large PerformanceQueries.mjs and improve code quality
 - hide RDF graph CLI command from public API
 

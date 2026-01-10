@@ -4,17 +4,17 @@
  * Implements Phase 4 requirements from UNRDF-PACKAGES-SURVEY.md
  */
 
-import { namedNode, literal, quad } from '@rdfjs/data-model'
-import { parseTurtle } from '@graphy/content.ttl.read'
+import { parseTurtle } from 'unrdf'
 import consola from 'consola'
 import { PackQueries } from './queries/PackQueries.mjs'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { useGraphCache } from '../composables/useGraphCache.mjs'
 
 /**
  * RDF-based Pack Registry
  * Provides semantic version resolution, license compatibility,
- * and federated pack discovery
+ * and federated pack discovery with LRU caching for improved performance
  */
 export class RDFPackRegistry {
   constructor(knowledgeSubstrate, options = {}) {
@@ -26,8 +26,15 @@ export class RDFPackRegistry {
       ...options
     }
     this.initialized = false
-    this.queryCache = new Map()
-    this.packCache = new Map()
+
+    // Use LRU cache for better performance and memory management
+    if (this.options.cacheEnabled) {
+      this.queryCache = useGraphCache({ maxEntries: 200, ttlMs: 60 * 60 * 1000 }) // 1 hour
+      this.packCache = useGraphCache({ maxEntries: 500, ttlMs: 60 * 60 * 1000 }) // 1 hour
+    } else {
+      this.queryCache = null
+      this.packCache = null
+    }
   }
 
   /**
@@ -112,8 +119,11 @@ export class RDFPackRegistry {
     await this._ensureInitialized()
 
     const cacheKey = `pack:${name}:${version || 'latest'}`
-    if (this.options.cacheEnabled && this.packCache.has(cacheKey)) {
-      return this.packCache.get(cacheKey)
+
+    // Check cache first
+    if (this.options.cacheEnabled) {
+      const cached = this.packCache.get(cacheKey)
+      if (cached) return cached
     }
 
     try {
@@ -438,25 +448,12 @@ export class RDFPackRegistry {
   }
 
   async _parseTurtle(turtle) {
-    return new Promise((resolve, reject) => {
-      const triples = []
-      const parser = parseTurtle()
-
-      parser.on('data', (quad) => {
-        triples.push(quad)
-      })
-
-      parser.on('error', (error) => {
-        reject(error)
-      })
-
-      parser.on('end', () => {
-        resolve(triples)
-      })
-
-      parser.write(turtle)
-      parser.end()
-    })
+    try {
+      const quads = await parseTurtle(turtle)
+      return Array.isArray(quads) ? quads : Array.from(quads)
+    } catch (error) {
+      throw new Error(`Failed to parse Turtle: ${error.message}`)
+    }
   }
 
   _extractPackId(triples) {
@@ -519,19 +516,11 @@ export class RDFPackRegistry {
   }
 
   _invalidateCache(packId) {
-    // Clear query cache
-    for (const key of this.queryCache.keys()) {
-      if (key.includes(packId)) {
-        this.queryCache.delete(key)
-      }
-    }
+    if (!this.options.cacheEnabled) return
 
-    // Clear pack cache
-    for (const key of this.packCache.keys()) {
-      if (key.includes(packId)) {
-        this.packCache.delete(key)
-      }
-    }
+    // Invalidate related cache entries using wildcard patterns
+    this.queryCache.invalidate(`*${packId}*`)
+    this.packCache.invalidate(`*${packId}*`)
   }
 
   /**
@@ -559,11 +548,14 @@ export class RDFPackRegistry {
         ORDER BY DESC(?count)
       `)
 
+      const packCacheStats = this.options.cacheEnabled ? this.packCache.stats() : { currentEntries: 0 }
+      const queryCacheStats = this.options.cacheEnabled ? this.queryCache.stats() : { currentEntries: 0 }
+
       return {
         totalPacks: totalPacks[0]?.count || 0,
         categories: categoryStats,
-        cacheSize: this.packCache.size,
-        queryCacheSize: this.queryCache.size
+        cacheSize: packCacheStats.currentEntries,
+        queryCacheSize: queryCacheStats.currentEntries
       }
     } catch (error) {
       consola.error('Failed to get statistics:', error.message)

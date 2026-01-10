@@ -13,6 +13,8 @@ import {
   addQuad,
   removeQuad,
 } from "unrdf";
+import { useQueryOptimizer } from "./useQueryOptimizer.mjs";
+import { useQueryPlanner } from "./useQueryPlanner.mjs";
 
 /**
  * Creates an operational interface for a given RDF graph store.
@@ -26,6 +28,10 @@ export function useGraph(store) {
   if (!store || typeof store.getQuads !== "function") {
     throw new Error("[useGraph] A Store instance must be provided.");
   }
+
+  // Initialize optimizer and planner for Dark Matter query optimization
+  const optimizer = useQueryOptimizer();
+  const planner = useQueryPlanner();
 
   const self = {
     /**
@@ -123,6 +129,48 @@ export function useGraph(store) {
      */
     toNTriples() {
       return toNTriples(store);
+    },
+
+    /**
+     * Dark Matter Query Optimization API
+     * Analyzes a SPARQL query for optimization opportunities
+     *
+     * @param {string} sparql - The SPARQL query string
+     * @returns {Object} Query analysis with patterns and selectivity
+     */
+    analyzeQuery(sparql) {
+      return optimizer.analyzeQuery(sparql);
+    },
+
+    /**
+     * Generate an optimized execution plan for a SPARQL query
+     *
+     * @param {string} sparql - The SPARQL query string
+     * @param {Object} [schema={}] - Optional schema information
+     * @returns {Object} Execution plan with reordered patterns and steps
+     */
+    planQuery(sparql, schema = {}) {
+      return planner.planQuery(sparql, schema);
+    },
+
+    /**
+     * Get human-readable explanation of a query plan
+     *
+     * @param {Object} plan - Execution plan from planQuery()
+     * @returns {string} Explanation text
+     */
+    explainPlan(plan) {
+      return planner.explainPlan(plan);
+    },
+
+    /**
+     * Estimate selectivity of a triple pattern
+     *
+     * @param {Object} pattern - Triple pattern
+     * @returns {number} Selectivity estimate (0.0-1.0)
+     */
+    estimateSelectivity(pattern) {
+      return optimizer.estimateSelectivity(pattern);
     },
   };
 

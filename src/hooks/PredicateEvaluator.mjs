@@ -338,19 +338,46 @@ export class PredicateEvaluator {
       throw new Error("SHACL predicate missing shapes definition");
     }
 
-    // This would integrate with SHACL validation
-    // For now, simulate validation
-    const conforms = true; // Would be actual SHACL validation result
-    const violations = []; // Would be actual violations
+    try {
+      // Dynamic import of SHACL validator
+      const { useSHACLValidator } = await import("../composables/useSHACLValidator.mjs");
+      const validator = useSHACLValidator({ logger: this.logger });
 
-    return {
-      conforms: conforms,
-      context: {
-        shapes: predicate.definition.shapes,
-        violations: violations,
-        violationCount: violations.length,
-      },
-    };
+      // Get shapes definition - can be Turtle string or shape IDs
+      const shapesDefinition = predicate.definition.shapes;
+      const shapeIds = predicate.definition.shapeIds;
+
+      // Load shapes if Turtle content provided
+      if (typeof shapesDefinition === "string") {
+        await validator.loadShapes(shapesDefinition);
+      }
+
+      // Validate graph
+      const result = await validator.validate(
+        currentGraph.store || currentGraph,
+        shapeIds
+      );
+
+      return {
+        conforms: result.conforms,
+        context: {
+          shapes: predicate.definition.shapes,
+          violations: result.violations,
+          violationCount: result.violationCount,
+        },
+      };
+    } catch (error) {
+      this.logger.warn(`SHACL validation error: ${error.message}`);
+      return {
+        conforms: false,
+        context: {
+          shapes: predicate.definition.shapes,
+          violations: [],
+          violationCount: 0,
+          error: error.message,
+        },
+      };
+    }
   }
 
   /**

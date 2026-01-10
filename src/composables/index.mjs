@@ -31,5 +31,8 @@ export { useFederationDiscovery } from "./federation-discovery.mjs";
 export { useFederatedQuery } from "./federated-query.mjs";
 export { useFederationEvents } from "./federation-events.mjs";
 
+// Streaming composables (v4.0.0+)
+export { useChangeStream } from "./useChangeStream.mjs";
+
 // Re-export context utilities for convenience
 export { withGitVan, useGitVan, tryUseGitVan } from "../core/context.mjs";

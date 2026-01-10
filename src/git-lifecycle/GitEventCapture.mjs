@@ -20,7 +20,7 @@
 
 import { execSync } from "node:child_process";
 import { readFileSync, statSync } from "node:fs";
-import { createKnowledgeSubstrateCore, namedNode, literal, quad } from "../lib/unrdf-loader.mjs";
+import { createStore, namedNode, literal, quad } from "unrdf";
 
 // Git event types mapping to hook names
 const GIT_EVENT_TYPES = {
@@ -89,11 +89,10 @@ export class GitEventCapture {
 
     try {
       if (!this.core) {
-        this.core = await createKnowledgeSubstrateCore({
+        this.core = {
+          store: await createStore(),
           enableObservability: this.enableObservability,
-          enableKnowledgeHookManager: true,
-          enableTransactionManager: true,
-        });
+        };
       }
 
       this.initialized = true;

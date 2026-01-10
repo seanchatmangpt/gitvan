@@ -21,7 +21,7 @@
 
 import { mkdir, writeFile, readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { createKnowledgeSubstrateCore, namedNode, literal, quad, sparqlQuery } from "../lib/unrdf-loader.mjs";
+import { createStore, namedNode, literal, quad, executeQuery } from "unrdf";
 
 // RDF namespace constants
 const GITV = "https://gitvan.dev/ontology/git#";
@@ -83,13 +83,12 @@ export class GitEventStore {
       // Create store directory
       await mkdir(this.storePath, { recursive: true });
 
-      // Initialize KnowledgeSubstrateCore
+      // Initialize store
       if (!this.core) {
-        this.core = await createKnowledgeSubstrateCore({
+        this.core = {
+          store: await createStore(),
           enableObservability: this.enableObservability,
-          enableKnowledgeHookManager: true,
-          enableTransactionManager: true,
-        });
+        };
       }
 
       // Load persisted events if they exist
@@ -120,7 +119,7 @@ export class GitEventStore {
     await this.initialize();
 
     try {
-      const results = await sparqlQuery(this.core.store, query);
+      const results = await executeQuery(this.core.store, query);
       return results;
     } catch (error) {
       this.logger.error("❌ SPARQL query failed:", error);

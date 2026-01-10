@@ -2,20 +2,17 @@
 // Provides a high-level, ergonomic API to operate on an in-memory RDF graph using unrdf.
 
 import {
-  query,
-  validateShacl,
+  executeQuery,
+  executeSelect,
+  executeAsk,
+  executeConstruct,
   isIsomorphic,
   canonicalize,
-  reason,
-  toJsonLd,
-  parseTurtle,
-  toTurtle,
-  toNQuads,
-  getStoreStats,
-  mergeStores,
-  differenceStores,
-  intersectStores,
-} from "../lib/unrdf-loader.mjs";
+  toNTriples,
+  getQuads,
+  addQuad,
+  removeQuad,
+} from "unrdf";
 
 /**
  * Creates an operational interface for a given RDF graph store.
@@ -40,141 +37,92 @@ export function useGraph(store) {
     },
 
     /**
-     * Executes any valid SPARQL 1.1 query (SELECT, ASK, CONSTRUCT, DESCRIBE, UPDATE).
-     * @param {string} sparql - The SPARQL query string.
-     * @param {object} [options] - Options for the query engine.
-     * @returns {Promise<object>} A result object with a `type` and other properties.
-     */
-    async query(sparql, options = {}) {
-      return query(store, sparql, options);
-    },
-
-    /**
-     * A convenience method for SPARQL SELECT queries.
+     * Executes a SPARQL SELECT query.
      * @param {string} sparql - The SPARQL SELECT query string.
      * @returns {Promise<Array<object>>} An array of result bindings.
      */
     async select(sparql) {
-      const res = await query(store, sparql);
-      if (res.type !== "select")
-        throw new Error("Query is not a SELECT query.");
-      return res.results || res.rows || [];
+      return executeSelect(store, sparql);
     },
 
     /**
-     * A convenience method for SPARQL ASK queries.
+     * Executes a SPARQL ASK query.
      * @param {string} sparql - The SPARQL ASK query string.
      * @returns {Promise<boolean>} The boolean result of the query.
      */
     async ask(sparql) {
-      const res = await query(store, sparql);
-      if (res.type !== "ask") throw new Error("Query is not an ASK query.");
-      return res.boolean;
+      return executeAsk(store, sparql);
     },
 
     /**
-     * Validates the graph against a set of SHACL shapes.
-     * @param {string|Store} shapesInput - The SHACL shapes as a Turtle string or a Store.
-     * @returns {Promise<object>} A validation report with `conforms` and `results`.
+     * Executes a SPARQL CONSTRUCT query.
+     * @param {string} sparql - The SPARQL CONSTRUCT query string.
+     * @returns {Promise<Store>} A new store with the constructed quads.
      */
-    async validate(shapesInput) {
-      const shapesStore =
-        typeof shapesInput === "string"
-          ? parseTurtle(shapesInput)
-          : shapesInput;
-      return validateShacl(store, shapesStore);
+    async construct(sparql) {
+      return executeConstruct(store, sparql);
     },
 
     /**
-     * Serializes the graph to a string in the specified format.
-     * @param {{format: 'Turtle'|'N-Quads', prefixes?: object}} options
-     * @returns {Promise<string>}
+     * Executes a generic SPARQL query.
+     * @param {string} sparql - The SPARQL query string.
+     * @returns {Promise<object>} Query result object.
      */
-    async serialize({ format = "Turtle", prefixes = {} } = {}) {
-      if (format === "Turtle") {
-        return toTurtle(store, { prefixes });
-      }
-      if (format === "N-Quads") {
-        return toNQuads(store);
-      }
-      throw new Error(`Unsupported serialization format: ${format}`);
+    async query(sparql) {
+      return executeQuery(store, sparql);
     },
 
     /**
-     * Basic statistics about the graph (quads, subjects, etc.).
-     * @type {{quads: number, subjects: number, predicates: number, objects: number, graphs: number}}
+     * Returns quads matching the given pattern.
+     * @param {object} pattern - Pattern with subject, predicate, object, graph properties.
+     * @returns {Array} Matching quads.
      */
-    get stats() {
-      return getStoreStats(store);
+    findQuads(pattern) {
+      return getQuads(store, pattern);
+    },
+
+    /**
+     * Adds a quad to the graph.
+     * @param {object} quad - The quad to add.
+     * @returns {void}
+     */
+    addQuad(quad) {
+      addQuad(store, quad);
+    },
+
+    /**
+     * Removes a quad from the graph.
+     * @param {object} quad - The quad to remove.
+     * @returns {void}
+     */
+    removeQuad(quad) {
+      removeQuad(store, quad);
     },
 
     /**
      * Checks if the graph is logically equivalent (isomorphic) to another graph.
      * @param {object} otherGraph - Another `useGraph` instance or a raw Store.
-     * @returns {Promise<boolean>}
+     * @returns {boolean}
      */
-    async isIsomorphic(otherGraph) {
+    isIsomorphic(otherGraph) {
       const otherStore = otherGraph.store || otherGraph;
       return isIsomorphic(store, otherStore);
     },
 
     /**
-     * Returns a new graph instance containing the union of this graph and others.
-     * @param {...object} otherGraphs - Other `useGraph` instances or raw Stores.
-     * @returns {Promise<object>} A new `useGraph` instance with the resulting graph.
-     */
-    async union(...otherGraphs) {
-      const otherStores = otherGraphs.map((g) => g.store || g);
-      const resultStore = mergeStores(store, ...otherStores);
-      return useGraph(resultStore);
-    },
-
-    /**
-     * Returns a new graph instance containing quads that are in this graph but not in the other.
-     * @param {object} otherGraph - Another `useGraph` instance or a raw Store.
-     * @returns {Promise<object>} A new `useGraph` instance with the resulting graph.
-     */
-    async difference(otherGraph) {
-      const otherStore = otherGraph.store || otherGraph;
-      const resultStore = differenceStores(store, otherStore);
-      return useGraph(resultStore);
-    },
-
-    /**
-     * Returns a new graph instance containing only the quads that exist in both graphs.
-     * @param {object} otherGraph - Another `useGraph` instance or a raw Store.
-     * @returns {Promise<object>} A new `useGraph` instance with the resulting graph.
-     */
-    async intersection(otherGraph) {
-      const otherStore = otherGraph.store || otherGraph;
-      const resultStore = intersectStores(store, otherStore);
-      return useGraph(resultStore);
-    },
-
-    /**
-     * Converts the graph to JSON-LD format.
-     * @returns {Promise<object>} JSON-LD document
-     */
-    async toJsonLd() {
-      return toJsonLd(store);
-    },
-
-    /**
-     * Applies N3 reasoning rules to the graph.
-     * @param {Store} rulesStore - Store containing N3 rules
-     * @returns {Promise<object>} A new useGraph instance with inferred triples
-     */
-    async reason(rulesStore) {
-      const inferredStore = await reason(store, rulesStore);
-      return useGraph(inferredStore);
-    },
-
-    /**
      * Returns a canonical representation of the graph.
-     * @returns {Promise<string>} Canonical N-Quads string
+     * @returns {string} Canonical N-Triples string
      */
-    async canonicalize() {
+    canonicalize() {
       return canonicalize(store);
+    },
+
+    /**
+     * Serializes the graph to N-Triples format.
+     * @returns {string} N-Triples representation
+     */
+    toNTriples() {
+      return toNTriples(store);
     },
   };
 

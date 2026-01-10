@@ -14,7 +14,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { RDFStateStore } from '../../src/git-native/rdf-state-store.mjs';
 import { StateDiffEngine } from '../../src/git-native/state-diff-engine.mjs';
 import { GitNotesRDF } from '../../src/git-native/git-notes-rdf.mjs';
-import { createStore, parseTurtle, toNTriples } from 'unrdf';
+import { createStore, parseTurtle, toNTriples } from "@unrdf/core";
 import { execSync } from 'child_process';
 import { promises as fs } from 'fs';
 import path from 'path';

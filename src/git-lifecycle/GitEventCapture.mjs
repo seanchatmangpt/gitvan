@@ -21,7 +21,7 @@
 
 import { execSync } from "node:child_process";
 import { readFileSync, statSync } from "node:fs";
-import { createStore } from "unrdf";
+import { createStore } from "@unrdf/core";
 import { namedNode, literal, quad } from "@rdfjs/data-model";
 import { useBatchedQuads } from "../composables/batched-quads.mjs";
 

@@ -9,7 +9,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { GitEventCapture } from "../../src/git-lifecycle/GitEventCapture.mjs";
 import { QueryCache } from "../../src/utils/query-cache.mjs";
 import { useBatchedQuads } from "../../src/composables/batched-quads.mjs";
-import { createStore, namedNode, literal, quad } from "unrdf";
+import { createStore, namedNode, literal, quad } from "@unrdf/core";
 
 // Test constants
 const GITV = "https://gitvan.dev/ontology/git#";

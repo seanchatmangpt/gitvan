@@ -15,7 +15,7 @@ import { useFederatedQuery } from "../../src/composables/federated-query.mjs";
 import { useFederationEvents } from "../../src/composables/federation-events.mjs";
 import { withGitVan } from "../../src/core/context.mjs";
 import { useGit } from "../../src/composables/git/index.mjs";
-import { createStore, namedNode, literal, quad } from "unrdf";
+import { createStore, namedNode, literal, quad } from "@unrdf/core";
 
 describe("Federation Integration - End-to-End Tests", () => {
   let testContext;

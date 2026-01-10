@@ -19,7 +19,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { createStore, parseTurtle } from 'unrdf';
+import { createStore, parseTurtle } from "@unrdf/core";
 import { SPARQLWorkflowOptimizer } from '../../src/workflow/sparql-workflow-optimizer.mjs';
 import { CriticalPathAnalyzer } from '../../src/workflow/critical-path-analyzer.mjs';
 import { WorkflowComposer } from '../../src/workflow/workflow-composer.mjs';

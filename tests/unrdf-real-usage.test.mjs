@@ -16,7 +16,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { createKnowledgeSubstrateCore, parseTurtle } from "unrdf";
+import { createKnowledgeSubstrateCore, parseTurtle } from "@unrdf/core";
 import { GitEventCapture } from "../src/git-lifecycle/GitEventCapture.mjs";
 import { GitEventStore } from "../src/git-lifecycle/GitEventStore.mjs";
 import { tmpdir } from "node:os";

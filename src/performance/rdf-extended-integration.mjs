@@ -1,7 +1,7 @@
 import { createLogger } from "../utils/logger.mjs";
 import { ExtendedMetricsCollector } from "./extended-metrics.mjs";
 import { AnalyticsEngine } from "./analytics-engine.mjs";
-import { parseTurtle } from "unrdf";
+import { parseTurtle } from "@unrdf/core";
 import { randomUUID } from "node:crypto";
 
 const logger = createLogger("performance:rdf-extended");

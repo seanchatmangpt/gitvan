@@ -8,7 +8,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { useSHACLValidator } from '../../src/composables/shacl-validator.mjs';
-import { createStore, parseTurtle } from 'unrdf';
+import { createStore, parseTurtle } from "@unrdf/core";
 
 describe('SHACL Validator Composable', () => {
   let validator;

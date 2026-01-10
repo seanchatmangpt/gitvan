@@ -121,6 +121,15 @@ export class PredicateEvaluator {
           context = temporalResult.context;
           break;
 
+        case "n3Rule":
+          const n3Result = await this._evaluateN3Rule(
+            predicate,
+            currentGraph
+          );
+          result = n3Result.hasInferences;
+          context = n3Result.context;
+          break;
+
         default:
           throw new Error(`Unknown predicate type: ${predicate.type}`);
       }
@@ -448,6 +457,18 @@ export class PredicateEvaluator {
           }
           break;
 
+        case "n3Rule":
+          if (!predicate.definition.engine) {
+            throw new Error("N3Rule predicate missing engine");
+          }
+          if (
+            !predicate.definition.ruleIds &&
+            !predicate.definition.ruleId
+          ) {
+            throw new Error("N3Rule predicate missing ruleIds or ruleId");
+          }
+          break;
+
         default:
           throw new Error(`Unknown predicate type: ${predicate.type}`);
       }
@@ -721,6 +742,53 @@ export class PredicateEvaluator {
         triggered: false,
         context: {
           query: predicate.definition.query,
+          error: error.message,
+        },
+      };
+    }
+  }
+
+  /**
+   * Evaluate N3Rule predicate - forward-chaining inference
+   * @private
+   */
+  async _evaluateN3Rule(predicate, currentGraph) {
+    this.logger.info("🔄 Evaluating N3Rule predicate");
+
+    try {
+      if (!predicate.definition.engine) {
+        throw new Error("N3Rule predicate missing engine");
+      }
+
+      const engine = predicate.definition.engine;
+      const store = predicate.definition.store || currentGraph.store;
+      const ruleIds = predicate.definition.ruleIds || [predicate.definition.ruleId];
+
+      if (!ruleIds || ruleIds.length === 0) {
+        throw new Error("N3Rule predicate missing ruleIds or ruleId");
+      }
+
+      // Execute N3 rules
+      const inferred = await engine.executeRules(store, {
+        ruleIds: ruleIds,
+        maxIterations: predicate.definition.maxIterations || 10,
+      });
+
+      const hasInferences = inferred && inferred.length > 0;
+
+      return {
+        hasInferences: hasInferences,
+        context: {
+          ruleIds: ruleIds,
+          inferredCount: inferred.length,
+          inferred: inferred,
+        },
+      };
+    } catch (error) {
+      this.logger.error(`❌ N3Rule evaluation failed: ${error.message}`);
+      return {
+        hasInferences: false,
+        context: {
           error: error.message,
         },
       };

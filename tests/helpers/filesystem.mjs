@@ -4,6 +4,7 @@
  */
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, dirname } from "pathe";
 
 /**
@@ -126,7 +127,6 @@ export function assertFileContent(path, expected) {
  * @param {string} prefix - Directory prefix
  */
 export function createTempDir(prefix = "gitvan-test") {
-  const { tmpdir } = await import("node:os");
   const tempDir = join(tmpdir(), `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
   mkdirSync(tempDir, { recursive: true });
   return tempDir;

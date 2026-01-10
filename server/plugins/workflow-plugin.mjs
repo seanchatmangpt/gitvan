@@ -12,13 +12,14 @@
  *   workflow:completed - Workflow completed
  */
 
+import { readBody } from 'h3';
 import { WebSocketManager } from '../utils/websocket-manager.mjs';
 import { successResponse, errorResponse, listResponse } from '../utils/response-helpers.mjs';
 
 const workflows = new Map();
 let workflowIdCounter = 0;
 
-export default defineNitroPlugin((nitroApp) => {
+export default (nitroApp) => {
   nitroApp.router.get('/api/workflows/list', async (req, res) => {
     try {
       const workflowsList = Array.from(workflows.values());
@@ -127,4 +128,4 @@ export default defineNitroPlugin((nitroApp) => {
       return errorResponse(error.message, 'CANCEL_ERROR', 500);
     }
   });
-});
+};

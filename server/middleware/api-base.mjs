@@ -11,6 +11,9 @@
  * All /api/* routes pass through this middleware
  */
 
+import { setHeader, getHeader, setResponseStatus, defineEventHandler } from 'h3';
+import { randomUUID } from 'crypto';
+
 export default defineEventHandler(async (event) => {
   const startTime = Date.now();
   const method = event.method || event.node.req.method;
@@ -29,7 +32,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // Add request ID for tracking
-  event.id = crypto.randomUUID();
+  event.id = randomUUID();
   setHeader(event, 'X-Request-ID', event.id);
 
   // Add JSON content type

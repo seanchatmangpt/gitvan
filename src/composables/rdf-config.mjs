@@ -36,16 +36,27 @@ export async function useRDFConfig(options = {}) {
   }
 
   try {
-    // Load config within context
-    const ctx = useGitVan();
-    const config = await withGitVan(ctx, async () => {
-      return await loadRDFConfig({
+    // Load config - try with context if available, fallback to direct loading
+    let config;
+    try {
+      const ctx = useGitVan();
+      config = await withGitVan(ctx, async () => {
+        return await loadRDFConfig({
+          env,
+          envPrefix,
+          configObj,
+          configUri,
+        });
+      });
+    } catch (contextError) {
+      // Context not available, load directly
+      config = await loadRDFConfig({
         env,
         envPrefix,
         configObj,
         configUri,
       });
-    });
+    }
 
     // Cache if enabled
     if (cache) {

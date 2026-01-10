@@ -14,13 +14,12 @@
  * const stream = await client.stream('/api/jobs/123/logs');
  */
 
-import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import got from 'got';
 import pRetry from 'p-retry';
 import { createLogger } from '../utils/logger.mjs';
-import { withGitVan } from '../composables/context.mjs';
+import { withGitVan } from '../composables/ctx.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

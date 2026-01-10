@@ -72,8 +72,8 @@
     "giget": "^2.0.0",
     "globby": "^14.0.1",
     "got": "^14.2.1",
-    "gray-matter": "^4.0.3",
     "graphql": "^16.8.1",
+    "gray-matter": "^4.0.3",
     "hookable": "^5.5.3",
     "inflection": "^3.0.0",
     "ini": "^6.0.0",
@@ -128,7 +128,7 @@
     "@vitest/coverage-v8": "^4.0.16",
     "eslint-config-unjs": "^0.2.1",
     "h3": "^2.0.0",
-    "nitropack": "^2.9.0",
+    "nitropack": "^2.13.0",
     "typescript": "^5.3.3",
     "vitest": "4.0.16"
   },

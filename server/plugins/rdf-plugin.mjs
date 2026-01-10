@@ -11,6 +11,7 @@
  *   rdf:graph-modified - Graph modified
  */
 
+import { readBody } from 'h3';
 import { WebSocketManager } from '../utils/websocket-manager.mjs';
 import { successResponse, errorResponse, listResponse } from '../utils/response-helpers.mjs';
 
@@ -20,7 +21,7 @@ const graphs = {
   state: { triples: [] }
 };
 
-export default defineNitroPlugin((nitroApp) => {
+export default (nitroApp) => {
   nitroApp.router.post('/api/rdf/query', async (req, res) => {
     try {
       const body = await readBody(req);
@@ -143,4 +144,4 @@ export default defineNitroPlugin((nitroApp) => {
       return errorResponse(error.message, 'EXPORT_ERROR', 500);
     }
   });
-});
+};

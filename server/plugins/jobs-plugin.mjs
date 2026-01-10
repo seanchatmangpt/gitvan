@@ -12,6 +12,7 @@
  *   job:completed - Job completed
  */
 
+import { readBody } from 'h3';
 import { WebSocketManager } from '../utils/websocket-manager.mjs';
 import { successResponse, errorResponse, listResponse } from '../utils/response-helpers.mjs';
 
@@ -19,7 +20,7 @@ const jobs = new Map();
 const jobLogs = new Map();
 let jobIdCounter = 0;
 
-export default defineNitroPlugin((nitroApp) => {
+export default (nitroApp) => {
   nitroApp.router.get('/api/jobs/list', async (req, res) => {
     try {
       const jobsList = Array.from(jobs.values());
@@ -130,4 +131,4 @@ export default defineNitroPlugin((nitroApp) => {
       return errorResponse(error.message, 'CANCEL_ERROR', 500);
     }
   });
-});
+};

@@ -1,7 +1,7 @@
 // server/plugins/health-plugin.mjs
 // Health check endpoint for daemon monitoring
 
-export default defineNitroPlugin((nitroApp) => {
+export default (nitroApp) => {
   nitroApp.router.get('/api/health', async (event) => {
     return {
       status: 'healthy',
@@ -10,4 +10,4 @@ export default defineNitroPlugin((nitroApp) => {
       uptime: process.uptime(),
     };
   });
-});
+};

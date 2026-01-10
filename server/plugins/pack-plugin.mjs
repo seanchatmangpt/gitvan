@@ -10,6 +10,7 @@
  *   pack:discovered - Pack discovered
  */
 
+import { readBody } from 'h3';
 import { WebSocketManager } from '../utils/websocket-manager.mjs';
 import { successResponse, errorResponse, listResponse } from '../utils/response-helpers.mjs';
 
@@ -20,7 +21,7 @@ const marketplace = [
   { id: 'pack-hook-lint', name: 'Lint Hooks', version: '1.5.0', author: 'GitVan' }
 ];
 
-export default defineNitroPlugin((nitroApp) => {
+export default (nitroApp) => {
   nitroApp.router.get('/api/packs/search', async (req, res) => {
     try {
       const query = (req.query?.q || '').toLowerCase();
@@ -83,4 +84,4 @@ export default defineNitroPlugin((nitroApp) => {
       return errorResponse(error.message, 'INSTALL_ERROR', 500);
     }
   });
-});
+};

@@ -34,23 +34,34 @@ const CONFIG_PROPERTY_MAP = {
   "ai.baseUrl": `${CONFIG_NS}aiBaseUrl`,
   "ai.temperature": `${CONFIG_NS}aiTemperature`,
   "ai.maxTokens": `${CONFIG_NS}aiMaxTokens`,
+  "ai.max.tokens": `${CONFIG_NS}aiMaxTokens`,
   "ai.topP": `${CONFIG_NS}aiTopP`,
+  "ai.top.p": `${CONFIG_NS}aiTopP`,
   "ai.topK": `${CONFIG_NS}aiTopK`,
+  "ai.top.k": `${CONFIG_NS}aiTopK`,
   "ai.repeatPenalty": `${CONFIG_NS}aiRepeatPenalty`,
+  "ai.repeat.penalty": `${CONFIG_NS}aiRepeatPenalty`,
   "ai.apiKey": `${CONFIG_NS}aiApiKey`,
+  "ai.api.key": `${CONFIG_NS}aiApiKey`,
   "runtime.timezone": `${CONFIG_NS}runtimeTimezone`,
   "runtime.locale": `${CONFIG_NS}runtimeLocale`,
   "runtime.deterministic": `${CONFIG_NS}runtimeDeterministic`,
   "runtime.sandbox": `${CONFIG_NS}runtimeSandbox`,
   "daemon.pollMs": `${CONFIG_NS}daemonPollMs`,
+  "daemon.poll.ms": `${CONFIG_NS}daemonPollMs`,
   "daemon.lookback": `${CONFIG_NS}daemonLookback`,
   "daemon.maxPerTick": `${CONFIG_NS}daemonMaxPerTick`,
+  "daemon.max.per.tick": `${CONFIG_NS}daemonMaxPerTick`,
   "events.directory": `${CONFIG_NS}eventsDirectory`,
   "graph.dir": `${CONFIG_NS}graphDir`,
   "graph.snapshotsDir": `${CONFIG_NS}graphSnapshotsDir`,
+  "graph.snapshots.dir": `${CONFIG_NS}graphSnapshotsDir`,
   "graph.uriRoots": `${CONFIG_NS}graphUriRoots`,
+  "graph.uri.roots": `${CONFIG_NS}graphUriRoots`,
   "graph.autoLoad": `${CONFIG_NS}graphAutoLoad`,
+  "graph.auto.load": `${CONFIG_NS}graphAutoLoad`,
   "graph.validateOnLoad": `${CONFIG_NS}graphValidateOnLoad`,
+  "graph.validate.on.load": `${CONFIG_NS}graphValidateOnLoad`,
 };
 
 /**
@@ -119,17 +130,32 @@ export function configToQuads(config, configUri = "urn:gitvan:config") {
   function addQuads(obj, prefix = "") {
     for (const [key, value] of Object.entries(obj)) {
       const path = prefix ? `${prefix}.${key}` : key;
-      const predicateUri = CONFIG_PROPERTY_MAP[path];
-
-      if (!predicateUri) {
-        // Skip unknown properties
-        continue;
-      }
+      let predicateUri = CONFIG_PROPERTY_MAP[path];
 
       if (value === null || value === undefined) {
         continue;
       }
 
+      // If it's an object and not an array, recurse or use mapped predicate
+      if (typeof value === "object" && !Array.isArray(value)) {
+        if (predicateUri) {
+          // Has a direct mapping - treat the entire object as the value
+          // For now, skip complex nested objects with their own predicate
+          continue;
+        } else {
+          // No direct mapping - recurse to find nested properties
+          addQuads(value, path);
+        }
+        continue;
+      }
+
+      // If no predicateUri found, create a dynamic one for unmapped keys
+      if (!predicateUri) {
+        // Use a dynamic predicate based on the path
+        predicateUri = `${CONFIG_NS}${path.replace(/\./g, "-")}`;
+      }
+
+      // Add literal value with proper datatype
       if (Array.isArray(value)) {
         // Create RDF list
         const listNode = createRDFList(quads, value);
@@ -138,17 +164,12 @@ export function configToQuads(config, configUri = "urn:gitvan:config") {
           predicate: namedNode(predicateUri),
           object: listNode,
         });
-      } else if (typeof value === "object" && !Array.isArray(value)) {
-        // Recurse into nested objects
-        addQuads(value, path);
       } else {
-        // Add literal value with proper datatype
+        // Scalar value - add with proper datatype
         const datatypeUri = inferType(value);
-        const obj = literal(value.toString());
-        // Set datatype using n3's internal structure
-        if (datatypeUri !== `${XSD_NS}string`) {
-          obj.datatype = namedNode(datatypeUri);
-        }
+        const obj = datatypeUri !== `${XSD_NS}string`
+          ? literal(value.toString(), namedNode(datatypeUri))
+          : literal(value.toString());
         quads.push({
           subject: configNode,
           predicate: namedNode(predicateUri),
@@ -203,24 +224,19 @@ export function envToQuads(env, prefix = "GITVAN_", configUri = "urn:gitvan:conf
     let datatypeUri = `${XSD_NS}string`;
 
     if (value === "true") {
-      objValue = literal("true");
       datatypeUri = `${XSD_NS}boolean`;
+      objValue = literal("true", namedNode(datatypeUri));
     } else if (value === "false") {
-      objValue = literal("false");
       datatypeUri = `${XSD_NS}boolean`;
+      objValue = literal("false", namedNode(datatypeUri));
     } else if (/^\d+$/.test(value)) {
-      objValue = literal(value);
       datatypeUri = `${XSD_NS}integer`;
+      objValue = literal(value, namedNode(datatypeUri));
     } else if (/^\d+\.\d+$/.test(value)) {
-      objValue = literal(value);
       datatypeUri = `${XSD_NS}decimal`;
+      objValue = literal(value, namedNode(datatypeUri));
     } else {
       objValue = literal(value);
-    }
-
-    // Set datatype
-    if (datatypeUri !== `${XSD_NS}string`) {
-      objValue.datatype = namedNode(datatypeUri);
     }
 
     quads.push({

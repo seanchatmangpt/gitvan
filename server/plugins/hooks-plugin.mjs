@@ -11,13 +11,14 @@
  *   hook:fired - Fired when hook executes
  */
 
+import { readBody } from 'h3';
 import { WebSocketManager } from '../utils/websocket-manager.mjs';
 import { successResponse, errorResponse, listResponse, wsEvent } from '../utils/response-helpers.mjs';
 
 const hooks = new Map();
 let hookIdCounter = 0;
 
-export default defineNitroPlugin((nitroApp) => {
+export default (nitroApp) => {
   nitroApp.router.get('/api/hooks/list', async (req, res) => {
     try {
       const hooksList = Array.from(hooks.values());
@@ -112,4 +113,4 @@ export default defineNitroPlugin((nitroApp) => {
       return errorResponse(error.message, 'DELETE_ERROR', 500);
     }
   });
-});
+};

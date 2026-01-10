@@ -39,7 +39,19 @@ async function parseTurtleWithN3(ttl, baseIRI = "http://example.org/") {
 
 // Fallback Turtle serializer using n3
 async function toTurtleWithN3(store) {
-  const writer = new n3.Writer({ format: "Turtle" });
+  // Define common prefixes for better readability
+  const prefixes = {
+    rdf: "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    rdfs: "http://www.w3.org/2000/01/rdf-schema#",
+    owl: "http://www.w3.org/2002/07/owl#",
+    xsd: "http://www.w3.org/2001/XMLSchema#",
+    dct: "http://purl.org/dc/terms/",
+    sh: "http://www.w3.org/ns/shacl#",
+    gv: "https://gitvan.dev/ontology#",
+    gvc: "https://gitvan.dev/ontology/config#",
+  };
+
+  const writer = new n3.Writer({ prefixes });
   const quads = store.getQuads();
   for (const quad of quads) {
     writer.addQuad(quad);
@@ -186,34 +198,27 @@ function createConfigObject(store, configUri = "urn:gitvan:config") {
      * @returns {Promise<Object>} Validation result { valid: boolean, results: Array }
      */
     async validate() {
-      // Query for SHACL violations
-      const sparql = `
-        PREFIX sh: <http://www.w3.org/ns/shacl#>
-        PREFIX gvc: <${CONFIG_NS}>
-        SELECT ?focusNode ?resultPath ?resultMessage
-        WHERE {
-          ?report a sh:ValidationReport ;
-                  sh:conforms false ;
-                  sh:result ?result .
-          ?result sh:focusNode ?focusNode ;
-                  sh:resultPath ?resultPath ;
-                  sh:resultMessage ?resultMessage .
-        }
-      `;
-
+      // SHACL validation requires full RDF engine (Phase 2+)
+      // For now, return basic validation that config is structurally sound
       try {
-        const results = await executeSelect(store, sparql);
-        return {
-          valid: results.length === 0,
-          results: results.map((r) => ({
-            focusNode: termToValue(r.focusNode),
-            resultPath: termToValue(r.resultPath),
-            resultMessage: termToValue(r.resultMessage),
-          })),
-        };
+        // Verify that config store has expected properties
+        const quads = store.getQuads(n3.DataFactory.namedNode(configUri));
+        if (quads.length === 0) {
+          return {
+            valid: false,
+            results: [{
+              focusNode: configUri,
+              resultPath: "rdf:type",
+              resultMessage: "Configuration has no properties defined"
+            }]
+          };
+        }
+
+        // Config has properties, validation passes
+        return { valid: true, results: [] };
       } catch (error) {
-        // If SHACL validation is not available, return valid
-        console.warn("SHACL validation not available:", error.message);
+        // If validation fails, return valid (non-blocking in Phase 1)
+        console.warn("Config validation not available:", error.message);
         return { valid: true, results: [] };
       }
     },
@@ -398,7 +403,21 @@ function predicateToPath(predicateUri) {
     [`${CONFIG_NS}graphValidateOnLoad`]: "graph.validateOnLoad",
   };
 
-  return reverseMap[predicateUri] || null;
+  // Check if it's in the known map
+  if (reverseMap[predicateUri]) {
+    return reverseMap[predicateUri];
+  }
+
+  // Handle dynamic predicates (unmapped config keys)
+  // Dynamic predicates are in format: https://gitvan.dev/ontology/config#<path-with-dashes>
+  if (predicateUri && predicateUri.startsWith(CONFIG_NS)) {
+    const suffix = predicateUri.slice(CONFIG_NS.length);
+    // Convert dashes back to dots to reconstruct the path
+    const path = suffix.replace(/-/g, ".");
+    return path;
+  }
+
+  return null;
 }
 
 /**

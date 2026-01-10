@@ -5,6 +5,9 @@
 import { defineNitroConfig } from 'nitropack';
 
 export default defineNitroConfig({
+  // Compatibility date
+  compatibilityDate: '2026-01-10',
+
   // Server basics
   preset: 'node-server',
   srcDir: './server',
@@ -25,15 +28,18 @@ export default defineNitroConfig({
 
   // Middleware stack
   middleware: [
-    'cors',
-    'logger',
-    'error-handler',
+    'api-base',
   ],
 
   // Plugin loading
   plugins: [
-    './server/plugins/config-plugin.mjs',
-    './server/plugins/health-plugin.mjs',
+    './plugins/config-plugin.mjs',
+    './plugins/health-plugin.mjs',
+    './plugins/hooks-plugin.mjs',
+    './plugins/jobs-plugin.mjs',
+    './plugins/pack-plugin.mjs',
+    './plugins/rdf-plugin.mjs',
+    './plugins/workflow-plugin.mjs',
   ],
 
   // Environment variables

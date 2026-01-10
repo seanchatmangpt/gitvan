@@ -574,7 +574,7 @@ export class GitEventStore {
     await this.initialize();
 
     try {
-      const { toTurtle } = await import("unrdf");
+      const { toTurtle } = await import("../lib/unrdf-compat.mjs");
       const turtleContent = await toTurtle(this.core.store);
       const filePath = join(this.storePath, "events.ttl");
 
@@ -597,7 +597,7 @@ export class GitEventStore {
    */
   async _loadPersistedEvents() {
     try {
-      const { parseTurtle } = await import("unrdf");
+      const { parseTurtle } = await import("../lib/unrdf-compat.mjs");
       const filePath = join(this.storePath, "events.ttl");
       const content = await readFile(filePath, "utf8");
       const eventStore = parseTurtle(content);

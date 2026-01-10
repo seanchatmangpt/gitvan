@@ -243,9 +243,12 @@ export const graphMigrationJob = defineGraphJob({
     // Perform migration using unrdf
     let migratedData;
     if (sourceFormat === "turtle" && targetFormat === "nquads") {
-      const { parseTurtle, toNQuads } = await import("unrdf");
-      const store = parseTurtle(migrationData);
-      migratedData = toNQuads(store);
+      // Note: Full Turtle parsing and N-Quads serialization not yet available in unrdf v5
+      // This feature requires parser/serializer implementation
+      throw new Error(
+        "Turtle to N-Quads migration not yet supported. " +
+        "Please use the REST API for data conversion."
+      );
     } else {
       migratedData = migrationData; // No conversion needed
     }

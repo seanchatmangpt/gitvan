@@ -8,7 +8,6 @@ import crypto from "node:crypto";
 import { promisify } from "node:util";
 import { gzip as zlibGzip, gunzip as zlibGunzip } from "node:zlib";
 import { consola } from "consola";
-import { parseTurtle, toTurtle } from "unrdf";
 
 const gzip = promisify(zlibGzip);
 const gunzip = promisify(zlibGunzip);
@@ -224,53 +223,48 @@ export class TurtleSerializer {
   }
 
   /**
-   * Serialize store to Turtle with optimization
-   * @param {any} store - RDF store
-   * @param {object} options - Serialization options
-   * @returns {Promise<object>} Serialization result
+   * Optimize Turtle content with compression and formatting
+   * @param {string} turtle - Turtle content
+   * @param {object} options - Optimization options
+   * @returns {Promise<object>} Optimized result
    */
-  async serialize(store, options = {}) {
+  async optimizeTurtle(turtle, options = {}) {
     const startTime = performance.now();
     const {
-      prefixes = null,
       sortQuads = false,
       compress = this.enableCompression,
-      delta = false,
+      compressBlankNodes = this.blankNodeCompression,
     } = options;
 
     try {
-      // Generate prefix hints if not provided
-      const prefixHints = prefixes || this.generatePrefixHints(store);
-
-      // Serialize to Turtle
-      let turtle = await toTurtle(store, { prefixes: prefixHints });
+      let content = turtle;
 
       // Apply blank node compression
-      if (this.blankNodeCompression) {
-        turtle = this.compressBlankNodes(turtle);
+      if (compressBlankNodes) {
+        content = this.compressBlankNodes(content);
       }
 
       // Sort quads for consistency (optional)
       if (sortQuads) {
-        turtle = this.sortTurtleQuads(turtle);
+        content = this.sortTurtleQuads(content);
       }
 
       // Apply compression if needed
       let result = {
-        data: turtle,
+        data: content,
         compressed: false,
-        size: turtle.length,
+        size: content.length,
         originalSize: turtle.length,
         duration: performance.now() - startTime,
       };
 
-      if (compress && turtle.length > this.compressionThreshold) {
+      if (compress && content.length > this.compressionThreshold) {
         try {
-          const compressed = await gzip(Buffer.from(turtle, "utf-8"));
+          const compressed = await gzip(Buffer.from(content, "utf-8"));
           result.data = compressed;
           result.compressed = true;
           result.compressedSize = compressed.length;
-          result.ratio = (compressed.length / turtle.length).toFixed(2);
+          result.ratio = (compressed.length / content.length).toFixed(2);
         } catch (error) {
           this.logger.warn("Compression failed, using uncompressed:", error);
         }
@@ -278,101 +272,85 @@ export class TurtleSerializer {
 
       return result;
     } catch (error) {
-      this.logger.error("Serialization error:", error);
-      throw new Error(`Failed to serialize store: ${error.message}`);
+      this.logger.error("Optimization error:", error);
+      throw new Error(`Failed to optimize Turtle: ${error.message}`);
     }
   }
 
   /**
-   * Serialize with delta optimization
-   * @param {any} store - Current store
-   * @param {object} options - Serialization options
-   * @returns {Promise<object>} Delta serialization result
+   * Check if content has been cached
+   * @param {string} content - Turtle content
+   * @returns {boolean}
    */
-  async serializeDelta(store, options = {}) {
-    const { includeFullIfLarge = true, largeThreshold = 50000 } = options;
-
-    // Check if store changed
-    if (!this.deltaTracker.hasChanged(store)) {
-      return {
-        data: null,
-        isDelta: true,
-        changed: false,
-        size: 0,
-      };
-    }
-
-    // If we have a previous state, compute delta
-    if (this.deltaTracker.lastSerialized) {
-      const delta = this.deltaTracker.computeDelta(
-        this.deltaTracker.lastSerialized,
-        store
-      );
-
-      const deltaSize = delta.added.size + delta.removed.size;
-      const fullSize = Array.isArray(store) ? store.length : store.size || 0;
-
-      // Use full serialization if delta is large relative to full size
-      if (
-        includeFullIfLarge &&
-        deltaSize > fullSize * 0.3
-      ) {
-        return this.serialize(store, options);
-      }
-
-      // Serialize delta
-      const deltaQuads = [
-        ...Array.from(delta.removed).map((q) => `# REMOVED\n${q}`),
-        ...Array.from(delta.added).map((q) => `# ADDED\n${q}`),
-      ];
-
-      return {
-        data: deltaQuads.join("\n"),
-        isDelta: true,
-        added: delta.added.size,
-        removed: delta.removed.size,
-        size: deltaQuads.join("\n").length,
-        fullSize,
-        ratio: ((deltaSize / fullSize) * 100).toFixed(1) + "%",
-      };
-    }
-
-    // First serialization, do full
-    this.deltaTracker.lastSerialized = store;
-    return this.serialize(store, options);
+  isCached(content) {
+    const hash = crypto.createHash("sha256").update(content).digest("hex");
+    return this.parseCache.cache.has(hash);
   }
 
   /**
-   * Deserialize Turtle content
-   * @param {string|Buffer} content - Turtle content
-   * @param {object} options - Parse options
-   * @returns {Promise<any>} Parsed store
+   * Cache Turtle content for future parsing
+   * @param {string} content - Turtle content
+   * @param {any} store - Parsed store result
+   * @returns {object} Cache entry
    */
-  async deserialize(content, options = {}) {
+  cacheContent(content, store) {
+    const hash = crypto.createHash("sha256").update(content).digest("hex");
+    this.parseCache.set(hash, store, { contentSize: content.length });
+    return { hash, cached: true, size: content.length };
+  }
+
+  /**
+   * Get cached parsed store if available
+   * @param {string} content - Turtle content
+   * @returns {any|null} Cached store or null
+   */
+  getCachedStore(content) {
+    const hash = crypto.createHash("sha256").update(content).digest("hex");
+    const cached = this.parseCache.get(hash);
+    if (cached) {
+      this.logger.debug("Turtle parse cache hit");
+      return cached;
+    }
+    return null;
+  }
+
+  /**
+   * Decompress Turtle content if needed
+   * @param {string|Buffer} content - Turtle content (possibly compressed)
+   * @returns {Promise<string>} Decompressed content
+   */
+  async decompressIfNeeded(content) {
     try {
-      // Handle compressed content
       if (Buffer.isBuffer(content)) {
         const decompressed = await gunzip(content);
-        content = decompressed.toString("utf-8");
+        return decompressed.toString("utf-8");
       }
-
-      // Check cache
-      const hash = crypto.createHash("sha256").update(content).digest("hex");
-      const cached = this.parseCache.get(hash);
-      if (cached) {
-        this.logger.debug("Turtle parse cache hit");
-        return cached;
-      }
-
-      // Parse and cache
-      const store = parseTurtle(content, options);
-
-      this.parseCache.set(hash, store, { contentSize: content.length });
-      return store;
+      return content;
     } catch (error) {
-      this.logger.error("Deserialization error:", error);
-      throw new Error(`Failed to deserialize Turtle: ${error.message}`);
+      this.logger.warn("Decompression failed, treating as uncompressed:", error);
+      return typeof content === "string" ? content : content.toString("utf-8");
     }
+  }
+
+  /**
+   * Compute delta between Turtle serializations
+   * @param {string} oldContent - Previous Turtle content
+   * @param {string} newContent - Current Turtle content
+   * @returns {object} Delta information
+   */
+  computeTurtleDelta(oldContent, newContent) {
+    const oldLines = oldContent.split("\n").filter((l) => l.trim() && !l.startsWith("#"));
+    const newLines = newContent.split("\n").filter((l) => l.trim() && !l.startsWith("#"));
+
+    const oldSet = new Set(oldLines);
+    const newSet = new Set(newLines);
+
+    return {
+      added: new Set([...newSet].filter((l) => !oldSet.has(l))),
+      removed: new Set([...oldSet].filter((l) => !newSet.has(l))),
+      unchanged: new Set([...newSet].filter((l) => oldSet.has(l))),
+      changePercent: ((1 - [...newSet].filter((l) => oldSet.has(l)).length / Math.max(newSet.size, 1)) * 100).toFixed(1),
+    };
   }
 
   /**

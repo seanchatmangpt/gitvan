@@ -387,8 +387,8 @@ export class NamespaceManager {
 
     // Find unused standard prefixes
     const usedPrefixes = new Set(report.prefixUsage.keys());
-    report.stats.standardPrefixesUsed = Array.from(
-      STANDARD_NAMESPACES.keys()
+    report.stats.standardPrefixesUsed = Object.keys(
+      STANDARD_NAMESPACES
     ).filter((p) => usedPrefixes.has(p)).length;
     report.stats.standardPrefixesTotal = Object.keys(STANDARD_NAMESPACES).length;
 

@@ -1,7 +1,7 @@
 import { QueueManager } from './QueueManager.mjs';
 import { randomUUID } from 'crypto';
 import { useGraph } from '../composables/graph.mjs';
-import { parseTurtle } from '../lib/unrdf-loader.mjs';
+import { parseTurtle } from 'unrdf';
 import { createLogger } from '../utils/logger.mjs';
 
 const logger = createLogger('git-native:RDFQueueManager');

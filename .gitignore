@@ -39,38 +39,6 @@ yarn-error.log*
 gitvan.local.config.js
 .gitvan-cache/
 
-# Vendor submodules - ignore build artifacts but not the submodule itself
-# The vendor/unrdf directory is tracked as a git submodule
-vendor/unrdf/node_modules/
-vendor/unrdf/dist/
-vendor/unrdf/*.log
-vendor/unrdf/coverage/
-vendor/unrdf/.turbo/
-
-# Claude Flow generated files
-.claude/settings.local.json
-.mcp.json
-claude-flow.config.json
-.swarm/
-.hive-mind/
-memory/claude-flow-data.json
-memory/sessions/*
-!memory/sessions/README.md
-memory/agents/*
-!memory/agents/README.md
-coordination/memory_bank/*
-coordination/subtasks/*
-coordination/orchestration/*
-*.db
-*.db-journal
-*.db-wal
-*.sqlite
-*.sqlite-journal
-*.sqlite-wal
-claude-flow
-claude-flow.bat
-claude-flow.ps1
-hive-mind-prompt-*.txt
 
 # Testing
 .nyc_output/
@@ -117,7 +85,7 @@ Thumbs.db
 .yarn/
 .yarn-integrity
 yarn.lock
-# Note: package-lock.json should be committed for reproducible builds
+package-lock.json
 
 .lh/.telemetry/
 hooks-test/
@@ -131,3 +99,30 @@ demo-outputs/
 test-git-native-*
 *.tgz
 .telemetry/
+
+# Claude Flow generated files
+.claude/settings.local.json
+.mcp.json
+claude-flow.config.json
+.swarm/
+.hive-mind/
+.claude-flow/
+memory/
+coordination/
+memory/claude-flow-data.json
+memory/sessions/*
+!memory/sessions/README.md
+memory/agents/*
+!memory/agents/README.md
+coordination/memory_bank/*
+coordination/subtasks/*
+coordination/orchestration/*
+*.db
+*.db-journal
+*.db-wal
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+claude-flow
+# Removed Windows wrapper files per user request
+hive-mind-prompt-*.txt

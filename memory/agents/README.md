@@ -1,7 +1,7 @@
 # Agent Memory Storage
 
 ## Purpose
-This directory stores agent-specific memory data, configurations, and persistent state information for individual Ollama agents in the orchestration system.
+This directory stores agent-specific memory data, configurations, and persistent state information for individual Claude agents in the orchestration system.
 
 ## Structure
 Each agent gets its own subdirectory for isolated memory storage:
@@ -28,4 +28,4 @@ memory/agents/
 5. **Cleanup**: Remove directories for terminated agents periodically
 
 ## Last Updated
-2025-09-16T05:18:37.863Z
+2025-12-18T06:07:17.835Z

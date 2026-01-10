@@ -21,7 +21,8 @@
 
 import { execSync } from "node:child_process";
 import { readFileSync, statSync } from "node:fs";
-import { createStore, namedNode, literal, quad } from "unrdf";
+import { createStore } from "unrdf";
+import { namedNode, literal, quad } from "@rdfjs/data-model";
 import { useBatchedQuads } from "../composables/batched-quads.mjs";
 
 // Git event types mapping to hook names

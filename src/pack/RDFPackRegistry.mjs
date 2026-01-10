@@ -4,8 +4,7 @@
  * Implements Phase 4 requirements from UNRDF-PACKAGES-SURVEY.md
  */
 
-import { namedNode, literal, quad } from '@rdfjs/data-model'
-import { parseTurtle } from '@graphy/content.ttl.read'
+import { parseTurtle } from 'unrdf'
 import consola from 'consola'
 import { PackQueries } from './queries/PackQueries.mjs'
 import { readFile } from 'node:fs/promises'
@@ -438,25 +437,12 @@ export class RDFPackRegistry {
   }
 
   async _parseTurtle(turtle) {
-    return new Promise((resolve, reject) => {
-      const triples = []
-      const parser = parseTurtle()
-
-      parser.on('data', (quad) => {
-        triples.push(quad)
-      })
-
-      parser.on('error', (error) => {
-        reject(error)
-      })
-
-      parser.on('end', () => {
-        resolve(triples)
-      })
-
-      parser.write(turtle)
-      parser.end()
-    })
+    try {
+      const quads = await parseTurtle(turtle)
+      return Array.isArray(quads) ? quads : Array.from(quads)
+    } catch (error) {
+      throw new Error(`Failed to parse Turtle: ${error.message}`)
+    }
   }
 
   _extractPackId(triples) {

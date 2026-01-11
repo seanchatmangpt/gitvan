@@ -22,7 +22,7 @@ export {
   UnrdfHooksBridge,
   getUnrdfHooksBridge,
   resetUnrdfHooksBridge,
-} from "./unrdf-hooks-bridge.mjs";
+} from "./bree-hook-adapter.mjs";
 
 // Re-export unified composable from composables
 export { useUnifiedHooks } from "../composables/unified-hooks.mjs";

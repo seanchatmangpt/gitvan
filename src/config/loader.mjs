@@ -1,12 +1,14 @@
 // src/config/loader.mjs
 // GitVan v2 — Configuration loader with c12 integration
 // Nitro-style sugar and template string resolution
+// Also exports RDF-aware adapter for backward compatibility
 
 import { loadConfig, watchConfig } from "c12";
 import { klona } from "klona/full";
 import defu from "defu";
 import { GitVanDefaults } from "./defaults.mjs";
 import { normalizeRuntimeConfig } from "./runtime-config.mjs";
+import { loadWithRDFSupport } from "./rdf-adapter.mjs";
 
 // Nitro-style sugar: defineGitVanConfig(() => ({ ... }))
 globalThis.defineGitVanConfig = globalThis.defineGitVanConfig || ((c) => c);
@@ -96,3 +98,6 @@ function _subst(val, map, root) {
     .replace("{{ rootDir }}/dist", map["{{ rootDir }}/dist"])
     .replace("{{ rootDir }}", root);
 }
+
+// Re-export RDF-aware adapter for optional use
+export { loadWithRDFSupport };

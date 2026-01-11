@@ -8,7 +8,7 @@
  */
 
 import { getHuskyHookBridge } from "../integrations/husky-hook-bridge.mjs";
-import { getUnrdfHooksBridge } from "../integrations/unrdf-hooks-bridge.mjs";
+import { getUnrdfHooksBridge } from "../integrations/bree-hook-adapter.mjs";
 import { createLogger } from "../utils/logger.mjs";
 
 const logger = createLogger("composables:unified-hooks");

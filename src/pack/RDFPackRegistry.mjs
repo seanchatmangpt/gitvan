@@ -4,7 +4,7 @@
  * Implements Phase 4 requirements from UNRDF-PACKAGES-SURVEY.md
  */
 
-import { parseTurtle } from 'unrdf'
+import { parseTurtle } from "@unrdf/core"
 import consola from 'consola'
 import { PackQueries } from './queries/PackQueries.mjs'
 import { readFile } from 'node:fs/promises'
@@ -576,6 +576,3 @@ export class RDFPackRegistry {
 /**
  * Factory function for RDFPackRegistry
  */
-export function createRDFPackRegistry(knowledgeSubstrate, options = {}) {
-  return new RDFPackRegistry(knowledgeSubstrate, options)
-}

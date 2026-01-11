@@ -3,7 +3,7 @@
  * Integrates jobs with the graph architecture for enhanced data processing
  */
 
-import { defineJob } from "../runtime/define-job.mjs";
+import { defineJob } from "../core/job-registry.mjs";
 import { GitVanGraphArchitecture } from "../core/graph-architecture.mjs";
 
 /**

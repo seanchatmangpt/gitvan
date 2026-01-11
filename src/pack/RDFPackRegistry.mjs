@@ -576,6 +576,3 @@ export class RDFPackRegistry {
 /**
  * Factory function for RDFPackRegistry
  */
-export function createRDFPackRegistry(knowledgeSubstrate, options = {}) {
-  return new RDFPackRegistry(knowledgeSubstrate, options)
-}

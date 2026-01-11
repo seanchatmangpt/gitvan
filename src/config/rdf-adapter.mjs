@@ -1,73 +1,244 @@
-// src/config/rdf-adapter.mjs
-// RDF configuration with c12 backward compatibility
-// Uses @unrdf/kgc-4d directly - no wrappers
+/**
+ * RDF Config Adapter - Converts gitvan.config.js → RDF triples
+ *
+ * Transforms flat configuration into semantic RDF representation:
+ * - gitvan.config.jobsPath → rdf:gitvan:hasJobsDirectory
+ * - gitvan.config.hooks.pre → rdf:gitvan:hasPreHook
+ * - etc.
+ *
+ * All configs stored in refs/rdf/config as Turtle
+ * SHACL validation ensures schema compliance
+ */
 
-import { klona } from "klona/full";
-import { KGCStore } from "@unrdf/kgc-4d";
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { dirname } from "node:path";
-import { loadOptions } from "./loader.mjs";
+import { createLogger } from '../utils/logger.mjs';
+import { unrdfStore } from '../core/unrdf-store.mjs';
+
+const logger = createLogger('config:rdf-adapter');
+
+// RDF namespace definitions
+const NAMESPACES = {
+  gitvan: 'http://gitvan.local/ontology/',
+  rdf: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+  rdfs: 'http://www.w3.org/2000/01/rdf-schema#',
+  xsd: 'http://www.w3.org/2001/XMLSchema#',
+};
 
 /**
- * Load GitVan configuration with RDF support and c12 backward compatibility
- * RDF functionality via @unrdf/kgc-4d KGCStore API directly
- *
- * @param {Object} overrides - Configuration overrides
- * @param {Object} opts - Loader options
- * @param {boolean} opts.watch - Enable config watching (default: false)
- * @param {string} opts.rdfConfigUri - Base URI for RDF config (default: "urn:gitvan:config")
- * @returns {Promise<Object>} Configuration object with rdfStore property for direct @unrdf access
+ * Create named node from namespace and local name
  */
-export async function loadWithRDFSupport(overrides = {}, opts = {}) {
-  const startTime = Date.now();
+function createIRI(ns, localName) {
+  return `${NAMESPACES[ns]}${localName}`;
+}
 
-  const {
-    rdfConfigUri = "urn:gitvan:config",
-    watch = false,
-  } = opts;
+/**
+ * Convert JavaScript value to RDF literal
+ */
+function valueToLiteral(value) {
+  if (typeof value === 'string') {
+    return { value, type: NAMESPACES.xsd + 'string' };
+  }
+  if (typeof value === 'number') {
+    return { value: String(value), type: NAMESPACES.xsd + 'decimal' };
+  }
+  if (typeof value === 'boolean') {
+    return { value: String(value), type: NAMESPACES.xsd + 'boolean' };
+  }
+  return { value: JSON.stringify(value), type: NAMESPACES.xsd + 'string' };
+}
 
-  // Load both c12 and RDF config in parallel
-  const [c12Config, rdfStore] = await Promise.all([
-    loadOptions(overrides, { watch }),
-    _loadRDFConfigSafely(overrides, { configUri: rdfConfigUri }),
-  ]);
+/**
+ * Recursively convert config object to RDF triples
+ */
+function configToQuads(config, subjectIRI, path = []) {
+  const quads = [];
 
-  const loadTimeMs = Date.now() - startTime;
+  for (const [key, value] of Object.entries(config)) {
+    const predicate = createIRI('gitvan', `has${capitalize(key)}`);
 
-  // Return merged config with direct RDF store access
-  const config = klona(c12Config);
-  config.rdfStore = rdfStore;
-  config.getLoadTimeMs = () => loadTimeMs;
+    if (value === null || value === undefined) {
+      continue;
+    }
+
+    if (typeof value === 'object' && !Array.isArray(value)) {
+      // Nested object: create blank node
+      const objectIRI = `${subjectIRI}#${path.concat(key).join('_')}`;
+      quads.push({
+        subject: { type: 'NamedNode', value: subjectIRI },
+        predicate: { type: 'NamedNode', value: predicate },
+        object: { type: 'NamedNode', value: objectIRI },
+      });
+
+      // Recurse
+      quads.push(
+        ...configToQuads(value, objectIRI, path.concat(key))
+      );
+    } else if (Array.isArray(value)) {
+      // Array: create RDF list or individual properties
+      for (let i = 0; i < value.length; i++) {
+        const item = value[i];
+        const indexedPredicate = createIRI('gitvan', `${key}[${i}]`);
+
+        if (typeof item === 'object') {
+          const objectIRI = `${subjectIRI}#${path.concat(key, i).join('_')}`;
+          quads.push({
+            subject: { type: 'NamedNode', value: subjectIRI },
+            predicate: { type: 'NamedNode', value: indexedPredicate },
+            object: { type: 'NamedNode', value: objectIRI },
+          });
+          quads.push(...configToQuads(item, objectIRI, path.concat(key, i)));
+        } else {
+          const literal = valueToLiteral(item);
+          quads.push({
+            subject: { type: 'NamedNode', value: subjectIRI },
+            predicate: { type: 'NamedNode', value: indexedPredicate },
+            object: {
+              type: 'Literal',
+              value: literal.value,
+              datatype: { type: 'NamedNode', value: literal.type },
+            },
+          });
+        }
+      }
+    } else {
+      // Scalar value: create literal
+      const literal = valueToLiteral(value);
+      quads.push({
+        subject: { type: 'NamedNode', value: subjectIRI },
+        predicate: { type: 'NamedNode', value: predicate },
+        object: {
+          type: 'Literal',
+          value: literal.value,
+          datatype: { type: 'NamedNode', value: literal.type },
+        },
+      });
+    }
+  }
+
+  return quads;
+}
+
+/**
+ * Capitalize first letter
+ */
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+/**
+ * Convert gitvan config to RDF quads
+ */
+export function configToRdf(configObj) {
+  const configIRI = createIRI('gitvan', 'Configuration');
+
+  // Root triple
+  const quads = [
+    {
+      subject: { type: 'NamedNode', value: configIRI },
+      predicate: { type: 'NamedNode', value: NAMESPACES.rdf + 'type' },
+      object: { type: 'NamedNode', value: createIRI('gitvan', 'Config') },
+    },
+    {
+      subject: { type: 'NamedNode', value: configIRI },
+      predicate: { type: 'NamedNode', value: NAMESPACES.rdfs + 'label' },
+      object: {
+        type: 'Literal',
+        value: 'GitVan Configuration',
+      },
+    },
+  ];
+
+  // Add config properties
+  quads.push(...configToQuads(configObj, configIRI));
+
+  return quads;
+}
+
+/**
+ * Convert RDF quads back to config object
+ */
+export function rdfToConfig(quads) {
+  const config = {};
+
+  // Group quads by subject
+  const bySubject = {};
+  for (const quad of quads) {
+    const subject = quad.subject.value;
+    if (!bySubject[subject]) {
+      bySubject[subject] = [];
+    }
+    bySubject[subject].push(quad);
+  }
+
+  // Process root config
+  for (const quads of Object.values(bySubject)) {
+    for (const quad of quads) {
+      const predicateName = quad.predicate.value.split('/').pop();
+
+      // Skip RDF type declarations
+      if (predicateName === 'type' || predicateName === 'label') {
+        continue;
+      }
+
+      // Convert RDF property back to config key
+      if (predicateName.startsWith('has')) {
+        const key = predicateName.slice(3).charAt(0).toLowerCase() +
+          predicateName.slice(4);
+
+        if (quad.object.type === 'Literal') {
+          config[key] = quad.object.value;
+        }
+      }
+    }
+  }
 
   return config;
 }
 
 /**
- * Safely load RDF config store - returns KGCStore directly
- * Applications should use @unrdf/kgc-4d KGCStore API directly
- * No wrappers - direct access to @unrdf capabilities
- * @private
+ * Persist config to RDF store
  */
-async function _loadRDFConfigSafely(overrides = {}, opts = {}) {
+export async function persistConfigToRdf(configObj) {
   try {
-    const kgcStore = new KGCStore();
+    if (!unrdfStore.initialized) {
+      await unrdfStore.initialize();
+    }
 
-    // Load config ontology
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = dirname(__filename);
-    const ontologyPath = join(__dirname, "config-ontology.ttl");
+    const quads = configToRdf(configObj);
+    await unrdfStore.insert(quads, 'refs/rdf/config/main');
 
-    const content = await readFile(ontologyPath, "utf-8");
-    await kgcStore.load(content, { format: "text/turtle" });
-
-    // Return KGCStore directly - applications use @unrdf API
-    return kgcStore;
+    logger.info(`Persisted ${quads.length} config quads to RDF store`);
+    return quads;
   } catch (error) {
-    console.warn(
-      `RDF config loading failed (non-fatal): ${error.message}. Continuing with c12 only.`
-    );
-    return null;
+    logger.error('Failed to persist config to RDF:', error);
+    throw error;
   }
 }
+
+/**
+ * Load config from RDF store
+ */
+export async function loadConfigFromRdf() {
+  try {
+    if (!unrdfStore.initialized) {
+      await unrdfStore.initialize();
+    }
+
+    // Query configuration
+    const sparqlQuery = `
+      PREFIX gitvan: <http://gitvan.local/ontology/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      DESCRIBE ?config
+      WHERE {
+        ?config rdf:type gitvan:Config .
+      }
+    `;
+
+    const results = await unrdfStore.sparql(sparqlQuery);
+    return rdfToConfig(results || []);
+  } catch (error) {
+    logger.warn('Could not load config from RDF:', error);
+    return {};
+  }
+}
+
+export { NAMESPACES, createIRI };

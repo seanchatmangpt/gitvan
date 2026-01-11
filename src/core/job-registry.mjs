@@ -52,11 +52,6 @@ const JobDefinitionSchema = z.object({
 });
 
 /**
- * Global job registry instance
- */
-const globalJobRegistry = new Map();
-
-/**
  * Define a GitVan job with validation and registration
  *
  * Supports both legacy and modern job definitions:
@@ -64,6 +59,8 @@ const globalJobRegistry = new Map();
  * - Modern: { name, description, hooks: [...], run: fn }
  */
 export function defineJob(config) {
+  // NOTE: jobRegistry is defined below, this function is called after
+  // the global jobRegistry singleton is created
   try {
     // Normalize job config to modern format
     const normalized = normalizeJobConfig(config);
@@ -71,12 +68,17 @@ export function defineJob(config) {
     // Validate the job definition
     const validatedDefinition = JobDefinitionSchema.parse(normalized);
 
-    // Register the job in global registry
-    globalJobRegistry.set(validatedDefinition.name, validatedDefinition);
+    // Create job object
+    const jobObject = createJobObject(validatedDefinition);
+
+    // Register with the global jobRegistry singleton
+    if (typeof jobRegistry?.register === 'function') {
+      jobRegistry.register(jobObject);
+    }
 
     logger.info(`✅ Job '${validatedDefinition.name}' defined and registered`);
 
-    return createJobObject(validatedDefinition);
+    return jobObject;
   } catch (error) {
     logger.error(`❌ Failed to define job: ${error.message}`);
     throw new Error(`Invalid job definition: ${error.message}`);
@@ -280,47 +282,47 @@ export class JobRegistry {
 export const jobRegistry = new JobRegistry();
 
 /**
- * Get a job by name from global registry
+ * Get a job by name from registry singleton
  */
 export function getJob(name) {
-  return globalJobRegistry.get(name) || null;
+  return jobRegistry?.getJob(name) || null;
 }
 
 /**
- * List all registered jobs from global registry
+ * List all registered jobs from registry singleton
  */
 export function listJobs() {
-  return Array.from(globalJobRegistry.values());
+  return jobRegistry?.getAllJobs() || [];
 }
 
 /**
- * Check if a job exists in global registry
+ * Check if a job exists in registry singleton
  */
 export function hasJob(name) {
-  return globalJobRegistry.has(name);
+  return jobRegistry?.hasJob(name) || false;
 }
 
 /**
- * Remove a job from global registry
+ * Remove a job from registry singleton
  */
 export function removeJob(name) {
-  return globalJobRegistry.delete(name);
+  return jobRegistry?.removeJob(name) || false;
 }
 
 /**
- * Clear all jobs from global registry
+ * Clear all jobs from registry singleton
  */
 export function clearJobs() {
-  globalJobRegistry.clear();
+  jobRegistry?.clearJobs();
 }
 
 /**
  * Get job registry statistics
  */
 export function getJobStats() {
-  return {
-    totalJobs: globalJobRegistry.size,
-    jobNames: Array.from(globalJobRegistry.keys()),
+  return jobRegistry?.getJobStats() || {
+    totalJobs: 0,
+    jobNames: [],
   };
 }
 

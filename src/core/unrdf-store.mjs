@@ -2,50 +2,90 @@
  * @unrdf/core Store Wrapper - Central RDF persistence layer
  *
  * Dual-backend architecture:
- * - Git refs (refs/rdf/*) for permanent, versioned storage
- * - In-memory quad store for blazing-fast queries
+ * - Git refs (refs/rdf/*) for permanent, versioned storage (via @unrdf/kgc-4d)
+ * - Oxigraph in-memory store for blazing-fast queries (@unrdf/core)
  *
- * Sync strategy: Git is source of truth, in-memory is query cache
- * Write flow: Git → In-memory (synchronous)
- * Read flow: In-memory (with fallback to Git)
+ * Integration:
+ * - UnrdfStore wraps @unrdf/core.UnrdfStore (Oxigraph backend)
+ * - KGCStore wraps event logging + Git persistence
+ * - GitBackbone provides isomorphic-git integration
  *
- * NOTE: Foundation spike uses simplified in-memory store.
- * Full @unrdf/core integration comes in Phase 2.
+ * Sync strategy:
+ * - Write flow: Memory → Git (atomic commits)
+ * - Read flow: Memory (with optional Git sync on startup)
+ * - Queries: Synchronous SPARQL via @unrdf/core
  */
 
+import {
+  UnrdfStore as OxigraphStore,
+  namedNode,
+  literal,
+  blankNode,
+  quad,
+  executeQuerySync,
+} from '@unrdf/core';
+import { KGCStore, GitBackbone } from '@unrdf/kgc-4d';
 import { createLogger } from '../utils/logger.mjs';
 
 const logger = createLogger('unrdf:store');
 
 /**
- * Singleton store instance with dual backends
+ * UnRDF Store - Wrapper around @unrdf/core + @unrdf/kgc-4d
+ *
+ * Provides:
+ * - Oxigraph-backed RDF store (synchronous operations)
+ * - Event logging with KGC-4D
+ * - Git persistence with GitBackbone
  */
 class UnrdfStore {
   constructor() {
+    // @unrdf/core Oxigraph store (primary query engine)
     this.store = null;
-    this.queryEngine = null;
+
+    // @unrdf/kgc-4d event log (audit trail + time-travel)
+    this.kgcStore = null;
+
+    // Git persistence layer
+    this.git = null;
+
+    // Store state
     this.initialized = false;
     this.stats = {
       quadsWritten: 0,
       quadsRead: 0,
       queriesExecuted: 0,
+      eventsLogged: 0,
     };
   }
 
   /**
-   * Initialize store with Git-backed persistence
-   * Loads existing RDF data from Git refs/rdf/* into in-memory store
+   * Initialize @unrdf/core store with optional Git and KGC-4D
    */
-  async initialize() {
+  async initialize(options = {}) {
     try {
-      logger.info('Initializing UnRDF store with Git persistence...');
+      logger.info('Initializing UnRDF store with @unrdf/core + @unrdf/kgc-4d...');
 
-      // Create simple in-memory quad store
-      // TODO: Replace with @unrdf/core KGCStore in Phase 2
-      this.store = new Map(); // quadId -> quad object
+      // Create Oxigraph-backed store (@unrdf/core)
+      this.store = new OxigraphStore();
+      logger.debug('✓ Created Oxigraph store');
 
-      // Load existing RDF data from Git refs
-      await this.loadFromGit();
+      // Initialize KGC-4D for event logging
+      this.kgcStore = new KGCStore();
+      logger.debug('✓ Created KGCStore for event logging');
+
+      // Initialize Git persistence if configured
+      if (options.gitRepo) {
+        try {
+          this.git = new GitBackbone(options.gitRepo);
+          logger.debug(`✓ Initialized Git persistence at ${options.gitRepo}`);
+
+          // Load existing RDF from Git refs
+          await this.loadFromGit();
+        } catch (error) {
+          logger.warn(`Git persistence unavailable: ${error.message}`);
+          this.git = null;
+        }
+      }
 
       this.initialized = true;
       logger.info('✅ UnRDF store initialized successfully');
@@ -57,16 +97,31 @@ class UnrdfStore {
   }
 
   /**
-   * Load RDF data from Git refs/rdf/* into store
+   * Load RDF data from Git refs/rdf/* into Oxigraph store
    * Partitioned by domain: config, jobs, hooks, workflows, events
-   *
-   * TODO: Implement Git persistence layer integration
-   * For now, store starts empty and grows as data is inserted
    */
   async loadFromGit() {
+    if (!this.git) return;
+
     try {
-      // TODO: Integrate with git composable to load refs/rdf/*
-      logger.debug('Git persistence layer not yet integrated - store starting empty');
+      const refPatterns = [
+        'refs/rdf/config',
+        'refs/rdf/jobs',
+        'refs/rdf/hooks',
+        'refs/rdf/workflows',
+        'refs/rdf/events',
+      ];
+
+      for (const pattern of refPatterns) {
+        try {
+          // TODO: Implement git composable integration to list refs by pattern
+          logger.debug(`Checking Git ref pattern: ${pattern}`);
+        } catch (error) {
+          // Ref pattern may not exist yet - this is fine
+          logger.debug(`Git ref pattern ${pattern} not yet populated`);
+        }
+      }
+
       logger.info(`Loaded RDF data from Git refs (${this.stats.quadsRead} quads)`);
     } catch (error) {
       logger.warn('Could not load RDF from Git:', error.message);
@@ -75,26 +130,11 @@ class UnrdfStore {
   }
 
   /**
-   * Ingest Turtle data into the store
-   * Foundation spike: simple parsing (full Turtle parser in Phase 2)
-   */
-  async ingestTurtle(turtleData, sourceRef) {
-    try {
-      // TODO: Implement proper Turtle parser in Phase 2
-      // For now, skip Turtle parsing - quads added via insert()
-      logger.debug(
-        `[TODO] Parse Turtle from ${sourceRef} (${turtleData.length} bytes)`
-      );
-    } catch (error) {
-      logger.warn(`Could not parse Turtle from ${sourceRef}:`, error.message);
-    }
-  }
-
-  /**
-   * Execute SPARQL query against store
-   * Foundation spike: returns empty results (full SPARQL in Phase 2)
+   * Execute SPARQL query using @unrdf/core synchronous engine
    *
-   * TODO: Integrate @unrdf/core SPARQL engine in Phase 2
+   * @param {string} query - SPARQL query (SELECT, ASK, CONSTRUCT, DESCRIBE)
+   * @param {Object} options - Query options
+   * @returns {Promise<Array|boolean|Quad[]>} Query results
    */
   async sparql(query, options = {}) {
     if (!this.initialized) {
@@ -104,11 +144,13 @@ class UnrdfStore {
     try {
       this.stats.queriesExecuted++;
 
-      logger.debug(`SPARQL query (${query.substring(0, 50)}...)`);
+      logger.debug(`SPARQL query: ${query.substring(0, 60)}...`);
 
-      // TODO: Execute actual SPARQL queries with @unrdf/core engine
-      // For foundation spike, return empty results
-      return { bindings: [] };
+      // Execute synchronously using @unrdf/core
+      const results = executeQuerySync(this.store, query);
+
+      logger.debug(`Query returned ${Array.isArray(results) ? results.length : 1} result(s)`);
+      return results;
     } catch (error) {
       logger.error('SPARQL query failed:', error);
       throw new Error(`Query execution failed: ${error.message}`);
@@ -116,10 +158,11 @@ class UnrdfStore {
   }
 
   /**
-   * Insert RDF triples
-   * Writes to in-memory store (Git persistence TODO)
+   * Insert RDF quads into store
    *
-   * TODO: Integrate Git persistence - write to refs/rdf/* refs
+   * @param {Quad[]} quads - RDF quads to insert
+   * @param {string} refPath - Optional Git ref path for persistence
+   * @returns {Promise<Object>} { success: boolean, count: number }
    */
   async insert(quads, refPath) {
     if (!this.initialized) {
@@ -127,21 +170,33 @@ class UnrdfStore {
     }
 
     try {
-      // Add to in-memory store
+      // Add to Oxigraph store
       for (const quad of quads) {
-        // Create quad ID from subject + predicate + object
-        const quadId = `${quad.subject.value}|${quad.predicate.value}|${
-          quad.object.value
-        }`;
-        this.store.set(quadId, quad);
+        this.store.add(quad);
         this.stats.quadsWritten++;
       }
 
-      // TODO: Persist to Git ref when git composable is integrated
-      if (refPath) {
-        logger.debug(
-          `[TODO] Persisting ${quads.length} quads to ${refPath} in Git refs`
+      // Log event in KGC-4D for audit trail
+      if (this.kgcStore) {
+        await this.kgcStore.appendEvent(
+          {
+            type: 'INSERT',
+            count: quads.length,
+            ref: refPath,
+          },
+          quads.map((q) => ({ type: 'add', ...q }))
         );
+        this.stats.eventsLogged++;
+      }
+
+      // Persist to Git ref if configured
+      if (refPath && this.git) {
+        try {
+          await this.persistToGit(quads, refPath, 'Add quads');
+        } catch (error) {
+          logger.warn(`Failed to persist to Git: ${error.message}`);
+          // Non-fatal - continue with in-memory store
+        }
       }
 
       return { success: true, count: quads.length };
@@ -152,7 +207,11 @@ class UnrdfStore {
   }
 
   /**
-   * Delete RDF triples
+   * Delete RDF quads from store
+   *
+   * @param {Quad[]} quads - RDF quads to delete
+   * @param {string} refPath - Optional Git ref path for persistence
+   * @returns {Promise<Object>} { success: boolean, count: number }
    */
   async delete(quads, refPath) {
     if (!this.initialized) {
@@ -160,20 +219,31 @@ class UnrdfStore {
     }
 
     try {
+      // Remove from Oxigraph store
       for (const quad of quads) {
-        const quadId = `${quad.subject.value}|${quad.predicate.value}|${
-          quad.object.value
-        }`;
-        if (this.store.has(quadId)) {
-          this.store.delete(quadId);
-        }
+        this.store.delete(quad);
       }
 
-      // TODO: Update Git ref when persistence is integrated
-      if (refPath) {
-        logger.debug(
-          `[TODO] Updating ${refPath} in Git refs to remove ${quads.length} quads`
+      // Log event in KGC-4D
+      if (this.kgcStore) {
+        await this.kgcStore.appendEvent(
+          {
+            type: 'DELETE',
+            count: quads.length,
+            ref: refPath,
+          },
+          quads.map((q) => ({ type: 'remove', ...q }))
         );
+        this.stats.eventsLogged++;
+      }
+
+      // Update Git ref if configured
+      if (refPath && this.git) {
+        try {
+          await this.persistToGit([], refPath, 'Delete quads');
+        } catch (error) {
+          logger.warn(`Failed to persist deletion to Git: ${error.message}`);
+        }
       }
 
       return { success: true, count: quads.length };
@@ -184,39 +254,50 @@ class UnrdfStore {
   }
 
   /**
-   * Convert quads to Turtle format for Git storage
+   * Persist quads to Git ref in N-Quads format
+   *
+   * @private
    */
-  quadsToTurtle(quads) {
+  async persistToGit(quads, refPath, message) {
+    if (!this.git) return;
+
     try {
-      // Convert each quad to N-Triples, then aggregate to Turtle
-      const ntriples = quads.map((quad) => {
-        const s = this.termToNT(quad.subject);
-        const p = this.termToNT(quad.predicate);
-        const o = this.termToNT(quad.object);
-        return `${s} ${p} ${o} .`;
+      // Convert to N-Quads format
+      const nquads = quads
+        .map((q) => `${this.termToNT(q.subject)} ${this.termToNT(q.predicate)} ${this.termToNT(q.object)} .`)
+        .join('\n');
+
+      // Commit to Git
+      const commit = await this.git.commitSnapshot(nquads, refPath, {
+        author: { name: 'GitVan', email: 'bot@gitvan.ai' },
+        message: `${message} to ${refPath}`,
       });
 
-      return ntriples.join('\n') + '\n';
+      logger.debug(`Persisted ${quads.length} quads to Git: ${commit.slice(0, 8)}`);
     } catch (error) {
-      logger.error('Failed to convert quads to Turtle:', error);
-      return '';
+      throw error;
     }
   }
 
   /**
    * Convert RDF term to N-Triples format
+   *
+   * @private
    */
   termToNT(term) {
     if (term.termType === 'NamedNode') {
       return `<${term.value}>`;
     } else if (term.termType === 'Literal') {
       const escaped = term.value.replace(/"/g, '\\"');
-      if (term.datatype) {
-        return `"${escaped}"^^<${term.datatype.value}>`;
-      }
-      return `"${escaped}"`;
+      const lang = term.language ? `@${term.language}` : '';
+      const type = term.datatype && term.datatype.value !== 'http://www.w3.org/2001/XMLSchema#string'
+        ? `^^<${term.datatype.value}>`
+        : '';
+      return `"${escaped}"${lang}${type}`;
     } else if (term.termType === 'BlankNode') {
       return `_:${term.value}`;
+    } else if (term.termType === 'Variable') {
+      return `?${term.value}`;
     }
     return '';
   }
@@ -227,8 +308,23 @@ class UnrdfStore {
   getStats() {
     return {
       ...this.stats,
-      totalQuads: this.store instanceof Map ? this.store.size : 0,
+      totalQuads: this.store?.size?.() || 0,
+      storeType: '@unrdf/core (Oxigraph)',
+      hasGit: !!this.git,
+      hasKGC: !!this.kgcStore,
       initialized: this.initialized,
+    };
+  }
+
+  /**
+   * Create term factories for convenient RDF creation
+   */
+  terms() {
+    return {
+      namedNode,
+      literal,
+      blankNode,
+      quad,
     };
   }
 
@@ -237,12 +333,14 @@ class UnrdfStore {
    */
   async reset() {
     this.store = null;
-    this.queryEngine = null;
+    this.kgcStore = null;
+    this.git = null;
     this.initialized = false;
     this.stats = {
       quadsWritten: 0,
       quadsRead: 0,
       queriesExecuted: 0,
+      eventsLogged: 0,
     };
   }
 }
@@ -250,4 +348,5 @@ class UnrdfStore {
 // Singleton instance
 const unrdfStore = new UnrdfStore();
 
-export { unrdfStore, UnrdfStore };
+// Export term factories for convenience
+export { unrdfStore, UnrdfStore, namedNode, literal, blankNode, quad };

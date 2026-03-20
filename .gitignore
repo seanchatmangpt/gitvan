@@ -128,3 +128,4 @@ claude-flow
 hive-mind-prompt-*.txt
 .nitro/
 .output/
+.claude/worktrees/

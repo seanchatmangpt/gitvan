@@ -68,12 +68,22 @@ export function useReceipt() {
         // Generate fingerprint for verification
         receipt.fingerprint = this.generateFingerprint(receipt);
 
-        // Write receipt to Git notes
-        await writeReceipt({
-          resultsRef: "refs/notes/gitvan/results",
-          id: receipt.id,
-          status: receipt.status,
+        // Write receipt to Git notes using composable's git instance
+        // (avoids unctx context loss that occurs when runtime/receipt.mjs
+        // creates its own useGit)
+        const payload = {
+          schema: "gitvan.receipt.v1",
+          role: "receipt",
+          ts: git.nowISO(),
           commit: receipt.commit,
+          id: receipt.id,
+          jobId: receipt.jobId,
+          eventId: receipt.eventId,
+          status: receipt.status,
+          timestamp: receipt.timestamp,
+          branch: receipt.branch,
+          worktree: receipt.worktree,
+          fingerprint: receipt.fingerprint,
           action: receipt.jobId ? "job" : "event",
           result: receipt.result,
           artifact: receipt.artifacts,
@@ -84,7 +94,11 @@ export function useReceipt() {
             fingerprint: receipt.fingerprint,
             ...receipt.metadata,
           },
-        });
+        };
+        await git.noteAppend(
+          "refs/notes/gitvan/results",
+          JSON.stringify(payload)
+        );
 
         return receipt;
       } catch (error) {
@@ -105,10 +119,26 @@ export function useReceipt() {
 
       try {
         const gitInfo = await git.info();
-        const receipts = await readReceipts({
-          resultsRef: "refs/notes/gitvan/results",
-          worktree: gitInfo.worktree,
-        });
+        // Read receipts using composable's git instance (avoids unctx context loss)
+        let receipts = [];
+        try {
+          const notes = await git.noteShow(
+            "refs/notes/gitvan/results",
+            "HEAD"
+          );
+          const lines = notes.split("\n").filter((line) => line.trim());
+          receipts = lines
+            .map((line) => {
+              try {
+                return JSON.parse(line);
+              } catch {
+                return null;
+              }
+            })
+            .filter(Boolean);
+        } catch {
+          receipts = []; // No notes found
+        }
 
         let filtered = receipts;
 

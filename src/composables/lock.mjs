@@ -6,11 +6,7 @@
 import { useGitVan, tryUseGitVan, withGitVan } from "../core/context.mjs";
 import { useGit } from "./git/index.mjs";
 import { createLogger } from "../utils/logger.mjs";
-import {
-  acquireLock,
-  releaseLock,
-  generateLockRef,
-} from "../runtime/locks.mjs";
+import { generateLockRef } from "../runtime/locks.mjs";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 
@@ -69,8 +65,10 @@ export function useLock() {
           metadata,
         };
 
-        // Try to acquire lock
-        const acquired = await acquireLock(lockRef, JSON.stringify(lockData));
+        // Try to acquire lock using composable's git instance (avoids unctx
+        // context loss that occurs when runtime/locks.mjs creates its own useGit)
+        const sha = gitInfo.head;
+        const acquired = sha ? await git.updateRefCreate(lockRef, sha) : false;
 
         if (acquired) {
           return {
@@ -100,7 +98,13 @@ export function useLock() {
         const gitInfo = await git.info();
         const lockRef = this.getLockRef(lockName, gitInfo);
 
-        const released = await releaseLock(lockRef);
+        // Release lock using composable's git instance (avoids unctx context loss)
+        const refValue = await git.getRef(lockRef);
+        let released = false;
+        if (refValue) {
+          await git.run(["update-ref", "-d", lockRef]);
+          released = true;
+        }
 
         return {
           name: lockName,
@@ -130,7 +134,7 @@ export function useLock() {
         const gitInfo = await git.info();
         const lockRef = this.getLockRef(lockName, gitInfo);
 
-        const locked = await isLocked(lockRef);
+        const locked = await this.isLocked(lockName);
         if (!locked) {
           return null;
         }
@@ -158,7 +162,7 @@ export function useLock() {
         const gitInfo = await git.info();
         const lockRef = this.getLockRef(lockName, gitInfo);
 
-        const locked = await isLocked(lockRef);
+        const locked = await this.isLocked(lockName);
         const lockInfo = locked ? await this.getLockInfo(lockName) : null;
 
         return {

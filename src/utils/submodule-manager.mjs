@@ -24,35 +24,28 @@ import { createLogger } from "./logger.mjs";
 const logger = createLogger("submodule-manager");
 
 /**
- * Submodule configuration
+ * Package configuration for @unrdf npm packages
  */
 export const SUBMODULE_CONFIG = {
   unrdf: {
-    path: "vendor/unrdf",
+    path: "node_modules/@unrdf",
     name: "@unrdf/hooks",
-    remote: "https://github.com/unjs/unrdf.git",
-    branch: "main",
+    npmScope: "@unrdf",
   },
 };
 
 /**
- * Check if a submodule is initialized
+ * Check if @unrdf packages are installed
  *
- * @param {string} submodulePath - Relative path to submodule
+ * @param {string} packagePath - Relative path to check (e.g., "node_modules/@unrdf")
  * @param {string} [cwd=process.cwd()] - Working directory
- * @returns {boolean} True if initialized
+ * @returns {boolean} True if installed
  */
-export function isSubmoduleInitialized(submodulePath, cwd = process.cwd()) {
-  const fullPath = resolve(cwd, submodulePath);
+export function isSubmoduleInitialized(packagePath, cwd = process.cwd()) {
+  const fullPath = resolve(cwd, packagePath);
 
   // Check if directory exists
   if (!existsSync(fullPath)) {
-    return false;
-  }
-
-  // Check if .git exists (either file or directory)
-  const gitPath = join(fullPath, ".git");
-  if (!existsSync(gitPath)) {
     return false;
   }
 
@@ -60,14 +53,18 @@ export function isSubmoduleInitialized(submodulePath, cwd = process.cwd()) {
 }
 
 /**
- * Get submodule version from package.json
+ * Get @unrdf package version from package.json
  *
- * @param {string} submodulePath - Relative path to submodule
+ * @param {string} packagePath - Relative path to package (e.g., "node_modules/@unrdf/hooks")
  * @param {string} [cwd=process.cwd()] - Working directory
  * @returns {string|null} Version string or null if not found
  */
-export function getSubmoduleVersion(submodulePath, cwd = process.cwd()) {
-  const packageJsonPath = resolve(cwd, submodulePath, "package.json");
+export function getSubmoduleVersion(packagePath, cwd = process.cwd()) {
+  // If path is "node_modules/@unrdf", try hooks subpackage
+  let packageJsonPath = resolve(cwd, packagePath, "package.json");
+  if (!existsSync(packageJsonPath)) {
+    packageJsonPath = resolve(cwd, packagePath, "hooks", "package.json");
+  }
 
   if (!existsSync(packageJsonPath)) {
     return null;

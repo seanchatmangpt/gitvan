@@ -142,8 +142,8 @@ const checkSubcommand = defineCommand({
       const status = getUnrdfStatus(cwd);
 
       if (!status.initialized) {
-        logger.warn("⚠️  UnRDF submodule not initialized");
-        logger.info("Run: gitvan submodule init");
+        logger.warn("⚠️  @unrdf packages not installed");
+        logger.info("Run: npm install");
         process.exit(1);
       }
 
@@ -171,8 +171,8 @@ const checkSubcommand = defineCommand({
       if (status.hasChanges) {
         result.issues.push({
           type: "uncommitted-changes",
-          message: "Submodule has uncommitted changes",
-          fix: "Commit or stash changes in vendor/unrdf",
+          message: "Package has local modifications",
+          fix: "Reinstall @unrdf packages: npm install",
         });
       }
 

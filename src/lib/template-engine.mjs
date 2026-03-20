@@ -1,7 +1,7 @@
 /**
  * @fileoverview GitVan Template Engine - KGN-based replacement for Nunjucks
  *
- * This module provides template rendering using the KGN engine from vendor/unrdf,
+ * This module provides template rendering using the KGN engine from @unrdf/kgn,
  * replacing the nunjucks dependency with a more deterministic and performant solution.
  *
  * Complete filter ecosystem with 40+ filters including:

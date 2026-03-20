@@ -8,15 +8,20 @@ import { useGit } from "../composables/git/index.mjs";
 /**
  * Acquires an atomic lock using Git refs
  * @param {string} lockRef - Git ref to use as lock (e.g., 'refs/gitvan/locks/template:path')
- * @param {string} sha - Git SHA to store in the lock
+ * @param {string} _data - Lock metadata (unused, lock uses HEAD SHA as ref value)
  * @returns {Promise<boolean>} True if lock acquired, false if already locked
  */
-export async function acquireLock(lockRef, sha) {
+export async function acquireLock(lockRef, _data) {
   const git = useGit();
   try {
-    // Atomically create the ref. This fails if the ref already exists.
-    await git.updateRefCreate(lockRef, sha);
-    return true;
+    // Use current HEAD as the ref value (git update-ref requires a valid SHA)
+    const sha = await git.currentHead();
+    if (!sha) {
+      return false;
+    }
+    // Atomically create the ref. Returns false if the ref already exists.
+    const created = await git.updateRefCreate(lockRef, sha);
+    return created;
   } catch {
     return false; // Lock is held by another process
   }
@@ -25,14 +30,22 @@ export async function acquireLock(lockRef, sha) {
 /**
  * Releases a lock by deleting the Git ref
  * @param {string} lockRef - Git ref to release
- * @returns {Promise<void>}
+ * @returns {Promise<boolean>} True if lock was released
  */
 export async function releaseLock(lockRef) {
   const git = useGit();
   try {
-    await git.delRef(lockRef);
+    // Check if the ref exists first
+    const refValue = await git.getRef(lockRef);
+    if (!refValue) {
+      return false; // Nothing to release
+    }
+    // Delete the ref using update-ref -d
+    await git.run(["update-ref", "-d", lockRef]);
+    return true;
   } catch {
     // Ignore errors if the ref is already gone
+    return false;
   }
 }
 

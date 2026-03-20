@@ -1,23 +1,4 @@
 import { defineBuildConfig } from "unbuild";
-import { existsSync } from "node:fs";
-import { resolve } from "node:path";
-
-// Pre-build verification: Ensure vendor/unrdf submodule is initialized
-const vendorUnrdfPath = resolve(process.cwd(), "vendor/unrdf");
-if (!existsSync(vendorUnrdfPath)) {
-  console.error("\n❌ ERROR: vendor/unrdf submodule not found!");
-  console.error("Please initialize the git submodule:");
-  console.error("  git submodule update --init --recursive\n");
-  process.exit(1);
-}
-
-// Verify unrdf build artifacts exist
-const unrdfDistPath = resolve(vendorUnrdfPath, "dist");
-if (!existsSync(unrdfDistPath)) {
-  console.error("\n⚠️  WARNING: vendor/unrdf/dist not found!");
-  console.error("The unrdf submodule may need to be built.");
-  console.error("Navigate to vendor/unrdf and run: npm install && npm run build\n");
-}
 
 export default defineBuildConfig({
   // Main CLI entry point
@@ -40,12 +21,6 @@ export default defineBuildConfig({
 
   // Rollup configuration
   rollup: {
-    // Alias configuration to resolve unrdf from vendor submodule
-    alias: {
-      // Map 'unrdf' imports to the vendor submodule
-      // This ensures all imports of 'unrdf' resolve to vendor/unrdf/dist
-      unrdf: resolve(vendorUnrdfPath, "dist/index.mjs"),
-    },
     // External dependencies (don't bundle these)
     external: [
       // Node.js built-ins

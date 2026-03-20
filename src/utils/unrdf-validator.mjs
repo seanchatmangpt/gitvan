@@ -171,15 +171,14 @@ function getAllExpectedExports() {
  * @returns {boolean} True if available
  */
 export function isUnrdfAvailable(cwd = process.cwd()) {
-  // Check if submodule is initialized
-  if (!isSubmoduleInitialized("vendor/unrdf", cwd)) {
+  // Check if @unrdf npm packages are installed
+  if (!isSubmoduleInitialized("node_modules/@unrdf", cwd)) {
     return false;
   }
 
-  // Check if index.ts exists in either location
-  const indexPath1 = resolve(cwd, "vendor/unrdf/src/unrdf-hooks/index.ts");
-  const indexPath2 = resolve(cwd, "src/unrdf-hooks/index.ts");
-  return existsSync(indexPath1) || existsSync(indexPath2);
+  // Check if @unrdf/hooks package exists
+  const hooksPath = resolve(cwd, "node_modules/@unrdf/hooks");
+  return existsSync(hooksPath);
 }
 
 /**
@@ -373,13 +372,13 @@ export async function validateUnrdfExports(cwd = process.cwd()) {
     return {
       valid: false,
       available: false,
-      message: "UnRDF submodule not initialized or not available",
-      recommendation: "Run: git submodule update --init vendor/unrdf",
+      message: "@unrdf npm packages not installed",
+      recommendation: "Run: npm install",
     };
   }
 
   // Check version
-  const version = getSubmoduleVersion("vendor/unrdf", cwd);
+  const version = getSubmoduleVersion("node_modules/@unrdf", cwd);
   const versionCheck = checkVersionCompatibility(version);
 
   if (!versionCheck.compatible) {
@@ -466,7 +465,7 @@ export function listUnrdfMethods(cwd = process.cwd()) {
 
   return {
     available: true,
-    version: getSubmoduleVersion("vendor/unrdf", cwd),
+    version: getSubmoduleVersion("node_modules/@unrdf", cwd),
     methods: EXPECTED_EXPORTS,
     total: getAllExpectedExports().length,
   };

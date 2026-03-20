@@ -8,7 +8,7 @@
 
 import { promises as fs } from "node:fs";
 import { join, dirname } from "pathe";
-import { parseTurtle, toTurtle } from "@unrdf/core";
+import { parseTurtle, toTurtle } from "../lib/unrdf-compat.mjs";
 import { namespaceManager } from "./namespace-manager.mjs";
 
 /**

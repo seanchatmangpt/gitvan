@@ -11,7 +11,8 @@
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { readFileSync } from 'fs';
-import { createStore, parseTurtle } from "@unrdf/core";
+import { createStore } from "@unrdf/core";
+import { parseTurtle } from "../lib/unrdf-compat.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

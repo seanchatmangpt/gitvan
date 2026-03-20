@@ -12,9 +12,9 @@ import { discoverEvents, loadEventDefinition } from "../runtime/events.mjs";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
-import {
 import { createLogger } from "../utils/logger.mjs";
 const logger = createLogger("composables:event");
+import {
   unrouteEventId,
   unrouteCronExpression,
   unrouteBranchName,

@@ -1,4 +1,5 @@
-import { createStore, parseTurtle } from "@unrdf/core";
+import { createStore } from "@unrdf/core";
+import { parseTurtle } from "../lib/unrdf-compat.mjs";
 import { useLog } from "../composables/log.mjs";
 import { StepRunner } from "./step-runner.mjs";
 import { ContextManager } from "./context-manager.mjs";

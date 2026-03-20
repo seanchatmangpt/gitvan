@@ -1,5 +1,5 @@
 import { createStore } from "@unrdf/core";
-import { parseTurtle } from "@unrdf/core";
+import { parseTurtle } from "../lib/unrdf-compat.mjs";
 import { createLogger } from "../utils/logger.mjs";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";

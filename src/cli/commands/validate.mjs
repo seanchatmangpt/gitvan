@@ -15,7 +15,8 @@ import { useSHACLValidator } from '../../composables/shacl-validator.mjs';
 import { useGitVan, withGitVan } from '../../core/context.mjs';
 import { createLogger } from '../../utils/logger.mjs';
 import { readFileSync } from 'fs';
-import { createStore, parseTurtle } from "@unrdf/core";
+import { createStore } from "@unrdf/core";
+import { parseTurtle } from "../lib/unrdf-compat.mjs";
 
 const logger = createLogger('cli:commands:validate');
 

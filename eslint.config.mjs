@@ -1,4 +1,5 @@
-import { unjs } from "eslint-config-unjs";
+import pkg from "eslint-config-unjs";
+const { unjs } = pkg;
 
 export default unjs({
   ignores: [

@@ -4,6 +4,14 @@ import { join } from "pathe";
 import { mkdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 import { createLogger } from "../utils/logger.mjs";
+import {
+  initializeKnowledgeGraph,
+  createSampleHooks,
+  createSampleWorkflows,
+  createSampleTemplates,
+  createPackageScripts,
+} from "./init-samples.mjs";
+
 const logger = createLogger("cli:init");
 
 export const initCommand = defineCommand({
@@ -12,16 +20,8 @@ export const initCommand = defineCommand({
     description: "Initialize GitVan project with Knowledge Hook Engine support",
   },
   args: {
-    cwd: {
-      type: "string",
-      description: "Working directory",
-      default: process.cwd(),
-    },
-    name: {
-      type: "string",
-      description: "Project name",
-      default: "gitvan-project",
-    },
+    cwd: { type: "string", description: "Working directory", default: process.cwd() },
+    name: { type: "string", description: "Project name", default: "gitvan-project" },
     description: {
       type: "string",
       description: "Project description",
@@ -34,61 +34,34 @@ export const initCommand = defineCommand({
     const projectDescription =
       args.description || "A GitVan-powered project with Knowledge Hook Engine";
 
-    logger.info("🚀 Initializing GitVan project with Knowledge Hook Engine...");
+    logger.info("Initializing GitVan project with Knowledge Hook Engine...");
     logger.info(`   Project: ${projectName}`);
     logger.info(`   Directory: ${cwd}`);
 
     try {
-      // Step 1: Initialize Git repository
       await initializeGit(cwd);
-
-      // Step 2: Initialize npm project
       await initializeNpm(cwd, projectName, projectDescription);
-
-      // Step 3: Create GitVan directory structure
       await createDirectoryStructure(cwd);
-
-      // Step 4: Create GitVan configuration
       await createGitVanConfig(cwd, projectName, projectDescription);
-
-      // Step 5: Initialize Knowledge Graph
-      await initializeKnowledgeGraph(cwd, projectName, projectDescription);
-
-      // Step 6: Create sample hooks and workflows
-      await createSampleHooks(cwd);
-
-      // Step 7: Create sample workflows
-      await createSampleWorkflows(cwd);
-
-      // Step 8: Create sample templates
-      await createSampleTemplates(cwd);
-
-      // Step 9: Create package.json scripts
-      await createPackageScripts(cwd);
-
-      // Step 10: Install dependencies automatically
+      await initializeKnowledgeGraph(cwd, projectName, projectDescription, logger);
+      await createSampleHooks(cwd, logger);
+      await createSampleWorkflows(cwd, logger);
+      await createSampleTemplates(cwd, logger);
+      await createPackageScripts(cwd, logger);
       await installDependencies(cwd);
-
-      // Step 11: Verify installation
       await verifyInstallation(cwd);
 
-      logger.info("\n🎉 GitVan project initialization complete!");
-      logger.info("\n📋 Next steps:");
+      logger.info("\nGitVan project initialization complete!");
+      logger.info("\nNext steps:");
       logger.info('   1. Configure Git user: git config user.name "Your Name"');
-      logger.info(
-        '   2. Configure Git email: git config user.email "your@email.com"'
-      );
+      logger.info('   2. Configure Git email: git config user.email "your@email.com"');
       logger.info("   3. Complete setup: gitvan setup");
       logger.info("   4. Test hooks: gitvan hooks list");
       logger.info("   5. Test workflows: gitvan workflow list");
       logger.info("   6. Save changes: gitvan save");
-      logger.info("\n📚 Documentation:");
-      logger.info("   • Knowledge Hooks: ./hooks/README.md");
-      logger.info("   • Workflows: ./workflows/README.md");
-      logger.info("   • Templates: ./templates/README.md");
       logger.info("\nFor more help: gitvan help");
     } catch (error) {
-      logger.info("\n❌ Initialization failed:");
+      logger.info("\nInitialization failed:");
       logger.info("   Error:", error.message);
       logger.info("\nYou can try again or run: gitvan help");
       await exitWithError(new Error("Operation failed"), 1);
@@ -100,27 +73,22 @@ export const initCommand = defineCommand({
  * Initialize Git repository
  */
 async function initializeGit(cwd) {
-  logger.info("\n📦 Initializing Git repository...");
+  logger.info("\nInitializing Git repository...");
 
   try {
-    // Check if already a git repo
     if (existsSync(join(cwd, ".git"))) {
-      logger.info("   ✅ Git repository already exists");
+      logger.info("   Git repository already exists");
       return;
     }
 
     execSync("git init", { cwd, stdio: "pipe" });
-    logger.info("   ✅ Git repository initialized");
+    logger.info("   Git repository initialized");
 
-    // Create initial commit
     execSync("git add .", { cwd, stdio: "pipe" });
-    execSync('git commit -m "Initial GitVan project setup"', {
-      cwd,
-      stdio: "pipe",
-    });
-    logger.info("   ✅ Initial commit created");
+    execSync('git commit -m "Initial GitVan project setup"', { cwd, stdio: "pipe" });
+    logger.info("   Initial commit created");
   } catch (error) {
-    logger.info("   ⚠️  Git initialization had issues:", error.message);
+    logger.info("   Git initialization had issues:", error.message);
   }
 }
 
@@ -128,12 +96,11 @@ async function initializeGit(cwd) {
  * Initialize npm project
  */
 async function initializeNpm(cwd, projectName, projectDescription) {
-  logger.info("\n📦 Initializing npm project...");
+  logger.info("\nInitializing npm project...");
 
   try {
-    // Check if package.json already exists
     if (existsSync(join(cwd, "package.json"))) {
-      logger.info("   ✅ package.json already exists");
+      logger.info("   package.json already exists");
       return;
     }
 
@@ -153,21 +120,14 @@ async function initializeNpm(cwd, projectName, projectDescription) {
       keywords: ["gitvan", "automation", "knowledge-hooks", "workflows"],
       author: "",
       license: "MIT",
-      dependencies: {
-        gitvan: "^2.1.0",
-      },
-      devDependencies: {
-        vitest: "^1.0.0",
-      },
+      dependencies: { gitvan: "^2.1.0" },
+      devDependencies: { vitest: "^1.0.0" },
     };
 
-    writeFileSync(
-      join(cwd, "package.json"),
-      JSON.stringify(packageJson, null, 2)
-    );
-    logger.info("   ✅ package.json created");
+    writeFileSync(join(cwd, "package.json"), JSON.stringify(packageJson, null, 2));
+    logger.info("   package.json created");
   } catch (error) {
-    logger.info("   ⚠️  npm initialization had issues:", error.message);
+    logger.info("   npm initialization had issues:", error.message);
   }
 }
 
@@ -175,32 +135,20 @@ async function initializeNpm(cwd, projectName, projectDescription) {
  * Create GitVan directory structure
  */
 async function createDirectoryStructure(cwd) {
-  logger.info("\n📁 Creating GitVan directory structure...");
+  logger.info("\nCreating GitVan directory structure...");
 
   const dirs = [
-    ".gitvan",
-    ".gitvan/packs",
-    ".gitvan/state",
-    ".gitvan/backups",
-    "jobs",
-    "events",
-    "templates",
-    "packs",
-    "hooks",
-    "workflows",
-    "graph",
-    "docs",
-    "tests",
-    "tests/hooks",
-    "tests/workflows",
+    ".gitvan", ".gitvan/packs", ".gitvan/state", ".gitvan/backups",
+    "jobs", "events", "templates", "packs", "hooks", "workflows",
+    "graph", "docs", "tests", "tests/hooks", "tests/workflows",
   ];
 
   for (const dir of dirs) {
     try {
       mkdirSync(join(cwd, dir), { recursive: true });
-      logger.info(`   ✅ Created: ${dir}`);
+      logger.info(`   Created: ${dir}`);
     } catch (error) {
-      logger.info(`   ⚠️  Failed to create ${dir}:`, error.message);
+      logger.info(`   Failed to create ${dir}:`, error.message);
     }
   }
 }
@@ -209,78 +157,27 @@ async function createDirectoryStructure(cwd) {
  * Create GitVan configuration
  */
 async function createGitVanConfig(cwd, projectName, projectDescription) {
-  logger.info("\n⚙️  Creating GitVan configuration...");
+  logger.info("\nCreating GitVan configuration...");
 
   const configPath = join(cwd, "gitvan.config.js");
 
   if (existsSync(configPath)) {
-    logger.info("   ⚠️  gitvan.config.js already exists");
+    logger.info("   gitvan.config.js already exists");
     return;
   }
 
   const config = `export default {
-  // GitVan v2 Configuration with Knowledge Hook Engine
-  templates: {
-    dirs: ["templates"],
-    autoescape: false,
-    noCache: true,
-  },
-  
-  jobs: {
-    dirs: ["jobs"],
-  },
-  
-  events: {
-    dirs: ["events"],
-  },
-  
-  packs: {
-    dirs: ["packs", ".gitvan/packs"],
-  },
-  
-  // Knowledge Hook Engine Configuration
-  hooks: {
-    dirs: ["hooks"],
-    autoEvaluate: true,
-    evaluationInterval: 30000, // 30 seconds
-  },
-  
-  // Workflow Engine Configuration
-  workflows: {
-    dirs: ["workflows"],
-    autoExecute: false,
-    timeout: 300000, // 5 minutes
-  },
-  
-  // Knowledge Graph Configuration
-  graph: {
-    dirs: ["graph"],
-    format: "turtle",
-    autoCommit: true,
-  },
-  
-  daemon: {
-    enabled: true,
-    worktrees: "current",
-  },
-  
-  shell: {
-    allow: ["echo", "git", "npm", "pnpm", "yarn"],
-  },
-  
-  ai: {
-    provider: "ollama",
-    model: "qwen3-coder:30b",
-  },
-  
-  // Auto-install packs on gitvan init
-  autoInstall: {
-    packs: [
-      // Add packs here that should be auto-installed
-    ]
-  },
-  
-  // Custom data available in templates
+  templates: { dirs: ["templates"], autoescape: false, noCache: true },
+  jobs: { dirs: ["jobs"] },
+  events: { dirs: ["events"] },
+  packs: { dirs: ["packs", ".gitvan/packs"] },
+  hooks: { dirs: ["hooks"], autoEvaluate: true, evaluationInterval: 30000 },
+  workflows: { dirs: ["workflows"], autoExecute: false, timeout: 300000 },
+  graph: { dirs: ["graph"], format: "turtle", autoCommit: true },
+  daemon: { enabled: true, worktrees: "current" },
+  shell: { allow: ["echo", "git", "npm", "pnpm", "yarn"] },
+  ai: { provider: "ollama", model: "qwen3-coder:30b" },
+  autoInstall: { packs: [] },
   data: {
     project: {
       name: "${projectName}",
@@ -291,499 +188,26 @@ async function createGitVanConfig(cwd, projectName, projectDescription) {
 `;
 
   writeFileSync(configPath, config);
-  logger.info("   ✅ gitvan.config.js created");
-}
-
-/**
- * Initialize Knowledge Graph
- */
-async function initializeKnowledgeGraph(cwd, projectName, projectDescription) {
-  logger.info("\n🧠 Initializing Knowledge Graph...");
-
-  const initTtl = `@prefix ex: <http://example.org/> .
-@prefix gv: <https://gitvan.dev/ontology#> .
-@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-
-# Project Information
-ex:project rdf:type gv:Project ;
-    gv:name "${projectName}" ;
-    gv:description "${projectDescription}" ;
-    gv:version "1.0.0" ;
-    gv:createdDate "${new Date().toISOString()}" ;
-    gv:status "active" .
-
-# Initial Project State
-ex:project-state rdf:type gv:ProjectState ;
-    gv:project ex:project ;
-    gv:phase "initialization" ;
-    gv:lastUpdated "${new Date().toISOString()}" ;
-    gv:status "setup-complete" .
-
-# Sample Entities for Testing
-ex:test-item-1 rdf:type gv:TestItem ;
-    gv:name "Sample Item 1" ;
-    gv:status "active" ;
-    gv:priority "medium" .
-
-ex:test-item-2 rdf:type gv:TestItem ;
-    gv:name "Sample Item 2" ;
-    gv:status "pending" ;
-    gv:priority "high" .
-
-# Sample Metrics
-ex:project-metrics rdf:type gv:ProjectMetrics ;
-    gv:project ex:project ;
-    gv:totalItems 2 ;
-    gv:activeItems 1 ;
-    gv:pendingItems 1 ;
-    gv:lastCalculated "${new Date().toISOString()}" .
-`;
-
-  writeFileSync(join(cwd, "graph", "init.ttl"), initTtl);
-  logger.info("   ✅ graph/init.ttl created");
-
-  // Create graph README
-  const graphReadme = `# Knowledge Graph
-
-This directory contains the Knowledge Graph for your GitVan project.
-
-## Files
-
-- \`init.ttl\` - Initial project knowledge graph
-- \`project.ttl\` - Project-specific knowledge
-- \`domain.ttl\` - Domain-specific knowledge
-
-## Usage
-
-The Knowledge Graph is automatically loaded by GitVan's Knowledge Hook Engine and can be queried using SPARQL.
-
-## Examples
-
-\`\`\`sparql
-# Find all active items
-PREFIX gv: <https://gitvan.dev/ontology#>
-SELECT ?item ?name WHERE {
-    ?item rdf:type gv:TestItem .
-    ?item gv:status "active" .
-    ?item gv:name ?name .
-}
-\`\`\`
-
-## Integration
-
-The Knowledge Graph integrates with:
-- Knowledge Hooks (predicate evaluation)
-- Workflows (data processing)
-- Templates (data rendering)
-- AI Commands (context provision)
-`;
-
-  writeFileSync(join(cwd, "graph", "README.md"), graphReadme);
-  logger.info("   ✅ graph/README.md created");
-}
-
-/**
- * Create sample hooks
- */
-async function createSampleHooks(cwd) {
-  logger.info("\n🎣 Creating sample Knowledge Hooks...");
-
-  // Copy the example hooks we created earlier
-  const hooks = [
-    {
-      name: "version-change.ttl",
-      content: `@prefix ex: <http://example.org/> .
-@prefix gv: <https://gitvan.dev/ontology#> .
-@prefix gh: <https://gitvan.dev/graph-hook#> .
-@prefix op: <https://gitvan.dev/op#> .
-@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-
-# Version Change Detection Hook
-ex:version-change-hook rdf:type gh:Hook ;
-    gv:title "Version Change Detection" ;
-    gh:hasPredicate ex:version-change-predicate ;
-    gh:orderedPipelines ex:version-change-pipeline .
-
-# ResultDelta Predicate - "State Change" Sensor
-ex:version-change-predicate rdf:type gh:ResultDelta ;
-    gh:queryText """
-        PREFIX gv: <https://gitvan.dev/ontology#>
-        PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-        
-        SELECT ?project ?version ?releaseDate WHERE {
-            ?project rdf:type gv:Project .
-            ?project gv:version ?version .
-            ?project gv:releaseDate ?releaseDate .
-        } ORDER BY ?project
-    """ ;
-    gh:description "Detects when project version information changes between commits" .
-
-# Workflow Pipeline
-ex:version-change-pipeline rdf:type op:Pipeline ;
-    op:steps (ex:notify-team, ex:update-changelog) .
-
-# Step 1: Notify Team
-ex:notify-team rdf:type gv:TemplateStep ;
-    gv:text "Version {{ version }} detected at {{ releaseDate }}" ;
-    gv:filePath "./logs/version-changes.log" .
-
-# Step 2: Update Changelog
-ex:update-changelog rdf:type gv:TemplateStep ;
-    gv:text "## Version {{ version }} - {{ releaseDate }}\\n\\nVersion change detected automatically.\\n" ;
-    gv:filePath "./CHANGELOG.md" ;
-    gv:dependsOn ex:notify-team .
-`,
-    },
-    {
-      name: "critical-issues.ttl",
-      content: `@prefix ex: <http://example.org/> .
-@prefix gv: <https://gitvan.dev/ontology#> .
-@prefix gh: <https://gitvan.dev/graph-hook#> .
-@prefix op: <https://gitvan.dev/op#> .
-@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-
-# Critical Issue Alert Hook
-ex:critical-issues-hook rdf:type gh:Hook ;
-    gv:title "Critical Issue Alert" ;
-    gh:hasPredicate ex:critical-issues-predicate ;
-    gh:orderedPipelines ex:critical-issues-pipeline .
-
-# ASK Predicate - "Condition" Sensor
-ex:critical-issues-predicate rdf:type gh:ASKPredicate ;
-    gh:queryText """
-        PREFIX gv: <https://gitvan.dev/ontology#>
-        PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-        
-        ASK WHERE {
-            ?item rdf:type gv:TestItem .
-            ?item gv:priority "critical" .
-            ?item gv:status "open" .
-        }
-    """ ;
-    gh:description "Detects if there are any open critical issues in the system" .
-
-# Workflow Pipeline
-ex:critical-issues-pipeline rdf:type op:Pipeline ;
-    op:steps (ex:create-alert) .
-
-# Step 1: Create Alert
-ex:create-alert rdf:type gv:TemplateStep ;
-    gv:text "🚨 CRITICAL ISSUE DETECTED\\n\\nTime: {{ 'now' | date('YYYY-MM-DD HH:mm:ss') }}\\nStatus: Action Required\\n" ;
-    gv:filePath "./logs/critical-alerts.log" .
-`,
-    },
-  ];
-
-  for (const hook of hooks) {
-    writeFileSync(join(cwd, "hooks", hook.name), hook.content);
-    logger.info(`   ✅ Created: hooks/${hook.name}`);
-  }
-
-  // Copy the hooks README
-  const hooksReadme = `# Knowledge Hooks
-
-This directory contains Knowledge Hook definitions that demonstrate intelligent automation based on changes in your project's knowledge graph.
-
-## Available Hooks
-
-- \`version-change.ttl\` - Detects project version changes
-- \`critical-issues.ttl\` - Monitors for critical issues
-
-## Usage
-
-\`\`\`bash
-# List available hooks
-gitvan hooks list
-
-# Evaluate all hooks
-gitvan hooks evaluate
-
-# Validate a specific hook
-gitvan hooks validate version-change-hook
-\`\`\`
-
-## Creating New Hooks
-
-1. Create a new \`.ttl\` file in this directory
-2. Define your hook using the GitVan ontology
-3. Test with \`gitvan hooks validate <hook-name>\`
-4. Run evaluation with \`gitvan hooks evaluate\`
-
-## Hook Types
-
-- **ResultDelta** - Detects changes in query results between commits
-- **ASK** - Evaluates boolean conditions
-- **SELECTThreshold** - Monitors numerical values against thresholds
-- **SHACL** - Validates graph conformance against shapes
-`;
-
-  writeFileSync(join(cwd, "hooks", "README.md"), hooksReadme);
-  logger.info("   ✅ hooks/README.md created");
-}
-
-/**
- * Create sample workflows
- */
-async function createSampleWorkflows(cwd) {
-  logger.info("\n⚡ Creating sample Workflows...");
-
-  const workflows = [
-    {
-      name: "data-processing.ttl",
-      content: `@prefix ex: <http://example.org/> .
-@prefix gv: <https://gitvan.dev/ontology#> .
-@prefix gh: <https://gitvan.dev/graph-hook#> .
-@prefix op: <https://gitvan.dev/op#> .
-@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-
-# Data Processing Workflow
-ex:data-processing-workflow rdf:type gh:Hook ;
-    gv:title "Data Processing Workflow" ;
-    gh:hasPredicate ex:data-processing-predicate ;
-    gh:orderedPipelines ex:data-processing-pipeline .
-
-# Predicate - Process when data changes
-ex:data-processing-predicate rdf:type gh:ResultDelta ;
-    gh:queryText """
-        PREFIX gv: <https://gitvan.dev/ontology#>
-        SELECT ?item ?name ?status WHERE {
-            ?item rdf:type gv:TestItem .
-            ?item gv:name ?name .
-            ?item gv:status ?status .
-        }
-    """ .
-
-# Workflow Pipeline
-ex:data-processing-pipeline rdf:type op:Pipeline ;
-    op:steps (ex:analyze-data, ex:generate-report) .
-
-# Step 1: Analyze Data
-ex:analyze-data rdf:type gv:SparqlStep ;
-    gv:text """
-        PREFIX gv: <https://gitvan.dev/ontology#>
-        SELECT (COUNT(?item) AS ?total) (COUNT(?active) AS ?active) WHERE {
-            ?item rdf:type gv:TestItem .
-            OPTIONAL { ?active rdf:type gv:TestItem ; gv:status "active" }
-        }
-    """ ;
-    gv:outputMapping '{"total": "total", "active": "active"}' .
-
-# Step 2: Generate Report
-ex:generate-report rdf:type gv:TemplateStep ;
-    gv:text "Data Processing Report\\n\\nTotal Items: {{ total }}\\nActive Items: {{ active }}\\nGenerated: {{ 'now' | date('YYYY-MM-DD HH:mm:ss') }}\\n" ;
-    gv:filePath "./reports/data-processing.txt" ;
-    gv:dependsOn ex:analyze-data .
-`,
-    },
-  ];
-
-  for (const workflow of workflows) {
-    writeFileSync(join(cwd, "workflows", workflow.name), workflow.content);
-    logger.info(`   ✅ Created: workflows/${workflow.name}`);
-  }
-
-  // Create workflows README
-  const workflowsReadme = `# Workflows
-
-This directory contains Workflow definitions for automated data processing and task execution.
-
-## Available Workflows
-
-- \`data-processing.ttl\` - Processes data changes and generates reports
-
-## Usage
-
-\`\`\`bash
-# List available workflows
-gitvan workflow list
-
-# Run a specific workflow
-gitvan workflow run data-processing-workflow
-
-# Validate a workflow
-gitvan workflow validate data-processing-workflow
-\`\`\`
-
-## Workflow Steps
-
-- **SparqlStep** - Execute SPARQL queries
-- **TemplateStep** - Process templates with data
-- **FileStep** - File operations
-- **HttpStep** - HTTP requests
-- **GitStep** - Git operations
-
-## Dependencies
-
-Workflows support step dependencies to ensure proper execution order.
-`;
-
-  writeFileSync(join(cwd, "workflows", "README.md"), workflowsReadme);
-  logger.info("   ✅ workflows/README.md created");
-}
-
-/**
- * Create sample templates
- */
-async function createSampleTemplates(cwd) {
-  logger.info("\n📝 Creating sample Templates...");
-
-  const templates = [
-    {
-      name: "project-status.njk",
-      content: `# Project Status Report
-
-**Project:** {{ project.name }}  
-**Description:** {{ project.description }}  
-**Generated:** {{ "now" | date("YYYY-MM-DD HH:mm:ss") }}
-
-## Summary
-
-This is a sample GitVan template demonstrating template processing with the Knowledge Hook Engine.
-
-## Data Available
-
-- Project information from gitvan.config.js
-- Knowledge graph data from SPARQL queries
-- Workflow execution results
-- Hook evaluation context
-
-## Usage
-
-Templates can be processed by:
-- Workflow steps
-- Hook actions
-- Manual processing
-
-## Filters
-
-Available filters:
-- \`| date(format)\` - Date formatting
-- \`| length\` - Array/object length
-- \`| tojson\` - JSON serialization
-- \`| upper\` - Uppercase conversion
-- \`| lower\` - Lowercase conversion
-`,
-    },
-    {
-      name: "example.njk",
-      content: `Hello {{ name }}!
-
-This is a sample GitVan template.
-
-Project: {{ project.name }}
-Description: {{ project.description }}
-
-## Knowledge Graph Integration
-
-Templates can access data from the Knowledge Graph through workflow steps and hook evaluations.
-
-## Dynamic Content
-
-- Current time: {{ "now" | date("YYYY-MM-DD HH:mm:ss") }}
-- Project name: {{ project.name | upper }}
-- Description length: {{ project.description | length }} characters
-`,
-    },
-  ];
-
-  for (const template of templates) {
-    writeFileSync(join(cwd, "templates", template.name), template.content);
-    logger.info(`   ✅ Created: templates/${template.name}`);
-  }
-
-  // Create templates README
-  const templatesReadme = `# Templates
-
-This directory contains Nunjucks templates for generating content from your Knowledge Graph data.
-
-## Available Templates
-
-- \`project-status.njk\` - Project status report
-- \`example.njk\` - Basic example template
-
-## Usage
-
-Templates are processed by:
-- Workflow steps (TemplateStep)
-- Hook actions
-- Manual processing
-
-## Data Sources
-
-Templates can access:
-- Project configuration data
-- Knowledge graph data (via SPARQL)
-- Workflow execution results
-- Hook evaluation context
-
-## Filters
-
-Available Nunjucks filters:
-- \`| date(format)\` - Date formatting
-- \`| length\` - Array/object length
-- \`| tojson\` - JSON serialization
-- \`| upper\` - Uppercase conversion
-- \`| lower\` - Lowercase conversion
-`;
-
-  writeFileSync(join(cwd, "templates", "README.md"), templatesReadme);
-  logger.info("   ✅ templates/README.md created");
-}
-
-/**
- * Create package.json scripts
- */
-async function createPackageScripts(cwd) {
-  logger.info("\n📜 Creating package.json scripts...");
-
-  try {
-    const packagePath = join(cwd, "package.json");
-    const packageJson = JSON.parse(readFileSync(packagePath, "utf8"));
-
-    packageJson.scripts = {
-      ...packageJson.scripts,
-      test: "vitest",
-      "test:hooks": "vitest tests/hooks/",
-      "test:workflows": "vitest tests/workflows/",
-      dev: "gitvan daemon",
-      build: "gitvan build",
-      hooks: "gitvan hooks",
-      "hooks:list": "gitvan hooks list",
-      "hooks:evaluate": "gitvan hooks evaluate",
-      workflows: "gitvan workflow",
-      "workflows:list": "gitvan workflow list",
-      "workflows:run": "gitvan workflow run",
-      setup: "gitvan setup",
-      save: "gitvan save",
-    };
-
-    writeFileSync(packagePath, JSON.stringify(packageJson, null, 2));
-    logger.info("   ✅ package.json scripts updated");
-  } catch (error) {
-    logger.info("   ⚠️  Failed to update package.json scripts:", error.message);
-  }
+  logger.info("   gitvan.config.js created");
 }
 
 /**
  * Install dependencies automatically
  */
 async function installDependencies(cwd) {
-  logger.info("\n📦 Installing dependencies...");
+  logger.info("\nInstalling dependencies...");
 
   try {
-    // Check if node_modules already exists
     if (existsSync(join(cwd, "node_modules"))) {
-      logger.info("   ✅ Dependencies already installed");
+      logger.info("   Dependencies already installed");
       return;
     }
 
-    // Run npm install
     execSync("npm install", { cwd, stdio: "inherit" });
-    logger.info("   ✅ Dependencies installed successfully");
+    logger.info("   Dependencies installed successfully");
   } catch (error) {
-    logger.info("   ⚠️  Dependency installation had issues:", error.message);
-    logger.info("   💡 You can run 'npm install' manually later");
+    logger.info("   Dependency installation had issues:", error.message);
+    logger.info("   You can run 'npm install' manually later");
   }
 }
 
@@ -791,16 +215,16 @@ async function installDependencies(cwd) {
  * Verify installation
  */
 async function verifyInstallation(cwd) {
-  logger.info("\n🔍 Verifying installation...");
+  logger.info("\nVerifying installation...");
 
   const checks = [
-    { name: "Git repository", path: ".git", type: "directory" },
-    { name: "package.json", path: "package.json", type: "file" },
-    { name: "gitvan.config.js", path: "gitvan.config.js", type: "file" },
-    { name: "Knowledge Graph", path: "graph/init.ttl", type: "file" },
-    { name: "Hooks directory", path: "hooks", type: "directory" },
-    { name: "Workflows directory", path: "workflows", type: "directory" },
-    { name: "Templates directory", path: "templates", type: "directory" },
+    { name: "Git repository", path: ".git" },
+    { name: "package.json", path: "package.json" },
+    { name: "gitvan.config.js", path: "gitvan.config.js" },
+    { name: "Knowledge Graph", path: "graph/init.ttl" },
+    { name: "Hooks directory", path: "hooks" },
+    { name: "Workflows directory", path: "workflows" },
+    { name: "Templates directory", path: "templates" },
   ];
 
   let allGood = true;
@@ -808,16 +232,16 @@ async function verifyInstallation(cwd) {
   for (const check of checks) {
     const exists = existsSync(join(cwd, check.path));
     if (exists) {
-      logger.info(`   ✅ ${check.name}`);
+      logger.info(`   ${check.name}: OK`);
     } else {
-      logger.info(`   ❌ ${check.name} missing`);
+      logger.info(`   ${check.name}: missing`);
       allGood = false;
     }
   }
 
   if (allGood) {
-    logger.info("   🎉 All components verified!");
+    logger.info("   All components verified!");
   } else {
-    logger.info("   ⚠️  Some components missing - check above");
+    logger.info("   Some components missing - check above");
   }
 }

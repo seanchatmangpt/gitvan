@@ -32,6 +32,16 @@ describe('BaseSupervisor', () => {
       assert.equal(s.maxRestarts, 5);
       assert.equal(s.shutdownTimeout, 10000);
     });
+
+    it('should throw error for invalid maxRestarts', () => {
+      assert.throws(() => new BaseSupervisor({ maxRestarts: 0 }), /maxRestarts must be greater than 0/);
+      assert.throws(() => new BaseSupervisor({ maxRestarts: -1 }), /maxRestarts must be greater than 0/);
+    });
+
+    it('should throw error for invalid shutdownTimeout', () => {
+      assert.throws(() => new BaseSupervisor({ shutdownTimeout: 0 }), /shutdownTimeout must be greater than 0/);
+      assert.throws(() => new BaseSupervisor({ shutdownTimeout: -100 }), /shutdownTimeout must be greater than 0/);
+    });
   });
 
   describe('child management', () => {
@@ -88,6 +98,69 @@ describe('BaseSupervisor', () => {
       supervisor.addChild(child);
       await supervisor.stop();
       assert.equal(childStopped, true);
+    });
+
+    it('should enforce shutdown timeout', async () => {
+      const slowSupervisor = new BaseSupervisor({
+        id: 'slow-supervisor',
+        shutdownTimeout: 100
+      });
+
+      const slowChild = {
+        id: 'slow-child',
+        stop: async () => {
+          // Sleep longer than timeout
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      };
+
+      slowSupervisor.addChild(slowChild);
+
+      // Should complete within timeout (100ms) despite slow child
+      const startTime = Date.now();
+      await slowSupervisor.stop();
+      const elapsed = Date.now() - startTime;
+
+      assert.equal(slowSupervisor.isRunning, false);
+      assert.equal(elapsed < 200, true); // Should be well under 200ms
+    });
+
+    it('should set isRunning to false AFTER children stop', async () => {
+      let isRunningWhenStopping = null;
+
+      const slowChild = {
+        id: 'slow-child',
+        stop: async () => {
+          // Check isRunning during stop
+          isRunningWhenStopping = supervisor.isRunning;
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
+      };
+
+      // Start supervisor first
+      await supervisor.start();
+      supervisor.addChild(slowChild);
+      await supervisor.stop();
+
+      // isRunning should still be true while children are stopping
+      assert.equal(isRunningWhenStopping, true);
+      // But false after all children stopped
+      assert.equal(supervisor.isRunning, false);
+    });
+
+    it('should handle child stop errors gracefully', async () => {
+      const failingChild = {
+        id: 'failing-child',
+        stop: async () => {
+          throw new Error('Child stop failed');
+        }
+      };
+
+      supervisor.addChild(failingChild);
+
+      // Should not throw, should log warning
+      await supervisor.stop();
+      assert.equal(supervisor.isRunning, false);
     });
   });
 

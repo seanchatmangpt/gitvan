@@ -5,6 +5,14 @@ const logger = createLogger('supervision:base');
 
 export class BaseSupervisor {
   constructor(options = {}) {
+    // Validate options before applying defaults
+    if (options.maxRestarts !== undefined && options.maxRestarts <= 0) {
+      throw new Error('maxRestarts must be greater than 0');
+    }
+    if (options.shutdownTimeout !== undefined && options.shutdownTimeout <= 0) {
+      throw new Error('shutdownTimeout must be greater than 0');
+    }
+
     this.id = options.id || 'supervisor';
     this.children = new Map();
     this.maxRestarts = options.maxRestarts || 3;
@@ -40,14 +48,31 @@ export class BaseSupervisor {
 
   async stop() {
     this.logger.info(`Stopping supervisor: ${this.id}`);
-    this.isRunning = false;
+
     // Stop all children with timeout
     const stopPromises = Array.from(this.children.values()).map(child =>
       this.stopChild(child).catch(err =>
         this.logger.warn(`Error stopping child ${child.id}: ${err.message}`)
       )
     );
-    await Promise.allSettled(stopPromises);
+
+    // Enforce timeout to prevent hanging indefinitely
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Shutdown timeout exceeded')), this.shutdownTimeout)
+    );
+
+    try {
+      await Promise.race([Promise.allSettled(stopPromises), timeoutPromise]);
+    } catch (error) {
+      if (error.message === 'Shutdown timeout exceeded') {
+        this.logger.warn(`Shutdown timeout exceeded: ${this.shutdownTimeout}ms`);
+      } else {
+        throw error;
+      }
+    }
+
+    // Set flag AFTER children stopped (fixes race condition)
+    this.isRunning = false;
   }
 
   async stopChild(child) {

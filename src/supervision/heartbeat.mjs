@@ -9,7 +9,7 @@ export class HeartbeatMonitor {
     this.missedThreshold = options.missedThreshold || 3;
     this.workers = new Map(); // workerId -> { lastSeen, missedCount }
     this.checkInterval = null;
-    this._workerDeathCallback = null;
+    this.onWorkerDeathCallback = null;
   }
 
   register(workerId) {
@@ -41,9 +41,7 @@ export class HeartbeatMonitor {
       const timeSinceLastSeen = now - worker.lastSeen;
 
       if (timeSinceLastSeen > this.interval) {
-        // Calculate how many intervals have been missed
-        const missedIntervals = Math.floor(timeSinceLastSeen / this.interval);
-        worker.missedCount = missedIntervals;
+        worker.missedCount++;
 
         if (worker.missedCount >= this.missedThreshold) {
           deadWorkers.push(workerId);
@@ -61,8 +59,8 @@ export class HeartbeatMonitor {
     this.checkInterval = setInterval(() => {
       const deadWorkers = this.getDeadWorkers();
 
-      if (deadWorkers.length > 0 && this._workerDeathCallback) {
-        this._workerDeathCallback(deadWorkers);
+      if (deadWorkers.length > 0 && this.onWorkerDeathCallback) {
+        this.onWorkerDeathCallback(deadWorkers);
       }
     }, this.interval);
 
@@ -77,7 +75,7 @@ export class HeartbeatMonitor {
     }
   }
 
-  setWorkerDeathCallback(callback) {
-    this._workerDeathCallback = callback;
+  onWorkerDeath(callback) {
+    this.onWorkerDeathCallback = callback;
   }
 }

@@ -60,10 +60,13 @@ describe('HeartbeatMonitor', () => {
     it('should detect dead workers', async () => {
       monitor.register('worker-1');
 
-      // Wait for threshold to be exceeded
+      // Wait for threshold to be exceeded and call getDeadWorkers multiple times
       await new Promise(resolve => setTimeout(resolve, 250));
+      monitor.getDeadWorkers(); // First check - increments to 1
+      await new Promise(resolve => setTimeout(resolve, 100));
+      monitor.getDeadWorkers(); // Second check - increments to 2 (meets threshold)
 
-      const deadWorkers = monitor.getDeadWorkers();
+      const deadWorkers = monitor.getDeadWorkers(); // Third check - should detect as dead
       assert.include(deadWorkers, 'worker-1');
     });
 
@@ -78,7 +81,7 @@ describe('HeartbeatMonitor', () => {
 
     it('should call callback on worker death', async () => {
       let deadWorkers = [];
-      monitor.setWorkerDeathCallback((workers) => {
+      monitor.onWorkerDeath((workers) => {
         deadWorkers = workers;
       });
 

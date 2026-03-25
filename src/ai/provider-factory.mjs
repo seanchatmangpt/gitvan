@@ -295,13 +295,25 @@ function createMockProvider(aiConfig) {
  */
 export async function checkAIProviderAvailability(config = {}) {
   try {
-    const provider = createAIProvider(config);
+    const provider = await createAIProvider(config);
 
     // Test the provider with a simple request
-    const testResult = await provider.generateText({
-      prompt: "Test",
-      maxTokens: 10,
-    });
+    // Note: Different providers have different interfaces
+    // Ollama uses generate(), AI SDK providers use doGenerate()
+    let testResult;
+    if (provider.provider === 'ollama') {
+      testResult = await provider.generate({
+        model: config.ai?.model || "qwen3-coder:30b",
+        prompt: "Test",
+        options: { num_predict: 10 }
+      });
+    } else {
+      // AI SDK providers (OpenAI, Anthropic, Mock)
+      testResult = await provider.doGenerate({
+        prompt: "Test",
+        maxTokens: 10,
+      });
+    }
 
     return {
       available: true,

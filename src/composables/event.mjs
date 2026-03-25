@@ -1,6 +1,13 @@
 /**
  * GitVan v2 - useEvent() Composable
  * Provides event system management, registration, and triggering
+ *
+ * @returns {Object} Event management interface
+ * @returns {Function} list - List all events
+ * @returns {Function} get - Get event by ID
+ * @returns {Function} add - Add new event
+ * @returns {Function} remove - Remove event
+ * @returns {Function} trigger - Trigger an event
  */
 
 import { useGitVan, tryUseGitVan, withGitVan } from "../core/context.mjs";
@@ -12,9 +19,9 @@ import { discoverEvents, loadEventDefinition } from "../runtime/events.mjs";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
-import {
 import { createLogger } from "../utils/logger.mjs";
 const logger = createLogger("composables:event");
+import {
   unrouteEventId,
   unrouteCronExpression,
   unrouteBranchName,

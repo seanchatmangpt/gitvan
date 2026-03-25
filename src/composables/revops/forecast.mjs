@@ -1,5 +1,11 @@
 import { useGitVan } from "../../core/context.mjs";
 
+/**
+ * RevOps forecast composable
+ * Provides revenue forecasting and projections
+ *
+ * @returns {Object} Forecast interface
+ */
 export function useRevOpsForecast() {
   const { config } = useGitVan();
 

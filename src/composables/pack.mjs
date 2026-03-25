@@ -19,6 +19,15 @@ import { createLogger } from "../utils/logger.mjs";
 import { join, resolve } from "pathe";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 
+/**
+ * Pack system composable
+ * Manages GitVan packs which bundle templates, jobs, workflows, and dependencies
+ * Provides pack installation, discovery, and lifecycle management
+ *
+ * @param {Object} options - Pack options
+ * @param {string} [options.registryUrl] - Registry URL
+ * @returns {Object} Pack management interface
+ */
 export function usePack(options = {}) {
   // Get context from unctx
   let ctx;

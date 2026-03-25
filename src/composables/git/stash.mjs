@@ -3,6 +3,14 @@
 // - Stash push, list, apply, drop operations
 // - Uses modern `stash push` command
 
+/**
+ * Create Git stash operations
+ * @param {Object} base - Base configuration {cwd, env}
+ * @param {Function} run - Execute git command with output
+ * @param {Function} runVoid - Execute git command without output
+ * @param {Function} toArr - Convert to array helper
+ * @returns {Object} Stash operations interface
+ */
 export default function makeStash(base, run, runVoid, toArr) {
   return {
     // Push to stash (modern command)

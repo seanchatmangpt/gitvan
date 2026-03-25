@@ -1,5 +1,11 @@
 import { useGitVan } from "../../core/context.mjs";
 
+/**
+ * RevOps report composable
+ * Provides business reporting and analytics
+ *
+ * @returns {Object} Report interface
+ */
 export function useRevOpsReport() {
   const { config } = useGitVan();
 

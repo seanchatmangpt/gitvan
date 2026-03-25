@@ -5,6 +5,43 @@ import { StepHandlerRegistry } from "./step-handlers/step-handler-registry.mjs";
 
 /**
  * Step runner that executes individual workflow steps using modular handlers
+ *
+ * The StepRunner is responsible for executing individual workflow steps
+ * by delegating to specialized step handlers. It manages the execution
+ * context, handles input/output mapping, and provides comprehensive
+ * error handling and logging.
+ *
+ * ## Step Execution Flow
+ *
+ * 1. Validate step configuration using registered handler
+ * 2. Gather step inputs from context manager
+ * 3. Prepare execution context with graph, turtle, and options
+ * 4. Execute step using appropriate handler
+ * 5. Store step outputs in context manager
+ * 6. Return standardized execution result
+ *
+ * ## Handler Registry
+ *
+ * Step types are mapped to handlers via StepHandlerRegistry:
+ * - `sparql` → SparqlStepHandler
+ * - `template` → TemplateStepHandler
+ * - `file` → FileStepHandler
+ * - `http` → HttpStepHandler
+ * - `cli` → CliStepHandler
+ * - `output` → OutputStepHandler
+ *
+ * @example
+ * ```javascript
+ * const runner = new StepRunner({ logger: console });
+ *
+ * const result = await runner.executeStep(
+ *   stepDefinition,
+ *   contextManager,
+ *   graphInstance,
+ *   turtleInstance,
+ *   { verbose: true }
+ * );
+ * ```
  */
 export class StepRunner {
   /**

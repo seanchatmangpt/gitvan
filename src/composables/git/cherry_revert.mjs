@@ -3,6 +3,14 @@
 // - Cherry-pick operations with options
 // - Revert operations with options
 
+/**
+ * Create Git cherry-pick and revert operations
+ * @param {Object} base - Base configuration {cwd, env}
+ * @param {Function} run - Execute git command with output
+ * @param {Function} runVoid - Execute git command without output
+ * @param {Function} toArr - Convert to array helper
+ * @returns {Object} Cherry-pick and revert operations interface
+ */
 export default function makeCherryRevert(base, run, runVoid, toArr) {
   return {
     // Cherry-pick operations

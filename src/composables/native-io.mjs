@@ -17,6 +17,13 @@ import { useLog } from "./log.mjs";
 import { createLogger } from "../utils/logger.mjs";
 const logger = createLogger("composables:native-io");
 
+/**
+ * Git-native I/O composable
+ * Provides Git-native storage for receipts, status, and other runtime data
+ * Uses Git refs, notes, and trees for persistent, versioned storage
+ *
+ * @returns {Object} GitNativeIO interface
+ */
 export function useNativeIO() {
   // Get context from unctx - this must be called synchronously
   let ctx;

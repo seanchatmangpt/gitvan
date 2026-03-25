@@ -11,6 +11,7 @@ import { createLogger } from "../utils/logger.mjs";
 import { useGitVan } from "../core/context.mjs";
 import { join } from "pathe";
 import { promises as fs } from "node:fs";
+import { dirname } from "pathe";
 
 const logger = createLogger("user-feedback");
 

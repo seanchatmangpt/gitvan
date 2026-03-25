@@ -270,7 +270,7 @@ const statusSubcommand = defineCommand({
 });
 
 /**
- * Interactive chat mode (placeholder for future implementation)
+ * Interactive chat mode with AI
  */
 const chatSubcommand = defineCommand({
   meta: {
@@ -293,9 +293,75 @@ const chatSubcommand = defineCommand({
   },
   async run({ args }) {
     try {
-      consola.info("Interactive chat mode is coming soon!");
-      consola.info("For now, use 'gitvan chat' for interactive AI assistance");
-      consola.info("Or use 'gitvan llm generate <prompt>' for single queries");
+      const { createInterface } = await import("node:readline");
+      const { chatCommand } = await import("../../chat.mjs");
+
+      consola.info("Starting interactive chat mode...");
+      consola.info("Type 'exit' or 'quit' to end the session");
+      consola.info("Type 'help' for available commands");
+
+      const rl = createInterface({
+        input: process.stdin,
+        output: process.stdout,
+      });
+
+      const chatHistory = [];
+
+      const askQuestion = (prompt) => {
+        return new Promise((resolve) => {
+          rl.question(prompt, (answer) => {
+            resolve(answer);
+          });
+        });
+      };
+
+      while (true) {
+        const userInput = await askQuestion("\n🤖 You> ");
+
+        if (
+          !userInput ||
+          userInput.toLowerCase() === "exit" ||
+          userInput.toLowerCase() === "quit"
+        ) {
+          consola.info("Exiting chat mode...");
+          rl.close();
+          break;
+        }
+
+        if (userInput.toLowerCase() === "help") {
+          consola.info(`
+Available commands:
+  help    - Show this help message
+  exit    - Exit chat mode
+  Any other text will be sent to the AI for processing
+          `);
+          continue;
+        }
+
+        if (userInput.toLowerCase() === "history") {
+          consola.info("Chat history:");
+          chatHistory.forEach((msg, i) => {
+            consola.info(`  ${i + 1}. ${msg.role}: ${msg.content}`);
+          });
+          continue;
+        }
+
+        try {
+          chatHistory.push({ role: "user", content: userInput });
+
+          const response = await chatCommand.run({
+            args: {
+              prompt: userInput,
+              model: args.model,
+              provider: args.provider,
+            },
+          });
+
+          chatHistory.push({ role: "assistant", content: response });
+        } catch (error) {
+          consola.error(`Error: ${error.message}`);
+        }
+      }
     } catch (error) {
       logger.error("Failed to start chat:", error);
       consola.error(`Failed to start chat: ${error.message}`);
@@ -336,10 +402,74 @@ const completeSubcommand = defineCommand({
   },
   async run({ args }) {
     try {
-      consola.info("Code completion is coming soon!");
-      consola.info(
-        "For now, use 'gitvan llm generate <prompt>' to generate code"
-      );
+      const { readFile } = await import("node:fs/promises");
+      const { resolve } = await import("node:path");
+      const { generateWorkingJob } = await import("../../ai/provider.mjs");
+
+      const filePath = resolve(process.cwd(), args.file);
+
+      consola.info(`Reading file: ${filePath}`);
+
+      let fileContent;
+      try {
+        fileContent = await readFile(filePath, "utf-8");
+      } catch (error) {
+        consola.error(`Failed to read file: ${error.message}`);
+        await exitWithError(new Error("File not found"), 1);
+        return;
+      }
+
+      const lines = fileContent.split("\n");
+      const lastLine = lines[lines.length - 1];
+
+      const completionPrompt = `
+You are a code completion assistant. Complete the following code based on the context:
+
+File: ${args.file}
+
+Context (previous lines):
+\`\`\`
+${lines.slice(-10).join("\n")}
+\`\`\`
+
+Last line to complete:
+\`\`\`
+${lastLine}
+\`\`\`
+
+Provide a completion that:
+1. Maintains the existing code style and formatting
+2. Follows JavaScript/Node.js best practices
+3. Completes the logical statement or block
+4. Includes proper error handling if needed
+5. Returns appropriate values if in a function
+
+Return only the completion code without explanation.
+`;
+
+      consola.info("Generating code completion...");
+
+      const result = await generateWorkingJob({
+        prompt: completionPrompt,
+        model: args.model,
+        options: {
+          temperature: 0.3,
+          maxTokens: 500,
+        },
+      });
+
+      if (result.code) {
+        consola.success("Code completion generated:");
+        consola.info(result.code);
+
+        const { writeFile } = await import("node:fs/promises");
+        const completedContent = fileContent + "\n" + result.code;
+        await writeFile(filePath, completedContent);
+
+        consola.success(`File updated: ${filePath}`);
+      } else {
+        consola.warn("No completion generated");
+      }
     } catch (error) {
       logger.error("Failed to complete code:", error);
       consola.error(`Failed to complete code: ${error.message}`);

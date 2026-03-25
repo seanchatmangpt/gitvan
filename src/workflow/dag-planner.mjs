@@ -4,7 +4,40 @@
 
 /**
  * DAG (Directed Acyclic Graph) planner for workflow execution
- * Creates valid execution orders from workflow steps with dependencies
+ *
+ * Creates valid execution orders from workflow steps with dependencies.
+ * Uses topological sorting (Kahn's algorithm) to ensure steps execute
+ * in the correct order based on their dependencies.
+ *
+ * ## Features
+ *
+ * - **Topological Sorting**: Ensures dependency order is respected
+ * - **Cycle Detection**: Identifies circular dependencies before execution
+ * - **Parallel Execution Analysis**: Marks steps that can run concurrently
+ * - **Complexity Estimation**: Analyzes step complexity for planning
+ * - **Enhanced Metadata**: Adds execution order, duration estimates, and priority
+ *
+ * ## Algorithm
+ *
+ * Uses Kahn's algorithm for topological sorting:
+ * 1. Calculate in-degrees for all nodes
+ * 2. Add nodes with zero in-degree to queue
+ * 3. Process queue, reducing dependents' in-degrees
+ * 4. Detect cycles if not all nodes are processed
+ *
+ * @example
+ * ```javascript
+ * const planner = new DAGPlanner({ logger: console });
+ *
+ * const steps = [
+ *   { id: 'step1', type: 'template' },
+ *   { id: 'step2', type: 'sparql', dependsOn: ['step1'] },
+ *   { id: 'step3', type: 'file', dependsOn: ['step1'] }
+ * ];
+ *
+ * const plan = await planner.createPlan(steps, graph);
+ * // plan: [step1, step2, step3] - step2 and step3 can run in parallel
+ * ```
  */
 export class DAGPlanner {
   /**
@@ -54,6 +87,8 @@ export class DAGPlanner {
   /**
    * Build dependency graph from steps
    * @private
+   * @param {Array<object>} steps - Array of workflow steps
+   * @returns {Map} Dependency graph
    */
   _buildDependencyGraph(steps) {
     const graph = new Map();
@@ -79,6 +114,9 @@ export class DAGPlanner {
         }
       }
     }
+
+    // Store reference for use in _countDependents
+    this._dependencyGraph = graph;
 
     return graph;
   }
@@ -275,11 +313,17 @@ export class DAGPlanner {
   /**
    * Count how many steps depend on this step
    * @private
+   * @param {string} stepId - Step ID to count dependents for
+   * @returns {number} Number of dependent steps
    */
   _countDependents(stepId) {
-    // This would need access to the full dependency graph
-    // For now, return a simple estimate
-    return 0;
+    // Build dependency graph to count dependents
+    if (!this._dependencyGraph) {
+      return 0;
+    }
+
+    const node = this._dependencyGraph.get(stepId);
+    return node ? node.dependents.size : 0;
   }
 
   /**

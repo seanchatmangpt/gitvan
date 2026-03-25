@@ -219,13 +219,21 @@ export class FileStepHandler extends BaseStepHandler {
         fs.mkdir(dir);
       }
       fs.write(targetPath, content);
-      // Note: Test environment doesn't have delete, so we'll just copy for now
-      // In a real implementation, you'd need to add a delete method to the files API
+
+      // Attempt to delete source if delete method is available
+      if (fs.delete && typeof fs.delete === "function") {
+        try {
+          fs.delete(sourcePath);
+        } catch (error) {
+          this.logger.warn(`⚠️ Could not delete source after move: ${error.message}`);
+        }
+      }
 
       return {
         operation: "move",
         sourcePath,
         targetPath,
+        deleteSupported: fs.delete !== undefined,
       };
     } else {
       // Node.js fs.promises API
@@ -250,13 +258,33 @@ export class FileStepHandler extends BaseStepHandler {
   async executeDelete(fs, filePath) {
     // Check if this is the test environment's files API
     if (fs.read && typeof fs.read === "function") {
-      // Test environment files API - delete is not implemented
-      // For now, we'll just return success since the test environment
-      // doesn't have a delete method
-      return {
-        operation: "delete",
-        filePath,
-      };
+      // Test environment files API
+      if (fs.delete && typeof fs.delete === "function") {
+        try {
+          fs.delete(filePath);
+          return {
+            operation: "delete",
+            filePath,
+            success: true,
+          };
+        } catch (error) {
+          return {
+            operation: "delete",
+            filePath,
+            success: false,
+            error: error.message,
+          };
+        }
+      } else {
+        // Delete not supported in test environment
+        this.logger.warn(`⚠️ Delete operation not supported in test environment`);
+        return {
+          operation: "delete",
+          filePath,
+          success: false,
+          error: "Delete operation not supported in test environment",
+        };
+      }
     } else {
       // Node.js fs.promises API
       await fs.unlink(filePath);
@@ -264,6 +292,7 @@ export class FileStepHandler extends BaseStepHandler {
       return {
         operation: "delete",
         filePath,
+        success: true,
       };
     }
   }

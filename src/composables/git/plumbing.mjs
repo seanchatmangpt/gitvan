@@ -5,6 +5,14 @@
 
 import path from "node:path";
 
+/**
+ * Create Git plumbing operations
+ * @param {Object} base - Base configuration {cwd, env}
+ * @param {Function} run - Execute git command with output
+ * @param {Function} runVoid - Execute git command without output
+ * @param {Function} toArr - Convert to array helper
+ * @returns {Object} Plumbing operations interface
+ */
 export default function makePlumbing(base, run, runVoid, toArr) {
   return {
     // Hash object

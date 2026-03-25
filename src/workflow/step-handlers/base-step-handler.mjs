@@ -2,7 +2,43 @@
 // Base class for all step handlers
 
 /**
- * Base class for step handlers
+ * Base class for all step handlers
+ *
+ * Provides common functionality for step handlers including:
+ * - Standardized result creation
+ * - Variable replacement in templates
+ * - Default validation behavior
+ * - Logging integration
+ *
+ * ## Implementing a Handler
+ *
+ * To create a custom step handler:
+ *
+ * 1. Extend BaseStepHandler
+ * 2. Implement `getStepType()` to return the step type name
+ * 3. Implement `execute()` to handle step execution
+ * 4. Override `validate()` for step-specific validation
+ *
+ * @example
+ * ```javascript
+ * export class MyStepHandler extends BaseStepHandler {
+ *   getStepType() {
+ *     return 'my-step';
+ *   }
+ *
+ *   validate(step) {
+ *     if (!step.config.myProperty) {
+ *       throw new Error('myProperty is required');
+ *     }
+ *     return true;
+ *   }
+ *
+ *   async execute(step, inputs, context) {
+ *     const result = await doSomething(step.config);
+ *     return this.createResult(result);
+ *   }
+ * }
+ * ```
  */
 export class BaseStepHandler {
   /**

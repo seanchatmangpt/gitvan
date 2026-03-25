@@ -4,6 +4,11 @@
 
 import { runGitVoid } from "../git-core.mjs";
 
+/**
+ * Create Git merge operations
+ * @param {Object} base - Base configuration {cwd, env}
+ * @returns {Object} Merge operations interface
+ */
 export function createMergeCommands(base) {
   return {
     // ---------- Merge operations ----------

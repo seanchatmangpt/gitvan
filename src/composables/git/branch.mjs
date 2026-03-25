@@ -4,6 +4,11 @@
 
 import { runGit, runGitVoid } from "../git-core.mjs";
 
+/**
+ * Create Git branch operations
+ * @param {Object} base - Base configuration {cwd, env}
+ * @returns {Object} Branch operations interface
+ */
 export function createBranchCommands(base) {
   return {
     // ---------- Branch operations ----------

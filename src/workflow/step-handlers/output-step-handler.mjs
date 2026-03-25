@@ -183,6 +183,9 @@ export class OutputStepHandler extends BaseStepHandler {
 
   /**
    * Generate Word document (HTML format)
+   * @param {string} content - Rendered content
+   * @param {string} outputPath - Output file path
+   * @returns {Promise<object>} Generation result with path, size, and pages
    */
   async _generateWord(content, outputPath) {
     const html = await this._markdownToDocx(content);

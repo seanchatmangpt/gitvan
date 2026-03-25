@@ -13,6 +13,13 @@ import {
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 
+/**
+ * Receipt management composable
+ * Provides receipt storage and retrieval using Git notes
+ * Receipts store execution results for verification and audit trails
+ *
+ * @returns {Object} Receipt interface
+ */
 export function useReceipt() {
   // Get context from unctx - this must be called synchronously
   let ctx;

@@ -1,6 +1,8 @@
 /**
  * GitVan v2 - useNotes() Composable
  * Provides Git notes management for simple note operations
+ *
+ * @returns {Object} Notes interface for managing Git notes
  */
 
 import { useGitVan, tryUseGitVan } from "../core/context.mjs";

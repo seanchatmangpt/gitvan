@@ -3,6 +3,14 @@
 // - Worktree listing, creation, removal
 // - Worktree pruning
 
+/**
+ * Create Git worktree operations
+ * @param {Object} base - Base configuration {cwd, env}
+ * @param {Function} run - Execute git command with output
+ * @param {Function} runVoid - Execute git command without output
+ * @param {Function} toArr - Convert to array helper
+ * @returns {Object} Worktree operations interface
+ */
 export default function makeWorktrees(base, run, runVoid, toArr) {
   return {
     // List worktrees

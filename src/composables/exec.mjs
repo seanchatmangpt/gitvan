@@ -3,9 +3,28 @@ import { useGitVan } from "./ctx.mjs";
 import { useTemplate } from "./template.mjs";
 import { join as joinPath } from "pathe";
 
+/**
+ * Execution composable for running commands, scripts, and jobs
+ * Provides CLI execution, JavaScript module execution, template rendering,
+ * LLM integration, and job execution capabilities
+ *
+ * @returns {Object} Execution interface
+ * @returns {Function} cli - Execute CLI commands
+ * @returns {Function} js - Execute JavaScript modules
+ * @returns {Function} tmpl - Render templates
+ * @returns {Function} llm - Execute LLM requests
+ * @returns {Function} job - Execute jobs
+ */
 export function useExec() {
   const gv = useGitVan();
 
+  /**
+   * Execute a CLI command synchronously
+   * @param {string} cmd - Command to execute
+   * @param {Array<string>} args - Command arguments
+   * @param {Object} env - Additional environment variables
+   * @returns {Object} Result object with ok, code, stdout, stderr
+   */
   function cli(cmd, args = [], env = {}) {
     const res = spawnSync(cmd, args, {
       cwd: gv.root,
@@ -20,6 +39,13 @@ export function useExec() {
     };
   }
 
+  /**
+   * Execute a JavaScript module
+   * @param {string} modulePath - Path to module (relative or absolute with file://)
+   * @param {string} exportName - Export name to call (default: "default")
+   * @param {Object} input - Input data to pass to module
+   * @returns {Promise<Object>} Result with ok, stdout, meta
+   */
   async function js(modulePath, exportName = "default", input = {}) {
     const mod = await import(
       modulePath.startsWith("file:")
@@ -31,6 +57,16 @@ export function useExec() {
     return { ok: true, stdout: toStr(out), meta: { out } };
   }
 
+  /**
+   * Render a template to string or file
+   * @param {Object} options - Template options
+   * @param {string} options.template - Template name or content
+   * @param {string} [options.out] - Output file path (optional)
+   * @param {Object|Function} options.data - Template data or function returning data
+   * @param {boolean} [options.autoescape] - Auto-escape HTML
+   * @param {Array<string>} [options.paths] - Template search paths
+   * @returns {Object} Result with ok, stdout or artifact
+   */
   function tmpl({ template, out, data, autoescape, paths }) {
     const t = useTemplate({ autoescape, paths });
     if (out) {
@@ -41,6 +77,16 @@ export function useExec() {
     return { ok: true, stdout: text };
   }
 
+  /**
+   * Execute an LLM request
+   * @param {Object} options - LLM options
+   * @param {string} [options.model] - Model name (default: "llama2")
+   * @param {string|Function} options.prompt - Prompt string or function
+   * @param {string} [options.system] - System prompt
+   * @param {number} [options.temperature=0.7] - Temperature
+   * @param {number} [options.maxTokens=1000] - Max tokens
+   * @returns {Promise<Object>} Result with ok, stdout, meta
+   */
   async function llm({
     model,
     prompt,
@@ -86,6 +132,12 @@ export function useExec() {
     };
   }
 
+  /**
+   * Execute a job
+   * @param {string} jobName - Job name
+   * @param {Object|Function} input - Job input data or function returning data
+   * @returns {Promise<Object>} Result with ok, stdout, meta
+   */
   async function job(jobName, input = {}) {
     // Simple JSON-based job execution - no external dependencies
     const jobData = {

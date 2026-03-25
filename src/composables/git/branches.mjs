@@ -3,6 +3,14 @@
 // - Branch listing, creation, deletion
 // - Checkout and switch operations
 
+/**
+ * Create Git branch operations
+ * @param {Object} base - Base configuration {cwd, env}
+ * @param {Function} run - Execute git command with output
+ * @param {Function} runVoid - Execute git command without output
+ * @param {Function} toArr - Convert to array helper
+ * @returns {Object} Branch operations interface
+ */
 export default function makeBranches(base, run, runVoid, toArr) {
   return {
     // List branches

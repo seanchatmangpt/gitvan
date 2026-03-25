@@ -4,6 +4,14 @@
 // - Rebase operations with options
 // - Reset operations with different modes
 
+/**
+ * Create Git merge, rebase, and reset operations
+ * @param {Object} base - Base configuration {cwd, env}
+ * @param {Function} run - Execute git command with output
+ * @param {Function} runVoid - Execute git command without output
+ * @param {Function} toArr - Convert to array helper
+ * @returns {Object} Merge/rebase/reset operations interface
+ */
 export default function makeMergeRebaseReset(base, run, runVoid, toArr) {
   return {
     // Merge operations

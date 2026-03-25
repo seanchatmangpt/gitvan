@@ -614,22 +614,99 @@ For more information, visit: https://github.com/seanchatmangpt/gitvan
   }
 
   async getWorkflowStatus(workflowId) {
-    // Placeholder implementation
-    return {
-      status: "ready",
-      lastRun: null,
-      successRate: "N/A",
-    };
+    const workflow = this.findJtbdWorkflow(workflowId);
+    if (!workflow) {
+      return {
+        status: "not-found",
+        lastRun: null,
+        successRate: "N/A",
+      };
+    }
+
+    try {
+      const { execSync } = await import("node:child_process");
+      const workflowDir = join(this.hooksDir, this.getJtbdCategory(workflowId));
+
+      const lastRunFile = join(workflowDir, `.${workflowId}-last-run.json`);
+      let lastRun = null;
+      let successRate = "N/A";
+
+      try {
+        const stats = statSync(lastRunFile);
+        lastRun = stats.mtime.toISOString();
+
+        const runData = JSON.parse(
+          execSync(`cat "${lastRunFile}"`, { encoding: "utf8" })
+        );
+        const totalRuns = runData.totalRuns || 1;
+        const successfulRuns = runData.successfulRuns || 0;
+        successRate = `${Math.round((successfulRuns / totalRuns) * 100)}%`;
+      } catch (error) {
+        lastRun = null;
+        successRate = "N/A";
+      }
+
+      return {
+        status: "ready",
+        lastRun,
+        successRate,
+      };
+    } catch (error) {
+      return {
+        status: "error",
+        lastRun: null,
+        successRate: "N/A",
+        error: error.message,
+      };
+    }
   }
 
   async generateJtbdAnalytics(category) {
-    // Placeholder implementation
+    const evaluationTimes = [];
+    const workflowsExecuted = {};
+
+    for (const [hookId, hook] of this.registry.hooks) {
+      const hookCategory = this.getJtbdCategory(hookId);
+      if (category && hookCategory !== category) continue;
+
+      const startTime = Date.now();
+      try {
+        await this.orchestrator.validateHook(hookId);
+        evaluationTimes.push(Date.now() - startTime);
+      } catch (error) {
+        evaluationTimes.push(0);
+      }
+
+      if (hook.workflows) {
+        for (const workflow of hook.workflows) {
+          workflowsExecuted[hookCategory] =
+            (workflowsExecuted[hookCategory] || 0) + 1;
+        }
+      }
+    }
+
+    const avgEvaluationTime =
+      evaluationTimes.length > 0
+        ? Math.round(
+            evaluationTimes.reduce((a, b) => a + b, 0) / evaluationTimes.length
+          )
+        : 0;
+
+    const categoryBreakdown = category
+      ? { [category]: this.getJtbdCategoriesBreakdown()[category] || 0 }
+      : this.getJtbdCategoriesBreakdown();
+
     return {
-      totalHooks: this.registry.hooks.size,
-      activeCategories: this.getAllJtbdCategories().length,
-      avgEvaluationTime: 150,
-      workflowsExecuted: 0,
-      categoryBreakdown: this.getJtbdCategoriesBreakdown(),
+      totalHooks: category
+        ? Object.values(categoryBreakdown).reduce((a, b) => a + b, 0)
+        : this.registry.hooks.size,
+      activeCategories: Object.keys(categoryBreakdown).length,
+      avgEvaluationTime,
+      workflowsExecuted: Object.values(workflowsExecuted).reduce(
+        (a, b) => a + b,
+        0
+      ),
+      categoryBreakdown,
     };
   }
 

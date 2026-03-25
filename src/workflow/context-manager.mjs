@@ -4,6 +4,43 @@
 
 /**
  * Context manager for workflow execution state
+ *
+ * The ContextManager is responsible for maintaining the in-memory state
+ * during workflow execution. It stores inputs, outputs, and intermediate
+ * results, providing a consistent interface for step handlers to access
+ * and modify execution state.
+ *
+ * ## Features
+ *
+ * - **State Storage**: Map-based storage for key-value pairs
+ * - **Execution History**: Tracks all step executions with metadata
+ * - **Snapshot/Restore**: Can capture and restore context state
+ * - **Import/Export**: Supports serialization of context data
+ * - **Query Operations**: Filter keys by pattern or value type
+ *
+ * ## Lifecycle
+ *
+ * 1. Initialize with workflow ID and inputs
+ * 2. Steps read inputs via `getOutput()` and write via `setOutput()`
+ * 3. Execution history is tracked automatically
+ * 4. Context can be snapshotted for rollback/analysis
+ * 5. Final state is exported for audit/reuse
+ *
+ * @example
+ * ```javascript
+ * const contextManager = new ContextManager({ logger: console });
+ *
+ * await contextManager.initialize({
+ *   workflowId: 'my-workflow',
+ *   inputs: { key1: 'value1', key2: 'value2' },
+ *   startTime: Date.now()
+ * });
+ *
+ * await contextManager.setOutput('result', { data: 'value' });
+ * const value = await contextManager.getOutput('result');
+ *
+ * const snapshot = contextManager.createSnapshot();
+ * ```
  */
 export class ContextManager {
   /**

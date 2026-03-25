@@ -1,5 +1,11 @@
 import { useGitVan } from "../../core/context.mjs";
 
+/**
+ * RevOps metrics composable
+ * Provides revenue and business metrics calculation
+ *
+ * @returns {Object} Metrics interface
+ */
 export function useRevOpsMetrics() {
   const { config } = useGitVan();
 

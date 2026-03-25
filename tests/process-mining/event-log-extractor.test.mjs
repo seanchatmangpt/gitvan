@@ -70,4 +70,32 @@ describe('EventLogExtractor', () => {
       assert.deepEqual(stats.uniqueActivities, ['a', 'b']);
     });
   });
+
+  describe('_getTimeRange', () => {
+    it('should calculate time range correctly with numeric comparison', async () => {
+      extractor.git.log = async () => ({
+        stdout: `abc123|2026-03-25T01:00:00Z|[workflow-execution:wf-123] [step:a]\ndef456|2026-03-25T23:59:59Z|[workflow-execution:wf-123] [step:b]`
+      });
+
+      const stats = await extractor.extractWorkflowStats('wf-123');
+
+      assert.property(stats, 'timeRange');
+      assert.property(stats.timeRange, 'start');
+      assert.property(stats.timeRange, 'end');
+      // Verify numeric comparison (not lexicographic)
+      assert.isTrue(stats.timeRange.start < stats.timeRange.end);
+    });
+
+    it('should handle traces with no activities', async () => {
+      extractor.git.log = async () => ({
+        stdout: '' // No log entries
+      });
+
+      const stats = await extractor.extractWorkflowStats('wf-123');
+
+      // Should return null timeRange for empty traces
+      assert.isNull(stats.timeRange);
+      assert.equal(stats.totalExecutions, 0);
+    });
+  });
 });

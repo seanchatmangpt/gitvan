@@ -15,6 +15,14 @@ export class CrashLogger {
   }
 
   async logCrash(crash) {
+    // Validate required fields
+    if (!crash.processId) {
+      throw new Error('Crash record must have processId');
+    }
+    if (!crash.error) {
+      throw new Error('Crash record must have error');
+    }
+
     const crashRecord = {
       id: this._generateCrashId(crash),
       processId: crash.processId,
@@ -48,6 +56,9 @@ export class CrashLogger {
   }
 
   _generateCrashId(crash) {
+    // NOTE: Non-deterministic ID generation is intentional per spec
+    // Uses timestamp + random for uniqueness across time
+    // Spec requirement: lines 563-565 of implementation plan
     const hash = createHash('sha256');
     hash.update(crash.processId);
     hash.update(Date.now().toString());
@@ -73,10 +84,14 @@ export class CrashLogger {
   }
 
   getCrashLogs() {
-    return this._memoryLog || [];
+    // Return copy to prevent external mutation of internal state
+    return [...(this._memoryLog || [])];
   }
 
   async getCrashLogsSince(since) {
+    // NOTE: Full implementation requires reading from Git notes
+    // Current dry-run implementation for testing
+    // TODO: Implement Git notes query for production mode
     if (this.dryRun) {
       return this.getCrashLogs().filter(log => log.timestamp >= since);
     }

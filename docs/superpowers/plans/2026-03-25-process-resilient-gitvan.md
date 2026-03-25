@@ -549,7 +549,7 @@ export class CrashLogger {
 
     try {
       const noteContent = JSON.stringify(crashRecord, null, 2);
-      await this.git.writeNote(noteContent, { ref: CRASH_NOTES_REF });
+      await this.git.notes.add(noteContent, { ref: CRASH_NOTES_REF });
       logger.info(`Crash logged: ${crashRecord.id}`);
       return crashRecord.id;
     } catch (error) {
@@ -795,13 +795,13 @@ git commit -m "feat(supervision): add StepSupervisor with one-for-one restarts"
 
 **Files:**
 - Create: `src/process-mining/event-log-extractor.mjs`
-- Create: `tests/process-mining/event-log-extractor.test.mjs'
+- Create: `tests/process-mining/event-log-extractor.test.mjs`
 
 - [ ] **Step 1: Write failing test**
 
 ```javascript
 // tests/process-mining/event-log-extractor.test.mjs
-import { describe, it, beforeEach } from 'vitest';
+import { describe, it, beforeEach, expect } from 'vitest';
 import { EventLogExtractor } from '../../src/process-mining/event-log-extractor.mjs';
 
 describe('EventLogExtractor', () => {
@@ -970,7 +970,7 @@ git commit -m "feat(process-mining): add event log extraction from Git commits"
 
 ```javascript
 // tests/process-mining/conformance-checker.test.mjs
-import { describe, it } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { ConformanceChecker } from '../../src/process-mining/conformance-checker.mjs';
 
 describe('ConformanceChecker', () => {
@@ -1120,7 +1120,7 @@ git commit -m "feat(process-mining): add conformance checking with fitness score
 
 ```javascript
 // tests/process-mining/bottleneck-detector.test.mjs
-import { describe, it } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { BottleneckDetector } from '../../src/process-mining/bottleneck-detector.mjs';
 
 describe('BottleneckDetector', () => {
@@ -1240,6 +1240,148 @@ Expected: PASS
 ```bash
 git add src/process-mining/bottleneck-detector.mjs tests/process-mining/bottleneck-detector.test.mjs
 git commit -m "feat(process-mining): add bottleneck detection with p95/p99 analysis"
+```
+
+---
+
+### Task 8.5: Variant Analyzer
+
+**Files:**
+- Create: `src/process-mining/variant-analyzer.mjs`
+- Create: `tests/process-mining/variant-analyzer.test.mjs`
+
+- [ ] **Step 1: Write failing test**
+
+```javascript
+// tests/process-mining/variant-analyzer.test.mjs
+import { describe, it, beforeEach } from 'vitest';
+import { VariantAnalyzer } from '../../src/process-mining/variant-analyzer.mjs';
+
+describe('VariantAnalyzer', () => {
+  let analyzer;
+
+  beforeEach(() => {
+    analyzer = new VariantAnalyzer();
+  });
+
+  it('should discover process variants', async () => {
+    const executions = [
+      {
+        caseId: 'case-1',
+        activities: [
+          { name: 'step1', timestamp: '2026-03-25T01:00:00Z' },
+          { name: 'step2', timestamp: '2026-03-25T01:00:01Z' },
+          { name: 'step3', timestamp: '2026-03-25T01:00:02Z' }
+        ]
+      },
+      {
+        caseId: 'case-2',
+        activities: [
+          { name: 'step1', timestamp: '2026-03-25T01:01:00Z' },
+          { name: 'step3', timestamp: '2026-03-25T01:01:02Z' }
+        ]
+      }
+    ];
+
+    const variants = await analyzer.discover(executions);
+    expect(variants.length).to.equal(2);
+    expect(variants[0].frequency).to.equal(1);
+    expect(variants[0].path).to.deep.equal(['step1', 'step2', 'step3']);
+  });
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `npm test tests/process-mining/variant-analyzer.test.mjs`
+Expected: FAIL
+
+- [ ] **Step 3: Implement VariantAnalyzer**
+
+```javascript
+// src/process-mining/variant-analyzer.mjs
+import { createLogger } from '../utils/logger.mjs';
+
+const logger = createLogger('process-mining:variant');
+
+export class VariantAnalyzer {
+  constructor(options = {}) {
+    this.logger = options.logger || logger;
+  }
+
+  async discover(executions) {
+    // Group executions by their step sequence
+    const variantMap = new Map();
+
+    for (const execution of executions) {
+      const path = execution.activities.map(a => a.name);
+      const pathKey = path.join('->');
+
+      if (!variantMap.has(pathKey)) {
+        variantMap.set(pathKey, {
+          path,
+          frequency: 0,
+          caseIds: [],
+          exampleCaseId: execution.caseId
+        });
+      }
+
+      const variant = variantMap.get(pathKey);
+      variant.frequency++;
+      variant.caseIds.push(execution.caseId);
+    }
+
+    // Convert to array and sort by frequency
+    const variants = Array.from(variantMap.values())
+      .sort((a, b) => b.frequency - a.frequency)
+      .map((variant, index) => ({
+        ...variant,
+        rank: index + 1,
+        percentage: (variant.frequency / executions.length * 100).toFixed(1)
+      }));
+
+    this.logger.info(`Discovered ${variants.length} process variants`);
+    return variants;
+  }
+
+  async getVariantStatistics(executions) {
+    const variants = await this.discover(executions);
+
+    return {
+      totalVariants: variants.length,
+      mostCommonVariant: variants[0],
+      variantCoverage: variants.map(v => ({
+        path: v.path.join('->'),
+        frequency: v.frequency,
+        percentage: v.percentage
+      })),
+      entropy: this._calculateEntropy(variants, executions.length)
+    };
+  }
+
+  _calculateEntropy(variants, totalExecutions) {
+    let entropy = 0;
+
+    for (const variant of variants) {
+      const p = variant.frequency / totalExecutions;
+      entropy -= p * Math.log2(p);
+    }
+
+    return entropy;
+  }
+}
+```
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+Run: `npm test tests/process-mining/variant-analyzer.test.mjs`
+Expected: PASS
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/process-mining/variant-analyzer.mjs tests/process-mining/variant-analyzer.test.mjs
+git commit -m "feat(process-mining): add process variant discovery with entropy calculation"
 ```
 
 ---
@@ -1489,6 +1631,239 @@ Expected: PASS
 ```bash
 git add tests/integration/supervision-end-to-end.test.mjs test/fixtures/workflows/test-workflow.ttl
 git commit -m "test(integration): add end-to-end supervision test with process mining"
+```
+
+---
+
+### Task 11: GitVanSupervisor (Root)
+
+**Files:**
+- Create: `src/supervision/gitvan-supervisor.mjs`
+- Create: `tests/supervision/gitvan-supervisor.test.mjs`
+
+- [ ] **Step 1: Write failing test**
+
+```javascript
+// tests/supervision/gitvan-supervisor.test.mjs
+import { describe, it, beforeEach, afterEach } from 'vitest';
+import { GitVanSupervisor } from '../../src/supervision/gitvan-supervisor.mjs';
+import { WorkflowSupervisor } from '../../src/supervision/workflow-supervisor.mjs';
+
+describe('GitVanSupervisor', () => {
+  let supervisor;
+
+  beforeEach(() => {
+    supervisor = new GitVanSupervisor({
+      id: 'gitvan-root'
+    });
+  });
+
+  afterEach(async () => {
+    await supervisor.stop();
+  });
+
+  it('should manage child supervisors', async () => {
+    const workflowSupervisor = new WorkflowSupervisor({
+      id: 'workflow-supervisor'
+    });
+
+    supervisor.addChild(workflowSupervisor);
+    await supervisor.start();
+
+    expect(supervisor.getChild('workflow-supervisor')).to.exist;
+    expect(supervisor.getHealth().isRunning).to.be.true;
+  });
+
+  it('should handle child supervisor crash', async () => {
+    const workflowSupervisor = new WorkflowSupervisor({
+      id: 'workflow-supervisor'
+    });
+
+    supervisor.addChild(workflowSupervisor);
+    await supervisor.start();
+
+    // Simulate crash
+    await supervisor.handleChildCrash('workflow-supervisor', new Error('Test crash'));
+
+    // Should attempt restart
+    const health = supervisor.getHealth();
+    expect(health.restartCounts['workflow-supervisor']).to.equal(1);
+  });
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `npm test tests/supervision/gitvan-supervisor.test.mjs`
+Expected: FAIL
+
+- [ ] **Step 3: Implement GitVanSupervisor**
+
+```javascript
+// src/supervision/gitvan-supervisor.mjs
+import { BaseSupervisor } from './base-supervisor.mjs';
+import { RestartStrategies, shouldRestart } from './restart-strategies.mjs';
+import { CrashLogger } from './crash-logger.mjs';
+import { createLogger } from '../utils/logger.mjs';
+
+const logger = createLogger('supervision:gitvan');
+
+export class GitVanSupervisor extends BaseSupervisor {
+  constructor(options = {}) {
+    super({
+      ...options,
+      id: options.id || 'gitvan-root',
+      maxRestarts: options.maxRestarts || 5
+    });
+
+    this.strategy = options.strategy || RestartStrategies.ONE_FOR_ONE;
+    this.crashLogger = new CrashLogger({
+      cwd: options.cwd || process.cwd(),
+      dryRun: options.dryRun || false
+    });
+
+    // System health metrics
+    this.startTime = null;
+    this.totalRestarts = 0;
+    this.totalCrashes = 0;
+  }
+
+  async start() {
+    await super.start();
+    this.startTime = Date.now();
+    logger.info(`GitVan supervisor started with ${this.children.size} children`);
+  }
+
+  async stop() {
+    logger.info('Stopping GitVan supervisor');
+    await super.stop();
+  }
+
+  async handleChildCrash(childId, error, crashContext = {}) {
+    this.totalCrashes++;
+
+    logger.error(`Child supervisor crashed: ${childId}`, {
+      error: error.message,
+      stack: error.stack
+    });
+
+    // Log crash to Git notes
+    await this.crashLogger.logCrash({
+      processId: childId,
+      processType: 'supervisor',
+      error,
+      timestamp: new Date(),
+      context: {
+        ...crashContext,
+        supervisorId: this.id,
+        totalCrashes: this.totalCrashes
+      }
+    });
+
+    // Determine restart strategy
+    if (!shouldRestart(error)) {
+      logger.error(`Non-restartable error in ${childId}, not restarting`);
+      this.removeChild(childId);
+      return { action: 'stopped', reason: 'permanent_error' };
+    }
+
+    if (!this.shouldRestartChild(childId)) {
+      logger.error(`Max restarts exceeded for ${childId}, stopping`);
+      this.removeChild(childId);
+      return { action: 'stopped', reason: 'max_restarts' };
+    }
+
+    // Execute restart strategy
+    const restartCount = this.incrementRestartCount(childId);
+    this.totalRestarts++;
+
+    logger.info(`Restarting child supervisor: ${childId} (restart #${restartCount})`);
+
+    try {
+      const child = this.getChild(childId);
+
+      if (this.strategy === RestartStrategies.ONE_FOR_ONE) {
+        await this._restartChild(child);
+      } else if (this.strategy === RestartStrategies.REST_FOR_ONE) {
+        await this._restartChildAndDependents(child);
+      } else if (this.strategy === RestartStrategies.ONE_FOR_ALL) {
+        await this._restartAllChildren();
+      }
+
+      return { action: 'restarted', childId, restartCount };
+    } catch (restartError) {
+      logger.error(`Failed to restart ${childId}: ${restartError.message}`);
+      this.removeChild(childId);
+      return { action: 'failed', childId, error: restartError.message };
+    }
+  }
+
+  async _restartChild(child) {
+    if (typeof child.restart === 'function') {
+      await child.restart();
+    } else if (typeof child.start === 'function') {
+      await child.start();
+    }
+  }
+
+  async _restartChildAndDependents(child) {
+    const dependents = this._getDependents(child);
+    const childrenToRestart = [child, ...dependents];
+
+    for (const c of childrenToRestart) {
+      await this._restartChild(c);
+    }
+  }
+
+  async _restartAllChildren() {
+    for (const child of this.children.values()) {
+      await this._restartChild(child);
+    }
+  }
+
+  _getDependents(child) {
+    // For GitVan, dependencies are:
+    // - WorkflowSupervisor depends on JobSupervisor
+    // - StepSupervisor depends on WorkflowSupervisor
+    const dependents = [];
+
+    if (child.id.includes('workflow')) {
+      // Find steps that depend on this workflow
+      for (const [id, c] of this.children) {
+        if (id.includes('step') && c.workflowId === child.id) {
+          dependents.push(c);
+        }
+      }
+    }
+
+    return dependents;
+  }
+
+  getSystemHealth() {
+    const uptime = this.startTime ? Date.now() - this.startTime : 0;
+
+    return {
+      ...this.getHealth(),
+      uptime,
+      totalRestarts: this.totalRestarts,
+      totalCrashes: this.totalCrashes,
+      strategy: this.strategy,
+      childrenHealth: Array.from(this.children.values()).map(child => child.getHealth?.() || {})
+    };
+  }
+}
+```
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+Run: `npm test tests/supervision/gitvan-supervisor.test.mjs`
+Expected: PASS
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/supervision/gitvan-supervisor.mjs tests/supervision/gitvan-supervisor.test.mjs
+git commit -m "feat(supervision): add GitVanSupervisor root with crash handling and restart strategies"
 ```
 
 ---

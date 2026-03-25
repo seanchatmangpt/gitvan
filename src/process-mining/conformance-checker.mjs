@@ -3,50 +3,61 @@ import { createLogger } from '../utils/logger.mjs';
 
 const logger = createLogger('process-mining:conformance');
 
+// Fitness penalties (configurable)
+const PENALTIES = {
+  SKIP: 0.1,
+  UNAUTHORIZED: 0.15,
+  REORDER: 0.05
+};
+
 export class ConformanceChecker {
   constructor(options = {}) {
     this.logger = options.logger || logger;
+    this.penalties = options.penalties || PENALTIES;
   }
 
   async check(expectedSteps, actualSteps) {
     const deviations = [];
     let fitness = 1.0;
 
-    // Check for skipped steps
+    // Use Set for O(1) lookups
+    const expectedSet = new Set(expectedSteps);
+    const actualSet = new Set(actualSteps);
+
+    // Check for skipped steps (in expected but not in actual)
     for (const expected of expectedSteps) {
-      if (!actualSteps.includes(expected)) {
+      if (!actualSet.has(expected)) {
         deviations.push({
           type: 'skip',
           step: expected,
           message: `Step "${expected}" was skipped`
         });
-        fitness -= 0.1;
+        fitness -= this.penalties.SKIP;
       }
     }
 
-    // Check for unauthorized steps
+    // Check for unauthorized steps (in actual but not in expected)
     for (const actual of actualSteps) {
-      if (!expectedSteps.includes(actual)) {
+      if (!expectedSet.has(actual)) {
         deviations.push({
           type: 'unauthorized',
           step: actual,
           message: `Unexpected step "${actual}" was executed`
         });
-        fitness -= 0.15;
+        fitness -= this.penalties.UNAUTHORIZED;
       }
     }
 
-    // Check for order deviations
-    const expectedOrder = expectedSteps.join(',');
-    const actualOrder = actualSteps.join(',');
-    if (expectedOrder !== actualOrder) {
+    // Check for order deviations (compare arrays directly)
+    if (expectedSteps.length !== actualSteps.length ||
+        !expectedSteps.every((step, i) => step === actualSteps[i])) {
       deviations.push({
         type: 'reorder',
         expected: expectedSteps,
         actual: actualSteps,
         message: 'Steps executed in different order than expected'
       });
-      fitness -= 0.05;
+      fitness -= this.penalties.REORDER;
     }
 
     // Ensure fitness is between 0 and 1
@@ -58,8 +69,8 @@ export class ConformanceChecker {
       fitness,
       deviations,
       expectedSteps,
-      actualSteps,
-      timestamp: new Date().toISOString()
+      actualSteps
+      // Removed timestamp for determinism
     };
   }
 
@@ -80,8 +91,8 @@ export class ConformanceChecker {
     return {
       averageFitness: totalFitness / executions.length,
       executions: results.length,
-      results,
-      timestamp: new Date().toISOString()
+      results
+      // Removed timestamp for determinism
     };
   }
 }

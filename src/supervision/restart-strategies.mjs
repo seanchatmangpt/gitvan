@@ -35,16 +35,24 @@ export function getBackoffDelay(attempt, backoffSchedule = [1000, 5000, 10000]) 
 export function shouldRestart(error) {
   if (!error) return false;
 
-  const code = error.code || error.message?.split(':')[0];
+  // Try error.code first
+  let code = error.code;
+
+  // Fallback: extract from message using more robust pattern
+  if (!code && error.message) {
+    // Match patterns like "ECONNREFUSED", "ECONNREFUSED: ...", or "Error: ECONNREFUSED"
+    const match = error.message.match(/\b([A-Z]{3,})\b/);
+    code = match ? match[1] : null;
+  }
 
   // Check if error is transient
-  if (ErrorTypes.TRANSIENT.includes(code)) {
+  if (code && ErrorTypes.TRANSIENT.includes(code)) {
     logger.debug(`Transient error detected: ${code}, will restart`);
     return true;
   }
 
   // Check if error is permanent
-  if (ErrorTypes.PERMANENT.includes(code)) {
+  if (code && ErrorTypes.PERMANENT.includes(code)) {
     logger.warn(`Permanent error detected: ${code}, will not restart`);
     return false;
   }
@@ -56,7 +64,7 @@ export function shouldRestart(error) {
 
 /**
  * Get dependent children for REST_FOR_ONE strategy
- * @param {Map} children - All children
+ * @param {Map} children - All children (used for validation)
  * @param {string} crashedChildId - The child that crashed
  * @param {object} dependencies - Dependency graph {childId: [depIds]}
  * @returns {string[]} Array of child IDs to restart
@@ -66,7 +74,12 @@ export function getDependents(children, crashedChildId, dependencies = {}) {
 
   for (const [childId, deps] of Object.entries(dependencies)) {
     if (deps.includes(crashedChildId)) {
-      dependents.push(childId);
+      // Validate that dependent exists in children map
+      if (children.has(childId)) {
+        dependents.push(childId);
+      } else {
+        logger.warn(`Dependent ${childId} not found in children map`);
+      }
     }
   }
 

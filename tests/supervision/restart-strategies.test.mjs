@@ -80,6 +80,20 @@ describe('RestartStrategies', () => {
       const dependents = getDependents(children, 'child-1', {});
       assert.deepEqual(dependents, []);
     });
+
+    it('should validate dependents exist in children map', () => {
+      const children = new Map([
+        ['child-1', { id: 'child-1' }],
+        ['child-3', { id: 'child-3' }]
+      ]);
+      const dependencies = {
+        'child-2': ['child-1'],  // child-2 doesn't exist in children
+        'child-3': ['child-1']
+      };
+      const dependents = getDependents(children, 'child-1', dependencies);
+      // Should only return child-3 (child-2 is not in children map)
+      assert.deepEqual(dependents, ['child-3']);
+    });
   });
 
   describe('exports', () => {

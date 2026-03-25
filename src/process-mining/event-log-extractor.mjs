@@ -105,9 +105,12 @@ export class EventLogExtractor {
     if (traces.length === 0) return null;
 
     const allTimestamps = traces.flatMap(t => t.activities.map(a => a.timestamp));
+    // Convert ISO strings to Date objects for numeric comparison
+    const timestampDates = allTimestamps.map(ts => new Date(ts).getTime());
+
     return {
-      start: Math.min(...allTimestamps),
-      end: Math.max(...allTimestamps)
+      start: new Date(Math.min(...timestampDates)).toISOString(),
+      end: new Date(Math.max(...timestampDates)).toISOString()
     };
   }
 }

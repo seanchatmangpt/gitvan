@@ -1,6 +1,12 @@
 /**
  * GitVan v2 - Composables Index
  * Centralized exports for all composables
+ *
+ * This module re-exports all composables for convenient importing.
+ * Import from here to get access to all GitVan composables.
+ *
+ * @example
+ * import { useGit, useWorktree, useJob } from 'src/composables/index.mjs'
  */
 
 // Core composables

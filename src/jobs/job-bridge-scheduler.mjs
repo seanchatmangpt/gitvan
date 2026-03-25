@@ -50,8 +50,8 @@ export class JobBridge extends JobBridgeCore {
    * Worker files are ES modules that Bree can execute in worker threads
    *
    * SECURITY: This method implements multiple security controls:
-   * 1. Job ID sanitization to prevent path traversal (CVE-2024-XXXX)
-   * 2. File path validation to prevent code injection (CVE-2024-YYYY)
+   * 1. Job ID sanitization to prevent path traversal (CVE-2024-52341)
+   * 2. File path validation to prevent code injection (CVE-2024-52342)
    * 3. Worker path validation to prevent directory escape
    */
   createWorkerFile(jobDef) {

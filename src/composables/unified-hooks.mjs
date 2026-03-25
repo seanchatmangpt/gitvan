@@ -26,6 +26,16 @@ const logger = createLogger("composables:unified-hooks");
  * @param {boolean} [options.enableAudit=true] - Enable audit logging
  * @returns {Object} Unified hooks interface
  */
+/**
+ * Unified hooks composable
+ * Provides integrated hooks system combining Husky, @unrdf/hooks, and Bree
+ *
+ * @param {Object} options - Hooks options
+ * @param {string} [options.cwd] - Working directory
+ * @param {boolean} [options.autoStart=true] - Auto-start scheduler
+ * @param {boolean} [options.enableAudit=true] - Enable audit logging
+ * @returns {Object} Unified hooks interface
+ */
 export function useUnifiedHooks(options = {}) {
   const cwd = options.cwd || process.cwd();
   const autoStart = options.autoStart !== false;

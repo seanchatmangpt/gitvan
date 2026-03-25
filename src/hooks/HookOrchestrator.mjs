@@ -359,13 +359,51 @@ export class HookOrchestrator {
     this.logger.info("📚 Loading previous state for comparison");
 
     try {
-      // Load previous commit's state
-      // This would integrate with Git to get the previous state
-      // For now, we'll simulate this
-      this.previousGraph = null; // Would be loaded from Git history
-      this.logger.info("📚 Previous state loaded");
+      // Load previous commit's state from Git history
+      const { useGit } = await import("../composables/git.mjs");
+
+      const git = useGit({
+        cwd: this.cwd || process.cwd(),
+      });
+
+      // Get the previous commit hash
+      const HEAD = await git.symbolicRef("HEAD");
+      if (!HEAD) {
+        this.logger.info("📚 No HEAD ref found, starting fresh");
+        this.previousGraph = null;
+        return;
+      }
+
+      const logResult = await git.log({ maxCount: 2 });
+      if (!logResult || logResult.length < 2) {
+        this.logger.info("📚 Only one commit in history, no previous state");
+        this.previousGraph = null;
+        return;
+      }
+
+      const previousCommit = logResult[1].hash;
+
+      // Load previous state from GitNativeIO
+      const previousState = await this.gitNativeIO.loadSnapshot(
+        `graph-state-${previousCommit}`
+      );
+
+      if (previousState) {
+        // Reconstruct previous graph from stored state
+        this.previousGraph = useGraph(previousState.store);
+        this.logger.info(
+          `📚 Previous state loaded from commit ${previousCommit}`
+        );
+      } else {
+        this.logger.info(
+          "📚 No previous state snapshot found, using null baseline"
+        );
+        this.previousGraph = null;
+      }
     } catch (error) {
-      this.logger.warn(`⚠️ Failed to load previous state: ${error.message}`);
+      this.logger.warn(
+        `⚠️ Failed to load previous state: ${error.message}`
+      );
       this.previousGraph = null;
     }
   }
@@ -704,7 +742,38 @@ export class HookOrchestrator {
   async _writeEvaluationReceipt(result) {
     try {
       this.logger.info("📝 Writing evaluation receipt to Git Notes");
-      // Implementation would integrate with Git Notes for auditability
+
+      const { useGit } = await import("../composables/git.mjs");
+
+      const git = useGit({
+        cwd: this.cwd || process.cwd(),
+      });
+
+      // Create receipt data
+      const receiptData = {
+        timestamp: new Date().toISOString(),
+        duration: result.duration,
+        hooksEvaluated: result.hooksEvaluated,
+        hooksTriggered: result.hooksTriggered,
+        workflowsExecuted: result.workflowsExecuted,
+        workflowsSuccessful: result.workflowsSuccessful,
+        triggeredHooks: result.triggeredHooks,
+        executions: result.executions.map((ex) => ({
+          hookId: ex.hookId,
+          success: ex.success,
+          error: ex.error,
+        })),
+      };
+
+      // Write to Git Notes for audit trail
+      const noteContent = JSON.stringify(receiptData, null, 2);
+      const noteRef = "refs/notes/gitvan/hook-evaluations";
+
+      await git.writeNote(noteRef, noteContent, {
+        append: true,
+      });
+
+      this.logger.info("✅ Evaluation receipt written to Git Notes");
     } catch (error) {
       this.logger.warn(
         `⚠️ Failed to write evaluation receipt: ${error.message}`
@@ -717,9 +786,23 @@ export class HookOrchestrator {
    * @private
    */
   _getPredicateType(hook) {
-    // This would analyze the hook's predicate to determine its type
-    // For now, return a default
-    return "unknown";
+    if (!hook || !hook.predicateDefinition) {
+      return "unknown";
+    }
+
+    const predicate = hook.predicateDefinition;
+    const typeMap = {
+      resultDelta: "change-detection",
+      ask: "boolean-condition",
+      selectThreshold: "threshold-monitoring",
+      shaclAllConform: "validation",
+      construct: "graph-construction",
+      describe: "resource-description",
+      federated: "federated-query",
+      temporal: "time-based",
+    };
+
+    return typeMap[predicate.type] || predicate.type || "unknown";
   }
 
   /**

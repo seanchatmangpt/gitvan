@@ -195,7 +195,7 @@ export default defineJob({
     const git = useGit()
     const tpl = await useTemplate()
     
-    {{ body | default("// TODO: implement") }}
+    {{ body | default("// Implement job logic here\n    // Available: git (useGit), tpl (useTemplate)\n    // Access: payload (job input), ctx (execution context)\n    logger.info('Job executing:', { payload, ctx });") }}
     
     return { ok: true, artifacts: [] }
   }
@@ -220,7 +220,7 @@ export default defineJob({
     const git = useGit()
     const tpl = await useTemplate()
     
-    {{ body | default("// TODO: implement event handler") }}
+    {{ body | default("// Implement event handler logic here\n    // Available: git (useGit), tpl (useTemplate)\n    // Access: payload (job input), ctx (execution context), meta (event metadata)\n    logger.info('Event job executing:', { payload, ctx, meta });") }}
     
     return { ok: true, artifacts: [] }
   }
@@ -234,7 +234,7 @@ Generate a Nunjucks template for GitVan:
 {# {{ name | default('Generated Template') }} #}
 {# Generated: {{ now | default('now') }} #}
 
-{{ content | default('<!-- TODO: implement template -->') }}
+{{ content | default('<!-- Implement your template content here -->\n<!-- Available variables: {{ variableName }} -->\n<!-- Example: -->\n\n{# Template description #}\n{% if variableName %}\nResult: {{ variableName }}\n{% endif %}') }}
 `;
 
 // Changelog template

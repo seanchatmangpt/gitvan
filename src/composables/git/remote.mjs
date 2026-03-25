@@ -4,6 +4,11 @@
 
 import { runGit, runGitVoid } from "../git-core.mjs";
 
+/**
+ * Create Git remote operations
+ * @param {Object} base - Base configuration {cwd, env}
+ * @returns {Object} Remote operations interface
+ */
 export function createRemoteCommands(base) {
   return {
     // ---------- Remote operations ----------

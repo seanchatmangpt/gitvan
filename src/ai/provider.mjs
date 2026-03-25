@@ -247,16 +247,16 @@ export async function generateText({
   config = {}
 }) {
   const startTime = Date.now();
-  
+
   try {
     // Use configurable provider factory
     const provider = await createAIProvider(config);
-    
+
     // Check if this is a mock provider
     if (provider.provider === 'mock') {
       const result = await provider.doGenerate({ prompt });
       const duration = Date.now() - startTime;
-      
+
       return {
         output: result.text,
         model: provider.model || model,
@@ -266,7 +266,32 @@ export async function generateText({
         success: true
       };
     }
-    
+
+    // Check if this is Ollama provider (has generate method, not doGenerate)
+    if (provider.provider === 'ollama') {
+      const result = await provider.generate({
+        model: provider.model || model,
+        prompt,
+        options: {
+          temperature: options.temperature || 0.7,
+          top_p: options.top_p || 0.8,
+          top_k: options.top_k || 20,
+          num_predict: options.maxTokens || 2048,
+        }
+      });
+      const duration = Date.now() - startTime;
+
+      return {
+        output: result,
+        model: provider.model || model,
+        provider: provider.provider || 'ollama',
+        options,
+        duration,
+        success: true
+      };
+    }
+
+    // Use AI SDK for OpenAI/Anthropic providers
     const result = await aiGenerateText({
       model: provider,
       prompt,
@@ -274,7 +299,7 @@ export async function generateText({
     });
 
     const duration = Date.now() - startTime;
-    
+
     return {
       output: result.text,
       model: provider.model || model,

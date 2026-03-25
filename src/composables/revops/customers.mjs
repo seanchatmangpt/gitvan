@@ -1,5 +1,11 @@
 import { useGitVan } from "../../core/context.mjs";
 
+/**
+ * RevOps customers composable
+ * Provides customer data management and analysis
+ *
+ * @returns {Object} Customers interface
+ */
 export function useRevOpsCustomers() {
   const { config } = useGitVan();
 

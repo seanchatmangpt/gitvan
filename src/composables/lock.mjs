@@ -16,6 +16,12 @@ import { join } from "node:path";
 
 const logger = createLogger("composables:lock");
 
+/**
+ * Distributed locking composable
+ * Provides Git-based distributed locking for coordination across processes
+ *
+ * @returns {Object} Lock interface with acquire, release, and status methods
+ */
 export function useLock() {
   // Get context from unctx - this must be called synchronously
   let ctx;

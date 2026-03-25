@@ -8,6 +8,16 @@
 import { useGitVan, tryUseGitVan } from "../core/context.mjs";
 import { useGit } from "./git/index.mjs";
 
+/**
+ * Worktree management composable
+ * Provides ergonomic API for Git worktree operations including:
+ * - Worktree discovery and listing
+ * - Worktree creation, removal, and repair
+ * - Worktree context management
+ * - Worktree status and information
+ *
+ * @returns {Object} Worktree interface with methods for managing Git worktrees
+ */
 export function useWorktree() {
   // Get context from unctx - this must be called synchronously
   let ctx;

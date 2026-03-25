@@ -4,6 +4,11 @@
 
 import { runGitVoid } from "../git-core.mjs";
 
+/**
+ * Create Git reset operations
+ * @param {Object} base - Base configuration {cwd, env}
+ * @returns {Object} Reset operations interface
+ */
 export function createResetCommands(base) {
   return {
     // ---------- Reset operations ----------

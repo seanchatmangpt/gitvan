@@ -1,5 +1,11 @@
 import { useGitVan } from "../../core/context.mjs";
 
+/**
+ * RevOps health composable
+ * Provides business health metrics and scoring
+ *
+ * @returns {Object} Health interface
+ */
 export function useRevOpsHealth() {
   const { config } = useGitVan();
 

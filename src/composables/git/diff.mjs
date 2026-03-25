@@ -5,6 +5,14 @@
 
 import { minimatch } from "minimatch";
 
+/**
+ * Create Git diff operations
+ * @param {Object} base - Base configuration {cwd, env}
+ * @param {Function} run - Execute git command with output
+ * @param {Function} runVoid - Execute git command without output
+ * @param {Function} toArr - Convert to array helper
+ * @returns {Object} Diff operations interface
+ */
 export default function makeDiff(base, run, runVoid, toArr) {
   return {
     // Git diff with various options

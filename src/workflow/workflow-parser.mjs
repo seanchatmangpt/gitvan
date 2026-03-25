@@ -6,6 +6,39 @@ import { useGraph } from "../composables/graph.mjs";
 
 /**
  * Workflow parser that loads and validates Turtle workflow definitions
+ *
+ * The WorkflowParser is responsible for reading workflow definitions
+ * from Turtle/RDF files and converting them into executable workflow
+ * objects. It performs structural validation and extracts step
+ * configurations, dependencies, and metadata.
+ *
+ * ## Parsing Process
+ *
+ * 1. Query graph for workflow hook by ID
+ * 2. Extract workflow metadata (title, predicate, pipelines)
+ * 3. Parse all steps from pipeline definitions
+ * 4. Extract step configurations and dependencies
+ * 5. Validate workflow structure (no cycles, required configs)
+ *
+ * ## Validation Rules
+ *
+ * - All step IDs must be unique
+ * - No circular dependencies allowed
+ * - Required step configs must be present
+ * - Step types must be recognized
+ *
+ * @example
+ * ```javascript
+ * const parser = new WorkflowParser({ logger: console });
+ *
+ * const workflow = await parser.parseWorkflow(turtleStore, workflowId);
+ * // workflow: {
+ * //   id: 'http://example.org/workflow',
+ * //   title: 'My Workflow',
+ * //   steps: [...],
+ * //   metadata: {...}
+ * // }
+ * ```
  */
 export class WorkflowParser {
   /**

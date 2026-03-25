@@ -4,6 +4,11 @@
 
 import { runGitVoid } from "../git-core.mjs";
 
+/**
+ * Create Git checkout/switch operations
+ * @param {Object} base - Base configuration {cwd, env}
+ * @returns {Object} Checkout operations interface
+ */
 export function createCheckoutCommands(base) {
   return {
     // ---------- Checkout/Switch operations ----------

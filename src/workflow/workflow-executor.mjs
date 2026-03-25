@@ -13,12 +13,44 @@ import { createStore, parseTurtle } from "@unrdf/core";
 /**
  * Main workflow executor that orchestrates the entire workflow lifecycle
  *
+ * The WorkflowExecutor coordinates all phases of workflow execution:
+ * - Parsing workflow definitions from Turtle/RDF
+ * - Creating execution plans via DAG planner
+ * - Managing execution context and state
+ * - Running individual steps via step handlers
+ * - Writing execution receipts to Git Notes
+ *
+ * ## Architecture
+ *
  * Uses KnowledgeSubstrateCore for:
  * - Transaction-based workflow changes
  * - OTEL observability on all operations
  * - Knowledge hooks for reactive behavior
  * - Federated queries across workflow definitions
  * - SHACL validation of workflow schemas
+ *
+ * ## Execution Flow
+ *
+ * 1. Initialize RDF components (KnowledgeSubstrateCore)
+ * 2. Parse workflow definition from graph
+ * 3. Create execution plan (DAG with dependencies)
+ * 4. Initialize execution context
+ * 5. Execute plan steps in order
+ * 6. Finalize and write execution receipt
+ *
+ * @example
+ * ```javascript
+ * const executor = new WorkflowExecutor({
+ *   graphDir: './workflows',
+ *   logger: console,
+ *   timeoutMs: 300000
+ * });
+ *
+ * const result = await executor.execute('http://example.org/my-workflow', {
+ *   input1: 'value1',
+ *   input2: 'value2'
+ * });
+ * ```
  */
 export class WorkflowExecutor {
   /**
@@ -328,9 +360,32 @@ export class WorkflowExecutor {
    */
   async _writeExecutionReceipt(executionResult) {
     try {
-      // This would integrate with Git Notes for auditability
+      // Integrate with Git Notes for auditability
       this.logger.info(`📝 Writing execution receipt to Git Notes`);
-      // Implementation would go here
+
+      // Create receipt data
+      const receiptData = {
+        workflowId: executionResult.workflowId || this.contextManager.workflowId,
+        timestamp: executionResult.metadata.endTime,
+        duration: executionResult.duration,
+        success: executionResult.success,
+        stepCount: executionResult.stepCount,
+        steps: executionResult.metadata.steps,
+        outputs: Object.keys(executionResult.outputs || {}),
+      };
+
+      // Serialize receipt for Git Notes storage
+      const receiptContent = JSON.stringify(receiptData, null, 2);
+
+      // Use Git Notes API to store receipt
+      // This integrates with GitVan's Git-native storage for audit trails
+      if (this.context && this.context.git) {
+        const noteRef = `refs/notes/workflow-executions/${receiptData.workflowId}`;
+        await this.context.git.addNote(noteRef, receiptContent);
+        this.logger.debug(`✅ Receipt written to Git Notes: ${noteRef}`);
+      } else {
+        this.logger.debug(`📝 Receipt content (Git not available): ${receiptContent}`);
+      }
     } catch (error) {
       this.logger.warn(
         `⚠️ Failed to write execution receipt: ${error.message}`
@@ -354,8 +409,39 @@ export class WorkflowExecutor {
    * @private
    */
   _estimateDuration(plan) {
-    // Simple estimation based on step count
-    return plan.length * 1000; // 1 second per step estimate
+    // Enhanced estimation based on step types and complexity
+    let totalDuration = 0;
+
+    for (const step of plan) {
+      // Base estimates by step type
+      const typeEstimates = {
+        sparql: 1000,    // 1 second for SPARQL queries
+        template: 500,   // 0.5 seconds for template rendering
+        file: 200,       // 0.2 seconds for file operations
+        http: 2000,      // 2 seconds for HTTP requests
+        cli: 1500,       // 1.5 seconds for CLI commands
+        output: 800,     // 0.8 seconds for output generation
+      };
+
+      const stepEstimate = typeEstimates[step.type] || 1000;
+
+      // Adjust for complexity indicators
+      let complexityMultiplier = 1.0;
+
+      if (step.config?.query && step.config.query.length > 500) {
+        complexityMultiplier += 0.5; // Complex queries
+      }
+      if (step.config?.template && step.config.template.length > 2000) {
+        complexityMultiplier += 0.3; // Large templates
+      }
+      if (step.dependsOn && step.dependsOn.length > 2) {
+        complexityMultiplier += 0.2; // Many dependencies
+      }
+
+      totalDuration += stepEstimate * complexityMultiplier;
+    }
+
+    return Math.round(totalDuration);
   }
 
   /**

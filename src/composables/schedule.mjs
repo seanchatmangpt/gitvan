@@ -1,6 +1,14 @@
 /**
  * GitVan v2 - useSchedule() Composable
  * Provides cron and scheduling management for jobs
+ *
+ * @returns {Object} Schedule management interface
+ * @returns {Function} add - Add a new schedule
+ * @returns {Function} remove - Remove a schedule
+ * @returns {Function} get - Get schedule by ID
+ * @returns {Function} list - List all schedules
+ * @returns {Function} startScheduler - Start cron scheduler
+ * @returns {Function} stopScheduler - Stop cron scheduler
  */
 
 import { useGitVan, tryUseGitVan, withGitVan } from "../core/context.mjs";
@@ -602,8 +610,16 @@ export default ${JSON.stringify(schedule.definition, null, 2)};
 
     async stopScheduler() {
       try {
-        // Note: stopCronScheduler is not implemented yet
-        logger.info("Cron scheduler stop not implemented yet");
+        // Stop the cron scheduler if running
+        const { stopCronScheduler } = await import("../jobs/cron.mjs");
+
+        if (typeof stopCronScheduler === "function") {
+          await stopCronScheduler();
+          logger.info("Cron scheduler stopped successfully");
+        } else {
+          logger.info("Cron scheduler stop method not available, may not be running");
+        }
+
         return true;
       } catch (error) {
         throw new Error(`Failed to stop cron scheduler: ${error.message}`);

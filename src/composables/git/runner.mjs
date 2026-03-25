@@ -58,6 +58,12 @@ function toArr(x) {
   return Array.isArray(x) ? x : [x];
 }
 
+/**
+ * Create Git runner with deterministic environment
+ * Provides base, run, runVoid, and toArr for Git operations
+ *
+ * @returns {Object} Runner object with base, run, runVoid, toArr
+ */
 export function createRunner() {
   // Get context from unctx - this must be called synchronously
   let ctx;

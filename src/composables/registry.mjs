@@ -13,6 +13,12 @@ import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { existsSync, readFileSync } from "node:fs";
 
+/**
+ * Registry composable
+ * Provides registry access for packs, templates, and extensions
+ *
+ * @returns {Object} Registry interface
+ */
 export function useRegistry() {
   // Get context from unctx - this must be called synchronously
   let ctx;

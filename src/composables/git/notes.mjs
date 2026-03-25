@@ -3,8 +3,19 @@
 // - Git notes for storing metadata
 // - Default NOTES_REF constant
 
+/**
+ * Default notes ref for GitVan results
+ */
 export const NOTES_REF = "refs/notes/gitvan/results";
 
+/**
+ * Create Git notes operations
+ * @param {Object} base - Base configuration {cwd, env}
+ * @param {Function} run - Execute git command with output
+ * @param {Function} runVoid - Execute git command without output
+ * @param {Function} toArr - Convert to array helper
+ * @returns {Object} Notes operations interface
+ */
 export default function makeNotes(base, run, runVoid, toArr) {
   return {
     // Add a note to a commit

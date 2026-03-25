@@ -5,6 +5,14 @@
 
 import { useGitVan, tryUseGitVan } from "../../core/context.mjs";
 
+/**
+ * Create Git repository information operations
+ * @param {Object} base - Base configuration {cwd, env}
+ * @param {Function} run - Execute git command with output
+ * @param {Function} runVoid - Execute git command without output
+ * @param {Function} toArr - Convert to array helper
+ * @returns {Object} Repository information interface
+ */
 export default function makeRepo(base, run, runVoid, toArr) {
   // Get context from unctx - this must be called synchronously
   let ctx;

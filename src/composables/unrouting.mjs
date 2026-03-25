@@ -1,6 +1,8 @@
 /**
  * GitVan Unrouting - Simple File-Based Job Router
  * 80/20 implementation: Route file changes to jobs using unrouting patterns
+ *
+ * @returns {Object} Unrouting interface for parsing and matching paths
  */
 
 import { parsePath, toRegExp } from "unrouting";

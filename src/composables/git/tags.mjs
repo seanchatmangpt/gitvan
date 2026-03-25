@@ -3,6 +3,14 @@
 // - Tag listing and creation
 // - Tag push convenience
 
+/**
+ * Create Git tag operations
+ * @param {Object} base - Base configuration {cwd, env}
+ * @param {Function} run - Execute git command with output
+ * @param {Function} runVoid - Execute git command without output
+ * @param {Function} toArr - Convert to array helper
+ * @returns {Object} Tag operations interface
+ */
 export default function makeTags(base, run, runVoid, toArr) {
   return {
     // List tags

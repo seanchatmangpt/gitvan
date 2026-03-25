@@ -19,6 +19,12 @@ import makeStash from "./stash.mjs";
 import makeCherryRevert from "./cherry_revert.mjs";
 import makePlumbing from "./plumbing.mjs";
 
+/**
+ * Git operations composable (internal factory version)
+ * Composes all Git factory modules into a single interface
+ *
+ * @returns {Object} Complete Git operations interface
+ */
 export function useGit() {
   // Create runner with base, run, runVoid, toArr
   const { base, run, runVoid, toArr } = createRunner();

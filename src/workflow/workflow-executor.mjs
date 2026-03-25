@@ -9,7 +9,7 @@ import { ContextManager } from "./context-manager.mjs";
 import { StepSupervisor } from '../supervision/step-supervisor.mjs';
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
-import { createStore, parseTurtle } from "@unrdf/core";
+import { createStore } from "@unrdf/core";
 
 /**
  * Main workflow executor that orchestrates the entire workflow lifecycle
@@ -179,6 +179,46 @@ export class WorkflowExecutor {
         enableObservability: true,
       };
       this.logger.info(`📊 Initialized store`);
+
+      // Load Turtle files from graphDir into the store
+      try {
+        const fileNames = (await fs.readdir(this.graphDir)).filter((f) =>
+          f.endsWith(".ttl")
+        );
+
+        if (fileNames.length > 0) {
+          const files = await Promise.all(
+            fileNames.map(async (name) => ({
+              name,
+              content: await fs.readFile(join(this.graphDir, name), "utf8"),
+            }))
+          );
+
+          // Load turtle files into the core's internal store
+          for (const file of files) {
+            try {
+              // Use the store's load method to parse Turtle
+              this.core.store.load(file.content, { format: 'text/turtle' });
+              this.logger.info(`📖 Loaded workflow file: ${file.name}`);
+            } catch (error) {
+              this.logger.warn(
+                `⚠️ Failed to parse ${file.name}: ${error.message}`
+              );
+            }
+          }
+
+          this.logger.info(
+            `📁 Loaded ${files.length} Turtle files from: ${this.graphDir}`
+          );
+          this.logger.info(
+            `📊 Store now has ${this.core.store.size} quads`
+          );
+        }
+      } catch (error) {
+        this.logger.warn(
+          `⚠️ Could not load workflow files from ${this.graphDir}: ${error.message}`
+        );
+      }
     }
   }
 
@@ -264,8 +304,8 @@ export class WorkflowExecutor {
   async _parseWorkflow(workflowId) {
     this.logger.info(`📖 Parsing workflow: ${workflowId}`);
 
-    // Use core.store for parser compatibility
-    const workflow = await this.parser.parseWorkflow(this.core.store, workflowId);
+    // Pass core object with store property for parser compatibility
+    const workflow = await this.parser.parseWorkflow(this.core, workflowId);
 
     if (!workflow) {
       throw new Error(`Workflow not found: ${workflowId}`);

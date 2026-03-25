@@ -6,6 +6,7 @@ import { WorkflowParser } from "./workflow-parser.mjs";
 import { DAGPlanner } from "./dag-planner.mjs";
 import { StepRunner } from "./step-runner.mjs";
 import { ContextManager } from "./context-manager.mjs";
+import { StepSupervisor } from '../supervision/step-supervisor.mjs';
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
 import { createStore, parseTurtle } from "@unrdf/core";
@@ -59,6 +60,9 @@ export class WorkflowExecutor {
    * @param {object} [options.context] - GitVan context
    * @param {object} [options.logger] - Logger instance
    * @param {number} [options.timeoutMs] - Execution timeout in milliseconds
+   * @param {object} [options.supervision] - Supervision configuration
+   * @param {boolean} [options.supervision.enabled] - Enable step supervision
+   * @param {number} [options.supervision.maxRestarts] - Maximum restarts per step
    */
   constructor(options = {}) {
     this.graphDir = options.graphDir || "./workflows";
@@ -71,6 +75,17 @@ export class WorkflowExecutor {
     this.planner = new DAGPlanner({ logger: this.logger });
     this.runner = new StepRunner({ logger: this.logger });
     this.contextManager = new ContextManager({ logger: this.logger });
+
+    // Initialize supervision
+    this.supervisionEnabled = options.supervision?.enabled || false;
+    this.stepSupervisor = null;
+
+    if (this.supervisionEnabled) {
+      this.stepSupervisor = new StepSupervisor({
+        id: 'workflow-step-supervisor',
+        maxRestarts: options.supervision?.maxRestarts || 3
+      });
+    }
 
     // Initialize knowledge core (high-level abstraction)
     this.core = null;
@@ -99,11 +114,11 @@ export class WorkflowExecutor {
       // Initialize execution context
       await this._initializeContext(workflowId, inputs);
 
-      // Execute the plan
-      const results = await this._executePlan(plan);
+      // Execute plan with supervision
+      const result = await this._executePlanWithSupervision(plan, inputs);
 
-      // Finalize execution
-      const executionResult = await this._finalizeExecution(results, startTime);
+      // Finalize and write execution receipt
+      const executionResult = await this._finalize(workflowId, result, startTime);
 
       this.logger.info(`✅ Workflow execution completed: ${workflowId}`);
       return executionResult;
@@ -291,62 +306,103 @@ export class WorkflowExecutor {
   }
 
   /**
-   * Execute the plan
+   * Execute the plan with optional supervision
    * @private
    */
-  async _executePlan(plan) {
-    this.logger.info(`⚡ Executing ${plan.length} steps`);
-
+  async _executePlanWithSupervision(plan, inputs) {
     const results = [];
+    const supervisionMetrics = {
+      restarts: 0,
+      failures: 0,
+      stepMetrics: {}
+    };
 
     for (let i = 0; i < plan.length; i++) {
       const step = plan[i];
       this.logger.info(`⚡ Executing step ${i + 1}/${plan.length}: ${step.id}`);
 
-      try {
-        // Pass core for full capabilities (OTEL, transactions, hooks)
-        const stepResult = await this.runner.executeStep(
-          step,
-          this.contextManager,
-          this.core,
-          null
-        );
+      let stepResult;
 
-        results.push(stepResult);
-        this.logger.info(`✅ Step completed: ${step.id}`);
-      } catch (error) {
-        this.logger.error(`❌ Step failed: ${step.id}`, error);
-        throw new Error(`Step execution failed: ${step.id} - ${error.message}`);
+      if (this.supervisionEnabled && this.stepSupervisor) {
+        // Execute with supervision
+        const stepWithHandler = {
+          ...step,
+          handler: async (step, context) => {
+            return await this.runner.executeStep(
+              step,
+              this.contextManager,
+              this.core,
+              null
+            );
+          }
+        };
+
+        stepResult = await this.stepSupervisor.executeStep(stepWithHandler, {
+          ...inputs,
+          contextManager: this.contextManager,
+          core: this.core
+        });
+
+        const metrics = this.stepSupervisor.getMetrics(step.id);
+        if (metrics) {
+          supervisionMetrics.stepMetrics[step.id] = metrics;
+          supervisionMetrics.restarts += metrics.executions - 1;
+          supervisionMetrics.failures += metrics.failures;
+        }
+      } else {
+        // Execute without supervision (existing behavior)
+        try {
+          stepResult = await this.runner.executeStep(
+            step,
+            this.contextManager,
+            this.core,
+            null
+          );
+        } catch (error) {
+          this.logger.error(`❌ Step failed: ${step.id}`, error);
+          throw new Error(`Step execution failed: ${step.id} - ${error.message}`);
+        }
       }
+
+      results.push(stepResult);
+      this.logger.info(`✅ Step completed: ${step.id}`);
     }
 
-    return results;
+    return {
+      outputs: results,
+      supervisionMetrics
+    };
   }
 
   /**
-   * Finalize execution
+   * Finalize execution and write receipt
    * @private
    */
-  async _finalizeExecution(results, startTime) {
+  async _finalize(workflowId, result, startTime) {
     const endTime = performance.now();
     const duration = endTime - startTime;
 
     const executionResult = {
       success: true,
       duration: Math.round(duration),
-      stepCount: results.length,
-      steps: results, // Add steps array for test compatibility
+      stepCount: result.outputs?.length || 0,
+      steps: result.outputs, // Add steps array for test compatibility
       outputs: this.contextManager.getOutputs(),
       metadata: {
         startTime: new Date(startTime).toISOString(),
         endTime: new Date(endTime).toISOString(),
-        steps: results.map((r) => ({
+        steps: result.outputs?.map((r) => ({
           id: r.stepId,
           duration: r.duration,
           success: r.success,
-        })),
+        })) || [],
       },
     };
+
+    // Only include supervisionMetrics if supervision was enabled
+    if (this.supervisionEnabled && result.supervisionMetrics) {
+      executionResult.supervisionMetrics = result.supervisionMetrics;
+    }
 
     // Write execution receipt to Git Notes
     await this._writeExecutionReceipt(executionResult);

@@ -19,6 +19,22 @@ import { HookOrchestrator } from "./HookOrchestrator.mjs";
  * - Provides centralized access to HookOrchestrator
  * - Manages hook lifecycle and evaluation
  */
+/**
+ * @deprecated v4.0.0
+ * 
+ * DEPRECATION NOTICE: KnowledgeHookRegistry will be replaced in v5.0.0
+ * with @unrdf/hooks integration and RDF-backed git-native storage.
+ * 
+ * Current status: Uses in-memory Map registry with no audit trail.
+ * Planned replacement: SPARQL queries over git-native RDF storage.
+ * 
+ * For migration details, see: docs/HOOKS_MIGRATION_STRATEGY.md
+ * 
+ * Migration timeline:
+ * - v4.1: Hook system refactored to use @unrdf/hooks foundations
+ * - v4.2: SPARQL queries replace Map-based lookups  
+ * - v5.0: Full replacement with git-native RDF storage
+ */
 export class KnowledgeHookRegistry {
   constructor(options = {}) {
     this.hooksDir = options.hooksDir || "./hooks";

@@ -1,4 +1,5 @@
-import { createKnowledgeSubstrateCore, parseTurtle } from "../lib/unrdf-loader.mjs";
+import { createStore } from "@unrdf/core";
+import { parseTurtle } from "@unrdf/core";
 import { createLogger } from "../utils/logger.mjs";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -78,12 +79,11 @@ export class RDFPerformanceMonitor {
       if (knowledgeSubstrate) {
         this.core = knowledgeSubstrate;
       } else {
-        this.core = await createKnowledgeSubstrateCore({
+        this.core = {
+          store: await createStore(),
           enableObservability: true,
-          enableKnowledgeHookManager: false, // Don't need hooks for monitoring
-          enableTransactionManager: true,
           ...options
-        });
+        };
       }
 
       // Load performance ontology

@@ -775,7 +775,7 @@ export default async function customQuality(context = {}) {
       const testFiles = [
         "/home/user/gitvan/tests/hooks/hooks-integration.test.mjs",
         "/home/user/gitvan/tests/integrations/husky-hook-bridge.test.mjs",
-        "/home/user/gitvan/tests/integrations/unrdf-hooks-bridge.test.mjs",
+        "/home/user/gitvan/tests/integrations/bree-hook-adapter.test.mjs",
       ];
 
       testFiles.forEach((path) => {

@@ -52,7 +52,6 @@ export {
 // RUNTIME EXPORTS
 // ==========================================
 export { boot, createGitVan } from "./runtime/boot.mjs";
-export { defineJob } from "./runtime/define-job.mjs";
 export { GitVanDaemon } from "./runtime/daemon.mjs";
 export {
   acquireLock,
@@ -104,7 +103,7 @@ export { GitVanDefaults } from "./config/defaults.mjs";
 // ==========================================
 export { GitVanContext } from "./core/context.mjs";
 export { GitVanHookable } from "./core/hookable.mjs";
-export { JobRegistry } from "./core/job-registry.mjs";
+export { JobRegistry, defineJob } from "./core/job-registry.mjs";
 
 // ==========================================
 // CLI (for programmatic usage)

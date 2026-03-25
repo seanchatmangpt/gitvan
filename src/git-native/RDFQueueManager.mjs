@@ -1,7 +1,7 @@
 import { QueueManager } from './QueueManager.mjs';
 import { randomUUID } from 'crypto';
 import { useGraph } from '../composables/graph.mjs';
-import { parseTurtle } from '../lib/unrdf-loader.mjs';
+import { parseTurtle } from "@unrdf/core";
 import { createLogger } from '../utils/logger.mjs';
 
 const logger = createLogger('git-native:RDFQueueManager');
@@ -60,7 +60,7 @@ export class RDFQueueManager extends QueueManager {
    * @returns {Promise<void>}
    *
    * @example
-   * import { createKnowledgeSubstrateCore } from 'unrdf';
+   * import { createKnowledgeSubstrateCore } from "@unrdf/core";
    * const ks = createKnowledgeSubstrateCore();
    * await queueManager.initialize(ks);
    */

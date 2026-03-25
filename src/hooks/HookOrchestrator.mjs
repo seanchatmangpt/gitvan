@@ -26,6 +26,7 @@ import { ContextManager } from "../workflow/context-manager.mjs";
 import { useTurtle } from "../composables/turtle.mjs";
 import { useGraph } from "../composables/graph.mjs";
 import { GitNativeIO } from "../git-native/GitNativeIO.mjs";
+import { useChangeStream } from "../composables/useChangeStream.mjs";
 
 /**
  * Main orchestrator for the Knowledge Hook Engine
@@ -53,10 +54,11 @@ export class HookOrchestrator {
     this.context = options.context;
     this.logger = options.logger || console;
     this.timeoutMs = options.timeoutMs || 300000; // 5 minutes default
+    this.cwd = options.cwd || process.cwd();
 
     // Initialize Git-Native I/O Layer
     this.gitNativeIO = new GitNativeIO({
-      cwd: options.cwd || process.cwd(),
+      cwd: this.cwd,
       logger: this.logger,
       ...options.gitNativeIO,
     });
@@ -72,6 +74,13 @@ export class HookOrchestrator {
     this.turtle = null;
     this.graph = null;
     this.previousGraph = null;
+
+    // Stream-driven evaluation
+    this.changeStream = null;
+    this.isStreamDriven = false;
+    this.pendingEvaluationTimer = null;
+    this.batchedEvents = [];
+    this.evaluationInProgress = false;
   }
 
   /**
@@ -180,7 +189,152 @@ export class HookOrchestrator {
       lastEvaluation: this.contextManager?.getLastExecution() || null,
       graphSize: this.graph ? this.graph.store.size : 0,
       gitNativeIO: await this.gitNativeIO.getStatus(),
+      streamDriven: this.isStreamDriven,
+      changeStream: this.changeStream ? this.changeStream.getStats() : null,
     };
+  }
+
+  /**
+   * Enable stream-driven evaluation mode
+   * @async
+   * @param {Object} options - Configuration options
+   * @param {number} [options.batchSize=100] - Events before auto-flush
+   * @param {number} [options.flushIntervalMs=100] - Flush interval for batching
+   * @returns {Promise<void>}
+   */
+  async enableStreamDriven(options = {}) {
+    if (this.isStreamDriven) {
+      this.logger.warn("Stream-driven mode is already enabled");
+      return;
+    }
+
+    await this._initializeRDFComponents();
+
+    this.logger.info("🔄 Enabling stream-driven hook evaluation");
+
+    // Create change stream
+    this.changeStream = useChangeStream();
+
+    // Subscribe to store mutations
+    this.changeStream.on("store-mutated", (event) => {
+      this._onStoreMutation(event);
+    });
+
+    this.changeStream.on("batch-flushed", (event) => {
+      this._onBatchFlushed(event);
+    });
+
+    // Open the stream
+    await this.changeStream.open({
+      batchSize: options.batchSize || 100,
+      flushIntervalMs: options.flushIntervalMs || 100,
+    });
+
+    this.isStreamDriven = true;
+    this.logger.info("✅ Stream-driven hook evaluation enabled");
+  }
+
+  /**
+   * Disable stream-driven evaluation mode
+   * @async
+   * @returns {Promise<void>}
+   */
+  async disableStreamDriven() {
+    if (!this.isStreamDriven) {
+      this.logger.warn("Stream-driven mode is not enabled");
+      return;
+    }
+
+    this.logger.info("🔄 Disabling stream-driven hook evaluation");
+
+    // Clear pending evaluation
+    if (this.pendingEvaluationTimer) {
+      clearTimeout(this.pendingEvaluationTimer);
+      this.pendingEvaluationTimer = null;
+    }
+
+    // Close the stream
+    if (this.changeStream) {
+      await this.changeStream.close();
+      this.changeStream = null;
+    }
+
+    this.isStreamDriven = false;
+    this.logger.info("✅ Stream-driven hook evaluation disabled");
+  }
+
+  /**
+   * Handle store mutation event from stream
+   * @private
+   */
+  _onStoreMutation(event) {
+    // Batch events for evaluation
+    this.batchedEvents.push(event);
+
+    // Schedule evaluation if not already scheduled
+    if (!this.pendingEvaluationTimer && !this.evaluationInProgress) {
+      this.pendingEvaluationTimer = setTimeout(() => {
+        this._evaluateOnStreamedEvents();
+      }, 50); // Evaluate quickly after first mutation
+    }
+  }
+
+  /**
+   * Handle batch flush event from stream
+   * @private
+   */
+  _onBatchFlushed(event) {
+    if (event.count > 0) {
+      this.logger.debug(`📊 Batch flushed: ${event.count} events`);
+    }
+  }
+
+  /**
+   * Evaluate hooks based on streamed events
+   * @private
+   * @async
+   */
+  async _evaluateOnStreamedEvents() {
+    if (this.evaluationInProgress) {
+      return;
+    }
+
+    if (this.batchedEvents.length === 0) {
+      return;
+    }
+
+    this.evaluationInProgress = true;
+    this.pendingEvaluationTimer = null;
+
+    try {
+      const eventCount = this.batchedEvents.length;
+      this.batchedEvents = [];
+
+      const startTime = performance.now();
+
+      // Perform hook evaluation
+      const hooks = await this._parseAllHooks({ verbose: false });
+      const evaluationResults = await this._evaluateHooks(hooks, {
+        verbose: false,
+      });
+
+      // Execute triggered workflows
+      const executionResults = await this._executeTriggeredWorkflows(
+        evaluationResults,
+        { verbose: false }
+      );
+
+      const endTime = performance.now();
+      const duration = endTime - startTime;
+
+      this.logger.info(
+        `⚡ Stream-driven evaluation complete (${eventCount} events, ${Math.round(duration)}ms)`
+      );
+    } catch (error) {
+      this.logger.error("❌ Stream-driven evaluation failed:", error);
+    } finally {
+      this.evaluationInProgress = false;
+    }
   }
 
   /**

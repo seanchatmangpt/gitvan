@@ -53,6 +53,7 @@ export function createProcessExecutor(options = {}) {
       let stdout = "";
       let stderr = "";
       let settled = false;
+      let timedOut = false;
       let timeout = null;
       let killTimeout = null;
       let child;
@@ -75,6 +76,14 @@ export function createProcessExecutor(options = {}) {
         }));
       };
 
+      const timeoutResult = signal => ({
+        ok: false,
+        exitCode: null,
+        signal,
+        error: `Verifier timed out after ${timeoutMs}ms`,
+        classification: "VERIFIER_TIMEOUT",
+      });
+
       try {
         child = spawnImpl(resolved.command, resolved.args, {
           cwd,
@@ -91,32 +100,38 @@ export function createProcessExecutor(options = {}) {
       child.stderr?.setEncoding?.("utf8");
       child.stdout?.on("data", chunk => { stdout = appendBounded(stdout, chunk, maxOutputBytes); });
       child.stderr?.on("data", chunk => { stderr = appendBounded(stderr, chunk, maxOutputBytes); });
-      child.on("error", error => finish({
-        ok: false,
-        exitCode: null,
-        signal: null,
-        error: error.message,
-        classification: "SPAWN_FAILED",
-      }));
-      child.on("close", (exitCode, signal) => finish({
-        ok: exitCode === 0,
-        exitCode,
-        signal,
-        error: exitCode === 0 ? null : `Verifier exited with code ${exitCode}${signal ? ` (${signal})` : ""}`,
-        classification: exitCode === 0 ? "VERIFIER_ALIVE" : "VERIFIER_FAILED",
-      }));
-
-      timeout = setTimeout(() => {
-        child.kill?.("SIGTERM");
-        killTimeout = setTimeout(() => child.kill?.("SIGKILL"), killGraceMs);
-        killTimeout.unref?.();
-        finish({
+      child.on("error", error => {
+        if (timedOut) finish(timeoutResult("SIGTERM"));
+        else finish({
           ok: false,
           exitCode: null,
-          signal: "SIGTERM",
-          error: `Verifier timed out after ${timeoutMs}ms`,
-          classification: "VERIFIER_TIMEOUT",
+          signal: null,
+          error: error.message,
+          classification: "SPAWN_FAILED",
         });
+      });
+      child.on("close", (exitCode, signal) => {
+        if (timedOut) {
+          finish(timeoutResult(signal || "SIGTERM"));
+          return;
+        }
+        finish({
+          ok: exitCode === 0,
+          exitCode,
+          signal,
+          error: exitCode === 0 ? null : `Verifier exited with code ${exitCode}${signal ? ` (${signal})` : ""}`,
+          classification: exitCode === 0 ? "VERIFIER_ALIVE" : "VERIFIER_FAILED",
+        });
+      });
+
+      timeout = setTimeout(() => {
+        timedOut = true;
+        child.kill?.("SIGTERM");
+        killTimeout = setTimeout(() => {
+          child.kill?.("SIGKILL");
+          finish(timeoutResult("SIGKILL"));
+        }, killGraceMs);
+        killTimeout.unref?.();
       }, timeoutMs);
       timeout.unref?.();
     });

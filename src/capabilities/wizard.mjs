@@ -36,19 +36,29 @@ export function composeWizardPlan(intentInput, options = [], context = {}) {
     maxAuthorityRisk: intent.constraints.maxAuthorityRisk ?? context.maxAuthorityRisk,
     allowActuation: false,
   });
-  const selection = selectCapabilityCombination(space, { objective: intent.constraints.objective || "balanced" });
+  const satisfyingFrontier = space.frontier.filter(candidate => intent.desiredCapabilities.every(item => candidate.provided.includes(item)));
+  const selectionSpace = satisfyingFrontier.length ? Object.freeze({ ...space, frontier: Object.freeze(satisfyingFrontier) }) : space;
+  const selection = selectCapabilityCombination(selectionSpace, { objective: intent.constraints.objective || "balanced" });
+  const missingDesiredCapabilities = intent.desiredCapabilities.filter(item => !selection.selected?.provided.includes(item));
   return Object.freeze({
     schema: "https://gitvan.dev/schemas/wizard-plan/v1",
     intent,
     spaceHash: space.hash,
     selection,
     steps: Object.freeze((selection.selected?.ids || []).map((id, index) => Object.freeze({ order: index + 1, option: id, action: "CONSTRUCT", authority: "NONE" }))),
-    missingDesiredCapabilities: Object.freeze(intent.desiredCapabilities.filter(item => !selection.selected?.provided.includes(item))),
+    missingDesiredCapabilities: Object.freeze(missingDesiredCapabilities),
+    desiredCapabilitiesSatisfied: missingDesiredCapabilities.length === 0,
     actuates: false,
   });
 }
 
 export function admitWizardActuation(plan, receipts = []) {
+  if (!plan.desiredCapabilitiesSatisfied) {
+    const error = new Error(`Wizard actuation refused; plan omits desired capabilities: ${plan.missingDesiredCapabilities.join(", ")}`);
+    error.type = "UNSATISFIED_WIZARD_INTENT_REFUSED";
+    error.missing = plan.missingDesiredCapabilities;
+    throw error;
+  }
   const alive = new Map(receipts.map(receipt => [receipt.capability, receipt]));
   const required = plan.selection.selected?.provided || [];
   const missing = required.filter(capability => alive.get(capability)?.standing !== "ALIVE");

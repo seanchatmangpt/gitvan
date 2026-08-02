@@ -1,0 +1,62 @@
+@prefix gv: <https://gitvan.dev/ontology/capability#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+
+gv:CapabilityShape a sh:NodeShape ;
+  sh:targetClass gv:Capability ;
+  sh:property [
+    sh:path dcterms:title ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:datatype xsd:string ;
+    sh:minLength 1
+  ] ;
+  sh:property [
+    sh:path gv:state ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:datatype xsd:string ;
+    sh:in ("UNKNOWN" "PARTIAL_ALIVE" "ALIVE" "BLOCKED" "BUILD_BROKEN" "UNSUPPORTED")
+  ] ;
+  sh:property [
+    sh:path gv:verifier ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:datatype xsd:string ;
+    sh:minLength 1
+  ] ;
+  sh:property [
+    sh:path gv:dependsOn ;
+    sh:class gv:Capability ;
+    sh:nodeKind sh:IRI
+  ] .
+
+
+gv:AliveCapabilityShape a sh:NodeShape ;
+  sh:target [
+    a sh:SPARQLTarget ;
+    sh:select """
+      PREFIX gv: <https://gitvan.dev/ontology/capability#>
+      SELECT ?this WHERE { ?this a gv:Capability ; gv:state "ALIVE" . }
+    """
+  ] ;
+  sh:property [
+    sh:path gv:evidence ;
+    sh:minCount 1 ;
+    sh:message "ALIVE capabilities require explicit execution evidence."
+  ] .
+
+
+gv:NoSelfDependencyShape a sh:NodeShape ;
+  sh:targetClass gv:Capability ;
+  sh:sparql [
+    a sh:SPARQLConstraint ;
+    sh:message "A capability cannot depend on itself." ;
+    sh:select """
+      PREFIX gv: <https://gitvan.dev/ontology/capability#>
+      SELECT $this WHERE { $this gv:dependsOn $this . }
+    """
+  ] .

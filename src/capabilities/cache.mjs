@@ -28,29 +28,37 @@ export function verifierCacheIdentity(input = {}) {
   return Object.freeze({ ...body, hash: digest(body) });
 }
 
+export function normalizeVerifierCacheIdentity(input = {}) {
+  const recomputed = verifierCacheIdentity(input);
+  if (input.hash && input.hash !== recomputed.hash) {
+    throw new Error(`Verifier cache identity hash mismatch: ${input.hash} != ${recomputed.hash}`);
+  }
+  return recomputed;
+}
+
 export class VerifierReceiptCache {
   constructor(options = {}) {
     this.root = options.root || join(options.cwd || process.cwd(), ".gitvan", "cache", "capability-receipts");
   }
 
-  pathFor(identity) {
-    const normalized = identity.hash ? identity : verifierCacheIdentity(identity);
-    return join(this.root, `${normalized.hash}.json`);
+  pathFor(identityInput) {
+    const identity = normalizeVerifierCacheIdentity(identityInput);
+    return join(this.root, `${identity.hash}.json`);
   }
 
   async put(identityInput, receipt) {
-    const identity = identityInput.hash ? identityInput : verifierCacheIdentity(identityInput);
+    const identity = normalizeVerifierCacheIdentity(identityInput);
     verifyReceipt(receipt);
     if (identity.capability !== receipt.capability) {
       throw new Error(`Cache identity capability mismatch: ${identity.capability} != ${receipt.capability}`);
     }
     if (receipt.standing !== "ALIVE") throw new Error(`Only ALIVE receipts are reusable: ${receipt.standing}`);
-    const record = Object.freeze({
+    const recordBody = Object.freeze({
       schema: "https://gitvan.dev/schemas/verifier-cache-record/v1",
       identity,
       receipt,
-      hash: digest({ identity, receipt }),
     });
+    const record = Object.freeze({ ...recordBody, hash: digest(recordBody) });
     const path = this.pathFor(identity);
     const temporary = `${path}.${process.pid}.${Date.now()}.tmp`;
     await mkdir(dirname(path), { recursive: true });
@@ -60,7 +68,7 @@ export class VerifierReceiptCache {
   }
 
   async get(identityInput) {
-    const identity = identityInput.hash ? identityInput : verifierCacheIdentity(identityInput);
+    const identity = normalizeVerifierCacheIdentity(identityInput);
     let record;
     try {
       record = JSON.parse(await readFile(this.pathFor(identity), "utf8"));
@@ -68,11 +76,13 @@ export class VerifierReceiptCache {
       if (error.code === "ENOENT") return null;
       throw error;
     }
-    if (record.identity?.hash !== identity.hash) throw new Error("Verifier cache identity mismatch");
-    if (digest({ identity: record.identity, receipt: record.receipt }) !== record.hash) throw new Error("Verifier cache record hash mismatch");
+    const storedIdentity = normalizeVerifierCacheIdentity(record.identity || {});
+    if (storedIdentity.hash !== identity.hash) throw new Error("Verifier cache identity mismatch");
+    const { hash: recordHash, ...recordBody } = record;
+    if (digest(recordBody) !== recordHash) throw new Error("Verifier cache record hash mismatch");
     verifyReceipt(record.receipt);
     if (record.receipt.standing !== "ALIVE") throw new Error("Verifier cache contains non-ALIVE receipt");
-    return Object.freeze(record);
+    return Object.freeze({ ...record, identity: storedIdentity });
   }
 
   async reusable(identityInput) {

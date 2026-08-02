@@ -50,6 +50,25 @@ const showCommand = defineCommand({
   },
 });
 
+const planCommand = defineCommand({
+  meta: { name: "plan", description: "Create a deterministic verification plan" },
+  args: {
+    ids: { type: "positional", description: "Capability identifiers", required: false },
+    prefix: { type: "string", description: "Select capabilities by identifier prefix" },
+    state: { type: "string", description: "Select capabilities by standing" },
+    format: { type: "string", description: "json or mermaid", default: "json" },
+  },
+  run({ args }) {
+    const ids = Array.isArray(args.ids) ? args.ids : args.ids ? [args.ids] : [];
+    const selector = {
+      ...(args.prefix ? { prefix: args.prefix } : {}),
+      ...(args.state ? { states: [args.state] } : {}),
+    };
+    const result = service().plan(ids, { selector, format: args.format });
+    print(result, args.format === "json");
+  },
+});
+
 const verifyCommand = defineCommand({
   meta: { name: "verify", description: "Execute a capability verifier and persist its receipt" },
   args: {
@@ -118,12 +137,13 @@ const statusCommand = defineCommand({
 export const capabilityCommand = defineCommand({
   meta: {
     name: "capability",
-    description: "Inspect, verify, receipt, replay, and admit GitVan capabilities",
+    description: "Inspect, plan, verify, receipt, replay, and admit GitVan capabilities",
     usage: "gitvan capability <subcommand>",
   },
   subCommands: {
     list: listCommand,
     show: showCommand,
+    plan: planCommand,
     verify: verifyCommand,
     "verify-all": verifyAllCommand,
     receipt: receiptCommand,

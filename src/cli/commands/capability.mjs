@@ -1,13 +1,32 @@
 import { defineCommand } from "citty";
-import { createCapabilityService } from "../../capabilities/index.mjs";
+import { createCapabilityService, listCapabilityProbes } from "../../capabilities/index.mjs";
 
-function service() {
+function normalizeTransport(args = {}) {
+  const transport = args.transport || "process";
+  if (!["process", "probe"].includes(transport)) throw new Error(`Unsupported verification transport: ${transport}`);
+  const mode = args.mode || "behavior";
+  if (!["surface", "behavior"].includes(mode)) throw new Error(`Unsupported probe mode: ${mode}`);
+  return { transport, mode };
+}
+
+function service(args = {}) {
+  const { transport, mode } = normalizeTransport(args);
   return createCapabilityService({
     runtimeOptions: {
-      subject: { cwd: process.cwd(), node: process.version, platform: process.platform, arch: process.arch },
+      transport,
+      subject: {
+        cwd: process.cwd(),
+        node: process.version,
+        platform: process.platform,
+        arch: process.arch,
+        ...(process.env.GITVAN_REPOSITORY ? { repository: process.env.GITVAN_REPOSITORY } : {}),
+        ...(process.env.GITVAN_SHA ? { sha: process.env.GITVAN_SHA } : {}),
+      },
       process: { cwd: process.cwd() },
+      probe: { cwd: process.cwd(), mode },
       receiptStore: { cwd: process.cwd() },
     },
+    expectedSubject: process.env.GITVAN_SHA ? { sha: process.env.GITVAN_SHA } : null,
   });
 }
 
@@ -15,6 +34,11 @@ function print(value, json = false) {
   if (typeof value === "string" && !json) process.stdout.write(value.endsWith("\n") ? value : `${value}\n`);
   else process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
 }
+
+const transportArgs = {
+  transport: { type: "string", description: "Verification transport: process or probe", default: "process" },
+  mode: { type: "string", description: "Probe mode: surface or behavior", default: "behavior" },
+};
 
 const listCommand = defineCommand({
   meta: { name: "list", description: "List admitted GitVan capabilities" },
@@ -31,18 +55,29 @@ const listCommand = defineCommand({
   },
 });
 
+const probesCommand = defineCommand({
+  meta: { name: "probes", description: "List bounded runtime capability probes" },
+  args: { json: { type: "boolean", description: "Emit JSON", default: false } },
+  run({ args }) {
+    const probes = listCapabilityProbes();
+    print(args.json ? probes : probes.join("\n"), args.json);
+  },
+});
+
 const showCommand = defineCommand({
   meta: { name: "show", description: "Inspect a capability and its dependency closure" },
   args: {
     id: { type: "positional", description: "Capability identifier", required: true },
     json: { type: "boolean", description: "Emit JSON", default: false },
+    ...transportArgs,
   },
   run({ args }) {
-    const result = service().inspect(args.id);
+    const result = service(args).inspect(args.id);
     if (args.json) return print(result, true);
     print([
       `${result.capability.id}: ${result.capability.title}`,
       `standing: ${result.capability.state}`,
+      `transport: ${result.transport}`,
       `verifier: ${result.capability.verifier || "none"}`,
       `dependency order: ${result.dependencyOrder.join(" -> ")}`,
       `inspection policy: ${result.policy.allowed ? "ADMITTED" : "REFUSED"}`,
@@ -57,14 +92,15 @@ const planCommand = defineCommand({
     prefix: { type: "string", description: "Select capabilities by identifier prefix" },
     state: { type: "string", description: "Select capabilities by standing" },
     format: { type: "string", description: "json or mermaid", default: "json" },
+    ...transportArgs,
   },
   run({ args }) {
-    const ids = Array.isArray(args.ids) ? args.ids : args.ids ? [args.ids] : [];
+    const ids = Array.isArray(args.ids) ? args.ids : args.ids ? String(args.ids).split(",").filter(Boolean) : [];
     const selector = {
       ...(args.prefix ? { prefix: args.prefix } : {}),
       ...(args.state ? { states: [args.state] } : {}),
     };
-    const result = service().plan(ids, { selector, format: args.format });
+    const result = service(args).plan(ids, { selector, format: args.format });
     print(result, args.format === "json");
   },
 });
@@ -74,9 +110,24 @@ const verifyCommand = defineCommand({
   args: {
     id: { type: "positional", description: "Capability identifier", required: true },
     json: { type: "boolean", description: "Emit JSON", default: false },
+    ...transportArgs,
   },
   async run({ args }) {
-    const receipt = await service().verify(args.id);
+    const receipt = await service(args).verify(args.id);
+    print(receipt, true);
+    if (receipt.standing !== "ALIVE") process.exitCode = 1;
+  },
+});
+
+const probeCommand = defineCommand({
+  meta: { name: "probe", description: "Execute a bounded in-process capability probe" },
+  args: {
+    id: { type: "positional", description: "Capability identifier", required: true },
+    mode: { type: "string", description: "surface or behavior", default: "behavior" },
+    json: { type: "boolean", description: "Emit JSON", default: true },
+  },
+  async run({ args }) {
+    const receipt = await service({ ...args, transport: "probe" }).verify(args.id);
     print(receipt, true);
     if (receipt.standing !== "ALIVE") process.exitCode = 1;
   },
@@ -87,9 +138,10 @@ const verifyAllCommand = defineCommand({
   args: {
     continue: { type: "boolean", description: "Continue after a failed verifier", default: false },
     json: { type: "boolean", description: "Emit JSON", default: false },
+    ...transportArgs,
   },
   async run({ args }) {
-    const receipts = await service().verifyAll({ failFast: !args.continue });
+    const receipts = await service(args).verifyAll({ failFast: !args.continue });
     if (args.json) print(receipts, true);
     else print(receipts.map(item => `${item.capability}: ${item.standing} ${item.hash}`).join("\n"));
     if (receipts.some(item => item.standing !== "ALIVE")) process.exitCode = 1;
@@ -100,9 +152,10 @@ const receiptCommand = defineCommand({
   meta: { name: "receipt", description: "Read and replay-verify the latest capability receipt" },
   args: {
     id: { type: "positional", description: "Capability identifier", required: true },
+    ...transportArgs,
   },
   async run({ args }) {
-    print(await service().receipt(args.id), true);
+    print(await service(args).receipt(args.id), true);
   },
 });
 
@@ -110,9 +163,10 @@ const admitCommand = defineCommand({
   meta: { name: "admit", description: "Admit actuation from an ALIVE replay-verified receipt" },
   args: {
     id: { type: "positional", description: "Capability identifier", required: true },
+    ...transportArgs,
   },
   async run({ args }) {
-    print(await service().admitActuation(args.id), true);
+    print(await service(args).admitActuation(args.id), true);
   },
 });
 
@@ -129,21 +183,24 @@ const graphCommand = defineCommand({
 
 const statusCommand = defineCommand({
   meta: { name: "status", description: "Summarize capability standing and evidence" },
-  run() {
-    print(service().status(), true);
+  args: { ...transportArgs },
+  run({ args }) {
+    print(service(args).status(), true);
   },
 });
 
 export const capabilityCommand = defineCommand({
   meta: {
     name: "capability",
-    description: "Inspect, plan, verify, receipt, replay, and admit GitVan capabilities",
+    description: "Inspect, plan, probe, verify, receipt, replay, and admit GitVan capabilities",
     usage: "gitvan capability <subcommand>",
   },
   subCommands: {
     list: listCommand,
+    probes: probesCommand,
     show: showCommand,
     plan: planCommand,
+    probe: probeCommand,
     verify: verifyCommand,
     "verify-all": verifyAllCommand,
     receipt: receiptCommand,

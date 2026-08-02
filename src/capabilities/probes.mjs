@@ -15,7 +15,9 @@ async function composableProbe({ modulePath, exportName, methods, behavior }, co
     const api = await factory();
     const surface = assertMethods(api, methods);
     if (!surface.ok) return { standing: "BUILD_BROKEN", evidence: { modulePath, exportName, surface } };
-    if (!behavior) return { standing: "PARTIAL_ALIVE", evidence: { modulePath, exportName, surface } };
+    if (!behavior || context.surfaceOnly) {
+      return { standing: "PARTIAL_ALIVE", evidence: { modulePath, exportName, surface } };
+    }
     const result = await behavior(api, context);
     return {
       standing: result?.standing || "ALIVE",
@@ -83,6 +85,12 @@ const PROBES = Object.freeze({
 
   "gitvan.workflow.dag": async context => {
     const { DAGPlanner } = await import("../workflow/dag-planner.mjs");
+    if (context.surfaceOnly) {
+      return {
+        standing: typeof DAGPlanner === "function" ? "PARTIAL_ALIVE" : "BUILD_BROKEN",
+        evidence: { modulePath: "../workflow/dag-planner.mjs", exportName: "DAGPlanner" },
+      };
+    }
     const logger = { info() {}, warn() {}, error() {} };
     const planner = new DAGPlanner({ logger });
     const steps = [
@@ -147,6 +155,7 @@ export function createProbeExecutor(options = {}) {
     cwd: options.cwd || process.cwd(),
     env: { ...process.env, TZ: "UTC", LANG: "C", LC_ALL: "C", ...(options.env || {}) },
     now: options.now || (() => options.nowISO || "2026-08-02T00:00:00.000Z"),
+    surfaceOnly: mode === "surface",
   });
 
   return async function execute(capability) {
@@ -159,9 +168,7 @@ export function createProbeExecutor(options = {}) {
       };
     }
     try {
-      const result = mode === "surface"
-        ? await surfaceOnlyProbe(capability, context)
-        : await probe(context);
+      const result = await probe(context);
       return {
         ok: !["BLOCKED", "BUILD_BROKEN", "UNSUPPORTED"].includes(result.standing),
         standing: result.standing,
@@ -177,10 +184,4 @@ export function createProbeExecutor(options = {}) {
       };
     }
   };
-}
-
-async function surfaceOnlyProbe(capability, context) {
-  const probe = PROBES[capability.id];
-  const result = await probe({ ...context, surfaceOnly: true });
-  return result.standing === "ALIVE" ? { ...result, standing: "PARTIAL_ALIVE" } : result;
 }

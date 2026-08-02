@@ -14,7 +14,6 @@ import { exitWithError } from "./core/error-handler.mjs";
 
 const logger = createLogger("cli");
 
-// Setup global error handlers
 process.on("uncaughtException", async (error) => {
   logger.error("Uncaught Exception", { error: error.message, stack: error.stack });
   await exitWithError(error, 1);
@@ -26,7 +25,6 @@ process.on("unhandledRejection", async (reason) => {
   await exitWithError(error, 1);
 });
 
-// Import all Citty-based commands
 import { daemonCommand } from "./cli/commands/daemon.mjs";
 import { eventCommand } from "./cli/commands/event.mjs";
 import { cronCommand } from "./cli/commands/cron.mjs";
@@ -41,8 +39,8 @@ import { worktreeCommand } from "./cli/commands/worktree.mjs";
 import { llmCommand } from "./cli/commands/llm.mjs";
 import { revopsCommand } from "./cli/commands/revops.mjs";
 import { submoduleCommand } from "./cli/commands/submodule.mjs";
+import { capabilityCommand } from "./cli/commands/capability.mjs";
 
-// Import existing Citty commands that are already properly implemented
 import { setupCommand } from "./cli/setup.mjs";
 import { packCommand } from "./cli/pack.mjs";
 import { marketplaceCommand } from "./cli/marketplace.mjs";
@@ -51,26 +49,13 @@ import { composeCommand } from "./cli/compose.mjs";
 import { saveCommand } from "./cli/save.mjs";
 import { ensureCommand } from "./cli/ensure.mjs";
 import { initCommand } from "./cli/init.mjs";
-
-// Import legacy commands that need to be migrated (temporary)
 import { chatCommand } from "./cli/chat.mjs";
-
-// Import Studio command for NextJS integration
 import { studioCommand } from "./cli/commands/studio.mjs";
 
-/**
- * Main GitVan CLI using Citty framework
- *
- * This follows the C4 model architecture:
- * - Level 1: Developer → GitVan CLI → File System
- * - Level 2: CLI Runner → Command Registry → Module System
- * - Level 3: Commands → Composables → Engines
- * - Level 4: Specific operations and data flow
- */
 export const cli = defineCommand({
   meta: {
     name: "gitvan",
-    version: "3.1.0",
+    version: "4.0.1",
     description: "Git-native development automation platform",
     usage: "gitvan <command> [options]",
     examples: [
@@ -115,10 +100,14 @@ export const cli = defineCommand({
       "gitvan submodule init",
       "gitvan submodule update",
       "gitvan submodule verify --list-methods",
+      "gitvan capability list",
+      "gitvan capability show gitvan.job.execution",
+      "gitvan capability verify gitvan.receipt",
+      "gitvan capability graph --format mermaid",
+      "gitvan capability admit gitvan.job.execution",
     ],
   },
   subCommands: {
-    // Core GitVan commands (properly implemented with Citty)
     daemon: daemonCommand,
     event: eventCommand,
     cron: cronCommand,
@@ -127,46 +116,32 @@ export const cli = defineCommand({
     workflow: workflowCommand,
     jtbd: jtbdCommand,
     cleanroom: cleanroomCommand,
-
-    // Job and schedule management commands
     job: jobCommand,
     schedule: scheduleCommand,
     worktree: worktreeCommand,
     submodule: submoduleCommand,
-
-    // Project management commands
+    capability: capabilityCommand,
     init: initCommand,
     setup: setupCommand,
     save: saveCommand,
     ensure: ensureCommand,
-
-    // Package and marketplace commands
     pack: packCommand,
     marketplace: marketplaceCommand,
     scaffold: scaffoldCommand,
     compose: composeCommand,
-
-    // AI and automation commands
     chat: chatCommand,
     llm: llmCommand,
-
-    // RevOps analytics and reporting
     revops: revopsCommand,
-
-    // Studio and NextJS integration
     studio: studioCommand,
   },
 });
 
-// Export for programmatic usage
 export default cli;
 
-// Export main function for bin/gitvan.mjs compatibility
 export async function main() {
   return runMain(cli);
 }
 
-// Run CLI if this is the main module
 if (import.meta.url === `file://${process.argv[1]}`) {
   runMain(cli);
 }

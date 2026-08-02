@@ -1,4 +1,4 @@
-import { createGitVanCapabilityRegistry } from "./index.mjs";
+import { createGitVanCapabilityRegistry } from "./factory.mjs";
 import { createProcessExecutor } from "./process-executor.mjs";
 import { FileReceiptStore } from "./receipt-store.mjs";
 import { verifyCapability, assertReceiptedActuation } from "./verifier.mjs";

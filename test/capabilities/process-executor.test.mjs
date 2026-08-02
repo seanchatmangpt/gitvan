@@ -69,4 +69,35 @@ describe("process verifier transport", () => {
     expect(result.outputTruncated).toBe(true);
     expect(result.classification).toBe("VERIFIER_FAILED");
   });
+
+  it("escalates timed-out verifiers from SIGTERM to SIGKILL before resolving", async () => {
+    vi.useFakeTimers();
+    try {
+      const child = childProcess();
+      const execute = createProcessExecutor({
+        timeoutMs: 10,
+        killGraceMs: 5,
+        spawnImpl: () => child,
+      });
+      const pending = execute({ id: "x", verifier: "scripts/hung.mjs" });
+
+      await vi.advanceTimersByTimeAsync(10);
+      expect(child.kill).toHaveBeenCalledWith("SIGTERM");
+      let resolved = false;
+      pending.then(() => { resolved = true; });
+      await Promise.resolve();
+      expect(resolved).toBe(false);
+
+      await vi.advanceTimersByTimeAsync(5);
+      await expect(pending).resolves.toMatchObject({
+        ok: false,
+        signal: "SIGKILL",
+        classification: "VERIFIER_TIMEOUT",
+        error: "Verifier timed out after 10ms",
+      });
+      expect(child.kill).toHaveBeenNthCalledWith(2, "SIGKILL");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

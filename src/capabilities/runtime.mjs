@@ -1,7 +1,7 @@
 import { createGitVanCapabilityRegistry } from "./index.mjs";
 import { createProcessExecutor } from "./process-executor.mjs";
 import { FileReceiptStore } from "./receipt-store.mjs";
-import { verifyCapability, assertActuationReceipt } from "./verifier.mjs";
+import { verifyCapability, assertReceiptedActuation } from "./verifier.mjs";
 
 export class CapabilityRuntime {
   constructor(options = {}) {
@@ -18,10 +18,10 @@ export class CapabilityRuntime {
 
   inspect(id) {
     const capability = this.registry.require(id);
-    return {
+    return Object.freeze({
       capability,
-      dependencyOrder: this.registry.dependencyOrder(id).map(item => item.id),
-    };
+      dependencyOrder: Object.freeze(this.registry.dependencyOrder(id).map(item => item.id)),
+    });
   }
 
   async verify(id) {
@@ -36,12 +36,12 @@ export class CapabilityRuntime {
 
   async admitActuation(id, candidateReceipt = null) {
     const receipt = candidateReceipt || await this.receipts.get(id);
-    assertActuationReceipt(receipt, id);
+    assertReceiptedActuation(receipt, id);
     return Object.freeze({
       admitted: true,
       capability: id,
       receiptHash: receipt.hash,
-      subject: receipt.body.subject,
+      subject: receipt.subject,
     });
   }
 }

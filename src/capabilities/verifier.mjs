@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { CapabilityRefusal } from "./model.mjs";
+import { CapabilityRefusal, CAPABILITY_STATES } from "./model.mjs";
 
 function canonical(value) {
   if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
@@ -7,6 +7,11 @@ function canonical(value) {
     return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${canonical(value[key])}`).join(",")}}`;
   }
   return JSON.stringify(value);
+}
+
+function observedStanding(result) {
+  const candidate = result?.standing || (result?.ok === true ? "ALIVE" : "PARTIAL_ALIVE");
+  return CAPABILITY_STATES.includes(candidate) ? candidate : "UNKNOWN";
 }
 
 export function receiptHash(receiptBody) {
@@ -26,6 +31,16 @@ export function verifyReceipt(receipt) {
   return true;
 }
 
+export function composeReceiptStanding(observations, expectedCount) {
+  if (observations.length !== expectedCount) return "PARTIAL_ALIVE";
+  if (observations.some(item => ["BLOCKED", "BUILD_BROKEN", "UNSUPPORTED"].includes(item.standing))) {
+    return observations.find(item => ["BLOCKED", "BUILD_BROKEN", "UNSUPPORTED"].includes(item.standing))?.standing || "PARTIAL_ALIVE";
+  }
+  if (observations.every(item => item.ok && item.standing === "ALIVE")) return "ALIVE";
+  if (observations.every(item => item.ok)) return "PARTIAL_ALIVE";
+  return "PARTIAL_ALIVE";
+}
+
 export async function verifyCapability(registry, id, options = {}) {
   const { execute, now = () => new Date().toISOString(), subject = {} } = options;
   if (typeof execute !== "function") throw new TypeError("verifyCapability requires an execute function");
@@ -40,28 +55,43 @@ export async function verifyCapability(registry, id, options = {}) {
       });
     }
     const startedAt = now();
-    const result = await execute(capability);
+    let result;
+    try {
+      result = await execute(capability);
+    } catch (error) {
+      result = {
+        ok: false,
+        standing: "BUILD_BROKEN",
+        output: null,
+        error: error.message,
+        refusal: error.type || error.name,
+      };
+    }
     const finishedAt = now();
+    const standing = observedStanding(result);
     observations.push(Object.freeze({
       capability: capability.id,
       verifier: capability.verifier,
       startedAt,
       finishedAt,
       ok: result?.ok === true,
+      standing,
       output: result?.output ?? null,
+      error: result?.error ?? null,
+      refusal: result?.refusal ?? null,
     }));
-    if (result?.ok !== true) break;
+    if (result?.ok !== true || ["BLOCKED", "BUILD_BROKEN", "UNSUPPORTED"].includes(standing)) break;
   }
 
   const target = registry.require(id);
-  const passed = observations.length === ordered.length && observations.every(item => item.ok);
+  const standing = composeReceiptStanding(observations, ordered.length);
   const body = Object.freeze({
     schema: "https://gitvan.dev/schemas/capability-receipt/v1",
     subject: Object.freeze({ ...subject }),
     capability: target.id,
     admittedDependencies: Object.freeze(ordered.map(item => item.id)),
     observations: Object.freeze(observations),
-    standing: passed ? "ALIVE" : "PARTIAL_ALIVE",
+    standing,
   });
   return Object.freeze({ ...body, hash: receiptHash(body) });
 }

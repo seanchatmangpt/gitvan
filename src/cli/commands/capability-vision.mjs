@@ -26,8 +26,8 @@ async function latestReceipts(service) {
   return { receipts, missing };
 }
 
-const visionCommand = defineCommand({
-  meta: { name: "vision", description: "Assess receipt-backed progress toward GitVan Vision 2030" },
+const assessCommand = defineCommand({
+  meta: { name: "assess", description: "Assess receipt-backed progress toward GitVan Vision 2030" },
   args: { ...capabilityTransportArgs },
   async run({ args }) {
     const service = createCliCapabilityService(args);
@@ -40,7 +40,7 @@ const visionCommand = defineCommand({
 });
 
 const roadmapCommand = defineCommand({
-  meta: { name: "roadmap-2030", description: "Rank remaining Vision 2030 capability gaps" },
+  meta: { name: "roadmap", description: "Rank remaining Vision 2030 capability gaps" },
   args: { ...capabilityTransportArgs },
   async run({ args }) {
     const service = createCliCapabilityService(args);
@@ -81,8 +81,19 @@ const leverageCommand = defineCommand({
 });
 
 export const visionCapabilityCommands = Object.freeze({
-  vision: visionCommand,
-  "roadmap-2030": roadmapCommand,
+  assess: assessCommand,
+  roadmap: roadmapCommand,
   doctor: doctorCommand,
   leverage: leverageCommand,
 });
+
+export const vision2030Command = defineCommand({
+  meta: {
+    name: "vision-2030",
+    description: "Drive GitVan toward receipt-backed 2030 phase-change capabilities",
+    usage: "gitvan vision-2030 <assess|roadmap|doctor|leverage>",
+  },
+  subCommands: visionCapabilityCommands,
+});
+
+export default vision2030Command;

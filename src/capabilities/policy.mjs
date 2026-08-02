@@ -80,7 +80,7 @@ export function defaultCapabilityPolicies() {
       actions: ["actuate"],
       evaluate(_capability, context) {
         const receipt = context.receipt;
-        const allowed = Boolean(receipt && receipt.body?.standing === "ALIVE" && context.replayVerified === true);
+        const allowed = Boolean(receipt && receipt.standing === "ALIVE" && context.replayVerified === true);
         return { allowed, reason: allowed ? "receipt admitted" : "missing ALIVE replay-verified receipt" };
       },
     },
@@ -91,7 +91,7 @@ export function defaultCapabilityPolicies() {
       evaluate(_capability, context) {
         const expected = context.expectedSubject;
         if (!expected) return { allowed: true, reason: "no subject constraint" };
-        const actual = context.subject || context.receipt?.body?.subject || {};
+        const actual = context.subject || context.receipt?.subject || {};
         const mismatches = Object.entries(expected).filter(([key, value]) => actual[key] !== value);
         return { allowed: mismatches.length === 0, reason: mismatches.length ? "subject mismatch" : "subject matched", details: { mismatches } };
       },

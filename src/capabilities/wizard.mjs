@@ -1,8 +1,19 @@
+import { createHash } from "node:crypto";
 import { exploreCapabilitySpace, selectCapabilityCombination } from "./combinatorial.mjs";
+
+function intentId(input) {
+  const body = JSON.stringify({
+    goal: String(input.goal || ""),
+    constraints: input.constraints || {},
+    desiredCapabilities: [...(input.desiredCapabilities || [])].map(String).sort(),
+    authority: input.authority || {},
+  });
+  return `wizard-${createHash("sha256").update(body).digest("hex").slice(0, 16)}`;
+}
 
 export function createWizardIntent(input = {}) {
   const intent = Object.freeze({
-    id: String(input.id || `wizard-${Date.now()}`),
+    id: String(input.id || intentId(input)),
     goal: String(input.goal || ""),
     constraints: Object.freeze({ ...(input.constraints || {}) }),
     desiredCapabilities: Object.freeze([...(input.desiredCapabilities || [])].map(String).sort()),
@@ -31,12 +42,7 @@ export function composeWizardPlan(intentInput, options = [], context = {}) {
     intent,
     spaceHash: space.hash,
     selection,
-    steps: Object.freeze((selection.selected?.ids || []).map((id, index) => Object.freeze({
-      order: index + 1,
-      option: id,
-      action: "CONSTRUCT",
-      authority: "NONE",
-    }))),
+    steps: Object.freeze((selection.selected?.ids || []).map((id, index) => Object.freeze({ order: index + 1, option: id, action: "CONSTRUCT", authority: "NONE" }))),
     missingDesiredCapabilities: Object.freeze(intent.desiredCapabilities.filter(item => !selection.selected?.provided.includes(item))),
     actuates: false,
   });

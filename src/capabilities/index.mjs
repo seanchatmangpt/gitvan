@@ -4,6 +4,9 @@ import { CapabilityRegistry } from "./registry.mjs";
 export * from "./model.mjs";
 export * from "./registry.mjs";
 export * from "./verifier.mjs";
+export * from "./process-executor.mjs";
+export * from "./receipt-store.mjs";
+export * from "./runtime.mjs";
 export { gitvanCapabilities } from "./generated/manifest.mjs";
 
 export function createGitVanCapabilityRegistry(overrides = []) {

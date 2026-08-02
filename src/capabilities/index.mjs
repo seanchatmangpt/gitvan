@@ -7,6 +7,10 @@ export * from "./verifier.mjs";
 export * from "./process-executor.mjs";
 export * from "./receipt-store.mjs";
 export * from "./runtime.mjs";
+export * from "./policy.mjs";
+export * from "./evidence-ledger.mjs";
+export * from "./graph.mjs";
+export * from "./service.mjs";
 export { gitvanCapabilities } from "./generated/manifest.mjs";
 
 export function createGitVanCapabilityRegistry(overrides = []) {

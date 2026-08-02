@@ -1,0 +1,119 @@
+name: capability-verification
+
+on:
+  workflow_dispatch: {}
+  pull_request:
+    paths:
+      - "ontology/gitvan-capabilities*.ttl"
+      - "templates/capabilities/**"
+      - "packs/gitvan-capabilities/**"
+      - "scripts/verify-capability-projection.mjs"
+      - "src/capabilities/**"
+      - "src/cli.mjs"
+      - "src/cli/commands/capability*.mjs"
+      - "test/capabilities/**"
+      - ".github/workflows/capability-verification.yml"
+  push:
+    branches: [main]
+    paths:
+      - "ontology/gitvan-capabilities*.ttl"
+      - "templates/capabilities/**"
+      - "packs/gitvan-capabilities/**"
+      - "scripts/verify-capability-projection.mjs"
+      - "src/capabilities/**"
+      - "src/cli.mjs"
+      - "src/cli/commands/capability*.mjs"
+      - "test/capabilities/**"
+      - ".github/workflows/capability-verification.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: capability-verification-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: "true"
+  TZ: UTC
+  LANG: C
+  LC_ALL: C
+  GITVAN_REPOSITORY: ${{ github.repository }}
+  GITVAN_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
+jobs:
+  verify:
+    name: manufacture and verify capabilities
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout exact head
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Enable pnpm
+        run: npm i -fg corepack && corepack enable
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Prepare evidence directory
+        run: mkdir -p artifacts/capabilities
+
+      - name: Verify ontology projection
+        run: node scripts/verify-capability-projection.mjs | tee artifacts/capabilities/projection.json
+
+      - name: Run capability verifier suite
+        run: pnpm exec vitest run test/capabilities --reporter=verbose
+
+      - name: Execute ontology-declared process verifiers
+        run: node src/cli.mjs capability verify-all --transport process --continue --json | tee artifacts/capabilities/process-receipts.json
+
+      - name: Project capability graph
+        run: |
+          node src/cli.mjs capability graph --format json > artifacts/capabilities/graph.json
+          node src/cli.mjs capability graph --format mermaid > artifacts/capabilities/graph.mmd
+          node src/cli.mjs capability graph --format dot > artifacts/capabilities/graph.dot
+          node src/cli.mjs capability plan --format mermaid > artifacts/capabilities/verification-plan.mmd
+
+      - name: Compose receipt-backed claims
+        run: |
+          node src/cli.mjs capability claims --format json --output artifacts/capabilities/claims.json
+          node src/cli.mjs capability claims --format toml --output artifacts/capabilities/claims.toml
+
+      - name: Render verification reports
+        run: |
+          node src/cli.mjs capability report --format markdown --output artifacts/capabilities/report.md
+          node src/cli.mjs capability report --format junit --output artifacts/capabilities/junit.xml
+          node src/cli.mjs capability report --format json --output artifacts/capabilities/report.json
+
+      - name: Capture probe diagnostics
+        run: |
+          pnpm exec vitest run test/capabilities/probes.test.mjs --reporter=verbose | tee artifacts/capabilities/probes.txt
+          node src/cli.mjs capability probes --json > artifacts/capabilities/probe-registry.json
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Build
+        run: pnpm build
+
+      - name: Upload capability evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: capability-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            artifacts/capabilities/**
+            .gitvan/receipts/capabilities/**
+          if-no-files-found: warn
+          retention-days: 30

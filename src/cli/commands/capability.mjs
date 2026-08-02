@@ -59,7 +59,7 @@ const verifyCommand = defineCommand({
   async run({ args }) {
     const receipt = await service().verify(args.id);
     print(receipt, true);
-    if (receipt.body.standing !== "ALIVE") process.exitCode = 1;
+    if (receipt.standing !== "ALIVE") process.exitCode = 1;
   },
 });
 
@@ -72,8 +72,8 @@ const verifyAllCommand = defineCommand({
   async run({ args }) {
     const receipts = await service().verifyAll({ failFast: !args.continue });
     if (args.json) print(receipts, true);
-    else print(receipts.map(item => `${item.body.capability}: ${item.body.standing} ${item.hash}`).join("\n"));
-    if (receipts.some(item => item.body.standing !== "ALIVE")) process.exitCode = 1;
+    else print(receipts.map(item => `${item.capability}: ${item.standing} ${item.hash}`).join("\n"));
+    if (receipts.some(item => item.standing !== "ALIVE")) process.exitCode = 1;
   },
 });
 

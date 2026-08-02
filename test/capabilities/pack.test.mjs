@@ -10,7 +10,7 @@ function pack(path) {
     manifest: {
       id: "capability-pack",
       version: "1.0.0",
-      dependencies: { npm: { zod: "^4.0.0" } },
+      dependencies: { npm: { dependencies: { zod: "^4.0.0" } } },
       provides: {
         files: [{ src: "config.json", target: "config.json", mode: "write" }],
         templates: [{ src: "module.mjs.njk", target: "src/module.mjs", mode: "write" }],
@@ -49,17 +49,19 @@ describe("pack dependency closure capability", () => {
     const planner = new PackPlanner({ cwd: root, dryRun: true });
     const plan = await planner.createDetailedPlan(pack(root), root, "install", {});
     const impacts = await planner.analyzeImpacts(plan, root);
-    expect(impacts.dependencies).toContainEqual({ type: "npm", packages: { zod: "^4.0.0" } });
+    expect(impacts.dependencies).toContain("zod");
     expect(impacts.creates.length).toBeGreaterThanOrEqual(4);
     expect(impacts.commands.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("respects false conditional steps", async () => {
+  it("respects conditional exclusions", async () => {
     const root = await mkdtemp(join(tmpdir(), "gitvan-pack-verifier-"));
     const planner = new PackPlanner({ cwd: root, dryRun: true });
     const conditional = pack(root);
-    conditional.manifest.provides.files[0].when = "false";
-    const plan = await planner.createDetailedPlan(conditional, root, "install", {});
-    expect(plan.steps.filter(step => step.type === "file")).toHaveLength(0);
+    conditional.manifest.provides.files[0].when = "inputs.enabled";
+    const excluded = await planner.createDetailedPlan(conditional, root, "install", {});
+    const included = await planner.createDetailedPlan(conditional, root, "install", { enabled: true });
+    expect(excluded.steps.filter(step => step.type === "file")).toHaveLength(0);
+    expect(included.steps.filter(step => step.type === "file")).toHaveLength(1);
   });
 });

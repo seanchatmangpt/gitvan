@@ -2,7 +2,7 @@ import { mkdtemp, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { CapabilityRuntime, FileReceiptStore, createGitVanCapabilityRegistry } from "../../src/capabilities/index.mjs";
+import { CapabilityRuntime, FileReceiptStore, createGitVanCapabilityRegistry, verifyReceipt } from "../../src/capabilities/index.mjs";
 
 describe("CapabilityRuntime", () => {
   it("verifies dependency closure, persists the receipt, and admits actuation", async () => {
@@ -32,7 +32,8 @@ describe("CapabilityRuntime", () => {
 
     expect(execute).toHaveBeenCalledTimes(2);
     expect(execute.mock.calls.map(([capability]) => capability.id)).toEqual(["gitvan.receipt", "gitvan.lock"]);
-    expect(receipt.body.state).toBe("ALIVE");
+    expect(receipt.standing).toBe("ALIVE");
+    expect(verifyReceipt(receipt)).toBe(true);
     expect(stored.hash).toBe(receipt.hash);
     expect(admission).toEqual({
       admitted: true,
@@ -42,7 +43,7 @@ describe("CapabilityRuntime", () => {
     });
   });
 
-  it("does not persist an ALIVE receipt when a dependency verifier fails", async () => {
+  it("does not admit actuation when a dependency verifier fails", async () => {
     const root = await mkdtemp(join(tmpdir(), "gitvan-capability-"));
     const runtime = new CapabilityRuntime({
       registry: createGitVanCapabilityRegistry(),
@@ -52,7 +53,7 @@ describe("CapabilityRuntime", () => {
 
     const receipt = await runtime.verify("gitvan.lock");
 
-    expect(receipt.body.state).not.toBe("ALIVE");
+    expect(receipt.standing).toBe("PARTIAL_ALIVE");
     await expect(runtime.admitActuation("gitvan.lock")).rejects.toMatchObject({
       type: "UNRECEIPTED_ACTUATION_REFUSED",
     });

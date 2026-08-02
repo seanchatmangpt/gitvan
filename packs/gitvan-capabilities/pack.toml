@@ -1,0 +1,36 @@
+schema = "https://gitvan.dev/schemas/ggen-pack/v1"
+id = "gitvan-capabilities"
+version = "0.1.0"
+description = "Manufacture GitVan capability registry, graph projections, verifier control plane, and receipts from RDF."
+
+[generator]
+repository = "seanchatmangpt/ggen"
+commit = "8351af4c5bbbf60bd99ab8417752a1762c6ea4e3"
+version = "26.8.3"
+command = "ggen sync run"
+
+[legacy]
+repository = "seanchatmangpt/ggen-legacy"
+commit = "70e599a599fedb7c62c965377cc2f80df1fa01ec"
+corpus = "v26.8.1"
+role = "immutable lineage and replay corpus"
+
+[inputs]
+ontology = "ontology/gitvan-capabilities.ttl"
+shapes = "ontology/gitvan-capabilities.shacl.ttl"
+templates = ["templates/capabilities/manifest.mjs.tera"]
+
+[outputs]
+manifest = "src/capabilities/generated/manifest.mjs"
+
+[verification]
+projection = "node scripts/verify-capability-projection.mjs"
+tests = "npm test -- --run test/capabilities"
+lint = "npm run lint"
+build = "npm run build"
+
+[policy]
+generated_files_are_editing_surfaces = false
+require_dependency_closure = true
+require_replay_verified_receipt_for_actuation = true
+alive_requires_observed_execution = true

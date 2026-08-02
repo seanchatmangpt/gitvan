@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   VerifierReceiptCache,
+  normalizeVerifierCacheIdentity,
   receiptHash,
   verifierCacheIdentity,
 } from "../../src/capabilities/index.mjs";
@@ -54,6 +55,15 @@ describe("VerifierReceiptCache", () => {
     expect(identity({ configuration: { mode: "surface" } }).hash).not.toBe(base.hash);
   });
 
+  it("refuses caller-supplied forged identity hashes", async () => {
+    const root = await mkdtemp(join(tmpdir(), "gitvan-cache-"));
+    const cache = new VerifierReceiptCache({ root });
+    const forged = { ...identity(), source: { sha: "forged" } };
+    expect(() => normalizeVerifierCacheIdentity(forged)).toThrow(/identity hash mismatch/);
+    expect(() => cache.pathFor(forged)).toThrow(/identity hash mismatch/);
+    await expect(cache.put(forged, aliveReceipt("gitvan.receipt"))).rejects.toThrow(/identity hash mismatch/);
+  });
+
   it("refuses non-ALIVE receipts and capability mismatches", async () => {
     const root = await mkdtemp(join(tmpdir(), "gitvan-cache-"));
     const cache = new VerifierReceiptCache({ root });
@@ -73,7 +83,7 @@ describe("VerifierReceiptCache", () => {
     const record = JSON.parse(await readFile(path, "utf8"));
     record.identity.transport = "process";
     await writeFile(path, JSON.stringify(record), "utf8");
-    await expect(cache.get(key)).rejects.toThrow(/identity mismatch|record hash mismatch/);
+    await expect(cache.get(key)).rejects.toThrow(/identity hash mismatch|record hash mismatch/);
     expect(await cache.reusable(key)).toBe(false);
   });
 });

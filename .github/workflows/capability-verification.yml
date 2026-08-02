@@ -75,6 +75,22 @@ jobs:
       - name: Run capability verifier suite
         run: pnpm exec vitest run test/capabilities --reporter=verbose
 
+      - name: Run Chicago all-capability autonomic validation
+        run: node src/cli.mjs vision-2030 chicago --passes 3 | tee artifacts/capabilities/chicago-autonomic.json
+
+      - name: Assert Chicago coverage receipt
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFile } from "node:fs/promises";
+          const receipt = JSON.parse(await readFile("artifacts/capabilities/chicago-autonomic.json", "utf8"));
+          const report = receipt.passes.at(-1).report;
+          if (receipt.standing !== "ALIVE") throw new Error(`Chicago standing: ${receipt.standing}`);
+          if (!receipt.converged) throw new Error("Chicago autonomic validation did not converge");
+          if (!report.complete) throw new Error("Chicago capability coverage is incomplete");
+          if (report.coveredCapabilities !== report.capabilities) throw new Error(`Coverage mismatch: ${report.coveredCapabilities}/${report.capabilities}`);
+          if (report.failedAssertions.length) throw new Error(`Chicago state assertions failed: ${JSON.stringify(report.failedAssertions)}`);
+          NODE
+
       - name: Execute ontology-declared process verifiers
         run: node src/cli.mjs capability verify-all --transport process --continue --json | tee artifacts/capabilities/process-receipts.json
 

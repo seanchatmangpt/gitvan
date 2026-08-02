@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gitvan.dev/schemas/capability-receipt/v1",
+  "title": "GitVan Capability Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "subject", "capability", "admittedDependencies", "observations", "standing", "hash"],
+  "properties": {
+    "schema": { "const": "https://gitvan.dev/schemas/capability-receipt/v1" },
+    "subject": { "type": "object", "additionalProperties": true },
+    "capability": { "type": "string", "pattern": "^gitvan\\." },
+    "admittedDependencies": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^gitvan\\." }
+    },
+    "observations": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/observation" }
+    },
+    "standing": { "$ref": "#/$defs/standing" },
+    "hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+  },
+  "$defs": {
+    "standing": {
+      "enum": ["UNKNOWN", "PARTIAL_ALIVE", "ALIVE", "BLOCKED", "BUILD_BROKEN", "UNSUPPORTED"]
+    },
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capability", "verifier", "startedAt", "finishedAt", "ok", "standing", "output", "error", "refusal"],
+      "properties": {
+        "capability": { "type": "string", "pattern": "^gitvan\\." },
+        "verifier": { "type": ["string", "null"] },
+        "startedAt": { "type": ["string", "null"] },
+        "finishedAt": { "type": ["string", "null"] },
+        "ok": { "type": "boolean" },
+        "standing": { "$ref": "#/$defs/standing" },
+        "output": {},
+        "error": { "type": ["string", "null"] },
+        "refusal": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

@@ -8,5 +8,6 @@ export * from "./runtime.mjs";
 export * from "./policy.mjs";
 export * from "./evidence-ledger.mjs";
 export * from "./graph.mjs";
+export * from "./planner.mjs";
 export * from "./service.mjs";
 export { gitvanCapabilities } from "./generated/manifest.mjs";

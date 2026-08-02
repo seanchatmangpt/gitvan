@@ -1,0 +1,15 @@
+@prefix gv: <https://gitvan.dev/ontology/capability#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+
+<https://gitvan.dev/capability/receipt> a gv:Capability ; dcterms:title "Receipt generation and replay" ; gv:state "PARTIAL_ALIVE" ; gv:verifier "test/capabilities/receipt.test.mjs" .
+<https://gitvan.dev/capability/lock> a gv:Capability ; dcterms:title "Deterministic lock lifecycle" ; gv:dependsOn <https://gitvan.dev/capability/receipt> ; gv:state "PARTIAL_ALIVE" ; gv:verifier "test/capabilities/lock.test.mjs" .
+<https://gitvan.dev/capability/job-discovery> a gv:Capability ; dcterms:title "Job discovery" ; gv:state "PARTIAL_ALIVE" ; gv:verifier "test/capabilities/job.test.mjs" .
+<https://gitvan.dev/capability/job-execution> a gv:Capability ; dcterms:title "Job execution" ; gv:dependsOn <https://gitvan.dev/capability/job-discovery>, <https://gitvan.dev/capability/lock>, <https://gitvan.dev/capability/receipt> ; gv:state "PARTIAL_ALIVE" ; gv:verifier "test/capabilities/job.test.mjs" .
+<https://gitvan.dev/capability/scheduler> a gv:Capability ; dcterms:title "Scheduler lifecycle" ; gv:dependsOn <https://gitvan.dev/capability/job-discovery>, <https://gitvan.dev/capability/job-execution> ; gv:state "PARTIAL_ALIVE" ; gv:verifier "test/capabilities/scheduler.test.mjs" .
+<https://gitvan.dev/capability/workflow-dag> a gv:Capability ; dcterms:title "Workflow DAG admission and execution" ; gv:dependsOn <https://gitvan.dev/capability/job-execution> ; gv:state "PARTIAL_ALIVE" ; gv:verifier "test/capabilities/workflow.test.mjs" .
+<https://gitvan.dev/capability/pack> a gv:Capability ; dcterms:title "Pack dependency closure" ; gv:dependsOn <https://gitvan.dev/capability/workflow-dag> ; gv:state "PARTIAL_ALIVE" ; gv:verifier "test/capabilities/pack.test.mjs" .
+<https://gitvan.dev/capability/template> a gv:Capability ; dcterms:title "Template generation boundary" ; gv:dependsOn <https://gitvan.dev/capability/pack> ; gv:state "PARTIAL_ALIVE" ; gv:verifier "test/capabilities/template.test.mjs" .
+<https://gitvan.dev/capability/registry> a gv:Capability ; dcterms:title "Registry lookup and refusal" ; gv:dependsOn <https://gitvan.dev/capability/receipt> ; gv:state "PARTIAL_ALIVE" ; gv:verifier "test/capabilities/registry.test.mjs" .
+
+gv:Capability a prov:Entity ; dcterms:description "An admitted GitVan capability with explicit dependencies, verifier, evidence, and standing." .

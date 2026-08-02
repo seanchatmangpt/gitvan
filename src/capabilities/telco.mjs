@@ -1,7 +1,13 @@
 import { createHash } from "node:crypto";
 
+function canonical(value) {
+  if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
+  if (value && typeof value === "object") return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${canonical(value[key])}`).join(",")}}`;
+  return JSON.stringify(value);
+}
+
 function digest(value) {
-  return createHash("sha256").update(JSON.stringify(value, Object.keys(value).sort())).digest("hex");
+  return createHash("sha256").update(canonical(value)).digest("hex");
 }
 
 export function planTelcoMesh(nodesInput = [], linksInput = [], options = {}) {
@@ -24,8 +30,8 @@ export function planTelcoMesh(nodesInput = [], linksInput = [], options = {}) {
   const eligible = nodes.filter(node => node.standing === "ALIVE" && required.every(capability => node.capabilities.includes(capability)));
   const routes = links
     .filter(link => eligible.some(node => node.id === link.from) && eligible.some(node => node.id === link.to))
-    .map(link => ({ ...link, score: link.reliability / Math.max(1, link.latencyMs + link.cost) }))
-    .sort((a, b) => b.score - a.score || a.from.localeCompare(b.from));
+    .map(link => Object.freeze({ ...link, score: link.reliability / Math.max(1, link.latencyMs + link.cost) }))
+    .sort((a, b) => b.score - a.score || a.from.localeCompare(b.from) || a.to.localeCompare(b.to));
   const regions = new Set(eligible.map(node => node.region));
   const quorum = Math.max(1, Number(options.quorum || Math.floor(eligible.length / 2) + 1));
   const body = Object.freeze({
@@ -45,7 +51,7 @@ export function simulateTelcoFailure(plan, failedNodeIds = []) {
   const failed = new Set(failedNodeIds.map(String));
   const surviving = plan.eligibleNodes.filter(node => !failed.has(node.id));
   const survivingRegions = new Set(surviving.map(node => node.region));
-  return Object.freeze({
+  const body = Object.freeze({
     schema: "https://gitvan.dev/schemas/telco-failure-simulation/v1",
     planHash: plan.hash,
     failed: Object.freeze([...failed].sort()),
@@ -54,4 +60,5 @@ export function simulateTelcoFailure(plan, failedNodeIds = []) {
     regionDiversityPreserved: survivingRegions.size >= Math.min(2, plan.quorum),
     standing: surviving.length >= plan.quorum && survivingRegions.size >= Math.min(2, plan.quorum) ? "ALIVE" : "BLOCKED",
   });
+  return Object.freeze({ ...body, hash: digest(body) });
 }

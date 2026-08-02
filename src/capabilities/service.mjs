@@ -2,6 +2,7 @@ import { createCapabilityRuntime } from "./runtime.mjs";
 import { createCapabilityPolicySet } from "./policy.mjs";
 import { createCapabilityEvidenceLedger } from "./evidence-ledger.mjs";
 import { capabilityGraph, capabilityLayers, toDot, toGraphJSON, toMermaid } from "./graph.mjs";
+import { createVerificationPlan, planToMermaid } from "./planner.mjs";
 import { verifyReceipt } from "./verifier.mjs";
 
 export class CapabilityService {
@@ -23,6 +24,17 @@ export class CapabilityService {
     const inspected = this.runtime.inspect(id);
     const policy = this.policies.evaluate("inspect", inspected.capability, { expectedSubject: this.expectedSubject });
     return Object.freeze({ ...inspected, policy });
+  }
+
+  plan(ids = [], options = {}) {
+    const plan = createVerificationPlan(this.runtime.registry, ids, options);
+    this.ledger.append("verification.planned", {
+      capability: ids.length === 1 ? ids[0] : null,
+      targets: plan.targets,
+      closure: plan.closure,
+      planHash: plan.hash,
+    });
+    return options.format === "mermaid" ? planToMermaid(plan) : plan;
   }
 
   async verify(id) {

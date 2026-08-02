@@ -1,44 +1,12 @@
 import { defineCommand } from "citty";
-import { createCapabilityService, listCapabilityProbes } from "../../capabilities/index.mjs";
-
-function normalizeTransport(args = {}) {
-  const transport = args.transport || "process";
-  if (!["process", "probe"].includes(transport)) throw new Error(`Unsupported verification transport: ${transport}`);
-  const mode = args.mode || "behavior";
-  if (!["surface", "behavior"].includes(mode)) throw new Error(`Unsupported probe mode: ${mode}`);
-  return { transport, mode };
-}
-
-function service(args = {}) {
-  const { transport, mode } = normalizeTransport(args);
-  return createCapabilityService({
-    runtimeOptions: {
-      transport,
-      subject: {
-        cwd: process.cwd(),
-        node: process.version,
-        platform: process.platform,
-        arch: process.arch,
-        ...(process.env.GITVAN_REPOSITORY ? { repository: process.env.GITVAN_REPOSITORY } : {}),
-        ...(process.env.GITVAN_SHA ? { sha: process.env.GITVAN_SHA } : {}),
-      },
-      process: { cwd: process.cwd() },
-      probe: { cwd: process.cwd(), mode },
-      receiptStore: { cwd: process.cwd() },
-    },
-    expectedSubject: process.env.GITVAN_SHA ? { sha: process.env.GITVAN_SHA } : null,
-  });
-}
-
-function print(value, json = false) {
-  if (typeof value === "string" && !json) process.stdout.write(value.endsWith("\n") ? value : `${value}\n`);
-  else process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
-}
-
-const transportArgs = {
-  transport: { type: "string", description: "Verification transport: process or probe", default: "process" },
-  mode: { type: "string", description: "Probe mode: surface or behavior", default: "behavior" },
-};
+import { listCapabilityProbes } from "../../capabilities/index.mjs";
+import {
+  capabilityTransportArgs,
+  createCliCapabilityService,
+  positionalList,
+  printCapabilityValue,
+} from "./capability-context.mjs";
+import { advancedCapabilityCommands } from "./capability-advanced.mjs";
 
 const listCommand = defineCommand({
   meta: { name: "list", description: "List admitted GitVan capabilities" },
@@ -47,11 +15,11 @@ const listCommand = defineCommand({
     state: { type: "string", description: "Filter by standing" },
   },
   run({ args }) {
-    let capabilities = service().list();
+    let capabilities = createCliCapabilityService().list();
     if (args.state) capabilities = capabilities.filter(item => item.state === args.state);
-    if (args.json) return print(capabilities, true);
+    if (args.json) return printCapabilityValue(capabilities, true);
     const rows = capabilities.map(item => `${item.id.padEnd(28)} ${item.state.padEnd(14)} ${item.title}`);
-    print(["CAPABILITY                   STANDING       TITLE", ...rows].join("\n"));
+    printCapabilityValue(["CAPABILITY                   STANDING       TITLE", ...rows].join("\n"));
   },
 });
 
@@ -60,7 +28,7 @@ const probesCommand = defineCommand({
   args: { json: { type: "boolean", description: "Emit JSON", default: false } },
   run({ args }) {
     const probes = listCapabilityProbes();
-    print(args.json ? probes : probes.join("\n"), args.json);
+    printCapabilityValue(args.json ? probes : probes.join("\n"), args.json);
   },
 });
 
@@ -69,12 +37,12 @@ const showCommand = defineCommand({
   args: {
     id: { type: "positional", description: "Capability identifier", required: true },
     json: { type: "boolean", description: "Emit JSON", default: false },
-    ...transportArgs,
+    ...capabilityTransportArgs,
   },
   run({ args }) {
-    const result = service(args).inspect(args.id);
-    if (args.json) return print(result, true);
-    print([
+    const result = createCliCapabilityService(args).inspect(args.id);
+    if (args.json) return printCapabilityValue(result, true);
+    printCapabilityValue([
       `${result.capability.id}: ${result.capability.title}`,
       `standing: ${result.capability.state}`,
       `transport: ${result.transport}`,
@@ -88,20 +56,19 @@ const showCommand = defineCommand({
 const planCommand = defineCommand({
   meta: { name: "plan", description: "Create a deterministic verification plan" },
   args: {
-    ids: { type: "positional", description: "Capability identifiers", required: false },
+    ids: { type: "positional", description: "Comma-separated capability identifiers", required: false },
     prefix: { type: "string", description: "Select capabilities by identifier prefix" },
     state: { type: "string", description: "Select capabilities by standing" },
     format: { type: "string", description: "json or mermaid", default: "json" },
-    ...transportArgs,
+    ...capabilityTransportArgs,
   },
   run({ args }) {
-    const ids = Array.isArray(args.ids) ? args.ids : args.ids ? String(args.ids).split(",").filter(Boolean) : [];
     const selector = {
       ...(args.prefix ? { prefix: args.prefix } : {}),
       ...(args.state ? { states: [args.state] } : {}),
     };
-    const result = service(args).plan(ids, { selector, format: args.format });
-    print(result, args.format === "json");
+    const result = createCliCapabilityService(args).plan(positionalList(args.ids), { selector, format: args.format });
+    printCapabilityValue(result, args.format === "json");
   },
 });
 
@@ -110,11 +77,11 @@ const verifyCommand = defineCommand({
   args: {
     id: { type: "positional", description: "Capability identifier", required: true },
     json: { type: "boolean", description: "Emit JSON", default: false },
-    ...transportArgs,
+    ...capabilityTransportArgs,
   },
   async run({ args }) {
-    const receipt = await service(args).verify(args.id);
-    print(receipt, true);
+    const receipt = await createCliCapabilityService(args).verify(args.id);
+    printCapabilityValue(receipt, true);
     if (receipt.standing !== "ALIVE") process.exitCode = 1;
   },
 });
@@ -124,11 +91,10 @@ const probeCommand = defineCommand({
   args: {
     id: { type: "positional", description: "Capability identifier", required: true },
     mode: { type: "string", description: "surface or behavior", default: "behavior" },
-    json: { type: "boolean", description: "Emit JSON", default: true },
   },
   async run({ args }) {
-    const receipt = await service({ ...args, transport: "probe" }).verify(args.id);
-    print(receipt, true);
+    const receipt = await createCliCapabilityService({ ...args, transport: "probe" }).verify(args.id);
+    printCapabilityValue(receipt, true);
     if (receipt.standing !== "ALIVE") process.exitCode = 1;
   },
 });
@@ -137,13 +103,14 @@ const verifyAllCommand = defineCommand({
   meta: { name: "verify-all", description: "Execute every admitted capability verifier" },
   args: {
     continue: { type: "boolean", description: "Continue after a failed verifier", default: false },
+    cache: { type: "boolean", description: "Reuse exact-identity ALIVE receipts", default: false },
     json: { type: "boolean", description: "Emit JSON", default: false },
-    ...transportArgs,
+    ...capabilityTransportArgs,
   },
   async run({ args }) {
-    const receipts = await service(args).verifyAll({ failFast: !args.continue });
-    if (args.json) print(receipts, true);
-    else print(receipts.map(item => `${item.capability}: ${item.standing} ${item.hash}`).join("\n"));
+    const receipts = await createCliCapabilityService(args).verifyAll({ failFast: !args.continue, cache: args.cache });
+    if (args.json) printCapabilityValue(receipts, true);
+    else printCapabilityValue(receipts.map(item => `${item.capability}: ${item.standing} ${item.hash}`).join("\n"));
     if (receipts.some(item => item.standing !== "ALIVE")) process.exitCode = 1;
   },
 });
@@ -152,10 +119,11 @@ const receiptCommand = defineCommand({
   meta: { name: "receipt", description: "Read and replay-verify the latest capability receipt" },
   args: {
     id: { type: "positional", description: "Capability identifier", required: true },
-    ...transportArgs,
+    hash: { type: "string", description: "Exact immutable receipt hash" },
+    ...capabilityTransportArgs,
   },
   async run({ args }) {
-    print(await service(args).receipt(args.id), true);
+    printCapabilityValue(await createCliCapabilityService(args).receipt(args.id, args.hash || null), true);
   },
 });
 
@@ -163,36 +131,35 @@ const admitCommand = defineCommand({
   meta: { name: "admit", description: "Admit actuation from an ALIVE replay-verified receipt" },
   args: {
     id: { type: "positional", description: "Capability identifier", required: true },
-    ...transportArgs,
+    hash: { type: "string", description: "Exact immutable receipt hash" },
+    ...capabilityTransportArgs,
   },
   async run({ args }) {
-    print(await service(args).admitActuation(args.id), true);
+    printCapabilityValue(await createCliCapabilityService(args).admitActuation(args.id, args.hash || null), true);
   },
 });
 
 const graphCommand = defineCommand({
   meta: { name: "graph", description: "Project the capability graph" },
-  args: {
-    format: { type: "string", description: "json, mermaid, or dot", default: "json" },
-  },
+  args: { format: { type: "string", description: "json, mermaid, or dot", default: "json" } },
   run({ args }) {
     if (!["json", "mermaid", "dot"].includes(args.format)) throw new Error(`Unsupported graph format: ${args.format}`);
-    print(service().graph(args.format));
+    printCapabilityValue(createCliCapabilityService().graph(args.format));
   },
 });
 
 const statusCommand = defineCommand({
   meta: { name: "status", description: "Summarize capability standing and evidence" },
-  args: { ...transportArgs },
+  args: { ...capabilityTransportArgs },
   run({ args }) {
-    print(service(args).status(), true);
+    printCapabilityValue(createCliCapabilityService(args).status(), true);
   },
 });
 
 export const capabilityCommand = defineCommand({
   meta: {
     name: "capability",
-    description: "Inspect, plan, probe, verify, receipt, replay, and admit GitVan capabilities",
+    description: "Inspect, plan, probe, verify, batch, receipt, report, compare, and admit GitVan capabilities",
     usage: "gitvan capability <subcommand>",
   },
   subCommands: {
@@ -207,6 +174,7 @@ export const capabilityCommand = defineCommand({
     admit: admitCommand,
     graph: graphCommand,
     status: statusCommand,
+    ...advancedCapabilityCommands,
   },
 });
 

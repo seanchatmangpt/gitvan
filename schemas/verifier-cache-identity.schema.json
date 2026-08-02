@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gitvan.dev/schemas/verifier-cache-identity/v1",
+  "title": "GitVan Verifier Cache Identity",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "capability", "verifier", "source", "validator", "toolchain", "environment", "configuration", "transport", "hash"],
+  "properties": {
+    "schema": { "const": "https://gitvan.dev/schemas/verifier-cache-identity/v1" },
+    "capability": { "type": "string", "pattern": "^gitvan\\." },
+    "verifier": { "type": "string", "minLength": 1 },
+    "source": { "type": "object", "additionalProperties": true },
+    "validator": { "type": "object", "additionalProperties": true },
+    "toolchain": { "type": "object", "additionalProperties": true },
+    "environment": { "type": "object", "additionalProperties": true },
+    "configuration": { "type": "object", "additionalProperties": true },
+    "transport": { "enum": ["process", "probe", "custom"] },
+    "hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+  }
+}

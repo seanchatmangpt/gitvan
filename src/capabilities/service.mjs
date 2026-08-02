@@ -36,7 +36,7 @@ export class CapabilityService {
       const receipt = await this.runtime.verify(id);
       this.ledger.append("verification.finished", {
         capability: id,
-        standing: receipt.body.standing,
+        standing: receipt.standing,
         receiptHash: receipt.hash,
       });
       return receipt;
@@ -56,7 +56,7 @@ export class CapabilityService {
     for (const id of selected) {
       const receipt = await this.verify(id);
       receipts.push(receipt);
-      if (options.failFast !== false && receipt.body.standing !== "ALIVE") break;
+      if (options.failFast !== false && receipt.standing !== "ALIVE") break;
     }
     return Object.freeze(receipts);
   }

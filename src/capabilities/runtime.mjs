@@ -1,12 +1,21 @@
 import { createGitVanCapabilityRegistry } from "./factory.mjs";
 import { createProcessExecutor } from "./process-executor.mjs";
+import { createProbeExecutor } from "./probes.mjs";
 import { FileReceiptStore } from "./receipt-store.mjs";
 import { verifyCapability, assertReceiptedActuation } from "./verifier.mjs";
+
+function createExecutor(options) {
+  if (typeof options.execute === "function") return options.execute;
+  if (options.transport === "probe") return createProbeExecutor(options.probe || {});
+  if (!options.transport || options.transport === "process") return createProcessExecutor(options.process || {});
+  throw new TypeError(`Unknown capability verification transport: ${options.transport}`);
+}
 
 export class CapabilityRuntime {
   constructor(options = {}) {
     this.registry = options.registry || createGitVanCapabilityRegistry(options.overrides || []);
-    this.execute = options.execute || createProcessExecutor(options.process || {});
+    this.transport = options.execute ? "custom" : options.transport || "process";
+    this.execute = createExecutor(options);
     this.receipts = options.receipts || new FileReceiptStore(options.receiptStore || {});
     this.subject = Object.freeze({ ...(options.subject || {}) });
     this.now = options.now;
@@ -20,6 +29,7 @@ export class CapabilityRuntime {
     const capability = this.registry.require(id);
     return Object.freeze({
       capability,
+      transport: this.transport,
       dependencyOrder: Object.freeze(this.registry.dependencyOrder(id).map(item => item.id)),
     });
   }
@@ -27,7 +37,7 @@ export class CapabilityRuntime {
   async verify(id) {
     const receipt = await verifyCapability(this.registry, id, {
       execute: this.execute,
-      subject: this.subject,
+      subject: Object.freeze({ ...this.subject, transport: this.transport }),
       ...(this.now ? { now: this.now } : {}),
     });
     await this.receipts.put(receipt);

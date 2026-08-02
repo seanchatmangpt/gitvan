@@ -1,5 +1,7 @@
 import { defineCommand } from "citty";
 import {
+  ChicagoCapabilityValidator,
+  autonomicChicagoValidation,
   composeWizardPlan,
   defaultVision2030Candidates,
   diagnoseCapabilities,
@@ -104,10 +106,25 @@ const telcoCommand = defineCommand({
   },
 });
 
-export const visionCapabilityCommands = Object.freeze({ assess: assessCommand, roadmap: roadmapCommand, doctor: doctorCommand, leverage: leverageCommand, frontier: frontierCommand, wizard: wizardCommand, telco: telcoCommand });
+const chicagoCommand = defineCommand({
+  meta: { name: "chicago", description: "Run full Chicago-state TDD with pairwise all-capability autonomic validation" },
+  args: {
+    passes: { type: "string", description: "Maximum autonomic validation passes", default: "3" },
+    ...capabilityTransportArgs,
+  },
+  async run({ args }) {
+    const service = createCliCapabilityService(args);
+    const validator = new ChicagoCapabilityValidator({ registry: service.runtime.registry, subject: service.runtime.subject });
+    const result = await autonomicChicagoValidation({ validator, maximumPasses: Number(args.passes || 3) });
+    printCapabilityValue(result, true);
+    if (result.standing !== "ALIVE") process.exitCode = 2;
+  },
+});
+
+export const visionCapabilityCommands = Object.freeze({ assess: assessCommand, roadmap: roadmapCommand, doctor: doctorCommand, leverage: leverageCommand, frontier: frontierCommand, wizard: wizardCommand, telco: telcoCommand, chicago: chicagoCommand });
 
 export const vision2030Command = defineCommand({
-  meta: { name: "vision-2030", description: "Drive receipt-backed combinatorial-maximalist 2030 capabilities", usage: "gitvan vision-2030 <assess|roadmap|doctor|leverage|frontier|wizard|telco>" },
+  meta: { name: "vision-2030", description: "Drive receipt-backed combinatorial-maximalist 2030 capabilities", usage: "gitvan vision-2030 <assess|roadmap|doctor|leverage|frontier|wizard|telco|chicago>" },
   subCommands: visionCapabilityCommands,
 });
 

@@ -3,6 +3,7 @@ export * from "./registry.mjs";
 export * from "./factory.mjs";
 export * from "./verifier.mjs";
 export * from "./process-executor.mjs";
+export * from "./probes.mjs";
 export * from "./receipt-store.mjs";
 export * from "./runtime.mjs";
 export * from "./policy.mjs";

@@ -1,4 +1,4 @@
-import { mkdtemp, readFile } from "node:fs/promises";
+import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -17,16 +17,14 @@ describe("template generation boundary capability", () => {
     });
   });
 
-  it("renders to a bounded project-relative file", async () => {
+  it("renders a template file to a bounded project-relative output", async () => {
     const cwd = await mkdtemp(join(tmpdir(), "gitvan-template-verifier-"));
+    await writeFile(join(cwd, "value.njk"), "value={{ value }}", "utf8");
     await withGitVan({ cwd, env: {}, now: () => "2026-08-02T00:00:00.000Z" }, async () => {
-      const template = await useTemplate({ paths: [], noCache: true, autoescape: false });
-      const result = await template.renderStringToFile?.("value={{ value }}", "generated/value.txt", { value: 42 });
-      if (result) {
-        expect(await readFile(join(cwd, "generated", "value.txt"), "utf8")).toBe("value=42");
-      } else {
-        expect(typeof template.renderToFile).toBe("function");
-      }
+      const template = await useTemplate({ paths: [cwd], noCache: true, autoescape: false });
+      const result = await template.renderToFile("value.njk", "generated/value.txt", { value: 42 });
+      expect(result).toEqual({ path: "generated/value.txt", bytes: 8 });
+      expect(await readFile(join(cwd, "generated", "value.txt"), "utf8")).toBe("value=42");
     });
   });
 

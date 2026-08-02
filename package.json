@@ -23,6 +23,11 @@
   "scripts": {
     "start": "node src/cli.mjs",
     "test": "vitest",
+    "test:capabilities": "vitest run test/capabilities",
+    "verify:capability-projection": "node scripts/verify-capability-projection.mjs",
+    "verify:capabilities": "node src/cli.mjs capability verify-all --transport process --continue",
+    "capability:graph": "node src/cli.mjs capability graph --format mermaid",
+    "capability:claims": "node src/cli.mjs capability claims --format toml --allowMissing",
     "build": "unbuild",
     "lint": "eslint src/",
     "prepublishOnly": "npm run build"

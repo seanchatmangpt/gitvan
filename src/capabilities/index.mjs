@@ -22,5 +22,6 @@ export * from "./vision2030.mjs";
 export * from "./combinatorial.mjs";
 export * from "./wizard.mjs";
 export * from "./telco.mjs";
+export * from "./chicago-tdd.mjs";
 export * from "./service.mjs";
 export { gitvanCapabilities } from "./generated/manifest.mjs";

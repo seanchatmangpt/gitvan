@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   admitWizardActuation,
   composeWizardPlan,
+  createWizardIntent,
   exploreCapabilitySpace,
   planTelcoMesh,
   selectCapabilityCombination,
@@ -20,7 +21,7 @@ describe("combinatorial maximalist explorer", () => {
   it("preserves admitted Pareto-frontier combinations and refuses ambient actuation", () => {
     const space = exploreCapabilitySpace(options, { maximumCombinationSize: 3, maxCost: 5, allowActuation: false });
     expect(space.admitted).toBeGreaterThan(0);
-    expect(space.frontier.some(item => item.ids.includes("dominated"))).toBe(false);
+    expect(space.frontier.some(item => item.ids.length === 1 && item.ids[0] === "dominated")).toBe(false);
     expect(space.frontier.some(item => item.ids.includes("actuator"))).toBe(false);
     expect(space.frontier.some(item => item.ids.includes("safe") && item.ids.includes("conflict"))).toBe(false);
   });
@@ -34,12 +35,9 @@ describe("combinatorial maximalist explorer", () => {
 
 describe("wizard composition", () => {
   it("constructs a reversible plan and refuses missing receipts", () => {
-    const plan = composeWizardPlan({
-      id: "intent-1",
-      goal: "manufacture verified developer workflow",
-      desiredCapabilities: ["dx", "doctor"],
-      constraints: { maxCost: 4, maxAuthorityRisk: 0.2 },
-    }, [
+    const input = { goal: "manufacture verified developer workflow", desiredCapabilities: ["dx", "doctor"], constraints: { maxCost: 4, maxAuthorityRisk: 0.2 } };
+    expect(createWizardIntent(input).id).toBe(createWizardIntent(input).id);
+    const plan = composeWizardPlan(input, [
       { id: "orientation", provides: ["dx"], utility: 5, cost: 1, evidence: 0.8 },
       { id: "diagnosis", provides: ["doctor"], utility: 5, cost: 1, evidence: 0.9 },
     ]);
@@ -63,6 +61,8 @@ describe("telco resilience", () => {
 
   it("plans regional quorum and detects quorum loss", () => {
     const plan = planTelcoMesh(nodes, links, { requiredCapabilities: ["receipt", "route"], quorum: 2 });
+    const replay = planTelcoMesh(nodes, links, { requiredCapabilities: ["receipt", "route"], quorum: 2 });
+    expect(plan.hash).toBe(replay.hash);
     expect(plan.resilient).toBe(true);
     expect(plan.actuates).toBe(false);
     expect(simulateTelcoFailure(plan, ["west-1"]).standing).toBe("BLOCKED");

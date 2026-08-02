@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gitvan.dev/schemas/capability-report/v1",
+  "title": "GitVan Capability Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "title", "generatedAt", "standing", "receipts", "byStanding", "summaries"],
+  "properties": {
+    "schema": { "const": "https://gitvan.dev/schemas/capability-report/v1" },
+    "title": { "type": "string", "minLength": 1 },
+    "generatedAt": { "type": ["string", "null"] },
+    "standing": { "enum": ["UNKNOWN", "PARTIAL_ALIVE", "ALIVE", "BLOCKED", "BUILD_BROKEN", "UNSUPPORTED"] },
+    "receipts": { "type": "integer", "minimum": 0 },
+    "byStanding": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } },
+    "summaries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["schema", "capability", "standing", "hash", "observations", "passed", "failed", "byStanding", "subject"],
+        "properties": {
+          "schema": { "type": ["string", "null"] },
+          "capability": { "type": ["string", "null"] },
+          "standing": { "enum": ["UNKNOWN", "PARTIAL_ALIVE", "ALIVE", "BLOCKED", "BUILD_BROKEN", "UNSUPPORTED"] },
+          "hash": { "type": ["string", "null"] },
+          "observations": { "type": "integer", "minimum": 0 },
+          "passed": { "type": "integer", "minimum": 0 },
+          "failed": { "type": "integer", "minimum": 0 },
+          "byStanding": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } },
+          "subject": { "type": "object", "additionalProperties": true }
+        }
+      }
+    }
+  }
+}

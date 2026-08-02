@@ -19,5 +19,8 @@ export * from "./cache.mjs";
 export * from "./doctor.mjs";
 export * from "./leverage.mjs";
 export * from "./vision2030.mjs";
+export * from "./combinatorial.mjs";
+export * from "./wizard.mjs";
+export * from "./telco.mjs";
 export * from "./service.mjs";
 export { gitvanCapabilities } from "./generated/manifest.mjs";

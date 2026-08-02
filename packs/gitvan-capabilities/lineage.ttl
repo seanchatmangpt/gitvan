@@ -1,0 +1,39 @@
+@prefix dcat: <http://www.w3.org/ns/dcat#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix gvp: <https://gitvan.dev/pack/gitvan-capabilities#> .
+
+
+gvp:Pack a dcat:Dataset, prov:Entity ;
+  dcterms:title "GitVan capability manufacturing pack" ;
+  dcterms:identifier "gitvan-capabilities@0.1.0" ;
+  prov:wasGeneratedBy gvp:ManufacturingActivity ;
+  prov:wasDerivedFrom gvp:GgenSource, gvp:GgenLegacyCorpus .
+
+
+gvp:ManufacturingActivity a prov:Activity ;
+  dcterms:description "RDF and SHACL admission followed by ggen SPARQL extraction, Tera rendering, projection verification, capability execution, and receipt replay." ;
+  prov:used gvp:GgenSource, gvp:GgenLegacyCorpus, gvp:CapabilityOntology, gvp:CapabilityShapes, gvp:ManifestTemplate .
+
+
+gvp:GgenSource a prov:Entity, dcat:Distribution ;
+  dcterms:identifier "seanchatmangpt/ggen@8351af4c5bbbf60bd99ab8417752a1762c6ea4e3" ;
+  dcterms:hasVersion "26.8.3" ;
+  dcat:downloadURL <https://github.com/seanchatmangpt/ggen/tree/8351af4c5bbbf60bd99ab8417752a1762c6ea4e3> .
+
+
+gvp:GgenLegacyCorpus a prov:Entity, dcat:Distribution ;
+  dcterms:identifier "seanchatmangpt/ggen-legacy@70e599a599fedb7c62c965377cc2f80df1fa01ec" ;
+  dcterms:hasVersion "26.8.1" ;
+  dcat:downloadURL <https://github.com/seanchatmangpt/ggen-legacy/tree/70e599a599fedb7c62c965377cc2f80df1fa01ec> .
+
+
+gvp:CapabilityOntology a prov:Entity ;
+  dcterms:identifier "ontology/gitvan-capabilities.ttl" .
+
+gvp:CapabilityShapes a prov:Entity ;
+  dcterms:identifier "ontology/gitvan-capabilities.shacl.ttl" .
+
+gvp:ManifestTemplate a prov:Entity ;
+  dcterms:identifier "templates/capabilities/manifest.mjs.tera" .

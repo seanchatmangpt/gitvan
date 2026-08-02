@@ -40,6 +40,7 @@ import { llmCommand } from "./cli/commands/llm.mjs";
 import { revopsCommand } from "./cli/commands/revops.mjs";
 import { submoduleCommand } from "./cli/commands/submodule.mjs";
 import { capabilityCommand } from "./cli/commands/capability.mjs";
+import { vision2030Command } from "./cli/commands/capability-vision.mjs";
 
 import { setupCommand } from "./cli/setup.mjs";
 import { packCommand } from "./cli/pack.mjs";
@@ -105,6 +106,10 @@ export const cli = defineCommand({
       "gitvan capability verify gitvan.receipt",
       "gitvan capability graph --format mermaid",
       "gitvan capability admit gitvan.job.execution",
+      "gitvan vision-2030 assess",
+      "gitvan vision-2030 doctor",
+      "gitvan vision-2030 roadmap",
+      "gitvan vision-2030 leverage --budget 36",
     ],
   },
   subCommands: {
@@ -121,6 +126,7 @@ export const cli = defineCommand({
     worktree: worktreeCommand,
     submodule: submoduleCommand,
     capability: capabilityCommand,
+    "vision-2030": vision2030Command,
     init: initCommand,
     setup: setupCommand,
     save: saveCommand,

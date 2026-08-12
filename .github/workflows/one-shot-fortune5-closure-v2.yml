@@ -1,4 +1,4 @@
-name: One-shot Fortune-5 closure repair v2
+name: One-shot Fortune-5 closure repair v3
 
 on:
   pull_request:
@@ -37,7 +37,7 @@ jobs:
           corepack enable
           corepack install --global pnpm@11.21.0
           test "$(pnpm --version)" = '11.21.0'
-      - name: Apply bounded source and package repair
+      - name: Apply bounded source and exact direct dependency repair
         run: |
           python3 - <<'PY'
           import json
@@ -55,15 +55,29 @@ jobs:
           package = json.loads(package_path.read_text())
           deps = package['dependencies']
           dev = package['devDependencies']
-          dev['@types/node'] = '22.20.1'
+
           for dead in ['@unrdf/knowledge-engine', '@unrdf/streaming', 'tar']:
               deps.pop(dead, None)
           if 'unbuild' in deps:
-              dev['unbuild'] = deps.pop('unbuild')
-          deps['defu'] = '^6.1.5'
-          deps['js-yaml'] = '^4.3.1'
-          deps['minimatch'] = '^10.2.3'
-          deps['n3'] = '^2.1.1'
+              deps.pop('unbuild')
+
+          deps.update({
+              '@opentelemetry/api': '1.9.1',
+              '@opentelemetry/auto-instrumentations-node': '0.79.0',
+              '@opentelemetry/exporter-metrics-otlp-http': '0.221.0',
+              '@opentelemetry/exporter-trace-otlp-http': '0.221.0',
+              '@opentelemetry/resources': '2.10.0',
+              '@opentelemetry/sdk-metrics': '2.10.0',
+              '@opentelemetry/sdk-node': '0.221.0',
+              '@opentelemetry/sdk-trace-base': '2.10.0',
+              '@opentelemetry/semantic-conventions': '1.43.0',
+              'defu': '6.1.7',
+              'js-yaml': '4.3.1',
+              'minimatch': '10.2.6',
+              'n3': '2.2.0',
+          })
+          dev['@types/node'] = '22.20.1'
+          dev['unbuild'] = '3.6.1'
           package['dependencies'] = dict(sorted(deps.items()))
           package['devDependencies'] = dict(sorted(dev.items()))
           package_path.write_text(json.dumps(package, indent=2) + '\n')
@@ -102,28 +116,12 @@ jobs:
           telemetry_text = telemetry_text.replace("serviceVersion: '2.1.0'", "serviceVersion: '4.0.1'")
           telemetry.write_text(telemetry_text)
           PY
-      - name: Upgrade coherent OpenTelemetry runtime line
-        run: >-
-          pnpm update --latest
-          @opentelemetry/api
-          @opentelemetry/auto-instrumentations-node
-          @opentelemetry/exporter-metrics-otlp-http
-          @opentelemetry/exporter-trace-otlp-http
-          @opentelemetry/resources
-          @opentelemetry/sdk-metrics
-          @opentelemetry/sdk-node
-          @opentelemetry/sdk-trace-base
-          @opentelemetry/semantic-conventions
-      - name: Manufacture patched production graph
-        shell: bash
-        run: |
-          pnpm install --lockfile-only --no-frozen-lockfile
-          set +e
-          pnpm audit --fix --prod
-          fix_status=$?
-          set -e
-          echo "pnpm audit --fix exit=$fix_status; final audit is authoritative"
-          pnpm install --lockfile-only --no-frozen-lockfile
+      - name: Manufacture base lock
+        run: pnpm install --lockfile-only --no-frozen-lockfile
+      - name: Manufacture patched transitive overrides from audit
+        run: pnpm audit --fix=override --prod
+      - name: Reconcile generated overrides into canonical lock
+        run: pnpm install --lockfile-only --no-frozen-lockfile
       - name: Format manufactured projection
         run: >-
           pnpm exec prettier --write package.json pnpm-workspace.yaml
@@ -134,6 +132,12 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Refuse HIGH or CRITICAL production advisories
         run: pnpm audit --prod --audit-level high
+      - name: Verify exact direct dependency identities
+        run: |
+          test "$(node -p 'require("./package.json").dependencies["@opentelemetry/sdk-node"]')" = '0.221.0'
+          test "$(node -p 'require("./package.json").dependencies.n3')" = '2.2.0'
+          test "$(node -p 'require("./package.json").devDependencies["@types/node"]')" = '22.20.1'
+          test "$(node -p 'require("./package.json").devDependencies.unbuild')" = '3.6.1'
       - name: Verify strict hooks type boundary
         run: >-
           pnpm exec tsc --noEmit --skipLibCheck --strict --allowJs false
@@ -167,7 +171,7 @@ jobs:
           import { OutputStepHandler } from './src/workflow/step-handlers/output-step-handler.mjs';
           const path = '/tmp/gitvan-enterprise-output.xlsx';
           const handler = new OutputStepHandler({ logger: { info() {}, warn() {}, error() {} } });
-          await handler._generateExcel({ records: [{ name: 'GitVan', status: 'ALIVE' }] }, {}, path);
+          await handler._generateExcel({ name: 'GitVan', status: 'ALIVE' }, {}, path);
           const info = await stat(path);
           if (info.size <= 0) throw new Error('Excel output is empty');
           await rm(path);
@@ -199,12 +203,9 @@ jobs:
           for path in "${changed[@]}"; do
             case " $allowed " in *" $path "*) ;; *) echo "Unexpected mutation: $path" >&2; exit 1 ;; esac
           done
-          test "$(node -p 'require("./package.json").dependencies.n3')" = '^2.1.1'
-          test "$(node -p 'require("./package.json").devDependencies["@types/node"]')" = '22.20.1'
           test "$(node -p 'Boolean(require("./package.json").dependencies["@unrdf/knowledge-engine"])')" = 'false'
           test "$(node -p 'Boolean(require("./package.json").dependencies["@unrdf/streaming"])')" = 'false'
           test "$(node -p 'Boolean(require("./package.json").dependencies.unbuild)')" = 'false'
-          test "$(node -p 'Boolean(require("./package.json").devDependencies.unbuild)')" = 'true'
       - name: Commit and push verified closure repair
         run: |
           git add package.json pnpm-lock.yaml pnpm-workspace.yaml src/telemetry/index.mjs src/unrdf-hooks/core/state.ts src/unrdf-hooks/events/hooks.ts src/unrdf-hooks/examples/advanced-patterns.ts src/unrdf-hooks/repository/hooks.ts .github/workflows/hooks-build.yml

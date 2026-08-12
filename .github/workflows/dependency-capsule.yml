@@ -32,7 +32,7 @@ jobs:
         run: |
           pnpm pkg set packageManager="pnpm@11.21.0"
           pnpm pkg set engines.node=">=22.0.0"
-          pnpm pkg delete devDependencies.eslint-config-unjs
+          pnpm pkg delete 'devDependencies["eslint-config-unjs"]'
           pnpm pkg set devDependencies.eslint="10.4.0"
           pnpm install --lockfile-only --no-frozen-lockfile
       - name: Replay manufactured dependency capsule

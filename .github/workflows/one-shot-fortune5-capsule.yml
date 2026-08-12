@@ -1,4 +1,4 @@
-name: One-shot Fortune-5 closure capsule
+name: One-shot Fortune-5 closure capsule v2
 
 on:
   push:
@@ -34,7 +34,9 @@ jobs:
           corepack install --global pnpm@11.21.0
           test "$(pnpm --version)" = '11.21.0'
       - name: Apply deterministic repair capsule
-        run: python3 scripts/fortune5-closure-repair.py
+        run: |
+          python3 scripts/fortune5-closure-repair.py
+          python3 scripts/fortune5-execution-context-repair.py
       - name: Manufacture base lock
         run: pnpm install --lockfile-only --no-frozen-lockfile
       - name: Manufacture patched transitive overrides from audit

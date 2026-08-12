@@ -6,6 +6,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: dependency-capsule-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   manufacture-lock:
     name: Manufacture canonical pnpm capsule
@@ -32,6 +36,8 @@ jobs:
         run: |
           pnpm pkg set packageManager="pnpm@11.21.0"
           pnpm pkg set engines.node=">=22.0.0"
+          pnpm pkg set scripts.prepublishOnly="pnpm run build"
+          pnpm pkg set scripts.test="vitest run"
           pnpm pkg delete 'devDependencies["eslint-config-unjs"]'
           pnpm pkg set devDependencies.eslint="10.4.0"
           pnpm install --lockfile-only --no-frozen-lockfile
@@ -44,11 +50,7 @@ jobs:
           const { existsSync, readFileSync } = require('node:fs');
           const packagePath = require.resolve('protobufjs/package.json');
           const pkg = require(packagePath);
-          console.log(JSON.stringify({
-            packagePath,
-            version: pkg.version,
-            scripts: pkg.scripts,
-          }, null, 2));
+          console.log(JSON.stringify({ packagePath, version: pkg.version, scripts: pkg.scripts }, null, 2));
           const root = dirname(packagePath);
           for (const candidate of ['scripts/postinstall.js', 'scripts/postinstall.cjs', 'scripts/postinstall.mjs']) {
             const path = join(root, candidate);
@@ -64,6 +66,8 @@ jobs:
           pnpm install --frozen-lockfile
           test "$(node -p 'require("./package.json").packageManager')" = "pnpm@11.21.0"
           test "$(node -p 'require("./package.json").engines.node')" = ">=22.0.0"
+          test "$(node -p 'require("./package.json").scripts.prepublishOnly')" = "pnpm run build"
+          test "$(node -p 'require("./package.json").scripts.test')" = "vitest run"
           test "$(node -p 'require("protobufjs/package.json").version')" = "7.5.5"
       - name: Bind artifact identity
         run: |

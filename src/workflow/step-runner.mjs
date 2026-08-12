@@ -77,6 +77,7 @@ export class StepRunner {
       broker.complete({
         success,
         error: success ? null : result?.error,
+        errorCode: success ? null : result?.errorCode,
         exitCode: result?.data?.exitCode ?? null,
         duration,
       });
@@ -110,6 +111,7 @@ export class StepRunner {
           broker.complete({
             success: false,
             error: error.message,
+            errorCode: error.code,
             exitCode: error.exitCode ?? null,
             duration,
           });

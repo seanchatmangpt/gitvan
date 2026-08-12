@@ -61,9 +61,8 @@ describe("StepRunner enterprise actuation boundary", () => {
     expect(result.receipts).toHaveLength(1);
   });
 
-  it("propagates handler-level failure instead of manufacturing success", async () => {
-    const rootDir = mkdtempSync(join(tmpdir(), "gitvan-runner-"));
-    const runner = new StepRunner({ enterprisePolicy: enterprisePolicy(rootDir) });
+  it("propagates handler-level failure instead of manufacturing success in legacy mode", async () => {
+    const runner = new StepRunner();
     runner.registerHandler("fixture-failure", {
       getStepType() { return "fixture-failure"; },
       validate() { return true; },
@@ -76,6 +75,26 @@ describe("StepRunner enterprise actuation boundary", () => {
     expect(result.success).toBe(false);
     expect(result.standing).toBe("FAILED");
     expect(result.error).toBe("fixture failed");
+  });
+
+  it("refuses a registered custom handler before execution in enterprise mode", async () => {
+    const rootDir = mkdtempSync(join(tmpdir(), "gitvan-runner-"));
+    const runner = new StepRunner({ enterprisePolicy: enterprisePolicy(rootDir) });
+    let executed = false;
+    runner.registerHandler("custom-plugin-step", {
+      getStepType() { return "custom-plugin-step"; },
+      validate() { return true; },
+      async execute() { executed = true; return { success: true, data: {} }; },
+    });
+    const result = await runner.executeStep(
+      { id: "custom", type: "custom-plugin-step", config: {} },
+      contextManager(), null, null
+    );
+    expect(executed).toBe(false);
+    expect(result.success).toBe(false);
+    expect(result.standing).toBe("REFUSED");
+    expect(result.errorCode).toBe("STEP_TYPE_AUTHORITY_REFUSED");
+    expect(result.receipts).toHaveLength(1);
   });
 
   it("does not follow an HTTP redirect outside the admitted destination", async () => {

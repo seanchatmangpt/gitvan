@@ -1,6 +1,7 @@
 import { createStore, executeQuery } from "@unrdf/core";
 import n3 from "n3";
 import { useLog } from "../composables/log.mjs";
+import { createActuationBroker } from "../enterprise/actuation-broker.mjs";
 import { StepRunner } from "./step-runner.mjs";
 import { ContextManager } from "./context-manager.mjs";
 
@@ -31,27 +32,67 @@ function localName(iri) {
 
 function termToValue(term) {
   if (!term) return null;
-  if (term.termType === "Literal") {
-    return term.value;
-  }
+  if (term.termType === "Literal") return term.value;
   return term.value ?? String(term);
 }
 
+function queryVariables(rows) {
+  const names = new Set();
+  for (const row of rows || []) {
+    for (const key of Object.keys(row || {})) {
+      if (key !== "get") names.add(key);
+    }
+  }
+  return [...names];
+}
+
 /**
- * WorkflowEngine loads Turtle into an admitted in-memory RDF store and derives
- * workflow execution from graph edges. The graph is the canonical topology;
- * generated query strings are not used to select actuation targets.
+ * WorkflowEngine loads admitted Turtle observations into an in-memory RDF store
+ * and derives workflow execution from graph edges. The graph is the canonical
+ * topology; generated query strings are not used to select actuation targets.
  */
 export class WorkflowEngine {
   constructor(options = {}) {
     this.graphDir = options.graphDir || "./workflows";
     this.logger = options.logger || useLog();
+    this.enterprisePolicy = options.enterprisePolicy || {};
     this.store = null;
+    this.observationReceipts = [];
     this.stepRunner = new StepRunner({
       logger: this.logger,
-      enterprisePolicy: options.enterprisePolicy || {},
+      enterprisePolicy: this.enterprisePolicy,
     });
     this.contextManager = new ContextManager();
+  }
+
+  async _observedFileRead(id, filePath, reader) {
+    const broker = createActuationBroker(
+      {
+        id,
+        type: "file",
+        config: { operation: "read", filePath },
+      },
+      this.enterprisePolicy
+    );
+    const admission = broker.admit();
+    if (!admission.admitted) throw admission.error;
+
+    const startedAt = performance.now();
+    try {
+      const value = await reader(admission.step.config.filePath);
+      broker.complete({ success: true, duration: performance.now() - startedAt });
+      this.observationReceipts.push(...broker.receipts());
+      return { value, path: admission.step.config.filePath };
+    } catch (error) {
+      broker.complete({
+        success: false,
+        error: error.message,
+        errorCode: error.code,
+        duration: performance.now() - startedAt,
+      });
+      this.observationReceipts.push(...broker.receipts());
+      throw error;
+    }
   }
 
   async initialize() {
@@ -60,15 +101,25 @@ export class WorkflowEngine {
 
     this.logger.info(`🚀 Initializing WorkflowEngine with graphDir: ${this.graphDir}`);
     this.store = await createStore();
+    this.observationReceipts = [];
 
-    const fileNames = (await readdir(this.graphDir)).filter((name) => name.endsWith(".ttl"));
+    const directory = await this._observedFileRead(
+      "workflow-source-directory",
+      this.graphDir,
+      (path) => readdir(path)
+    );
+    const fileNames = directory.value.filter((name) => name.endsWith(".ttl")).sort();
     let loadedFiles = 0;
 
     for (const name of fileNames) {
-      const path = join(this.graphDir, name);
-      const content = await readFile(path, "utf8");
+      const requestedPath = join(directory.path, name);
+      const source = await this._observedFileRead(
+        `workflow-source:${name}`,
+        requestedPath,
+        (path) => readFile(path, "utf8")
+      );
       try {
-        const quads = new Parser({ baseIRI: `file://${path}` }).parse(content);
+        const quads = new Parser({ baseIRI: `file://${source.path}` }).parse(source.value);
         for (const quad of quads) this.store.addQuad(quad);
         loadedFiles += 1;
       } catch (error) {
@@ -78,7 +129,7 @@ export class WorkflowEngine {
       }
     }
 
-    this.logger.info(`📁 Loaded ${loadedFiles} Turtle workflow files from: ${this.graphDir}`);
+    this.logger.info(`📁 Loaded ${loadedFiles} Turtle workflow files from admitted source directory`);
     this.logger.info(`📊 Workflow graph initialized with ${this.store.size} quads`);
     return this;
   }
@@ -111,9 +162,34 @@ export class WorkflowEngine {
     return [...subjects.values()];
   }
 
+  _graphAdapter() {
+    return {
+      store: this.store,
+      stats: { quadCount: this.store.size },
+      query: async (sparql) => {
+        const result = await executeQuery(this.store, sparql);
+        if (typeof result === "boolean") {
+          return { type: "ask", boolean: result };
+        }
+        if (Array.isArray(result) && result.type === "select") {
+          const rows = result.rows || result;
+          return {
+            type: "select",
+            variables: queryVariables(rows),
+            results: rows,
+          };
+        }
+        if (Array.isArray(result) && (result.type === "construct" || result.type === "describe")) {
+          const quads = result.quads || result;
+          return { type: result.type, quads, store: quads };
+        }
+        return { type: "unknown", result };
+      },
+    };
+  }
+
   async listWorkflows() {
     if (!this.store) await this.initialize();
-
     return this._hookSubjects().map((subject) => {
       const title = this._firstObject(subject, [RDFS_LABEL, GITVAN_TITLE]);
       const pipelines = this._objects(subject, [LEGACY_PIPELINE, GITVAN_PIPELINE]);
@@ -130,10 +206,7 @@ export class WorkflowEngine {
     const exact = this._hookSubjects().find((subject) => subject.value === workflowId);
     if (exact) return exact;
 
-    const candidates = this._hookSubjects().filter((subject) => {
-      const name = localName(subject.value);
-      return name === workflowId;
-    });
+    const candidates = this._hookSubjects().filter((subject) => localName(subject.value) === workflowId);
     if (candidates.length === 1) return candidates[0];
     if (candidates.length > 1) {
       const error = new Error(`Workflow ID is ambiguous: ${workflowId}`);
@@ -175,17 +248,17 @@ export class WorkflowEngine {
 
     this.logger.info(`🎯 Executing workflow: ${workflow.value}`);
     const stepResults = [];
+    const graph = this._graphAdapter();
 
     for (const step of steps) {
       const result = await this.stepRunner.executeStep(
         step,
         this.contextManager,
-        { store: this.store },
+        graph,
         null,
         options
       );
       stepResults.push(result);
-
       if (!result.success) {
         this.logger.error(`❌ Step ${step.id} ended with standing ${result.standing}`);
         break;
@@ -202,6 +275,7 @@ export class WorkflowEngine {
       steps: stepResults,
       totalSteps: steps.length,
       executedSteps: stepResults.length,
+      observationReceipts: [...this.observationReceipts],
       executedAt: new Date().toISOString(),
     };
   }
@@ -212,9 +286,7 @@ export class WorkflowEngine {
 
     return stepTerms.map((stepTerm) => {
       const typeTerms = this._objects(stepTerm, [RDF_TYPE]);
-      const stepType = typeTerms
-        .map((term) => localName(term.value))
-        .find((name) => name.endsWith("Step"));
+      const stepType = typeTerms.map((term) => localName(term.value)).find((name) => name.endsWith("Step"));
       if (!stepType) {
         const error = new Error(`Workflow step has no recognized *Step RDF type: ${stepTerm.value}`);
         error.code = "WORKFLOW_STEP_TYPE_REFUSED";
@@ -232,7 +304,6 @@ export class WorkflowEngine {
         else if (Array.isArray(config[mapped])) config[mapped].push(value);
         else config[mapped] = [config[mapped], value];
       }
-
       return { id: stepTerm.value, type, config };
     });
   }
@@ -267,11 +338,13 @@ export class WorkflowEngine {
       quadCount: this.store.size,
       initialized: true,
       workflows: this._hookSubjects().length,
+      observationReceiptCount: this.observationReceipts.length,
     };
   }
 
   async cleanup() {
     this.store = null;
+    this.observationReceipts = [];
     this.contextManager = new ContextManager();
   }
 }

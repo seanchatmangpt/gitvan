@@ -123,3 +123,60 @@ test("receipts chain execution consequence and detect tampering", () => {
   tampered.payload.consequence.success = false;
   assert.equal(verifyReceipt(tampered), false);
 });
+
+test("enterprise step admission is default-deny outside classified capabilities", () => {
+  const root = mkdtempSync(join(tmpdir(), "gitvan-enterprise-"));
+  for (const type of ["template", "output", "custom-plugin-step"]) {
+    const admission = createActuationBroker({
+      id: `deny-${type}`,
+      type,
+      config: { outputPath: "result.txt" },
+    }, policy(root)).admit();
+    assert.equal(admission.admitted, false);
+    assert.equal(admission.error.code, "STEP_TYPE_AUTHORITY_REFUSED");
+    assert.equal(verifyReceipt(admission.receipt), true);
+  }
+});
+
+test("enterprise admits bounded in-memory SPARQL without granting machine actuation", () => {
+  const root = mkdtempSync(join(tmpdir(), "gitvan-enterprise-"));
+  const admission = createActuationBroker({
+    id: "query",
+    type: "sparql",
+    config: { query: "SELECT * WHERE { ?s ?p ?o }" },
+  }, policy(root)).admit();
+  assert.equal(admission.admitted, true);
+  assert.deepEqual(admission.receipt.payload.target, { capability: "in-memory-sparql" });
+  assert.equal(verifyReceipt(admission.receipt), true);
+});
+
+test("enterprise receipts bind sensitive fields by digest instead of serializing raw values", () => {
+  const root = mkdtempSync(join(tmpdir(), "gitvan-enterprise-sensitive-"));
+  const secretContent = "fortune5-secret-payload";
+  const broker = createActuationBroker({
+    id: "sensitive-write",
+    type: "file",
+    config: { operation: "write", filePath: join(root, "private.txt"), content: secretContent },
+  }, policy(root));
+  const admission = broker.admit();
+  assert.equal(admission.admitted, true);
+  const execution = broker.complete({ success: false, error: "credential=fortune5-secret-error" });
+  const serialized = JSON.stringify([admission.receipt, execution]);
+  assert.equal(serialized.includes(secretContent), false);
+  assert.equal(serialized.includes("private.txt"), false);
+  assert.equal(serialized.includes("fortune5-secret-error"), false);
+  assert.equal(serialized.includes(root), false);
+  assert.match(execution.payload.consequence.errorDigest, /^sha256:/);
+  assert.equal(verifyReceipt(execution), true);
+
+  const refusal = createActuationBroker({
+    id: "sensitive-refusal",
+    type: "file",
+    config: { operation: "read", filePath: join(root, "..", "outside-secret.txt") },
+  }, policy(root)).admit();
+  const refusedSerialized = JSON.stringify(refusal.receipt);
+  assert.equal(refusal.admitted, false);
+  assert.equal(refusedSerialized.includes("outside-secret.txt"), false);
+  assert.equal(refusedSerialized.includes(root), false);
+  assert.match(refusal.receipt.payload.refusal.detailsDigest, /^sha256:/);
+});

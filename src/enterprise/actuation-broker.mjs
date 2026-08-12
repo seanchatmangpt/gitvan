@@ -2,7 +2,6 @@ import { createHash, timingSafeEqual } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
-const ACTUATING_TYPES = new Set(["cli", "http", "file"]);
 const TEMPLATE_PATTERN = /{{|{%|\$\{|<%/;
 const SHELL_META_PATTERN = /[;|&`$()<>\\{}\[\]\r\n]/;
 const DEFAULT_INHERITED_ENV = ["PATH", "SystemRoot", "ComSpec", "PATHEXT", "TMP", "TEMP"];
@@ -250,7 +249,7 @@ function summarize(step) {
       executable: vector[0] || null,
       argumentCount: Math.max(0, vector.length - 1),
       argumentsDigest: digest(vector.slice(1)),
-      cwd: config.cwd || null,
+      cwdDigest: config.cwd ? digest(String(config.cwd)) : null,
       envKeys: Object.keys(config.env || {}).sort(),
     };
   }
@@ -268,7 +267,7 @@ function summarize(step) {
       id: step.id || null,
       type: "http",
       method: String(config.method || "GET").toUpperCase(),
-      url: safeUrl,
+      origin: (() => { try { return new URL(safeUrl).origin; } catch { return null; } })(),
       headerNames: Object.keys(config.headers || {}).sort(),
       bodyDigest: config.body === undefined ? null : digest(config.body),
     };
@@ -278,9 +277,9 @@ function summarize(step) {
       id: step.id || null,
       type: "file",
       operation: config.operation || null,
-      filePath: config.filePath || null,
-      sourcePath: config.sourcePath || null,
-      targetPath: config.targetPath || null,
+      filePathDigest: config.filePath ? digest(String(config.filePath)) : null,
+      sourcePathDigest: config.sourcePath ? digest(String(config.sourcePath)) : null,
+      targetPathDigest: config.targetPath ? digest(String(config.targetPath)) : null,
       contentDigest: config.content === undefined ? null : digest(config.content),
     };
   }
@@ -289,7 +288,7 @@ function summarize(step) {
 
 function admitStrict(step, policy) {
   if (!policy.actor || !policy.tenant) {
-    refuse("IDENTITY_AUTHORITY_REFUSED", "Enterprise actuation requires GITVAN_ACTOR and GITVAN_TENANT");
+    refuse("IDENTITY_AUTHORITY_REFUSED", "Enterprise step admission requires GITVAN_ACTOR and GITVAN_TENANT");
   }
 
   const config = { ...(step.config || {}) };
@@ -319,7 +318,7 @@ function admitStrict(step, policy) {
     return {
       step: { ...step, config },
       runtime: { environment },
-      target: { executable, cwd: config.cwd },
+      target: { executable, cwdDigest: digest(String(config.cwd)) },
     };
   }
 
@@ -376,8 +375,29 @@ function admitStrict(step, policy) {
     };
   }
 
-  return { step, runtime: {}, target: { type: step.type } };
+  if (step.type === "sparql") {
+    return {
+      step: { ...step, config },
+      runtime: {},
+      target: { capability: "in-memory-sparql" },
+    };
+  }
+
+  if (step.type === "template" || step.type === "output") {
+    refuse(
+      "STEP_TYPE_AUTHORITY_REFUSED",
+      `Enterprise mode does not admit '${step.type}' until its filesystem consequences are brokered`,
+      { stepType: step.type }
+    );
+  }
+
+  refuse(
+    "STEP_TYPE_AUTHORITY_REFUSED",
+    `Enterprise mode does not admit unclassified step type: ${step.type || "unknown"}`,
+    { stepType: step.type || "unknown" }
+  );
 }
+
 
 export function createActuationBroker(step, policyInput = {}) {
   const policy = normalizePolicy(policyInput);
@@ -396,7 +416,7 @@ export function createActuationBroker(step, policyInput = {}) {
     admit() {
       if (admission) return admission;
       try {
-        const result = policy.enabled && ACTUATING_TYPES.has(step.type)
+        const result = policy.enabled
           ? admitStrict(step, policy)
           : { step, runtime: {}, target: { type: step.type } };
         const receipt = createReceipt("admission", {
@@ -419,7 +439,11 @@ export function createActuationBroker(step, policyInput = {}) {
           actor: policy.actor,
           tenant: policy.tenant,
           subject: summarize(step),
-          refusal: { code: error.code, message: error.message, details: error.details },
+          refusal: {
+            code: error.code,
+            message: error.message,
+            detailsDigest: error.details ? digest(error.details) : null,
+          },
         });
         const receiptPath = persistReceipt(receipt, policy);
         receipts.push(receipt);
@@ -437,7 +461,8 @@ export function createActuationBroker(step, policyInput = {}) {
         subject: summarize(admission?.step || step),
         consequence: {
           success: outcome.success !== false,
-          error: outcome.error || null,
+          errorDigest: outcome.error ? digest(String(outcome.error)) : null,
+          errorCode: outcome.errorCode ?? null,
           exitCode: outcome.exitCode ?? null,
           duration: outcome.duration ?? null,
         },

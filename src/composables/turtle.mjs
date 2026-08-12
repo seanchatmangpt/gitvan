@@ -6,7 +6,8 @@
  * Turtle-file ingestion plus hook/list/query/template helpers over that store.
  *
  * N3 is used only at the Turtle parsing boundary and quads immediately re-enter
- * the @unrdf/core store.
+ * the @unrdf/core store. Malformed files are individually refused and retained
+ * as diagnostics; one bad graph edge does not erase the admitted graph.
  */
 import { readdir, readFile } from "node:fs/promises";
 import { isAbsolute, join } from "node:path";
@@ -49,6 +50,7 @@ export async function useTurtle(options = {}) {
   const api = {
     store,
     files,
+    refusals: files.filter((file) => file.status === "REFUSED"),
     config: {
       root,
       graphDir,
@@ -81,7 +83,6 @@ export async function useTurtle(options = {}) {
       return matchingQuads(store, subject, RDF + "type", type).length > 0;
     },
 
-    // Historical public name retained for HookParser.
     isA(subject, type) {
       return this.hasType(subject, type);
     },
@@ -98,7 +99,6 @@ export async function useTurtle(options = {}) {
       return readRdfSequence(store, head);
     },
 
-    /** Discover hook definitions from the graph; no separate registry owns them. */
     getHooks() {
       return this.getSubjectsByType(GH + "Hook").map((hookNode) => {
         const id = hookNode.value;
@@ -202,14 +202,21 @@ async function loadTurtleDirectory(store, graphDir) {
     try {
       quads = new Parser({ baseIRI: `file://${path}` }).parse(content);
     } catch (cause) {
-      const error = new Error(`Refused malformed Turtle graph: ${path}`);
-      error.code = "TURTLE_PARSE_REFUSED";
-      error.file = path;
-      error.cause = cause;
-      throw error;
+      const refusal = {
+        name,
+        path,
+        content,
+        quads: 0,
+        status: "REFUSED",
+        code: "TURTLE_PARSE_REFUSED",
+        reason: cause?.message || String(cause),
+      };
+      files.push(refusal);
+      logger.warn(`${refusal.code}: ${path}: ${refusal.reason}`);
+      continue;
     }
     for (const quad of quads) addQuad(store, quad);
-    files.push({ name, path, content, quads: quads.length });
+    files.push({ name, path, content, quads: quads.length, status: "ADMITTED" });
   }
   return files;
 }
@@ -226,10 +233,6 @@ function termValue(value) {
   return typeof value === "string" ? value : value?.value;
 }
 
-/**
- * Read either an RDF Collection or the direct singleton resource accepted by
- * historical GitVan hook files. Cycles and malformed list cells are refused.
- */
 function readRdfSequence(store, head) {
   if (!head || termValue(head) === RDF + "nil") return [];
 

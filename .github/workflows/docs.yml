@@ -2,340 +2,159 @@ name: Documentation Generation
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
     paths:
       - 'src/**'
       - 'docs/**'
       - 'README.md'
       - 'CLAUDE.md'
       - '.cursorrules'
+      - '.github/workflows/docs.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
   pull_request:
     branches: [main]
     paths:
       - 'src/**'
       - 'docs/**'
+      - 'README.md'
+      - 'SECURITY.md'
+      - '.github/workflows/docs.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
   workflow_dispatch:
 
 permissions:
-  contents: write
-  pages: write
-  id-token: write
+  contents: read
+
+concurrency:
+  group: docs-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  TZ: UTC
+  LANG: C
 
 jobs:
-  # ============================================================================
-  # Generate API Documentation
-  # ============================================================================
-  api-docs:
-    name: Generate API Documentation
+  generate:
+    name: Generate documentation artifacts
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout exact subject
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          submodules: recursive
-          fetch-depth: 0
-
-      - name: Initialize and update submodules
-        run: |
-          git submodule init
-          git submodule update --recursive
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Set up Node 22
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Generate JSDoc
+          node-version: 22
+          package-manager-cache: false
+      - name: Pin pnpm toolchain
         run: |
-          npm install -g jsdoc
+          npm install --global corepack@0.35.0
+          corepack enable
+          corepack install --global pnpm@11.21.0
+          test "$(pnpm --version)" = "11.21.0"
+      - name: Install frozen dependency graph
+        run: pnpm install --frozen-lockfile
+      - name: Validate documentation examples
+        run: pnpm test:docs
+      - name: Build package for CLI documentation
+        run: pnpm build
+      - name: Generate API documentation
+        run: |
           mkdir -p docs/api
-
-          # Generate JSDoc for all source files
-          jsdoc -c jsdoc.conf.json -r src/ -d docs/api || echo "JSDoc configuration not found, creating default..."
-
-          # Create default JSDoc if config missing
           if [ ! -f jsdoc.conf.json ]; then
-            cat > jsdoc.conf.json <<EOF
+            cat > /tmp/gitvan-jsdoc.json <<'EOF'
           {
-            "source": {
-              "include": ["src"],
-              "includePattern": ".+\\.mjs$"
-            },
-            "opts": {
-              "destination": "docs/api",
-              "recurse": true
-            }
+            "source": {"include": ["src"], "includePattern": ".+\\.mjs$"},
+            "opts": {"destination": "docs/api", "recurse": true}
           }
           EOF
-            jsdoc -c jsdoc.conf.json -r src/ -d docs/api
+            JSDOC_CONFIG=/tmp/gitvan-jsdoc.json
+          else
+            JSDOC_CONFIG=jsdoc.conf.json
           fi
-        continue-on-error: true
-
-      - name: Upload API docs
-        uses: actions/upload-artifact@v4
-        with:
-          name: api-documentation
-          path: docs/api/
-          retention-days: 30
-
-  # ============================================================================
-  # Generate README and Documentation
-  # ============================================================================
-  readme-docs:
-    name: Generate README Documentation
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 0
-
-      - name: Initialize and update submodules
-        run: |
-          git submodule init
-          git submodule update --recursive
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Generate CLI documentation
+          pnpm exec jsdoc -c "$JSDOC_CONFIG" -r src/ -d docs/api
+      - name: Capture packaged CLI help
         run: |
           mkdir -p docs/cli
-
-          # Generate CLI help output
-          npm ci
-          npm run build || true
-
-          if [ -f dist/bin/gitvan.mjs ]; then
-            node dist/bin/gitvan.mjs --help > docs/cli/help.txt 2>&1 || echo "CLI not yet available"
-          fi
-
-      - name: Generate examples documentation
+          node dist/bin/gitvan.mjs --help > docs/cli/help.txt
+      - name: Generate coverage documentation
         run: |
-          mkdir -p docs/examples
-
-          # Document example files
-          find examples -name "*.mjs" -o -name "*.js" | while read -r file; do
-            echo "# Example: $file" >> docs/examples/index.md
-            echo '```javascript' >> docs/examples/index.md
-            head -50 "$file" >> docs/examples/index.md
-            echo '```' >> docs/examples/index.md
-            echo "" >> docs/examples/index.md
-          done
-        continue-on-error: true
-
-      - name: Upload README docs
-        uses: actions/upload-artifact@v4
-        with:
-          name: readme-documentation
-          path: docs/
-          retention-days: 30
-
-  # ============================================================================
-  # Generate Coverage Reports
-  # ============================================================================
-  coverage-docs:
-    name: Generate Coverage Documentation
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 0
-
-      - name: Initialize and update submodules
-        run: |
-          git submodule init
-          git submodule update --recursive
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Generate coverage report
-        run: |
-          npm test -- --coverage || true
-
+          pnpm exec vitest run --coverage
           if [ -d coverage ]; then
+            rm -rf docs/coverage
             mkdir -p docs/coverage
-            cp -r coverage/* docs/coverage/
+            cp -R coverage/. docs/coverage/
           fi
-
-      - name: Upload coverage docs
-        uses: actions/upload-artifact@v4
-        if: always()
+      - name: Upload generated documentation
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: coverage-documentation
-          path: docs/coverage/
+          name: generated-documentation-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            docs/api/
+            docs/cli/
+            docs/coverage/
+          if-no-files-found: error
           retention-days: 30
 
-  # ============================================================================
-  # Build Documentation Site
-  # ============================================================================
   build-site:
-    name: Build Documentation Site
+    name: Build documentation site
     runs-on: ubuntu-latest
-    needs: [api-docs, readme-docs, coverage-docs]
+    needs: generate
+    timeout-minutes: 10
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout exact subject
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          submodules: recursive
-          fetch-depth: 0
-
-      - name: Initialize and update submodules
-        run: |
-          git submodule init
-          git submodule update --recursive
-
-      - name: Download all documentation
-        uses: actions/download-artifact@v4
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Download generated documentation
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          path: artifacts/
-
-      - name: Prepare documentation site
+          name: generated-documentation-${{ github.event.pull_request.head.sha || github.sha }}
+          path: generated/
+      - name: Assemble site
         run: |
+          rm -rf public
           mkdir -p public
-
-          # Copy README as index
-          cp README.md public/index.md || echo "# GitVan Documentation" > public/index.md
-
-          # Copy CLAUDE.md
-          cp CLAUDE.md public/developer-guide.md || true
-
-          # Copy API docs
-          if [ -d artifacts/api-documentation ]; then
-            cp -r artifacts/api-documentation public/api
-          fi
-
-          # Copy README docs
-          if [ -d artifacts/readme-documentation ]; then
-            cp -r artifacts/readme-documentation/* public/ || true
-          fi
-
-          # Copy coverage
-          if [ -d artifacts/coverage-documentation ]; then
-            cp -r artifacts/coverage-documentation public/coverage
-          fi
-
-          # Generate index.html
+          cp README.md public/index.md
+          cp CLAUDE.md public/developer-guide.md 2>/dev/null || true
+          cp -R docs/. public/
+          cp -R generated/. public/
           cat > public/index.html <<'EOF'
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <title>GitVan Documentation</title>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <style>
-              body {
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-                max-width: 1200px;
-                margin: 0 auto;
-                padding: 20px;
-                line-height: 1.6;
-              }
-              h1 { color: #333; }
-              .nav { margin: 20px 0; }
-              .nav a {
-                display: inline-block;
-                margin: 5px 10px 5px 0;
-                padding: 10px 15px;
-                background: #007bff;
-                color: white;
-                text-decoration: none;
-                border-radius: 4px;
-              }
-              .nav a:hover { background: #0056b3; }
-            </style>
-          </head>
-          <body>
-            <h1>GitVan Documentation</h1>
-            <p>Git-native development automation platform with semantic workflow graphs</p>
-
-            <div class="nav">
-              <h2>Documentation</h2>
-              <a href="index.md">README</a>
-              <a href="developer-guide.md">Developer Guide (CLAUDE.md)</a>
-              <a href="api/">API Reference</a>
-              <a href="coverage/">Coverage Report</a>
-              <a href="cli/help.txt">CLI Help</a>
-            </div>
-
-            <h2>Quick Links</h2>
-            <ul>
-              <li><a href="https://github.com/seanchatmangpt/gitvan">GitHub Repository</a></li>
-              <li><a href="https://www.npmjs.com/package/gitvan">npm Package</a></li>
-            </ul>
-          </body>
-          </html>
+          <!doctype html>
+          <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GitVan Documentation</title></head>
+          <body><main><h1>GitVan Documentation</h1><ul><li><a href="index.md">README</a></li><li><a href="developer-guide.md">Developer Guide</a></li><li><a href="api/">API Reference</a></li><li><a href="coverage/">Coverage</a></li><li><a href="cli/help.txt">CLI Help</a></li></ul></main></body></html>
           EOF
-
-      - name: Upload documentation site
-        uses: actions/upload-artifact@v4
+      - name: Upload documentation site receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: documentation-site
+          name: documentation-site-${{ github.event.pull_request.head.sha || github.sha }}
           path: public/
+          if-no-files-found: error
           retention-days: 90
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Manufacture Pages artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
         with:
           path: public/
 
-  # ============================================================================
-  # Deploy to GitHub Pages
-  # ============================================================================
   deploy-pages:
-    name: Deploy to GitHub Pages
+    name: Deploy documentation to GitHub Pages
     runs-on: ubuntu-latest
     needs: build-site
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Deploy to GitHub Pages
+      - name: Deploy Pages artifact
         id: deployment
-        uses: actions/deploy-pages@v4
-
-  # ============================================================================
-  # Documentation Summary
-  # ============================================================================
-  summary:
-    name: Documentation Summary
-    runs-on: ubuntu-latest
-    needs: [api-docs, readme-docs, coverage-docs, build-site]
-    if: always()
-    steps:
-      - name: Generate summary
-        run: |
-          echo "## 📚 Documentation Generation Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- API Documentation: ${{ needs.api-docs.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- README Documentation: ${{ needs.readme-docs.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Coverage Documentation: ${{ needs.coverage-docs.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Build Site: ${{ needs.build-site.result }}" >> $GITHUB_STEP_SUMMARY
-
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "📄 Documentation will be deployed to GitHub Pages" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          if [[ "${{ needs.build-site.result }}" == "success" ]]; then
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "✅ Documentation generated successfully!" >> $GITHUB_STEP_SUMMARY
-          fi
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4

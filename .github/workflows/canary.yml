@@ -1,291 +1,124 @@
 name: Canary Deployment
 
 on:
-  push:
-    branches: [develop, 'claude/**']
   workflow_dispatch:
     inputs:
-      force_publish:
-        description: 'Force publish canary release'
+      publish:
+        description: Publish the admitted artifact to npm with the canary tag
         required: false
         type: boolean
         default: false
 
 permissions:
-  contents: write
-  packages: write
+  contents: read
+
+concurrency:
+  group: canary-${{ github.ref }}
+  cancel-in-progress: false
 
 env:
+  TZ: UTC
+  LANG: C
   NODE_ENV: production
 
 jobs:
-  # ============================================================================
-  # Validate Canary Build
-  # ============================================================================
-  validate:
-    name: Validate Canary Build
+  manufacture:
+    name: Manufacture canary capsule
     runs-on: ubuntu-latest
-    outputs:
-      canary_version: ${{ steps.version.outputs.canary_version }}
-      should_publish: ${{ steps.check.outputs.should_publish }}
+    timeout-minutes: 45
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout exact canary subject
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          fetch-depth: 0
-
-      - name: Generate canary version
-        id: version
-        run: |
-          BASE_VERSION=$(node -p "require('./package.json').version")
-          COMMIT_SHA=$(git rev-parse --short HEAD)
-          TIMESTAMP=$(date +%Y%m%d%H%M%S)
-          CANARY_VERSION="${BASE_VERSION}-canary.${TIMESTAMP}.${COMMIT_SHA}"
-
-          echo "canary_version=$CANARY_VERSION" >> $GITHUB_OUTPUT
-          echo "Canary version: $CANARY_VERSION"
-
-      - name: Check if should publish
-        id: check
-        run: |
-          # Only publish canary on develop branch or if forced
-          if [[ "${{ github.ref }}" == "refs/heads/develop" ]] || [[ "${{ github.event.inputs.force_publish }}" == "true" ]]; then
-            echo "should_publish=true" >> $GITHUB_OUTPUT
-          else
-            echo "should_publish=false" >> $GITHUB_OUTPUT
-          fi
-
-  # ============================================================================
-  # Run Tests
-  # ============================================================================
-  test:
-    name: Run Canary Tests
-    runs-on: ubuntu-latest
-    needs: validate
-    strategy:
-      matrix:
-        node-version: [18, 20, 22]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Set up Node 22
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run tests
-        run: npm test
-        env:
-          CI: true
-          NODE_ENV: test
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: canary-test-results-node${{ matrix.node-version }}
-          path: test-results.json
-          retention-days: 7
-        continue-on-error: true
-
-  # ============================================================================
-  # Build Canary Package
-  # ============================================================================
-  build:
-    name: Build Canary Package
-    runs-on: ubuntu-latest
-    needs: [validate, test]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Update version to canary
+          node-version: 22
+          package-manager-cache: false
+      - name: Pin pnpm toolchain
         run: |
-          npm version ${{ needs.validate.outputs.canary_version }} --no-git-tag-version
-
-      - name: Build package
-        run: npm run build
-        env:
-          NODE_ENV: production
-
-      - name: Verify build
+          npm install --global corepack@0.35.0
+          corepack enable
+          corepack install --global pnpm@11.21.0
+          test "$(pnpm --version)" = "11.21.0"
+      - name: Install frozen dependency graph
+        run: pnpm install --frozen-lockfile
+      - name: Enterprise actuation contract
+        run: pnpm test:enterprise
+      - name: Lint
+        run: pnpm lint
+      - name: Full regression suite
+        run: pnpm test
+      - name: Build canonical source
+        run: pnpm build
+      - name: High-severity production dependency audit
+        run: pnpm audit --prod --audit-level high
+      - name: Manufacture canary version and package
+        shell: bash
         run: |
-          if [ ! -d "dist" ]; then
-            echo "Build failed: dist directory not found"
-            exit 1
-          fi
-          ls -la dist/
-          npm pack --dry-run
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+          BASE_VERSION="$(node -p 'require("./package.json").version')"
+          SHORT_SHA="${GITHUB_SHA:0:12}"
+          CANARY_VERSION="${BASE_VERSION}-canary.${GITHUB_RUN_NUMBER}.${SHORT_SHA}"
+          pnpm pkg set version="$CANARY_VERSION"
+          rm -rf /tmp/gitvan-canary
+          mkdir -p /tmp/gitvan-canary
+          pnpm pack --pack-destination /tmp/gitvan-canary
+          TARBALL="$(find /tmp/gitvan-canary -maxdepth 1 -type f -name 'gitvan-*.tgz' -print -quit)"
+          test -n "$TARBALL"
+          printf '%s\n' "$CANARY_VERSION" > /tmp/gitvan-canary/VERSION
+          printf '%s\n' "$GITHUB_SHA" > /tmp/gitvan-canary/SOURCE_SHA
+          sha256sum "$TARBALL" > /tmp/gitvan-canary/SHA256SUMS
+      - name: Consumer smoke test exact canary artifact
+        run: |
+          TARBALL="$(find /tmp/gitvan-canary -maxdepth 1 -type f -name 'gitvan-*.tgz' -print -quit)"
+          rm -rf /tmp/gitvan-canary-consumer
+          mkdir -p /tmp/gitvan-canary-consumer
+          cd /tmp/gitvan-canary-consumer
+          npm init -y
+          npm install "$TARBALL"
+          npx --no-install gitvan --version
+          npx --no-install gitvan --help
+      - name: Upload canary capsule
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: canary-build
-          path: |
-            dist/
-            package.json
-          retention-days: 7
+          name: gitvan-canary-${{ github.sha }}
+          path: /tmp/gitvan-canary/
+          if-no-files-found: error
+          retention-days: 14
 
-  # ============================================================================
-  # Integration Tests with Canary Build
-  # ============================================================================
-  integration-test:
-    name: Integration Test Canary Build
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Download canary build
-        uses: actions/download-artifact@v4
-        with:
-          name: canary-build
-
-      - name: Install canary build locally
-        run: |
-          npm pack
-          npm install -g ./gitvan-*.tgz
-
-      - name: Test canary installation
-        run: |
-          which gitvan || echo "GitVan not found in PATH"
-          gitvan --version || echo "GitVan version command failed"
-          gitvan --help || echo "GitVan help command failed"
-
-      - name: Run smoke tests
-        run: |
-          # Basic smoke tests for the CLI
-          gitvan --version
-          echo "Canary build smoke tests passed!"
-        continue-on-error: true
-
-  # ============================================================================
-  # Publish Canary to npm
-  # ============================================================================
   publish:
-    name: Publish Canary Release
+    name: Publish admitted canary
     runs-on: ubuntu-latest
-    needs: [validate, build, integration-test]
-    if: needs.validate.outputs.should_publish == 'true'
+    needs: manufacture
+    if: inputs.publish == true
+    timeout-minutes: 15
+    permissions:
+      id-token: write
+      contents: read
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Set up Node 22 for npm
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: '20'
-          registry-url: 'https://registry.npmjs.org'
-          cache: 'npm'
-
-      - name: Download canary build
-        uses: actions/download-artifact@v4
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - name: Download exact canary capsule
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          name: canary-build
-
-      - name: Publish to npm with canary tag
+          name: gitvan-canary-${{ github.sha }}
+          path: canary/
+      - name: Verify canary capsule identity
+        working-directory: canary
         run: |
-          echo "Publishing canary version: ${{ needs.validate.outputs.canary_version }}"
-          npm publish --tag canary --access public
+          test "$(cat SOURCE_SHA)" = "$GITHUB_SHA"
+          sha256sum --check SHA256SUMS
+      - name: Publish the tested canary tarball
+        working-directory: canary
+        run: |
+          TARBALL="$(find . -maxdepth 1 -type f -name 'gitvan-*.tgz' -print -quit)"
+          test -n "$TARBALL"
+          npm publish "$TARBALL" --tag canary --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        continue-on-error: true
-
-      - name: Verify canary publication
-        run: |
-          sleep 10
-          npm view gitvan@canary || echo "Canary package not yet available"
-
-  # ============================================================================
-  # Canary Deployment Summary
-  # ============================================================================
-  summary:
-    name: Canary Deployment Summary
-    runs-on: ubuntu-latest
-    needs: [validate, test, build, integration-test, publish]
-    if: always()
-    steps:
-      - name: Create summary
-        run: |
-          echo "## 🐤 Canary Deployment Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Canary Version**: ${{ needs.validate.outputs.canary_version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Should Publish**: ${{ needs.validate.outputs.should_publish }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Tests**: ${{ needs.test.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Build**: ${{ needs.build.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Integration Tests**: ${{ needs.integration-test.result }}" >> $GITHUB_STEP_SUMMARY
-
-          if [[ "${{ needs.validate.outputs.should_publish }}" == "true" ]]; then
-            echo "- **Publish**: ${{ needs.publish.result }}" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "### 📦 Install Canary Build" >> $GITHUB_STEP_SUMMARY
-            echo '```bash' >> $GITHUB_STEP_SUMMARY
-            echo "npm install gitvan@canary" >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-          else
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "ℹ️ Canary build created but not published (branch: ${{ github.ref }})" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          if [[ "${{ needs.test.result }}" == "failure" ]] || [[ "${{ needs.build.result }}" == "failure" ]]; then
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "❌ Canary deployment failed!" >> $GITHUB_STEP_SUMMARY
-            exit 1
-          fi
-
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Canary deployment successful!" >> $GITHUB_STEP_SUMMARY
-
-  # ============================================================================
-  # Cleanup Old Canary Builds
-  # ============================================================================
-  cleanup:
-    name: Cleanup Old Artifacts
-    runs-on: ubuntu-latest
-    needs: summary
-    if: always()
-    steps:
-      - name: Delete old canary artifacts
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const artifacts = await github.rest.actions.listArtifactsForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-            });
-
-            const canaryArtifacts = artifacts.data.artifacts.filter(artifact =>
-              artifact.name.startsWith('canary-') &&
-              new Date(artifact.created_at) < new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-            );
-
-            for (const artifact of canaryArtifacts) {
-              console.log(`Deleting artifact: ${artifact.name}`);
-              await github.rest.actions.deleteArtifact({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                artifact_id: artifact.id,
-              });
-            }
-        continue-on-error: true

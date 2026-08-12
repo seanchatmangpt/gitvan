@@ -50,7 +50,9 @@ jobs:
 
           payload = []
           for line in lines[start:end]:
-              if line.startswith('          '):
+              if line == '':
+                  payload.append('')
+              elif line.startswith('          '):
                   payload.append(line[10:])
               else:
                   raise SystemExit(f'unexpected closure payload indentation: {line!r}')

@@ -1,23 +1,52 @@
 import { defineCommand } from "citty";
-import { WorkflowCLI } from "../cli/workflow.mjs";
+import { join } from "node:path";
+import { WorkflowEngine } from "../workflow/workflow-engine.mjs";
 import { useGitVan, withGitVan } from "../core/context.mjs";
 import { createLogger } from "../utils/logger.mjs";
 import { exitWithError } from "../core/error-handler.mjs";
 
 const logger = createLogger("cli:enterprise:workflow");
 
-async function withWorkflow(fn) {
-  const cli = new WorkflowCLI();
+function localName(iri) {
+  const value = String(iri || "");
+  const index = Math.max(value.lastIndexOf("#"), value.lastIndexOf("/"), value.lastIndexOf(":"));
+  return value.slice(index + 1);
+}
+
+async function withEngine(fn) {
   return withGitVan({ cwd: process.cwd() }, async () => {
     const context = useGitVan();
-    await cli.initialize(context);
-    return fn(cli);
+    const root = context?.root || context?.cwd || process.cwd();
+    const engine = new WorkflowEngine({
+      graphDir: join(root, "workflows"),
+      logger,
+      enterprisePolicy: context?.enterprisePolicy || {},
+    });
+    await engine.initialize();
+    try {
+      return await fn(engine);
+    } finally {
+      await engine.cleanup();
+    }
   });
 }
 
 async function fail(error, operation) {
   logger.error(`${operation}: ${error.message}`, { code: error.code });
   return exitWithError(error, 1);
+}
+
+function findWorkflow(workflows, workflowId) {
+  const exact = workflows.find((workflow) => workflow.id === workflowId);
+  if (exact) return exact;
+  const candidates = workflows.filter((workflow) => localName(workflow.id) === workflowId);
+  if (candidates.length === 1) return candidates[0];
+  if (candidates.length > 1) {
+    const error = new Error(`Workflow ID is ambiguous: ${workflowId}`);
+    error.code = "WORKFLOW_ID_AMBIGUOUS_REFUSED";
+    throw error;
+  }
+  return null;
 }
 
 export const enterpriseWorkflowCommand = defineCommand({
@@ -31,7 +60,12 @@ export const enterpriseWorkflowCommand = defineCommand({
       meta: { name: "list", description: "List admitted RDF workflows" },
       async run() {
         try {
-          await withWorkflow((cli) => cli.list());
+          await withEngine(async (engine) => {
+            const workflows = await engine.listWorkflows();
+            for (const workflow of workflows) {
+              logger.info(`${workflow.id} — ${workflow.title} (${workflow.pipelineCount} pipeline(s))`);
+            }
+          });
         } catch (error) {
           await fail(error, "Failed to list workflows");
         }
@@ -51,7 +85,7 @@ export const enterpriseWorkflowCommand = defineCommand({
         },
         "dry-run": {
           type: "boolean",
-          description: "Resolve the workflow without actuation",
+          description: "Resolve the admitted workflow without actuation",
           default: false,
         },
         verbose: {
@@ -62,10 +96,33 @@ export const enterpriseWorkflowCommand = defineCommand({
       },
       async run({ args }) {
         try {
-          await withWorkflow((cli) => cli.run(args.workflowId, {
-            dryRun: args["dry-run"],
-            verbose: args.verbose,
-          }));
+          await withEngine(async (engine) => {
+            if (args["dry-run"]) {
+              const workflow = findWorkflow(await engine.listWorkflows(), args.workflowId);
+              if (!workflow) {
+                const error = new Error(`Workflow not found: ${args.workflowId}`);
+                error.code = "WORKFLOW_NOT_FOUND";
+                throw error;
+              }
+              logger.info(`DRY_RUN_ADMITTED ${workflow.id} — ${workflow.title}`);
+              return;
+            }
+
+            const result = await engine.executeWorkflow(args.workflowId, {
+              verbose: args.verbose,
+            });
+            if (result.status !== "completed") {
+              const failedStep = result.steps.at(-1);
+              const error = new Error(
+                failedStep?.error || `Workflow ended with standing ${result.standing}`
+              );
+              error.code = failedStep?.errorCode || "WORKFLOW_EXECUTION_FAILED";
+              throw error;
+            }
+            logger.info(
+              `WORKFLOW_EXECUTED ${result.workflowId} steps=${result.executedSteps} observations=${result.observationReceipts.length}`
+            );
+          });
         } catch (error) {
           await fail(error, "Failed to execute workflow");
         }
@@ -75,7 +132,12 @@ export const enterpriseWorkflowCommand = defineCommand({
       meta: { name: "stats", description: "Show admitted workflow graph statistics" },
       async run() {
         try {
-          await withWorkflow((cli) => cli.stats());
+          await withEngine(async (engine) => {
+            const stats = await engine.getStats();
+            logger.info(
+              `WORKFLOW_STATS workflows=${stats.workflows} quads=${stats.quadCount} observationReceipts=${stats.observationReceiptCount}`
+            );
+          });
         } catch (error) {
           await fail(error, "Failed to read workflow statistics");
         }

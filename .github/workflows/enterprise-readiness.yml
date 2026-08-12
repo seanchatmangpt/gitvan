@@ -33,7 +33,10 @@ jobs:
           package-manager-cache: false
       - name: Parse hardened execution surfaces
         run: |
+          node --check src/cli.mjs
+          node --check src/enterprise/workflow-command.mjs
           node --check src/enterprise/actuation-broker.mjs
+          node --check src/workflow/workflow-engine.mjs
           node --check src/workflow/step-runner.mjs
           node --check src/workflow/step-handlers/cli-step-handler.mjs
           node --check src/workflow/step-handlers/http-step-handler.mjs
@@ -47,7 +50,7 @@ jobs:
   repository-regression:
     name: Repository regression / Node 22
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - name: Checkout exact subject
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -58,19 +61,34 @@ jobs:
         with:
           node-version: 22
           package-manager-cache: false
-      - name: Install locked dependencies without lifecycle scripts
-        run: npm ci --ignore-scripts
+      - name: Pin Corepack and pnpm
+        run: |
+          npm install --global corepack@0.35.0
+          corepack enable
+          corepack install --global pnpm@11.21.0
+          test "$(pnpm --version)" = "11.21.0"
+      - name: Install canonical dependency capsule
+        run: pnpm install --frozen-lockfile
       - name: Enterprise integration tests
-        run: npx vitest run tests/enterprise/step-runner-enterprise.test.mjs tests/step-handlers/cli-step-handler.test.mjs tests/step-handlers/http-step-handler.test.mjs tests/step-handlers/file-step-handler.test.mjs
+        run: >-
+          pnpm exec vitest run
+          tests/enterprise/step-runner-enterprise.test.mjs
+          tests/enterprise/workflow-engine-enterprise.test.mjs
+          tests/step-handlers/cli-step-handler.test.mjs
+          tests/step-handlers/http-step-handler.test.mjs
+          tests/step-handlers/file-step-handler.test.mjs
       - name: Lint
-        run: npm run lint
+        run: pnpm lint
       - name: Full test suite
-        run: npm test -- --run
+        run: pnpm test
       - name: Build package
-        run: npm run build
+        run: pnpm build
       - name: High-severity production dependency audit
-        run: npm audit --omit=dev --audit-level=high
-      - name: Manufacture SBOM
-        run: npm sbom --sbom-format cyclonedx > /tmp/gitvan-sbom.cdx.json
-      - name: Validate publish artifact
-        run: npm pack --dry-run --json > /tmp/gitvan-pack.json
+        run: pnpm audit --prod --audit-level high
+      - name: Manufacture production dependency inventory
+        run: pnpm list --prod --depth Infinity --json > /tmp/gitvan-production-dependencies.json
+      - name: Manufacture publish artifact
+        run: |
+          mkdir -p /tmp/gitvan-pack
+          pnpm pack --pack-destination /tmp/gitvan-pack
+          test -n "$(find /tmp/gitvan-pack -maxdepth 1 -name 'gitvan-*.tgz' -print -quit)"

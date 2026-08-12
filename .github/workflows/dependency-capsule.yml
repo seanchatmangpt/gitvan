@@ -61,14 +61,6 @@ jobs:
           }
           NODE
           rm -rf node_modules
-      - name: Replay manufactured dependency capsule
-        run: |
-          pnpm install --frozen-lockfile
-          test "$(node -p 'require("./package.json").packageManager')" = "pnpm@11.21.0"
-          test "$(node -p 'require("./package.json").engines.node')" = ">=22.0.0"
-          test "$(node -p 'require("./package.json").scripts.prepublishOnly')" = "pnpm run build"
-          test "$(node -p 'require("./package.json").scripts.test')" = "vitest run"
-          test "$(node -p 'require("protobufjs/package.json").version')" = "7.5.5"
       - name: Bind artifact identity
         run: |
           mkdir -p /tmp/gitvan-dependency-capsule
@@ -83,3 +75,12 @@ jobs:
           path: /tmp/gitvan-dependency-capsule
           if-no-files-found: error
           retention-days: 7
+      - name: Replay manufactured dependency capsule
+        run: |
+          rm -rf node_modules
+          pnpm install --frozen-lockfile
+          test "$(node -p 'require("./package.json").packageManager')" = "pnpm@11.21.0"
+          test "$(node -p 'require("./package.json").engines.node')" = ">=22.0.0"
+          test "$(node -p 'require("./package.json").scripts.prepublishOnly')" = "pnpm run build"
+          test "$(node -p 'require("./package.json").scripts.test')" = "vitest run"
+          test "$(node -p 'require("protobufjs/package.json").version')" = "7.5.5"

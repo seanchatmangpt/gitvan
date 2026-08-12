@@ -6,47 +6,12 @@ import { ContextManager } from "./context-manager.mjs";
 /**
  * WorkflowEngine - Loads and executes workflows defined in Turtle files
  *
- * The WorkflowEngine is the main entry point for workflow execution in GitVan.
- * It provides a high-level API for loading, validating, and executing workflows
- * defined in Turtle RDF format.
- *
- * ## Core Architecture
- *
  * Uses unrdf's KnowledgeSubstrateCore for:
  * - Federated queries across all workflow definitions
  * - SHACL validation of workflow schemas
  * - Knowledge hooks for reactive workflow management
  * - Built-in OTEL observability
  * - Transaction-based changes with audit receipts
- *
- * ## Usage
- *
- * ```javascript
- * const engine = new WorkflowEngine({
- *   graphDir: "./workflows",
- * });
- *
- * await engine.initialize();
- * const workflows = await engine.listWorkflows();
- * const result = await engine.executeWorkflow(workflowId);
- * ```
- *
- * @example
- * ```javascript
- * import { createWorkflowEngine } from './workflow-engine.mjs';
- *
- * const engine = await createWorkflowEngine({
- *   graphDir: './workflows'
- * });
- *
- * // List all available workflows
- * const workflows = await engine.listWorkflows();
- * console.log('Available workflows:', workflows);
- *
- * // Execute a workflow
- * const result = await engine.executeWorkflow('http://example.org/my-workflow');
- * console.log('Execution result:', result);
- * ```
  */
 export class WorkflowEngine {
   constructor(options = {}) {
@@ -59,21 +24,8 @@ export class WorkflowEngine {
 
   /**
    * Initialize the engine by loading Turtle files into KnowledgeSubstrateCore
-   *
-   * This method loads all Turtle (.ttl) files from the configured graphDir
-   * into the KnowledgeSubstrateCore's RDF store. Each file is parsed and
-   * its quads are added to the centralized knowledge graph.
-   *
-   * @returns {Promise<WorkflowEngine>} Returns this engine instance for chaining
-   * @throws {Error} If graphDir doesn't exist or files cannot be parsed
-   *
-   * @example
-   * ```javascript
-   * const engine = new WorkflowEngine({ graphDir: './workflows' });
-   * await engine.initialize();
-   * // Engine is now ready to execute workflows
-   * ```
    */
+  async initialize() {
     try {
       this.logger.info(
         `🚀 Initializing WorkflowEngine with graphDir: ${this.graphDir}`
@@ -126,24 +78,8 @@ export class WorkflowEngine {
 
   /**
    * List all workflows found in Turtle files
-   *
-   * Queries the knowledge graph for all workflow definitions and returns
-   * their metadata including ID, title, and predicate information.
-   *
-   * @returns {Promise<Array<object>>} Array of workflow metadata objects
-   * @returns {string} return[].id - Workflow URI/identifier
-   * @returns {string} return[].title - Human-readable workflow title
-   * @returns {string|null} return[].predicate - Git predicate that triggers this workflow
-   * @returns {number} return[].pipelineCount - Number of pipelines in the workflow
-   *
-   * @example
-   * ```javascript
-   * const workflows = await engine.listWorkflows();
-   * workflows.forEach(w => {
-   *   console.log(`Workflow: ${w.title} (${w.id})`);
-   * });
-   * ```
    */
+  async listWorkflows() {
     if (!this.core) {
       await this.initialize();
     }
@@ -184,30 +120,8 @@ export class WorkflowEngine {
 
   /**
    * Execute a workflow by ID
-   *
-   * Orchestrates the complete execution of a workflow including:
-   * 1. Finding the workflow definition in the knowledge graph
-   * 2. Parsing workflow steps from the pipeline
-   * 3. Executing each step in dependency order
-   * 4. Collecting and returning execution results
-   *
-   * @param {string} workflowId - The URI/identifier of the workflow to execute
-   * @returns {Promise<object>} Execution result object
-   * @returns {string} return.workflowId - ID of the executed workflow
-   * @returns {string} return.title - Title of the workflow
-   * @returns {string} return.status - Execution status ('completed' or 'failed')
-   * @returns {Array<object>} return.steps - Array of step execution results
-   * @returns {string} return.executedAt - ISO timestamp of execution
-   * @throws {Error} If workflow is not found or execution fails
-   *
-   * @example
-   * ```javascript
-   * const result = await engine.executeWorkflow('http://example.org/my-workflow');
-   * if (result.status === 'completed') {
-   *   console.log(`Successfully executed ${result.steps.length} steps`);
-   * }
-   * ```
    */
+  async executeWorkflow(workflowId) {
     if (!this.core) {
       await this.initialize();
     }

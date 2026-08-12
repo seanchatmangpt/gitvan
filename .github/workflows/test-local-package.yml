@@ -7,57 +7,61 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: local-package-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test-local-package:
     runs-on: ubuntu-latest
-
+    timeout-minutes: 20
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Checkout exact subject
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          node-version: "20"
-
-      - name: Install dependencies
-        run: npm install
-
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Set up Node 22
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+          package-manager-cache: false
+      - name: Pin pnpm toolchain
+        run: |
+          npm install --global corepack@0.35.0
+          corepack enable
+          corepack install --global pnpm@11.21.0
+          test "$(pnpm --version)" = "11.21.0"
+      - name: Install frozen dependency graph
+        run: pnpm install --frozen-lockfile
       - name: Build package
-        run: npm run build
-
-      - name: Pack package
-        run: npm pack
-
-      - name: Create test directory
+        run: pnpm build
+      - name: Manufacture package tarball
         run: |
-          mkdir -p /tmp/test-package
-          cp gitvan-2.0.0.tgz /tmp/test-package/
-          cd /tmp/test-package
-          echo "Test directory: $(pwd)"
-
-      - name: Install packed package
+          rm -rf /tmp/gitvan-pack /tmp/test-package
+          mkdir -p /tmp/gitvan-pack /tmp/test-package
+          pnpm pack --pack-destination /tmp/gitvan-pack
+          PACKAGE_TARBALL="$(find /tmp/gitvan-pack -maxdepth 1 -type f -name 'gitvan-*.tgz' -print -quit)"
+          test -n "$PACKAGE_TARBALL"
+          cp "$PACKAGE_TARBALL" /tmp/test-package/gitvan.tgz
+          sha256sum "$PACKAGE_TARBALL" | tee /tmp/test-package/PACKAGE_SHA256
+      - name: Install packaged artifact as a consumer
+        working-directory: /tmp/test-package
         run: |
-          cd /tmp/test-package
           npm init -y
-          npm install gitvan-2.0.0.tgz
-
-      - name: Test installation
+          npm install ./gitvan.tgz
+      - name: Exercise packaged CLI
+        working-directory: /tmp/test-package
         run: |
-          cd /tmp/test-package
-          npx gitvan --version
-          npx gitvan help
-
-      - name: Test basic functionality
-        run: |
-          cd /tmp/test-package
+          npx --no-install gitvan --version
+          npx --no-install gitvan --help
           git init
-          git config user.name "Test User"
-          git config user.email "test@example.com"
-          npx gitvan init --help
-
+          git config user.name "GitVan Package Test"
+          git config user.email "gitvan-package-test@example.invalid"
+          npx --no-install gitvan init --help
       - name: Cleanup
         if: always()
-        run: |
-          rm -rf /tmp/test-package
-          rm -f gitvan-2.0.0.tgz
+        run: rm -rf /tmp/gitvan-pack /tmp/test-package

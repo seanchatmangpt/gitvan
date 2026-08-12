@@ -1,22 +1,41 @@
 name: autofix.ci
-on: { push: {}, pull_request: {} }
-permissions: { contents: read }
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: autofix-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   autofix:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout exact subject
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          submodules: recursive
-          fetch-depth: 0
-      - name: Initialize and update submodules
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Set up Node 22
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+          package-manager-cache: false
+      - name: Pin pnpm toolchain
         run: |
-          git submodule init
-          git submodule update --recursive
-      - run: npm i -fg corepack && corepack enable
-      - uses: actions/setup-node@v4
-        with: { node-version: lts/*, cache: "pnpm" }
-      - run: pnpm install
-      - run: pnpm test:docs
-      - uses: autofix-ci/action@635ffb0c9798bd160680f18fd73371e355b85f27
-        with: { commit-message: "chore: apply automated updates" }
+          npm install --global corepack@0.35.0
+          corepack enable
+          corepack install --global pnpm@11.21.0
+          test "$(pnpm --version)" = "11.21.0"
+      - name: Install frozen dependency graph
+        run: pnpm install --frozen-lockfile
+      - name: Validate documentation before autofix
+        run: pnpm test:docs
+      - name: Apply authorized autofixes
+        uses: autofix-ci/action@635ffb0c9798bd160680f18fd73371e355b85f27
+        with:
+          commit-message: "chore: apply automated updates"

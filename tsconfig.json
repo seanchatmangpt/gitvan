@@ -15,11 +15,6 @@
     "forceConsistentCasingInFileNames": true,
     "allowImportingTsExtensions": true,
     "noImplicitOverride": true,
-    "noEmit": true,
-    "baseUrl": ".",
-    "paths": {
-      "unrdf": ["./vendor/unrdf/dist/index.mjs"],
-      "unrdf/*": ["./vendor/unrdf/dist/*"]
-    }
+    "noEmit": true
   }
 }

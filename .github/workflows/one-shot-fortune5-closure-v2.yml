@@ -1,4 +1,4 @@
-name: One-shot Fortune-5 closure repair v3
+name: One-shot Fortune-5 closure repair v4
 
 on:
   pull_request:
@@ -55,12 +55,9 @@ jobs:
           package = json.loads(package_path.read_text())
           deps = package['dependencies']
           dev = package['devDependencies']
-
           for dead in ['@unrdf/knowledge-engine', '@unrdf/streaming', 'tar']:
               deps.pop(dead, None)
-          if 'unbuild' in deps:
-              deps.pop('unbuild')
-
+          deps.pop('unbuild', None)
           deps.update({
               '@opentelemetry/api': '1.9.1',
               '@opentelemetry/auto-instrumentations-node': '0.79.0',
@@ -99,11 +96,11 @@ jobs:
 
           workspace = Path('pnpm-workspace.yaml')
           workspace_text = workspace.read_text()
-          workspace_text = workspace_text.replace('protobufjs: 7.5.5', 'protobufjs: 7.6.1')
-          workspace_text = workspace_text.replace("'protobufjs@7.5.5': false", "'protobufjs@7.6.1': false")
-          workspace_text = workspace_text.replace('patched in protobufjs 7.5.5', 'patched in protobufjs 7.6.1')
+          workspace_text = workspace_text.replace('protobufjs: 7.5.5', 'protobufjs: 7.6.5')
+          workspace_text = workspace_text.replace("'protobufjs@7.5.5': false", "'protobufjs@7.6.5': false")
+          workspace_text = workspace_text.replace('patched in protobufjs 7.5.5', 'patched in protobufjs 7.6.5')
           if '  esbuild: 0.28.1\n' not in workspace_text:
-              workspace_text = workspace_text.replace('  protobufjs: 7.6.1\n', '  protobufjs: 7.6.1\n  esbuild: 0.28.1\n')
+              workspace_text = workspace_text.replace('  protobufjs: 7.6.5\n', '  protobufjs: 7.6.5\n  esbuild: 0.28.1\n')
           if "  'esbuild@0.28.1': true\n" not in workspace_text:
               workspace_text = workspace_text.replace("  'esbuild@0.28.2': true\n", "  'esbuild@0.28.2': true\n  'esbuild@0.28.1': true\n")
           workspace.write_text(workspace_text)

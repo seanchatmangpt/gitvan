@@ -1,4 +1,4 @@
-name: One-shot Fortune-5 closure repair v4
+name: One-shot Fortune-5 closure repair v5
 
 on:
   pull_request:
@@ -43,13 +43,13 @@ jobs:
           import json
           from pathlib import Path
 
-          def replace_once(path, old, new):
+          def replace_exact(path, old, new, expected=1):
               p = Path(path)
               text = p.read_text()
               count = text.count(old)
-              if count != 1:
-                  raise SystemExit(f'{path}: expected exactly one match, got {count}: {old!r}')
-              p.write_text(text.replace(old, new, 1))
+              if count != expected:
+                  raise SystemExit(f'{path}: expected {expected} match(es), got {count}: {old!r}')
+              p.write_text(text.replace(old, new, expected))
 
           package_path = Path('package.json')
           package = json.loads(package_path.read_text())
@@ -79,12 +79,12 @@ jobs:
           package['devDependencies'] = dict(sorted(dev.items()))
           package_path.write_text(json.dumps(package, indent=2) + '\n')
 
-          replace_once('src/unrdf-hooks/core/state.ts', "    const newValue = isFunction(setter) ? setter(this.value) : setter;\n", "    const newValue = typeof setter === 'function'\n      ? (setter as (prev: T) => T)(this.value)\n      : setter;\n")
-          replace_once('src/unrdf-hooks/events/hooks.ts', "): AsyncGenerator<T, void, unknown> {\n", "): AsyncIterableIterator<T> {\n")
-          replace_once('src/unrdf-hooks/examples/advanced-patterns.ts', "    return () => subscribers.delete(callback);\n", "    return () => {\n      subscribers.delete(callback);\n    };\n")
-          replace_once('src/unrdf-hooks/repository/hooks.ts', "import { DEFAULT_REPOSITORY_STATE_OPTIONS } from './types.js';\n\nconst execFileAsync = promisify(execFile);\n", "import { DEFAULT_REPOSITORY_STATE_OPTIONS } from './types.js';\n\ntype MutableRemoteInfo = { -readonly [K in keyof RemoteInfo]?: RemoteInfo[K] };\ntype MutableWorktreeInfo = { -readonly [K in keyof WorktreeInfo]?: WorktreeInfo[K] };\n\nconst execFileAsync = promisify(execFile);\n")
-          replace_once('src/unrdf-hooks/repository/hooks.ts', "        const remotes: Map<string, Partial<RemoteInfo>> = new Map();\n", "        const remotes: Map<string, MutableRemoteInfo> = new Map();\n")
-          replace_once('src/unrdf-hooks/repository/hooks.ts', "        let current: Partial<WorktreeInfo> = {};\n", "        let current: MutableWorktreeInfo = {};\n")
+          replace_exact('src/unrdf-hooks/core/state.ts', "    const newValue = isFunction(setter) ? setter(this.value) : setter;\n", "    const newValue = typeof setter === 'function'\n      ? (setter as (prev: T) => T)(this.value)\n      : setter;\n")
+          replace_exact('src/unrdf-hooks/events/hooks.ts', "): AsyncGenerator<T, void, unknown> {\n", "): AsyncIterableIterator<T> {\n")
+          replace_exact('src/unrdf-hooks/examples/advanced-patterns.ts', "    return () => subscribers.delete(callback);\n", "    return () => {\n      subscribers.delete(callback);\n    };\n")
+          replace_exact('src/unrdf-hooks/repository/hooks.ts', "import { DEFAULT_REPOSITORY_STATE_OPTIONS } from './types.js';\n\nconst execFileAsync = promisify(execFile);\n", "import { DEFAULT_REPOSITORY_STATE_OPTIONS } from './types.js';\n\ntype MutableRemoteInfo = { -readonly [K in keyof RemoteInfo]?: RemoteInfo[K] };\ntype MutableWorktreeInfo = { -readonly [K in keyof WorktreeInfo]?: WorktreeInfo[K] };\n\nconst execFileAsync = promisify(execFile);\n")
+          replace_exact('src/unrdf-hooks/repository/hooks.ts', "        const remotes: Map<string, Partial<RemoteInfo>> = new Map();\n", "        const remotes: Map<string, MutableRemoteInfo> = new Map();\n")
+          replace_exact('src/unrdf-hooks/repository/hooks.ts', "        let current: Partial<WorktreeInfo> = {};\n", "        let current: MutableWorktreeInfo = {};\n")
 
           hooks_build = Path('.github/workflows/hooks-build.yml')
           hooks_text = hooks_build.read_text()
@@ -112,6 +112,101 @@ jobs:
           telemetry_text = telemetry_text.replace('SEMRESATTRS_DEPLOYMENT_ENVIRONMENT', 'ATTR_DEPLOYMENT_ENVIRONMENT_NAME')
           telemetry_text = telemetry_text.replace("serviceVersion: '2.1.0'", "serviceVersion: '4.0.1'")
           telemetry.write_text(telemetry_text)
+
+          replace_exact(
+              'src/hooks/PredicateEvaluator.mjs',
+              '    const result = await this._executeQueryWithCache(queryWithPrefixes, currentGraph);\n    return result.boolean || false;\n',
+              '    const result = await this._executeQueryWithCache(\n      queryWithPrefixes,\n      currentGraph\n    );\n\n    if (typeof result === "boolean") {\n      return result;\n    }\n    if (result && typeof result.boolean === "boolean") {\n      return result.boolean;\n    }\n\n    throw new Error("ASK query returned an unsupported result shape");\n',
+          )
+
+          replace_exact(
+              'src/hooks/HookOrchestrator.mjs',
+              '    this.cwd = options.cwd || process.cwd();\n',
+              '    this.cwd = options.cwd || options.context?.cwd || process.cwd();\n',
+          )
+          replace_exact(
+              'src/hooks/HookOrchestrator.mjs',
+              '  async evaluate(options = {}) {\n    const startTime = performance.now();\n',
+              '  async evaluate(options = {}) {\n    const startedAt = new Date().toISOString();\n    const startTime = performance.now();\n',
+          )
+          replace_exact(
+              'src/hooks/HookOrchestrator.mjs',
+              '      const evaluationResult = await this._finalizeEvaluation(\n        evaluationResults,\n        executionResults || [],\n        startTime\n      );\n',
+              '      const evaluationResult = await this._finalizeEvaluation(\n        evaluationResults,\n        executionResults || [],\n        startTime,\n        startedAt\n      );\n',
+          )
+          replace_exact(
+              'src/hooks/HookOrchestrator.mjs',
+              '      // Get the previous commit hash\n      const HEAD = await git.symbolicRef("HEAD");\n      if (!HEAD) {\n        this.logger.info("📚 No HEAD ref found, starting fresh");\n        this.previousGraph = null;\n        return;\n      }\n\n      const logResult = await git.log({ maxCount: 2 });\n      if (!logResult || logResult.length < 2) {\n        this.logger.info("📚 Only one commit in history, no previous state");\n        this.previousGraph = null;\n        return;\n      }\n\n      const previousCommit = logResult[1].hash;\n',
+              '      const revisions = (await git.revList(["--max-count=2", "HEAD"]))\n        .split("\\n")\n        .map((revision) => revision.trim())\n        .filter(Boolean);\n\n      if (revisions.length < 2) {\n        this.logger.info("📚 Only one commit in history, no previous state");\n        this.previousGraph = null;\n        return;\n      }\n\n      const previousCommit = revisions[1];\n',
+          )
+          replace_exact(
+              'src/hooks/HookOrchestrator.mjs',
+              '          const executionId = this._generateExecutionId();\n\n          try {\n',
+              '          const executionId = this._generateExecutionId();\n          const executionStartedAt = Date.now();\n\n          try {\n',
+          )
+          replace_exact(
+              'src/hooks/HookOrchestrator.mjs',
+              '                duration: Date.now() - evaluation.startTime,\n',
+              '                duration: Date.now() - executionStartedAt,\n',
+              expected=2,
+          )
+          replace_exact(
+              'src/hooks/HookOrchestrator.mjs',
+              '  async _finalizeEvaluation(evaluationResults, executionResults, startTime) {\n    const endTime = performance.now();\n    const duration = endTime - startTime;\n',
+              '  async _finalizeEvaluation(\n    evaluationResults,\n    executionResults,\n    startTime,\n    startedAt\n  ) {\n    const endTime = performance.now();\n    const endedAt = new Date().toISOString();\n    const duration = endTime - startTime;\n',
+          )
+          replace_exact(
+              'src/hooks/HookOrchestrator.mjs',
+              '    const result = {\n      success: true,\n      duration: Math.round(duration),\n',
+              '    const result = {\n      success: executions.every((execution) => execution.success),\n      duration: Math.round(duration),\n',
+          )
+          replace_exact(
+              'src/hooks/HookOrchestrator.mjs',
+              '        startTime: new Date(startTime).toISOString(),\n        endTime: new Date(endTime).toISOString(),\n',
+              '        startTime: startedAt,\n        endTime: endedAt,\n',
+          )
+          replace_exact(
+              'src/hooks/HookOrchestrator.mjs',
+              '      await git.writeNote(noteRef, noteContent, {\n        append: true,\n      });\n',
+              '      await git.noteAppend(noteRef, noteContent);\n',
+          )
+
+          replace_exact(
+              'tests/knowledge-hooks-simple-verification.test.mjs',
+              'import { mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs";\n',
+              'import {\n  mkdirSync,\n  writeFileSync,\n  readFileSync,\n  rmSync,\n  existsSync,\n} from "node:fs";\n',
+          )
+          replace_exact(
+              'tests/knowledge-hooks-simple-verification.test.mjs',
+              '      evaluationTime: result.evaluationTime,\n',
+              '      duration: result.duration,\n',
+          )
+          replace_exact(
+              'tests/knowledge-hooks-simple-verification.test.mjs',
+              '    expect(result.workflowsExecuted).toBeGreaterThan(0);\n    expect(result.success).toBe(true);\n',
+              '    expect(result.workflowsExecuted).toBeGreaterThan(0);\n    expect(result.workflowsSuccessful).toBeGreaterThan(0);\n    expect(result.success).toBe(true);\n',
+          )
+          replace_exact(
+              'tests/knowledge-hooks-simple-verification.test.mjs',
+              '    const logContent = require("fs").readFileSync(logFile, "utf8");\n    expect(logContent).toContain("Simple hook triggered at");\n',
+              '    const logContent = readFileSync(logFile, "utf8");\n    expect(logContent).toContain("Simple hook triggered at");\n\n    const receipt = execSync(\n      "git notes --ref=refs/notes/gitvan/hook-evaluations show HEAD",\n      { cwd: testDir, encoding: "utf8" }\n    );\n    expect(receipt).toContain(\'"hooksTriggered": 1\');\n    expect(receipt).toContain(\'"workflowsExecuted": 1\');\n',
+          )
+          replace_exact(
+              'tests/knowledge-hooks-simple-verification.test.mjs',
+              '    console.log(`   - Evaluation completed in ${result.evaluationTime}ms`);\n',
+              '    console.log(`   - Evaluation completed in ${result.duration}ms`);\n',
+          )
+
+          system_test = Path('tests/knowledge-hooks-system.test.mjs')
+          system_text = system_test.read_text()
+          system_text = system_text.replace('@prefix op: <https://gitvan.dev/ontology#> .', '@prefix op: <https://gitvan.dev/op#> .')
+          system_text = system_text.replace('ex:ask-pipeline rdf:type gh:Pipeline ;\n    op:steps ex:ask-step .\n\nex:ask-step rdf:type gh:Step ;\n    gh:actionType "log" ;\n    gh:actionMessage "ASK predicate evaluated successfully" .', 'ex:ask-pipeline rdf:type op:Pipeline ;\n    op:steps ex:ask-step .\n\nex:ask-step rdf:type gv:TemplateStep ;\n    gv:text "ASK predicate evaluated successfully" ;\n    gv:filePath "./ask-result.log" .')
+          system_text = system_text.replace('expect(result.hooksEvaluated).toBeGreaterThanOrEqual(0);\n        expect(result.workflowsExecuted).toBeGreaterThanOrEqual(0);', 'expect(result.hooksEvaluated).toBe(1);\n        expect(result.hooksTriggered).toBe(1);\n        expect(result.workflowsExecuted).toBe(1);\n        expect(result.workflowsSuccessful).toBe(1);\n        expect(result.success).toBe(true);', 1)
+          system_text = system_text.replace('it("should evaluate SELECT predicate hooks"', 'it("should evaluate SELECTThreshold predicate hooks"')
+          system_text = system_text.replace('ex:select-predicate rdf:type gh:SELECTPredicate ;\n    gh:queryText """SELECT ?component ?complexity WHERE {\n        ?component rdf:type gv:Component .\n        ?component gv:complexity ?complexity .\n      }""" .', 'ex:select-predicate rdf:type gh:SELECTThreshold ;\n    gh:queryText """SELECT (COUNT(?component) AS ?count) WHERE {\n        ?component rdf:type gv:Component .\n        ?component gv:complexity ?complexity .\n        FILTER(?complexity >= 7)\n      }""" ;\n    gh:threshold 0 ;\n    gh:operator ">" .')
+          system_text = system_text.replace('ex:select-pipeline rdf:type gh:Pipeline ;\n    op:steps ex:select-step .\n\nex:select-step rdf:type gh:Step ;\n    gh:actionType "log" ;\n    gh:actionMessage "SELECT predicate evaluated successfully" .', 'ex:select-pipeline rdf:type op:Pipeline ;\n    op:steps ex:select-step .\n\nex:select-step rdf:type gv:TemplateStep ;\n    gv:text "SELECTThreshold predicate evaluated successfully" ;\n    gv:filePath "./select-result.log" .')
+          system_text = system_text.replace('expect(result.hooksEvaluated).toBeGreaterThanOrEqual(0);\n        expect(result.workflowsExecuted).toBeGreaterThanOrEqual(0);', 'expect(result.hooksEvaluated).toBe(1);\n        expect(result.hooksTriggered).toBe(1);\n        expect(result.workflowsExecuted).toBe(1);\n        expect(result.workflowsSuccessful).toBe(1);\n        expect(result.success).toBe(true);', 1)
+          system_test.write_text(system_text)
           PY
       - name: Manufacture base lock
         run: pnpm install --lockfile-only --no-frozen-lockfile
@@ -125,6 +220,9 @@ jobs:
           src/telemetry/index.mjs src/unrdf-hooks/core/state.ts
           src/unrdf-hooks/events/hooks.ts src/unrdf-hooks/examples/advanced-patterns.ts
           src/unrdf-hooks/repository/hooks.ts .github/workflows/hooks-build.yml
+          src/hooks/PredicateEvaluator.mjs src/hooks/HookOrchestrator.mjs
+          tests/knowledge-hooks-simple-verification.test.mjs
+          tests/knowledge-hooks-system.test.mjs
       - name: Replay frozen graph
         run: pnpm install --frozen-lockfile
       - name: Refuse HIGH or CRITICAL production advisories
@@ -140,7 +238,10 @@ jobs:
           pnpm exec tsc --noEmit --skipLibCheck --strict --allowJs false
           --target esnext --module nodenext --moduleResolution nodenext src/unrdf-hooks/index.ts
       - name: Verify JavaScript lint boundary
-        run: pnpm exec eslint --max-warnings=0 src/integrations src/jobs/hooks.mjs src/cli/commands/hooks.mjs src/telemetry/index.mjs
+        run: >-
+          pnpm exec eslint --max-warnings=0 src/integrations src/jobs/hooks.mjs
+          src/cli/commands/hooks.mjs src/telemetry/index.mjs
+          src/hooks/PredicateEvaluator.mjs src/hooks/HookOrchestrator.mjs
       - name: Verify surviving UNRDF packages
         run: |
           node --input-type=module <<'NODE'
@@ -174,7 +275,7 @@ jobs:
           await rm(path);
           console.log('EXCEL_ALIVE');
           NODE
-      - name: Verify focused hooks behavior
+      - name: Verify focused hooks behavior and receipts
         run: pnpm exec vitest run tests/knowledge-hooks-simple-verification.test.mjs tests/knowledge-hooks-system.test.mjs --reporter=verbose
       - name: Verify enterprise authority boundary
         run: pnpm test:enterprise
@@ -190,13 +291,16 @@ jobs:
           src/telemetry/index.mjs src/unrdf-hooks/core/state.ts
           src/unrdf-hooks/events/hooks.ts src/unrdf-hooks/examples/advanced-patterns.ts
           src/unrdf-hooks/repository/hooks.ts .github/workflows/hooks-build.yml
+          src/hooks/PredicateEvaluator.mjs src/hooks/HookOrchestrator.mjs
+          tests/knowledge-hooks-simple-verification.test.mjs
+          tests/knowledge-hooks-system.test.mjs
       - name: Verify bounded mutation scope
         shell: bash
         run: |
           git diff --check
           rm -f docs-test-report.json
           mapfile -t changed < <(git status --short | awk '{print $2}')
-          allowed='package.json pnpm-lock.yaml pnpm-workspace.yaml src/telemetry/index.mjs src/unrdf-hooks/core/state.ts src/unrdf-hooks/events/hooks.ts src/unrdf-hooks/examples/advanced-patterns.ts src/unrdf-hooks/repository/hooks.ts .github/workflows/hooks-build.yml'
+          allowed='package.json pnpm-lock.yaml pnpm-workspace.yaml src/telemetry/index.mjs src/unrdf-hooks/core/state.ts src/unrdf-hooks/events/hooks.ts src/unrdf-hooks/examples/advanced-patterns.ts src/unrdf-hooks/repository/hooks.ts .github/workflows/hooks-build.yml src/hooks/PredicateEvaluator.mjs src/hooks/HookOrchestrator.mjs tests/knowledge-hooks-simple-verification.test.mjs tests/knowledge-hooks-system.test.mjs'
           for path in "${changed[@]}"; do
             case " $allowed " in *" $path "*) ;; *) echo "Unexpected mutation: $path" >&2; exit 1 ;; esac
           done
@@ -205,8 +309,8 @@ jobs:
           test "$(node -p 'Boolean(require("./package.json").dependencies.unbuild)')" = 'false'
       - name: Commit and push verified closure repair
         run: |
-          git add package.json pnpm-lock.yaml pnpm-workspace.yaml src/telemetry/index.mjs src/unrdf-hooks/core/state.ts src/unrdf-hooks/events/hooks.ts src/unrdf-hooks/examples/advanced-patterns.ts src/unrdf-hooks/repository/hooks.ts .github/workflows/hooks-build.yml
+          git add package.json pnpm-lock.yaml pnpm-workspace.yaml src/telemetry/index.mjs src/unrdf-hooks/core/state.ts src/unrdf-hooks/events/hooks.ts src/unrdf-hooks/examples/advanced-patterns.ts src/unrdf-hooks/repository/hooks.ts .github/workflows/hooks-build.yml src/hooks/PredicateEvaluator.mjs src/hooks/HookOrchestrator.mjs tests/knowledge-hooks-simple-verification.test.mjs tests/knowledge-hooks-system.test.mjs
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'close dependency and strict type blockers'
+          git commit -m 'close hook execution receipt and dependency blockers'
           git push origin HEAD:${{ github.event.pull_request.head.ref }}

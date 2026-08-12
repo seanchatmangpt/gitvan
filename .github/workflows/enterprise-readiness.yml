@@ -114,3 +114,58 @@ jobs:
           path: /tmp/gitvan-enterprise-evidence/
           if-no-files-found: error
           retention-days: 30
+
+  container-contract:
+    name: Container contract / Node 22.23.1
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact subject
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Build immutable production image
+        run: |
+          SUBJECT="${{ github.event.pull_request.head.sha || github.sha }}"
+          docker build --tag "gitvan-enterprise:$SUBJECT" .
+      - name: Verify runtime identity and least privilege
+        shell: bash
+        run: |
+          SUBJECT="${{ github.event.pull_request.head.sha || github.sha }}"
+          IMAGE="gitvan-enterprise:$SUBJECT"
+          EXPECTED_VERSION="$(node -p 'require("./package.json").version')"
+          test "$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.version" }}' "$IMAGE")" = "$EXPECTED_VERSION"
+          docker run --rm "$IMAGE" --version
+          docker run --rm "$IMAGE" --help >/dev/null
+          docker run --rm --entrypoint /bin/sh "$IMAGE" -c '
+            test "$(id -u)" = "1000"
+            test "$(node --version)" = "v22.23.1"
+            git --version
+            ! command -v npm
+            ! command -v npx
+            ! command -v yarn
+            ! command -v corepack
+          '
+      - name: Scan image for HIGH and CRITICAL vulnerabilities
+        id: trivy
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: gitvan-enterprise:${{ github.event.pull_request.head.sha || github.sha }}
+          format: json
+          output: /tmp/trivy-image.json
+          severity: HIGH,CRITICAL
+          ignore-unfixed: false
+          exit-code: '1'
+      - name: Upload container security receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: gitvan-container-security-${{ github.event.pull_request.head.sha || github.sha }}
+          path: /tmp/trivy-image.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Refuse vulnerable production image
+        if: always()
+        run: test '${{ steps.trivy.outcome }}' = 'success'

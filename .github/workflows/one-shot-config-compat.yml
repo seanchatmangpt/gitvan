@@ -1,0 +1,259 @@
+name: One-shot config compatibility repair
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/one-shot-config-compat.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  repair:
+    if: >-
+      github.actor == 'seanchatmangpt' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/fortune5-enterprise-hardening-20260812'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout exact admitted branch head
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Set up Node 22
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+          package-manager-cache: false
+      - name: Pin pnpm toolchain
+        run: |
+          npm install --global corepack@0.35.0
+          corepack enable
+          corepack install --global pnpm@11.21.0
+      - name: Install frozen current graph
+        run: pnpm install --frozen-lockfile
+      - name: Repair stale compatibility boundary
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          loader = Path('src/config/loader.mjs')
+          text = loader.read_text()
+          stale_import = 'import { loadWithRDFSupport } from "./rdf-adapter.mjs";\n'
+          if stale_import not in text:
+              raise SystemExit('stale loadWithRDFSupport import not found')
+          text = text.replace(stale_import, '', 1)
+
+          stale_tail = '''// Re-export RDF-aware adapter for optional use
+          export { loadWithRDFSupport };
+          '''.replace('          ', '')
+          if stale_tail not in text:
+              raise SystemExit('stale RDF adapter re-export not found')
+
+          implementation = r'''
+          /**
+           * Load configuration with a backward-compatible RDF projection.
+           *
+           * This compatibility surface does not restore the deleted rdf-loader wrapper.
+           * It projects the admitted c12 configuration through the current quad adapter
+           * and a local @unrdf/core store, so c12 remains the single configuration owner.
+           */
+          export async function loadWithRDFSupport(overrides = {}, opts = {}) {
+            const startedAt = performance.now();
+            const config = await loadOptions(overrides, { watch: opts.watch === true });
+            const projection = _toPlainConfig(config);
+            const [{ configToRdf }, unrdf] = await Promise.all([
+              import('./rdf-adapter.mjs'),
+              import('@unrdf/core'),
+            ]);
+
+            const rawQuads = configToRdf(projection);
+            const store = new unrdf.UnrdfStore();
+            for (const raw of rawQuads) {
+              store.add(_toRdfJsQuad(raw, unrdf));
+            }
+
+            const get = async (path) => _getConfigPath(projection, path);
+            const toPOJO = async () => klona(projection);
+            const paths = async () => _configPaths(projection);
+            const query = async (sparql) => unrdf.executeQuerySync(store, sparql);
+            const rdf = Object.freeze({
+              query,
+              async validate() {
+                return {
+                  supported: false,
+                  conformant: null,
+                  reason: 'SHACL validation requires explicit shapes; the compatibility projection does not manufacture a validation claim.',
+                };
+              },
+              async toTurtle() {
+                return rawQuads.map(_rawQuadToTurtle).join('\n');
+              },
+              toPOJO,
+              paths,
+              all: toPOJO,
+              get,
+              isAvailable() {
+                return true;
+              },
+              getConsistencyReport() {
+                return opts.validateConsistency === true
+                  ? _projectionConsistencyReport()
+                  : null;
+              },
+            });
+
+            const adapter = klona(config);
+            Object.defineProperties(adapter, {
+              rdf: { enumerable: true, configurable: false, value: rdf },
+              getRDF: { enumerable: true, configurable: false, value: get },
+              getConsistencyReport: {
+                enumerable: true,
+                configurable: false,
+                value: () => rdf.getConsistencyReport(),
+              },
+              getLoadTimeMs: {
+                enumerable: true,
+                configurable: false,
+                value: () => performance.now() - startedAt,
+              },
+            });
+            return adapter;
+          }
+
+          function _projectionConsistencyReport() {
+            return {
+              isConsistent: true,
+              discrepancies: [],
+              onlyInC12: [],
+              onlyInRDF: [],
+              typeConflicts: [],
+              valueConflicts: [],
+              warnings: [],
+              basis: 'RDF projection was manufactured from the admitted c12 configuration',
+            };
+          }
+
+          function _toPlainConfig(value, seen = new WeakSet()) {
+            if (value === null || value === undefined) return value;
+            if (typeof value === 'function' || typeof value === 'symbol') return undefined;
+            if (typeof value !== 'object') return value;
+            if (seen.has(value)) return undefined;
+            seen.add(value);
+            if (Array.isArray(value)) {
+              return value.map((item) => _toPlainConfig(item, seen)).filter((item) => item !== undefined);
+            }
+            const result = {};
+            for (const [key, item] of Object.entries(value)) {
+              const projected = _toPlainConfig(item, seen);
+              if (projected !== undefined) result[key] = projected;
+            }
+            return result;
+          }
+
+          function _getConfigPath(config, path) {
+            if (typeof path !== 'string' || path.length === 0) return undefined;
+            return path.split('.').reduce((value, key) => value?.[key], config);
+          }
+
+          function _configPaths(value, prefix = '') {
+            if (value === null || typeof value !== 'object') return prefix ? [prefix] : [];
+            const result = [];
+            for (const [key, item] of Object.entries(value)) {
+              const path = prefix ? `${prefix}.${key}` : key;
+              if (item !== null && typeof item === 'object' && !Array.isArray(item)) {
+                result.push(..._configPaths(item, path));
+              } else {
+                result.push(path);
+              }
+            }
+            return result;
+          }
+
+          function _toRdfJsQuad(raw, rdf) {
+            return rdf.quad(
+              _toRdfJsTerm(raw.subject, rdf),
+              _toRdfJsTerm(raw.predicate, rdf),
+              _toRdfJsTerm(raw.object, rdf),
+            );
+          }
+
+          function _toRdfJsTerm(raw, rdf) {
+            if (raw?.type === 'NamedNode') return rdf.namedNode(raw.value);
+            if (raw?.type === 'BlankNode') return rdf.blankNode(raw.value);
+            if (raw?.type === 'Literal') {
+              const value = String(raw.value ?? '');
+              return raw.datatype?.value
+                ? rdf.literal(value, rdf.namedNode(raw.datatype.value))
+                : rdf.literal(value);
+            }
+            throw new TypeError(`Unsupported RDF term: ${JSON.stringify(raw)}`);
+          }
+
+          function _rawQuadToTurtle(raw) {
+            return `${_rawTermToTurtle(raw.subject)} ${_rawTermToTurtle(raw.predicate)} ${_rawTermToTurtle(raw.object)} .`;
+          }
+
+          function _rawTermToTurtle(raw) {
+            if (raw?.type === 'NamedNode') return `<${raw.value}>`;
+            if (raw?.type === 'BlankNode') return `_:${raw.value}`;
+            if (raw?.type === 'Literal') {
+              const literalValue = JSON.stringify(String(raw.value ?? ''));
+              return raw.datatype?.value
+                ? `${literalValue}^^<${raw.datatype.value}>`
+                : literalValue;
+            }
+            throw new TypeError(`Unsupported RDF term: ${JSON.stringify(raw)}`);
+          }
+          '''.replace('          ', '')
+
+          text = text.replace(stale_tail, implementation.strip() + '\n', 1)
+          loader.write_text(text)
+
+          adapter = Path('src/config/rdf-adapter.mjs')
+          adapter_text = adapter.read_text()
+          reexport = '\n// Backward-compatible public projection; implementation remains owned by loader.mjs.\nexport { loadWithRDFSupport } from "./loader.mjs";\n'
+          if 'export { loadWithRDFSupport } from "./loader.mjs";' not in adapter_text:
+              adapter.write_text(adapter_text.rstrip() + reexport)
+
+          closure = Path('.github/workflows/one-shot-fortune5-closure-v2.yml')
+          closure_text = closure.read_text()
+          marker = 'name: One-shot Fortune-5 closure repair v4'
+          if marker not in closure_text:
+              raise SystemExit('Fortune-5 closure v4 marker not found')
+          closure.write_text(closure_text.replace(marker, 'name: One-shot Fortune-5 closure repair v4.1', 1))
+          PY
+      - name: Format repaired config surface
+        run: pnpm exec prettier --write src/config/loader.mjs src/config/rdf-adapter.mjs
+      - name: Verify loader and compatibility imports
+        run: |
+          node --input-type=module -e "const m=await import('./src/config/loader.mjs'); if(typeof m.loadWithRDFSupport!=='function') process.exit(1); console.log('LOADER_COMPAT_IMPORT_ALIVE')"
+          node --input-type=module -e "const m=await import('./src/config/rdf-adapter.mjs'); if(typeof m.loadWithRDFSupport!=='function') process.exit(1); console.log('ADAPTER_COMPAT_REEXPORT_ALIVE')"
+      - name: Verify config adapter behavior
+        run: >-
+          pnpm exec vitest run
+          tests/config/rdf-adapter.test.mjs
+          tests/v4/phase1-config-integration.test.mjs
+          --reporter=verbose
+      - name: Verify mutation scope
+        shell: bash
+        run: |
+          git diff --check
+          mapfile -t changed < <(git status --short | awk '{print $2}')
+          allowed='src/config/loader.mjs src/config/rdf-adapter.mjs .github/workflows/one-shot-fortune5-closure-v2.yml'
+          for path in "${changed[@]}"; do
+            case " $allowed " in *" $path "*) ;; *) echo "Unexpected mutation: $path" >&2; exit 1 ;; esac
+          done
+      - name: Commit verified compatibility repair and retrigger closure
+        run: |
+          git add src/config/loader.mjs src/config/rdf-adapter.mjs .github/workflows/one-shot-fortune5-closure-v2.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'repair config RDF compatibility boundary'
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}

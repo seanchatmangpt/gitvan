@@ -1,4 +1,4 @@
-name: One-shot Fortune-5 closure repair v5
+name: One-shot Fortune-5 closure repair v6
 
 on:
   pull_request:
@@ -118,11 +118,81 @@ jobs:
               '    const result = await this._executeQueryWithCache(queryWithPrefixes, currentGraph);\n    return result.boolean || false;\n',
               '    const result = await this._executeQueryWithCache(\n      queryWithPrefixes,\n      currentGraph\n    );\n\n    if (typeof result === "boolean") {\n      return result;\n    }\n    if (result && typeof result.boolean === "boolean") {\n      return result.boolean;\n    }\n\n    throw new Error("ASK query returned an unsupported result shape");\n',
           )
+          replace_exact(
+              'src/hooks/PredicateEvaluator.mjs',
+              '''  _extractNumericValue(result) {
+    if (!result) return 0;
+
+    if (result.results && result.results.length > 0) {
+      const firstResult = result.results[0];
+      const values = Object.values(firstResult);
+      if (values.length > 0) {
+        const value = values[0];
+        if (value && value.value) {
+          return parseFloat(value.value) || 0;
+        }
+      }
+    }
+
+    return 0;
+  }
+''',
+              '''  _extractNumericValue(result) {
+    if (!result) return 0;
+
+    const rows = Array.isArray(result)
+      ? result
+      : Array.isArray(result.rows)
+        ? result.rows
+        : Array.isArray(result.results)
+          ? result.results
+          : [];
+
+    if (rows.length === 0) return 0;
+
+    const firstResult = rows[0];
+    const values =
+      firstResult instanceof Map
+        ? Array.from(firstResult.values())
+        : Object.values(firstResult).filter(
+            (value) => typeof value !== "function"
+          );
+
+    if (values.length === 0) return 0;
+
+    const firstValue = values[0];
+    const rawValue = firstValue?.value ?? firstValue;
+    const numericValue = Number.parseFloat(String(rawValue));
+    return Number.isFinite(numericValue) ? numericValue : 0;
+  }
+''',
+          )
 
           replace_exact(
               'src/hooks/HookOrchestrator.mjs',
-              '    this.cwd = options.cwd || process.cwd();\n',
-              '    this.cwd = options.cwd || options.context?.cwd || process.cwd();\n',
+              'import { useChangeStream } from "../composables/useChangeStream.mjs";\n',
+              'import { useChangeStream } from "../composables/useChangeStream.mjs";\nimport { tryUseGitVan } from "../core/context.mjs";\n',
+          )
+          replace_exact(
+              'src/hooks/HookOrchestrator.mjs',
+              '''    this.graphDir = options.graphDir || "./hooks";
+    this.context = options.context;
+    this.logger = options.logger || console;
+    this.timeoutMs = options.timeoutMs || 300000; // 5 minutes default
+    this.cwd = options.cwd || process.cwd();
+''',
+              '''    this.graphDir = options.graphDir || "./hooks";
+    const activeContext = options.context || tryUseGitVan?.() || null;
+    this.context = activeContext;
+    this.logger = options.logger || console;
+    this.timeoutMs = options.timeoutMs || 300000; // 5 minutes default
+    this.cwd = options.cwd || activeContext?.cwd || process.cwd();
+''',
+          )
+          replace_exact(
+              'src/hooks/HookOrchestrator.mjs',
+              '    this.predicateEvaluator = new PredicateEvaluator({ logger: this.logger });\n',
+              '    this.predicateEvaluator = new PredicateEvaluator({\n      logger: this.logger,\n      cwd: this.cwd,\n    });\n',
           )
           replace_exact(
               'src/hooks/HookOrchestrator.mjs',
@@ -136,8 +206,41 @@ jobs:
           )
           replace_exact(
               'src/hooks/HookOrchestrator.mjs',
-              '      // Get the previous commit hash\n      const HEAD = await git.symbolicRef("HEAD");\n      if (!HEAD) {\n        this.logger.info("📚 No HEAD ref found, starting fresh");\n        this.previousGraph = null;\n        return;\n      }\n\n      const logResult = await git.log({ maxCount: 2 });\n      if (!logResult || logResult.length < 2) {\n        this.logger.info("📚 Only one commit in history, no previous state");\n        this.previousGraph = null;\n        return;\n      }\n\n      const previousCommit = logResult[1].hash;\n',
-              '      const revisions = (await git.revList(["--max-count=2", "HEAD"]))\n        .split("\\n")\n        .map((revision) => revision.trim())\n        .filter(Boolean);\n\n      if (revisions.length < 2) {\n        this.logger.info("📚 Only one commit in history, no previous state");\n        this.previousGraph = null;\n        return;\n      }\n\n      const previousCommit = revisions[1];\n',
+              '''      // Get the previous commit hash
+      const HEAD = await git.symbolicRef("HEAD");
+      if (!HEAD) {
+        this.logger.info("📚 No HEAD ref found, starting fresh");
+        this.previousGraph = null;
+        return;
+      }
+
+      const logResult = await git.log({ maxCount: 2 });
+      if (!logResult || logResult.length < 2) {
+        this.logger.info("📚 Only one commit in history, no previous state");
+        this.previousGraph = null;
+        return;
+      }
+
+      const previousCommit = logResult[1].hash;
+''',
+              '''      const revisions = (await git.revList(["--max-count=2", "HEAD"]))
+        .split("\\n")
+        .map((revision) => revision.trim())
+        .filter(Boolean);
+
+      if (revisions.length < 2) {
+        this.logger.info("📚 Only one commit in history, no previous state");
+        this.previousGraph = null;
+        return;
+      }
+
+      const previousCommit = revisions[1];
+''',
+          )
+          replace_exact(
+              'src/hooks/HookOrchestrator.mjs',
+              '      const previousState = await this.gitNativeIO.loadSnapshot(\n        `graph-state-${previousCommit}`\n      );\n',
+              '      const previousState = await this.gitNativeIO.getSnapshot(\n        `graph-state-${previousCommit}`\n      );\n',
           )
           replace_exact(
               'src/hooks/HookOrchestrator.mjs',
@@ -146,9 +249,69 @@ jobs:
           )
           replace_exact(
               'src/hooks/HookOrchestrator.mjs',
+              '              // Initialize execution context\n              await this.contextManager.initialize({\n',
+              '              // Isolate mutable context per concurrent workflow execution.\n              const contextManager = new ContextManager({ logger: this.logger });\n              await contextManager.initialize({\n',
+          )
+          replace_exact(
+              'src/hooks/HookOrchestrator.mjs',
+              '''                    return await this.runner.executeStep(
+                      step,
+                      this.contextManager,
+                      this.graph,
+                      this.turtle,
+                      options
+                    );
+''',
+              '''                    return await this.runner.executeStep(
+                      step,
+                      contextManager,
+                      this.graph,
+                      this.turtle,
+                      { ...options, cwd: this.cwd }
+                    );
+''',
+          )
+          replace_exact(
+              'src/hooks/HookOrchestrator.mjs',
+              '''              const executionResult = {
+                hookId: hook.id,
+                success: true,
+                stepResults,
+                outputs: this.contextManager.getOutputs(),
+                executionId,
+              };
+''',
+              '''              const workflowSucceeded = stepResults.every(
+                (stepResult) => stepResult?.success === true
+              );
+              const executionResult = {
+                hookId: hook.id,
+                success: workflowSucceeded,
+                stepResults,
+                outputs: contextManager.getOutputs(),
+                executionId,
+              };
+''',
+          )
+          replace_exact(
+              'src/hooks/HookOrchestrator.mjs',
               '                duration: Date.now() - evaluation.startTime,\n',
               '                duration: Date.now() - executionStartedAt,\n',
               expected=2,
+          )
+          replace_exact(
+              'src/hooks/HookOrchestrator.mjs',
+              '''                stepsExecuted: stepResults.length,
+                success: true,
+''',
+              '''                stepsExecuted: stepResults.length,
+                success: workflowSucceeded,
+''',
+          )
+          replace_exact(
+              'src/hooks/HookOrchestrator.mjs',
+              '                this.logger.info(`✅ Workflow completed for hook: ${hook.id}`);\n',
+              '                const icon = workflowSucceeded ? "✅" : "❌";\n                this.logger.info(\n                  `${icon} Workflow ${workflowSucceeded ? "completed" : "failed"} for hook: ${hook.id}`\n                );\n',
           )
           replace_exact(
               'src/hooks/HookOrchestrator.mjs',
@@ -167,8 +330,334 @@ jobs:
           )
           replace_exact(
               'src/hooks/HookOrchestrator.mjs',
-              '      await git.writeNote(noteRef, noteContent, {\n        append: true,\n      });\n',
-              '      await git.noteAppend(noteRef, noteContent);\n',
+              '''    // Write evaluation receipt to Git Notes
+    await this._writeEvaluationReceipt(result);
+
+    return result;
+''',
+              '''    // Zero unreceipted actuation: durable execution receipts must exist
+    // before the evaluation can return standing.
+    await this.gitNativeIO.flushAll();
+    await this._writeEvaluationReceipt(result);
+
+    return result;
+''',
+          )
+          replace_exact(
+              'src/hooks/HookOrchestrator.mjs',
+              '''  async _writeEvaluationReceipt(result) {
+    try {
+      this.logger.info("📝 Writing evaluation receipt to Git Notes");
+
+      const { useGit } = await import("../composables/git.mjs");
+
+      const git = useGit({
+        cwd: this.cwd || process.cwd(),
+      });
+
+      // Create receipt data
+      const receiptData = {
+        timestamp: new Date().toISOString(),
+        duration: result.duration,
+        hooksEvaluated: result.hooksEvaluated,
+        hooksTriggered: result.hooksTriggered,
+        workflowsExecuted: result.workflowsExecuted,
+        workflowsSuccessful: result.workflowsSuccessful,
+        triggeredHooks: result.triggeredHooks,
+        executions: result.executions.map((ex) => ({
+          hookId: ex.hookId,
+          success: ex.success,
+          error: ex.error,
+        })),
+      };
+
+      // Write to Git Notes for audit trail
+      const noteContent = JSON.stringify(receiptData, null, 2);
+      const noteRef = "refs/notes/gitvan/hook-evaluations";
+
+      await git.writeNote(noteRef, noteContent, {
+        append: true,
+      });
+
+      this.logger.info("✅ Evaluation receipt written to Git Notes");
+    } catch (error) {
+      this.logger.warn(
+        `⚠️ Failed to write evaluation receipt: ${error.message}`
+      );
+    }
+  }
+''',
+              '''  async _writeEvaluationReceipt(result) {
+    this.logger.info("📝 Writing evaluation receipt to Git Notes");
+
+    const { useGit } = await import("../composables/git.mjs");
+    const git = useGit({ cwd: this.cwd });
+
+    const receiptData = {
+      timestamp: new Date().toISOString(),
+      duration: result.duration,
+      hooksEvaluated: result.hooksEvaluated,
+      hooksTriggered: result.hooksTriggered,
+      workflowsExecuted: result.workflowsExecuted,
+      workflowsSuccessful: result.workflowsSuccessful,
+      triggeredHooks: result.triggeredHooks,
+      executions: result.executions.map((execution) => ({
+        hookId: execution.hookId,
+        success: execution.success,
+        error: execution.error,
+      })),
+    };
+
+    const noteContent = JSON.stringify(receiptData, null, 2);
+    await git.noteAppend(
+      "refs/notes/gitvan/hook-evaluations",
+      noteContent
+    );
+
+    this.logger.info("✅ Evaluation receipt written to Git Notes");
+  }
+''',
+          )
+
+          replace_exact(
+              'src/hooks/HookParser.mjs',
+              '''    const filePath = turtle.getOne(stepNode, GV + "filePath");
+    if (filePath) {
+      config.filePath = filePath.value;
+    }
+''',
+              '''    const filePath = turtle.getOne(stepNode, GV + "filePath");
+    if (filePath) {
+      config.filePath = filePath.value;
+      config.outputPath = filePath.value;
+    }
+''',
+          )
+
+          replace_exact(
+              'src/workflow/step-handlers/template-step-handler.mjs',
+              '''    const { template, templatePath, outputPath, ...templateOptions } =
+      step.config;
+
+    try {
+''',
+              '''    const { template, templatePath, outputPath, ...templateOptions } =
+      step.config;
+    const cwd = context.options?.cwd || process.cwd();
+
+    try {
+''',
+          )
+          replace_exact(
+              'src/workflow/step-handlers/template-step-handler.mjs',
+              '''      const { dirname } = await import("node:path");
+
+      // Ensure output directory exists
+''',
+              '''      const { dirname, resolve } = await import("node:path");
+      const resolvedOutputPath = resolve(cwd, outputPath);
+
+      // Ensure output directory exists
+''',
+          )
+          replace_exact(
+              'src/workflow/step-handlers/template-step-handler.mjs',
+              '        const dir = dirname(outputPath);\n',
+              '        const dir = dirname(resolvedOutputPath);\n',
+          )
+          replace_exact(
+              'src/workflow/step-handlers/template-step-handler.mjs',
+              '        await fs.writeFile(outputPath, renderedContent);\n',
+              '        await fs.writeFile(resolvedOutputPath, renderedContent);\n',
+          )
+          replace_exact(
+              'src/workflow/step-handlers/template-step-handler.mjs',
+              '        await fs.mkdir(dirname(outputPath), { recursive: true });\n        await fs.writeFile(outputPath, renderedContent, "utf8");\n',
+              '        await fs.mkdir(dirname(resolvedOutputPath), { recursive: true });\n        await fs.writeFile(resolvedOutputPath, renderedContent, "utf8");\n',
+          )
+          replace_exact(
+              'src/workflow/step-handlers/template-step-handler.mjs',
+              '        outputPath,\n        content: renderedContent,\n',
+              '        outputPath: resolvedOutputPath,\n        content: renderedContent,\n',
+          )
+
+          replace_exact(
+              'src/composables/git.mjs',
+              '  const cwd = (ctx && ctx.cwd) || process.cwd();\n',
+              '  const cwd = options.cwd || (ctx && ctx.cwd) || process.cwd();\n',
+          )
+          replace_exact(
+              'src/composables/git.mjs',
+              '''  const base = { cwd, env };
+  
+''',
+              '''  const base = { cwd, env };
+  const notesBase = {
+    cwd,
+    env: {
+      ...env,
+      GIT_AUTHOR_NAME: env.GIT_AUTHOR_NAME || "GitVan Receipt",
+      GIT_AUTHOR_EMAIL: env.GIT_AUTHOR_EMAIL || "receipts@gitvan.dev",
+      GIT_COMMITTER_NAME: env.GIT_COMMITTER_NAME || "GitVan Receipt",
+      GIT_COMMITTER_EMAIL: env.GIT_COMMITTER_EMAIL || "receipts@gitvan.dev",
+    },
+  };
+  
+''',
+          )
+          replace_exact(
+              'src/composables/git.mjs',
+              '''      await runGitVoid(
+        ["notes", `--ref=${ref}`, "add", "-f", "-m", message, sha],
+        base
+      );
+''',
+              '''      await runGitVoid(
+        ["notes", `--ref=${ref}`, "add", "-f", "-m", message, sha],
+        notesBase
+      );
+''',
+          )
+          replace_exact(
+              'src/composables/git.mjs',
+              '''      await runGitVoid(
+        ["notes", `--ref=${ref}`, "append", "-m", message, sha],
+        base
+      );
+''',
+              '''      await runGitVoid(
+        ["notes", `--ref=${ref}`, "append", "-m", message, sha],
+        notesBase
+      );
+''',
+          )
+
+          replace_exact(
+              'src/git-native/ReceiptWriter.mjs',
+              '''import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
+''',
+              '''import { execFile } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import { promisify } from "node:util";
+
+const execFileAsync = promisify(execFile);
+''',
+          )
+          replace_exact(
+              'src/git-native/ReceiptWriter.mjs',
+              "      await execAsync('git rev-parse --git-dir', { cwd: this.cwd });\n",
+              '      await this._git(["rev-parse", "--git-dir"]);\n',
+          )
+          replace_exact(
+              'src/git-native/ReceiptWriter.mjs',
+              '''    const { stdout } = await execAsync(`git log --oneline -n ${keepCommits} --format="%H"`, { cwd: this.cwd });
+''',
+              '''    const { stdout } = await this._git([
+      "log",
+      "--oneline",
+      "-n",
+      String(keepCommits),
+      "--format=%H",
+    ]);
+''',
+          )
+          replace_exact(
+              'src/git-native/ReceiptWriter.mjs',
+              '''      // Create a temporary file for the content
+      const tempFile = join(this.cwd, '.gitvan', 'tmp', `notes-${Date.now()}.txt`);
+      await fs.mkdir(dirname(tempFile), { recursive: true });
+      await fs.writeFile(tempFile, content);
+      
+      // Append to notes ref
+      await execAsync(`git notes --ref=${notesRef} append -F "${tempFile}"`, { cwd: this.cwd });
+      
+      // Clean up temp file
+      await fs.unlink(tempFile);
+''',
+              '''      const tempFile = join(
+        this.cwd,
+        ".gitvan",
+        "tmp",
+        `notes-${randomUUID()}.txt`
+      );
+      await fs.mkdir(dirname(tempFile), { recursive: true });
+      await fs.writeFile(tempFile, content);
+
+      try {
+        await this._git(
+          ["notes", `--ref=${notesRef}`, "append", "-F", tempFile],
+          { identity: true }
+        );
+      } finally {
+        await fs.rm(tempFile, { force: true });
+      }
+''',
+          )
+          replace_exact(
+              'src/git-native/ReceiptWriter.mjs',
+              '      const { stdout } = await execAsync(`git notes --ref=${notesRef} show ${commit}`, { cwd: this.cwd });\n',
+              '      const { stdout } = await this._git(["notes", `--ref=${notesRef}`, "show", commit]);\n',
+          )
+          replace_exact(
+              'src/git-native/ReceiptWriter.mjs',
+              '      const { stdout } = await execAsync(`git notes --ref=${notesRef} list`, { cwd: this.cwd });\n',
+              '      const { stdout } = await this._git(["notes", `--ref=${notesRef}`, "list"]);\n',
+          )
+          replace_exact(
+              'src/git-native/ReceiptWriter.mjs',
+              '        const { stdout } = await execAsync(`git notes --ref=${ref} list`, { cwd: this.cwd });\n        const refCommits = stdout.trim().split(\'\\n\').filter(Boolean);\n        refCommits.forEach(commit => commits.add(commit));\n',
+              '        const { stdout } = await this._git(["notes", `--ref=${ref}`, "list"]);\n        const refCommits = stdout.trim().split("\\n").filter(Boolean);\n        refCommits.forEach((line) => {\n          const target = line.trim().split(/\\s+/).at(-1);\n          if (target) commits.add(target);\n        });\n',
+          )
+          replace_exact(
+              'src/git-native/ReceiptWriter.mjs',
+              '        await execAsync(`git notes --ref=${ref} remove ${commit}`, { cwd: this.cwd });\n',
+              '        await this._git(["notes", `--ref=${ref}`, "remove", commit], { identity: true });\n',
+          )
+          replace_exact(
+              'src/git-native/ReceiptWriter.mjs',
+              '''  async _getCurrentCommit() {
+    const { stdout } = await execAsync('git rev-parse HEAD', { cwd: this.cwd });
+    return stdout.trim();
+  }
+''',
+              '''  async _git(args, options = {}) {
+    const identity = options.identity === true;
+    const env = identity
+      ? {
+          ...process.env,
+          GIT_AUTHOR_NAME: process.env.GIT_AUTHOR_NAME || "GitVan Receipt",
+          GIT_AUTHOR_EMAIL:
+            process.env.GIT_AUTHOR_EMAIL || "receipts@gitvan.dev",
+          GIT_COMMITTER_NAME:
+            process.env.GIT_COMMITTER_NAME || "GitVan Receipt",
+          GIT_COMMITTER_EMAIL:
+            process.env.GIT_COMMITTER_EMAIL || "receipts@gitvan.dev",
+          TZ: "UTC",
+          LANG: "C",
+        }
+      : { ...process.env, TZ: "UTC", LANG: "C" };
+
+    return execFileAsync("git", args, {
+      cwd: this.cwd,
+      env,
+      encoding: "utf8",
+      maxBuffer: 12 * 1024 * 1024,
+    });
+  }
+
+  async _getCurrentCommit() {
+    const { stdout } = await this._git(["rev-parse", "HEAD"]);
+    return stdout.trim();
+  }
+''',
+          )
+          replace_exact(
+              'src/git-native/ReceiptWriter.mjs',
+              "      const { stdout } = await execAsync('git branch --show-current', { cwd: this.cwd });\n",
+              '      const { stdout } = await this._git(["branch", "--show-current"]);\n',
           )
 
           replace_exact(
@@ -189,7 +678,7 @@ jobs:
           replace_exact(
               'tests/knowledge-hooks-simple-verification.test.mjs',
               '    const logContent = require("fs").readFileSync(logFile, "utf8");\n    expect(logContent).toContain("Simple hook triggered at");\n',
-              '    const logContent = readFileSync(logFile, "utf8");\n    expect(logContent).toContain("Simple hook triggered at");\n\n    const receipt = execSync(\n      "git notes --ref=refs/notes/gitvan/hook-evaluations show HEAD",\n      { cwd: testDir, encoding: "utf8" }\n    );\n    expect(receipt).toContain(\'"hooksTriggered": 1\');\n    expect(receipt).toContain(\'"workflowsExecuted": 1\');\n',
+              '    const logContent = readFileSync(logFile, "utf8");\n    expect(logContent).toContain("Simple hook triggered at");\n\n    const receipt = execSync(\n      "git notes --ref=refs/notes/gitvan/hook-evaluations show HEAD",\n      { cwd: testDir, encoding: "utf8" }\n    );\n    expect(receipt).toContain(\'"hooksTriggered": 1\');\n    expect(receipt).toContain(\'"workflowsExecuted": 1\');\n\n    const executionReceipt = execSync(\n      "git notes --ref=refs/gitvan/notes show HEAD",\n      { cwd: testDir, encoding: "utf8" }\n    );\n    expect(executionReceipt).toContain("http://example.org/simple-hook");\n',
           )
           replace_exact(
               'tests/knowledge-hooks-simple-verification.test.mjs',
@@ -221,6 +710,8 @@ jobs:
           src/unrdf-hooks/events/hooks.ts src/unrdf-hooks/examples/advanced-patterns.ts
           src/unrdf-hooks/repository/hooks.ts .github/workflows/hooks-build.yml
           src/hooks/PredicateEvaluator.mjs src/hooks/HookOrchestrator.mjs
+          src/hooks/HookParser.mjs src/workflow/step-handlers/template-step-handler.mjs
+          src/composables/git.mjs src/git-native/ReceiptWriter.mjs
           tests/knowledge-hooks-simple-verification.test.mjs
           tests/knowledge-hooks-system.test.mjs
       - name: Replay frozen graph
@@ -242,6 +733,8 @@ jobs:
           pnpm exec eslint --max-warnings=0 src/integrations src/jobs/hooks.mjs
           src/cli/commands/hooks.mjs src/telemetry/index.mjs
           src/hooks/PredicateEvaluator.mjs src/hooks/HookOrchestrator.mjs
+          src/hooks/HookParser.mjs src/workflow/step-handlers/template-step-handler.mjs
+          src/composables/git.mjs src/git-native/ReceiptWriter.mjs
       - name: Verify surviving UNRDF packages
         run: |
           node --input-type=module <<'NODE'
@@ -275,7 +768,7 @@ jobs:
           await rm(path);
           console.log('EXCEL_ALIVE');
           NODE
-      - name: Verify focused hooks behavior and receipts
+      - name: Verify focused hooks behavior, consequence, and receipts
         run: pnpm exec vitest run tests/knowledge-hooks-simple-verification.test.mjs tests/knowledge-hooks-system.test.mjs --reporter=verbose
       - name: Verify enterprise authority boundary
         run: pnpm test:enterprise
@@ -292,6 +785,8 @@ jobs:
           src/unrdf-hooks/events/hooks.ts src/unrdf-hooks/examples/advanced-patterns.ts
           src/unrdf-hooks/repository/hooks.ts .github/workflows/hooks-build.yml
           src/hooks/PredicateEvaluator.mjs src/hooks/HookOrchestrator.mjs
+          src/hooks/HookParser.mjs src/workflow/step-handlers/template-step-handler.mjs
+          src/composables/git.mjs src/git-native/ReceiptWriter.mjs
           tests/knowledge-hooks-simple-verification.test.mjs
           tests/knowledge-hooks-system.test.mjs
       - name: Verify bounded mutation scope
@@ -300,7 +795,7 @@ jobs:
           git diff --check
           rm -f docs-test-report.json
           mapfile -t changed < <(git status --short | awk '{print $2}')
-          allowed='package.json pnpm-lock.yaml pnpm-workspace.yaml src/telemetry/index.mjs src/unrdf-hooks/core/state.ts src/unrdf-hooks/events/hooks.ts src/unrdf-hooks/examples/advanced-patterns.ts src/unrdf-hooks/repository/hooks.ts .github/workflows/hooks-build.yml src/hooks/PredicateEvaluator.mjs src/hooks/HookOrchestrator.mjs tests/knowledge-hooks-simple-verification.test.mjs tests/knowledge-hooks-system.test.mjs'
+          allowed='package.json pnpm-lock.yaml pnpm-workspace.yaml src/telemetry/index.mjs src/unrdf-hooks/core/state.ts src/unrdf-hooks/events/hooks.ts src/unrdf-hooks/examples/advanced-patterns.ts src/unrdf-hooks/repository/hooks.ts .github/workflows/hooks-build.yml src/hooks/PredicateEvaluator.mjs src/hooks/HookOrchestrator.mjs src/hooks/HookParser.mjs src/workflow/step-handlers/template-step-handler.mjs src/composables/git.mjs src/git-native/ReceiptWriter.mjs tests/knowledge-hooks-simple-verification.test.mjs tests/knowledge-hooks-system.test.mjs'
           for path in "${changed[@]}"; do
             case " $allowed " in *" $path "*) ;; *) echo "Unexpected mutation: $path" >&2; exit 1 ;; esac
           done
@@ -309,8 +804,8 @@ jobs:
           test "$(node -p 'Boolean(require("./package.json").dependencies.unbuild)')" = 'false'
       - name: Commit and push verified closure repair
         run: |
-          git add package.json pnpm-lock.yaml pnpm-workspace.yaml src/telemetry/index.mjs src/unrdf-hooks/core/state.ts src/unrdf-hooks/events/hooks.ts src/unrdf-hooks/examples/advanced-patterns.ts src/unrdf-hooks/repository/hooks.ts .github/workflows/hooks-build.yml src/hooks/PredicateEvaluator.mjs src/hooks/HookOrchestrator.mjs tests/knowledge-hooks-simple-verification.test.mjs tests/knowledge-hooks-system.test.mjs
+          git add package.json pnpm-lock.yaml pnpm-workspace.yaml src/telemetry/index.mjs src/unrdf-hooks/core/state.ts src/unrdf-hooks/events/hooks.ts src/unrdf-hooks/examples/advanced-patterns.ts src/unrdf-hooks/repository/hooks.ts .github/workflows/hooks-build.yml src/hooks/PredicateEvaluator.mjs src/hooks/HookOrchestrator.mjs src/hooks/HookParser.mjs src/workflow/step-handlers/template-step-handler.mjs src/composables/git.mjs src/git-native/ReceiptWriter.mjs tests/knowledge-hooks-simple-verification.test.mjs tests/knowledge-hooks-system.test.mjs
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'close hook execution receipt and dependency blockers'
+          git commit -m 'close hook consequence receipt and dependency blockers'
           git push origin HEAD:${{ github.event.pull_request.head.ref }}

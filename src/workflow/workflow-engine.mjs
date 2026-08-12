@@ -1,419 +1,281 @@
-import { createStore, parseTurtle } from "@unrdf/core";
+import { createStore, executeQuery } from "@unrdf/core";
+import n3 from "n3";
 import { useLog } from "../composables/log.mjs";
 import { StepRunner } from "./step-runner.mjs";
 import { ContextManager } from "./context-manager.mjs";
 
+const { Parser, DataFactory } = n3;
+const { namedNode } = DataFactory;
+
+const RDF_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
+const RDFS_LABEL = "http://www.w3.org/2000/01/rdf-schema#label";
+const LEGACY_HOOK = "http://example.org/git-hooks#Hook";
+const GITVAN_HOOK = "https://gitvan.dev/graph-hook#Hook";
+const GITVAN_TITLE = "https://gitvan.dev/ontology#title";
+const LEGACY_PIPELINE = "http://example.org/operations#hasPipeline";
+const GITVAN_PIPELINE = "https://gitvan.dev/graph-hook#orderedPipelines";
+const LEGACY_STEP = "http://example.org/operations#hasStep";
+const GITVAN_STEP = "https://gitvan.dev/op#steps";
+
+function termValue(term) {
+  return term?.value ?? term ?? null;
+}
+
+function localName(iri) {
+  const value = String(iri || "");
+  const hash = value.lastIndexOf("#");
+  const slash = value.lastIndexOf("/");
+  const colon = value.lastIndexOf(":");
+  return value.slice(Math.max(hash, slash, colon) + 1);
+}
+
+function termToValue(term) {
+  if (!term) return null;
+  if (term.termType === "Literal") {
+    return term.value;
+  }
+  return term.value ?? String(term);
+}
+
 /**
- * WorkflowEngine - Loads and executes workflows defined in Turtle files
- *
- * Uses unrdf's KnowledgeSubstrateCore for:
- * - Federated queries across all workflow definitions
- * - SHACL validation of workflow schemas
- * - Knowledge hooks for reactive workflow management
- * - Built-in OTEL observability
- * - Transaction-based changes with audit receipts
+ * WorkflowEngine loads Turtle into an admitted in-memory RDF store and derives
+ * workflow execution from graph edges. The graph is the canonical topology;
+ * generated query strings are not used to select actuation targets.
  */
 export class WorkflowEngine {
   constructor(options = {}) {
     this.graphDir = options.graphDir || "./workflows";
-    this.logger = useLog();
-    this.core = null;
-    this.stepRunner = new StepRunner({ logger: this.logger });
+    this.logger = options.logger || useLog();
+    this.store = null;
+    this.stepRunner = new StepRunner({
+      logger: this.logger,
+      enterprisePolicy: options.enterprisePolicy || {},
+    });
     this.contextManager = new ContextManager();
   }
 
-  /**
-   * Initialize the engine by loading Turtle files into KnowledgeSubstrateCore
-   */
   async initialize() {
-    try {
-      this.logger.info(
-        `🚀 Initializing WorkflowEngine with graphDir: ${this.graphDir}`
-      );
+    const { readdir, readFile } = await import("node:fs/promises");
+    const { join } = await import("node:path");
 
-      // Create store
-      this.core = {
-        store: await createStore(),
-        enableObservability: true,
-      };
+    this.logger.info(`🚀 Initializing WorkflowEngine with graphDir: ${this.graphDir}`);
+    this.store = await createStore();
 
-      const { readdir, readFile } = await import("node:fs/promises");
-      const { join } = await import("node:path");
+    const fileNames = (await readdir(this.graphDir)).filter((name) => name.endsWith(".ttl"));
+    let loadedFiles = 0;
 
-      const fileNames = (await readdir(this.graphDir)).filter((f) =>
-        f.endsWith(".ttl")
-      );
-      const files = await Promise.all(
-        fileNames.map(async (name) => ({
-          name,
-          content: await readFile(join(this.graphDir, name), "utf8"),
-        }))
-      );
-
-      // Load turtle files into the core's internal store
-      for (const file of files) {
-        try {
-          const fileStore = await parseTurtle(file.content);
-          for (const quad of fileStore) {
-            this.core.store.add(quad);
-          }
-        } catch (error) {
-          this.logger.warn(
-            `⚠️ Failed to parse ${file.name}: ${error.message}`
-          );
-        }
+    for (const name of fileNames) {
+      const path = join(this.graphDir, name);
+      const content = await readFile(path, "utf8");
+      try {
+        const quads = new Parser({ baseIRI: `file://${path}` }).parse(content);
+        for (const quad of quads) this.store.addQuad(quad);
+        loadedFiles += 1;
+      } catch (error) {
+        const wrapped = new Error(`Invalid workflow Turtle ${name}: ${error.message}`);
+        wrapped.code = "WORKFLOW_TURTLE_REFUSED";
+        throw wrapped;
       }
-
-      this.logger.info(
-        `📁 Loaded ${files.length} Turtle files from: ${this.graphDir}`
-      );
-      this.logger.info(`📊 Knowledge graph initialized with ${this.core.store.size} quads`);
-
-      return this;
-    } catch (error) {
-      this.logger.error(`❌ Failed to initialize WorkflowEngine:`, error);
-      throw error;
     }
+
+    this.logger.info(`📁 Loaded ${loadedFiles} Turtle workflow files from: ${this.graphDir}`);
+    this.logger.info(`📊 Workflow graph initialized with ${this.store.size} quads`);
+    return this;
   }
 
-  /**
-   * List all workflows found in Turtle files
-   */
+  _ensureStore() {
+    if (!this.store) throw new Error("WorkflowEngine is not initialized");
+  }
+
+  _objects(subject, predicates) {
+    const result = [];
+    for (const predicate of predicates) {
+      for (const quad of this.store.getQuads(subject, namedNode(predicate), null, null)) {
+        result.push(quad.object);
+      }
+    }
+    return result;
+  }
+
+  _firstObject(subject, predicates) {
+    return this._objects(subject, predicates)[0] || null;
+  }
+
+  _hookSubjects() {
+    const subjects = new Map();
+    for (const type of [LEGACY_HOOK, GITVAN_HOOK]) {
+      for (const quad of this.store.getQuads(null, namedNode(RDF_TYPE), namedNode(type), null)) {
+        subjects.set(quad.subject.value, quad.subject);
+      }
+    }
+    return [...subjects.values()];
+  }
+
   async listWorkflows() {
-    if (!this.core) {
-      await this.initialize();
-    }
+    if (!this.store) await this.initialize();
 
-    try {
-      // Query for all hooks using SPARQL via KnowledgeSubstrateCore
-      const sparql = `
-        PREFIX gh: <http://example.org/git-hooks#>
-        PREFIX gh2: <https://gitvan.dev/graph-hook#>
-        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-        PREFIX gv: <https://gitvan.dev/ontology#>
-        SELECT ?workflow ?title WHERE {
-          {
-            ?workflow a gh:Hook ;
-              rdfs:label ?title .
-          } UNION {
-            ?workflow a gh2:Hook ;
-              gv:title ?title .
-          }
-        }
-      `;
-
-      // Use core.query() - includes OTEL spans automatically
-      const results = await this.core.query({ query: sparql });
-      this.logger.info(`📋 Found ${results.length} workflows`);
-
-      return results.map((result) => ({
-        id: result.workflow,
-        title: result.title,
-        predicate: null,
-        pipelineCount: 0,
-      }));
-    } catch (error) {
-      this.logger.error(`❌ Failed to list workflows:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Execute a workflow by ID
-   */
-  async executeWorkflow(workflowId) {
-    if (!this.core) {
-      await this.initialize();
-    }
-
-    try {
-      this.logger.info(`🎯 Executing workflow: ${workflowId}`);
-
-      // Find the workflow hook using SPARQL via core
-      const sparql = `
-        PREFIX gh: <http://example.org/git-hooks#>
-        PREFIX gh2: <https://gitvan.dev/graph-hook#>
-        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-        PREFIX gv: <https://gitvan.dev/ontology#>
-        PREFIX op: <http://example.org/operations#>
-        PREFIX op2: <https://gitvan.dev/op#>
-        SELECT ?workflow ?title ?pipeline WHERE {
-          {
-            ?workflow a gh:Hook ;
-              rdfs:label ?title ;
-              op:hasPipeline ?pipeline .
-            FILTER(?workflow = <${workflowId}>)
-          } UNION {
-            ?workflow a gh2:Hook ;
-              gv:title ?title ;
-              gh2:orderedPipelines ?pipeline .
-            FILTER(?workflow = <${workflowId}>)
-          }
-        }
-      `;
-
-      const results = await this.core.query({ query: sparql });
-
-      if (!results || results.length === 0) {
-        throw new Error(`Workflow not found: ${workflowId}`);
-      }
-
-      const workflowTitle = results[0].title;
-      const pipelineId = results[0].pipeline;
-      this.logger.info(`✅ Found workflow: ${workflowTitle}`);
-
-      // Parse workflow steps from the pipeline
-      const steps = await this._parseWorkflowSteps(pipelineId);
-      this.logger.info(`📋 Found ${steps.length} steps to execute`);
-
-      // Execute each step
-      const stepResults = [];
-      for (const step of steps) {
-        this.logger.info(`🔄 Executing step: ${step.id} (${step.type})`);
-
-        try {
-          const result = await this.stepRunner.executeStep(
-            step,
-            this.contextManager,
-            this.core, // Pass core instead of raw store
-            null,
-            {}
-          );
-
-          stepResults.push(result);
-          this.logger.info(`✅ Step completed: ${step.id}`);
-        } catch (error) {
-          this.logger.error(`❌ Step failed: ${step.id}`, error);
-          stepResults.push({
-            stepId: step.id,
-            success: false,
-            error: error.message,
-          });
-        }
-      }
-
-      // Return execution result
+    return this._hookSubjects().map((subject) => {
+      const title = this._firstObject(subject, [RDFS_LABEL, GITVAN_TITLE]);
+      const pipelines = this._objects(subject, [LEGACY_PIPELINE, GITVAN_PIPELINE]);
       return {
-        workflowId,
-        title: workflowTitle,
-        status: "completed",
-        steps: stepResults,
-        executedAt: new Date().toISOString(),
+        id: subject.value,
+        title: termValue(title) || subject.value,
+        predicate: null,
+        pipelineCount: pipelines.length,
       };
-    } catch (error) {
-      this.logger.error(`❌ Failed to execute workflow ${workflowId}:`, error);
-      throw error;
-    }
+    });
   }
 
-  /**
-   * Parse workflow steps from Turtle data
-   * @private
-   */
-  async _parseWorkflowSteps(pipelineId) {
-    try {
-      // Query for all steps in the pipeline via core
-      const sparql = `
-        PREFIX op: <http://example.org/operations#>
-        PREFIX op2: <https://gitvan.dev/op#>
-        PREFIX gv: <http://example.org/gitvan#>
-        PREFIX gv2: <https://gitvan.dev/ontology#>
-        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-        SELECT ?step ?stepType ?configProp ?configValue WHERE {
-          {
-            <${pipelineId}> op:hasStep ?step .
-            ?step a ?stepType .
-            OPTIONAL {
-              ?step ?configProp ?configValue .
-              FILTER(?configProp != rdf:type)
-            }
-          } UNION {
-            <${pipelineId}> op2:steps ?step .
-            ?step a ?stepType .
-            OPTIONAL {
-              ?step ?configProp ?configValue .
-              FILTER(?configProp != rdf:type)
-            }
-          }
-        }
-      `;
+  _resolveWorkflowSubject(workflowId) {
+    const exact = this._hookSubjects().find((subject) => subject.value === workflowId);
+    if (exact) return exact;
 
-      const results = await this.core.query({ query: sparql });
-      const stepMap = new Map();
+    const candidates = this._hookSubjects().filter((subject) => {
+      const name = localName(subject.value);
+      return name === workflowId;
+    });
+    if (candidates.length === 1) return candidates[0];
+    if (candidates.length > 1) {
+      const error = new Error(`Workflow ID is ambiguous: ${workflowId}`);
+      error.code = "WORKFLOW_ID_AMBIGUOUS_REFUSED";
+      throw error;
+    }
+    return null;
+  }
 
-      // Group results by step
-      for (const result of results) {
-        const stepId = result.step;
-        const stepType = result.stepType;
+  async executeWorkflow(workflowId, options = {}) {
+    if (!this.store) await this.initialize();
 
-        if (!stepMap.has(stepId)) {
-          // Extract step type (e.g., gv:FileStep -> file)
-          let type;
-          if (stepType.includes("#")) {
-            // Handle full URIs like http://example.org/gitvan#FileStep
-            type = stepType.split("#")[1].replace("Step", "").toLowerCase();
-          } else {
-            // Handle prefixed names like gv:FileStep
-            type = stepType.split(":")[1].replace("Step", "").toLowerCase();
-          }
-          stepMap.set(stepId, {
-            id: stepId,
-            type: type,
-            config: {},
-          });
-        }
+    const workflow = this._resolveWorkflowSubject(workflowId);
+    if (!workflow) {
+      const error = new Error(`Workflow not found: ${workflowId}`);
+      error.code = "WORKFLOW_NOT_FOUND";
+      throw error;
+    }
 
-        // Add configuration properties
-        if (result.configProp && result.configValue) {
-          let prop;
-          if (result.configProp.includes("#")) {
-            // Handle full URIs like http://example.org/gitvan#template
-            prop = result.configProp.split("#")[1];
-          } else {
-            // Handle prefixed names like gv:template
-            prop = result.configProp.split(":")[1];
-          }
-          const value = result.configValue;
+    const title = termValue(this._firstObject(workflow, [RDFS_LABEL, GITVAN_TITLE])) || workflow.value;
+    const pipelines = this._objects(workflow, [LEGACY_PIPELINE, GITVAN_PIPELINE]);
+    if (pipelines.length === 0) {
+      const error = new Error(`Workflow has no pipeline: ${workflow.value}`);
+      error.code = "WORKFLOW_PIPELINE_REFUSED";
+      throw error;
+    }
+    if (pipelines.length > 1) {
+      const error = new Error(`Workflow has multiple pipelines without an admitted ordering: ${workflow.value}`);
+      error.code = "WORKFLOW_PIPELINE_AMBIGUOUS_REFUSED";
+      throw error;
+    }
 
-          // Map property names to expected step handler properties
-          const mappedProp = this._mapPropertyName(
-            prop,
-            stepMap.get(stepId).type
-          );
-          stepMap.get(stepId).config[mappedProp] = value;
-        }
+    const steps = this._parseWorkflowSteps(pipelines[0]);
+    if (steps.length === 0) {
+      const error = new Error(`Workflow pipeline has no executable steps: ${termValue(pipelines[0])}`);
+      error.code = "WORKFLOW_EMPTY_PIPELINE_REFUSED";
+      throw error;
+    }
+
+    this.logger.info(`🎯 Executing workflow: ${workflow.value}`);
+    const stepResults = [];
+
+    for (const step of steps) {
+      const result = await this.stepRunner.executeStep(
+        step,
+        this.contextManager,
+        { store: this.store },
+        null,
+        options
+      );
+      stepResults.push(result);
+
+      if (!result.success) {
+        this.logger.error(`❌ Step ${step.id} ended with standing ${result.standing}`);
+        break;
+      }
+      this.logger.info(`✅ Step executed: ${step.id}`);
+    }
+
+    const success = stepResults.length === steps.length && stepResults.every((result) => result.success);
+    return {
+      workflowId: workflow.value,
+      title,
+      status: success ? "completed" : "failed",
+      standing: success ? "EXECUTED" : stepResults.at(-1)?.standing || "FAILED",
+      steps: stepResults,
+      totalSteps: steps.length,
+      executedSteps: stepResults.length,
+      executedAt: new Date().toISOString(),
+    };
+  }
+
+  _parseWorkflowSteps(pipeline) {
+    this._ensureStore();
+    const stepTerms = this._objects(pipeline, [LEGACY_STEP, GITVAN_STEP]);
+
+    return stepTerms.map((stepTerm) => {
+      const typeTerms = this._objects(stepTerm, [RDF_TYPE]);
+      const stepType = typeTerms
+        .map((term) => localName(term.value))
+        .find((name) => name.endsWith("Step"));
+      if (!stepType) {
+        const error = new Error(`Workflow step has no recognized *Step RDF type: ${stepTerm.value}`);
+        error.code = "WORKFLOW_STEP_TYPE_REFUSED";
+        throw error;
       }
 
-      return Array.from(stepMap.values());
-    } catch (error) {
-      this.logger.error(`❌ Failed to parse workflow steps:`, error);
-      throw error;
-    }
+      const type = stepType.slice(0, -"Step".length).toLowerCase();
+      const config = {};
+      for (const quad of this.store.getQuads(stepTerm, null, null, null)) {
+        if (quad.predicate.value === RDF_TYPE) continue;
+        const property = localName(quad.predicate.value);
+        const mapped = this._mapPropertyName(property, type);
+        const value = termToValue(quad.object);
+        if (config[mapped] === undefined) config[mapped] = value;
+        else if (Array.isArray(config[mapped])) config[mapped].push(value);
+        else config[mapped] = [config[mapped], value];
+      }
+
+      return { id: stepTerm.value, type, config };
+    });
   }
 
-  /**
-   * Map Turtle property names to step handler expected property names
-   * @private
-   */
   _mapPropertyName(turtleProp, stepType) {
     const mappings = {
-      sparql: {
-        text: "query",
-        outputMapping: "outputMapping",
-      },
-      template: {
-        template: "template",
-        text: "template",
-        outputPath: "outputPath",
-      },
-      file: {
-        filePath: "filePath",
-        operation: "operation",
-      },
-      http: {
-        url: "url",
-        httpUrl: "url",
-        method: "method",
-        httpMethod: "method",
-        headers: "headers",
-        body: "body",
-      },
-      cli: {
-        command: "command",
-      },
+      sparql: { text: "query", outputMapping: "outputMapping" },
+      template: { template: "template", text: "template", outputPath: "outputPath" },
+      file: { filePath: "filePath", operation: "operation", content: "content", sourcePath: "sourcePath", targetPath: "targetPath" },
+      http: { url: "url", httpUrl: "url", method: "method", httpMethod: "method", headers: "headers", body: "body" },
+      cli: { command: "command", cwd: "cwd", timeout: "timeout" },
     };
-
     return mappings[stepType]?.[turtleProp] || turtleProp;
   }
 
-  /**
-   * Execute a custom query against the knowledge graph
-   */
   async runQuery(sparqlQuery) {
-    if (!this.core) {
-      await this.initialize();
-    }
-
-    try {
-      this.logger.info(`🔍 Executing query`);
-      const results = await this.core.query({ query: sparqlQuery });
-      this.logger.info(
-        `✅ Query completed, ${Array.isArray(results) ? results.length : 1} results`
-      );
-      return results;
-    } catch (error) {
-      this.logger.error(`❌ Query failed:`, error);
-      throw error;
-    }
+    if (!this.store) await this.initialize();
+    return executeQuery(this.store, sparqlQuery);
   }
 
-  /**
-   * Validate workflow definitions against SHACL shapes
-   * @param {string} shapesGraph - SHACL shapes as Turtle string
-   */
-  async validate(shapesGraph) {
-    if (!this.core) {
-      await this.initialize();
-    }
-
-    try {
-      this.logger.info(`🔍 Validating workflow definitions`);
-      const report = await this.core.validate({
-        dataGraph: this.core.store,
-        shapesGraph,
-      });
-      this.logger.info(
-        `✅ Validation ${report.conforms ? "passed" : "failed"}`
-      );
-      return report;
-    } catch (error) {
-      this.logger.error(`❌ Validation failed:`, error);
-      throw error;
-    }
+  async validate() {
+    const error = new Error(
+      "Workflow SHACL validation is not admitted in this runtime profile; existence checks are available through workflow validate"
+    );
+    error.code = "WORKFLOW_SHACL_VALIDATION_UNSUPPORTED";
+    throw error;
   }
 
-  /**
-   * Get knowledge graph statistics and metrics
-   */
   async getStats() {
-    if (!this.core) {
-      await this.initialize();
-    }
-
-    try {
-      // Get both store stats and core metrics
-      const coreStatus = this.core.getStatus();
-      const coreMetrics = this.core.getMetrics();
-
-      const stats = {
-        quadCount: this.core.store.size,
-        initialized: coreStatus.initialized,
-        components: coreStatus.components,
-        metrics: coreMetrics,
-      };
-
-      this.logger.info(`📊 Knowledge graph: ${stats.quadCount} quads`);
-      return stats;
-    } catch (error) {
-      this.logger.error(`❌ Failed to get stats:`, error);
-      throw error;
-    }
+    if (!this.store) await this.initialize();
+    return {
+      quadCount: this.store.size,
+      initialized: true,
+      workflows: this._hookSubjects().length,
+    };
   }
 
-  /**
-   * Cleanup engine resources
-   */
   async cleanup() {
-    if (this.core) {
-      await this.core.cleanup();
-      this.core = null;
-    }
+    this.store = null;
+    this.contextManager = new ContextManager();
   }
 }
 
-/**
- * Create a new WorkflowEngine instance
- */
 export async function createWorkflowEngine(options = {}) {
   const engine = new WorkflowEngine(options);
   await engine.initialize();

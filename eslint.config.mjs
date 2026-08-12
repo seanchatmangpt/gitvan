@@ -1,15 +1,55 @@
-import { unjs } from "eslint-config-unjs";
-
-export default unjs({
-  ignores: [
-    // ignore paths
-  ],
-  rules: {
-    // rule overrides
+export default [
+  {
+    ignores: [
+      "dist/**",
+      "node_modules/**",
+      "coverage/**",
+      "docs/api/**",
+      "vendor/**",
+    ],
   },
-  markdown: {
+  {
+    files: ["src/**/*.{js,mjs,cjs}", "bin/**/*.{js,mjs,cjs}", "scripts/**/*.{js,mjs,cjs}"],
+    languageOptions: {
+      ecmaVersion: "latest",
+      sourceType: "module",
+    },
+    linterOptions: {
+      reportUnusedDisableDirectives: "error",
+    },
     rules: {
-      // markdown rule overrides
+      "constructor-super": "error",
+      "for-direction": "error",
+      "getter-return": "error",
+      "no-async-promise-executor": "error",
+      "no-class-assign": "error",
+      "no-compare-neg-zero": "error",
+      "no-cond-assign": "error",
+      "no-const-assign": "error",
+      "no-constant-binary-expression": "error",
+      "no-dupe-args": "error",
+      "no-dupe-class-members": "error",
+      "no-dupe-else-if": "error",
+      "no-dupe-keys": "error",
+      "no-duplicate-case": "error",
+      "no-func-assign": "error",
+      "no-import-assign": "error",
+      "no-irregular-whitespace": "error",
+      "no-loss-of-precision": "error",
+      "no-new-native-nonconstructor": "error",
+      "no-obj-calls": "error",
+      "no-self-assign": "error",
+      "no-setter-return": "error",
+      "no-sparse-arrays": "error",
+      "no-unreachable": "error",
+      "no-unreachable-loop": "error",
+      "no-unsafe-finally": "error",
+      "no-unsafe-negation": "error",
+      "no-unsafe-optional-chaining": "error",
+      "no-useless-backreference": "error",
+      "require-yield": "error",
+      "use-isnan": "error",
+      "valid-typeof": "error",
     },
   },
-});
+];

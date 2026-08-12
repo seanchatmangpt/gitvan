@@ -101,7 +101,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: manufacture
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
-    timeout-minutes: 15
+    timeout-minutes: 20
     permissions:
       contents: write
       id-token: write
@@ -131,6 +131,28 @@ jobs:
           npm publish "$TARBALL" --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Verify registry consequence
+        working-directory: release
+        shell: bash
+        run: |
+          VERSION="$(cat VERSION)"
+          OBSERVED=''
+          for attempt in {1..12}; do
+            OBSERVED="$(npm view "gitvan@$VERSION" version 2>/dev/null || true)"
+            if [[ "$OBSERVED" == "$VERSION" ]]; then
+              break
+            fi
+            sleep 5
+          done
+          test "$OBSERVED" = "$VERSION"
+          rm -rf /tmp/gitvan-registry-consumer
+          mkdir -p /tmp/gitvan-registry-consumer
+          cd /tmp/gitvan-registry-consumer
+          npm init -y
+          npm install "gitvan@$VERSION"
+          test "$(node -p 'require("gitvan/package.json").version')" = "$VERSION"
+          npx --no-install gitvan --version
+          npx --no-install gitvan --help
       - name: Create GitHub release for exact tag
         working-directory: release
         run: |

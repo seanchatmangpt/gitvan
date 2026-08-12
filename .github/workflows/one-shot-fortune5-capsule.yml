@@ -1,4 +1,4 @@
-name: One-shot Fortune-5 closure capsule v2
+name: One-shot Fortune-5 closure capsule v3
 
 on:
   push:
@@ -37,6 +37,7 @@ jobs:
         run: |
           python3 scripts/fortune5-closure-repair.py
           python3 scripts/fortune5-execution-context-repair.py
+          python3 scripts/fortune5-step-input-repair.py
       - name: Manufacture base lock
         run: pnpm install --lockfile-only --no-frozen-lockfile
       - name: Manufacture patched transitive overrides from audit
@@ -51,7 +52,7 @@ jobs:
           src/unrdf-hooks/repository/hooks.ts .github/workflows/hooks-build.yml
           src/hooks/PredicateEvaluator.mjs src/hooks/HookOrchestrator.mjs
           src/hooks/HookParser.mjs src/workflow/step-handlers/template-step-handler.mjs
-          src/composables/git.mjs src/git-native/ReceiptWriter.mjs
+          src/workflow/step-runner.mjs src/composables/git.mjs src/git-native/ReceiptWriter.mjs
           tests/knowledge-hooks-simple-verification.test.mjs
           tests/knowledge-hooks-system.test.mjs
       - name: Replay frozen graph
@@ -74,7 +75,7 @@ jobs:
           src/cli/commands/hooks.mjs src/telemetry/index.mjs
           src/hooks/PredicateEvaluator.mjs src/hooks/HookOrchestrator.mjs
           src/hooks/HookParser.mjs src/workflow/step-handlers/template-step-handler.mjs
-          src/composables/git.mjs src/git-native/ReceiptWriter.mjs
+          src/workflow/step-runner.mjs src/composables/git.mjs src/git-native/ReceiptWriter.mjs
       - name: Verify surviving UNRDF packages
         run: |
           node --input-type=module <<'NODE'
@@ -126,7 +127,7 @@ jobs:
           src/unrdf-hooks/repository/hooks.ts .github/workflows/hooks-build.yml
           src/hooks/PredicateEvaluator.mjs src/hooks/HookOrchestrator.mjs
           src/hooks/HookParser.mjs src/workflow/step-handlers/template-step-handler.mjs
-          src/composables/git.mjs src/git-native/ReceiptWriter.mjs
+          src/workflow/step-runner.mjs src/composables/git.mjs src/git-native/ReceiptWriter.mjs
           tests/knowledge-hooks-simple-verification.test.mjs
           tests/knowledge-hooks-system.test.mjs
       - name: Verify bounded mutation scope
@@ -135,7 +136,7 @@ jobs:
           git diff --check
           rm -f docs-test-report.json
           mapfile -t changed < <(git status --short | awk '{print $2}')
-          allowed='package.json pnpm-lock.yaml pnpm-workspace.yaml src/telemetry/index.mjs src/unrdf-hooks/core/state.ts src/unrdf-hooks/events/hooks.ts src/unrdf-hooks/examples/advanced-patterns.ts src/unrdf-hooks/repository/hooks.ts .github/workflows/hooks-build.yml src/hooks/PredicateEvaluator.mjs src/hooks/HookOrchestrator.mjs src/hooks/HookParser.mjs src/workflow/step-handlers/template-step-handler.mjs src/composables/git.mjs src/git-native/ReceiptWriter.mjs tests/knowledge-hooks-simple-verification.test.mjs tests/knowledge-hooks-system.test.mjs'
+          allowed='package.json pnpm-lock.yaml pnpm-workspace.yaml src/telemetry/index.mjs src/unrdf-hooks/core/state.ts src/unrdf-hooks/events/hooks.ts src/unrdf-hooks/examples/advanced-patterns.ts src/unrdf-hooks/repository/hooks.ts .github/workflows/hooks-build.yml src/hooks/PredicateEvaluator.mjs src/hooks/HookOrchestrator.mjs src/hooks/HookParser.mjs src/workflow/step-handlers/template-step-handler.mjs src/workflow/step-runner.mjs src/composables/git.mjs src/git-native/ReceiptWriter.mjs tests/knowledge-hooks-simple-verification.test.mjs tests/knowledge-hooks-system.test.mjs'
           for path in "${changed[@]}"; do
             case " $allowed " in *" $path "*) ;; *) echo "Unexpected mutation: $path" >&2; exit 1 ;; esac
           done
@@ -144,7 +145,7 @@ jobs:
           test "$(node -p 'Boolean(require("./package.json").dependencies.unbuild)')" = 'false'
       - name: Commit and push verified closure repair
         run: |
-          git add package.json pnpm-lock.yaml pnpm-workspace.yaml src/telemetry/index.mjs src/unrdf-hooks/core/state.ts src/unrdf-hooks/events/hooks.ts src/unrdf-hooks/examples/advanced-patterns.ts src/unrdf-hooks/repository/hooks.ts .github/workflows/hooks-build.yml src/hooks/PredicateEvaluator.mjs src/hooks/HookOrchestrator.mjs src/hooks/HookParser.mjs src/workflow/step-handlers/template-step-handler.mjs src/composables/git.mjs src/git-native/ReceiptWriter.mjs tests/knowledge-hooks-simple-verification.test.mjs tests/knowledge-hooks-system.test.mjs
+          git add package.json pnpm-lock.yaml pnpm-workspace.yaml src/telemetry/index.mjs src/unrdf-hooks/core/state.ts src/unrdf-hooks/events/hooks.ts src/unrdf-hooks/examples/advanced-patterns.ts src/unrdf-hooks/repository/hooks.ts .github/workflows/hooks-build.yml src/hooks/PredicateEvaluator.mjs src/hooks/HookOrchestrator.mjs src/hooks/HookParser.mjs src/workflow/step-handlers/template-step-handler.mjs src/workflow/step-runner.mjs src/composables/git.mjs src/git-native/ReceiptWriter.mjs tests/knowledge-hooks-simple-verification.test.mjs tests/knowledge-hooks-system.test.mjs
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -m 'close hook consequence receipt and dependency blockers'

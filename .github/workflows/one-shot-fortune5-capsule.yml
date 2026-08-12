@@ -1,4 +1,4 @@
-name: One-shot Fortune-5 closure capsule v3
+name: One-shot Fortune-5 closure capsule v4
 
 on:
   push:
@@ -38,6 +38,7 @@ jobs:
           python3 scripts/fortune5-closure-repair.py
           python3 scripts/fortune5-execution-context-repair.py
           python3 scripts/fortune5-step-input-repair.py
+          python3 scripts/fortune5-execution-ledger-repair.py
       - name: Manufacture base lock
         run: pnpm install --lockfile-only --no-frozen-lockfile
       - name: Manufacture patched transitive overrides from audit

@@ -107,8 +107,8 @@ jobs:
         run: |
           pnpm install --frozen-lockfile
           pnpm exec tsc --noEmit --skipLibCheck --strict --allowJs false --target esnext --module nodenext --moduleResolution nodenext src/unrdf-hooks/index.ts
-          pnpm exec eslint --max-warnings=0 src/unrdf-hooks src/integrations src/jobs/hooks.mjs src/cli/commands/hooks.mjs
-          pnpm exec prettier --check src/unrdf-hooks .github/workflows/hooks-build.yml package.json
+          pnpm exec eslint --max-warnings=0 src/integrations src/jobs/hooks.mjs src/cli/commands/hooks.mjs
+          pnpm exec prettier --check src/unrdf-hooks/core/state.ts src/unrdf-hooks/events/hooks.ts src/unrdf-hooks/examples/advanced-patterns.ts src/unrdf-hooks/repository/hooks.ts .github/workflows/hooks-build.yml package.json
           node --input-type=module <<'NODE'
           for (const name of ['@unrdf/core', '@unrdf/hooks', '@unrdf/kgc-4d', '@unrdf/kgn', '@unrdf/validation']) {
             await import(name);

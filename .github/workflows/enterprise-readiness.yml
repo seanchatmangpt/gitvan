@@ -1,0 +1,76 @@
+name: Enterprise Readiness
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: enterprise-readiness-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  actuation-contract:
+    name: Actuation contract / Node ${{ matrix.node }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+    steps:
+      - name: Checkout exact subject
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: ${{ matrix.node }}
+          package-manager-cache: false
+      - name: Parse hardened execution surfaces
+        run: |
+          node --check src/enterprise/actuation-broker.mjs
+          node --check src/workflow/step-runner.mjs
+          node --check src/workflow/step-handlers/cli-step-handler.mjs
+          node --check src/workflow/step-handlers/http-step-handler.mjs
+          node --check src/workflow/step-handlers/file-step-handler.mjs
+          node --check src/utils/shell.mjs
+      - name: Verify broker refusal and receipt laws
+        run: node --test tests/enterprise/actuation-broker.test.mjs
+      - name: Emit machine-readable enterprise verifier
+        run: node scripts/verify-enterprise-readiness.mjs
+
+  repository-regression:
+    name: Repository regression / Node 22
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact subject
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Set up Node 22
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+          package-manager-cache: false
+      - name: Install locked dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts
+      - name: Enterprise integration tests
+        run: npx vitest run tests/enterprise/step-runner-enterprise.test.mjs tests/step-handlers/cli-step-handler.test.mjs tests/step-handlers/http-step-handler.test.mjs tests/step-handlers/file-step-handler.test.mjs
+      - name: Lint
+        run: npm run lint
+      - name: Full test suite
+        run: npm test -- --run
+      - name: Build package
+        run: npm run build
+      - name: High-severity production dependency audit
+        run: npm audit --omit=dev --audit-level=high
+      - name: Manufacture SBOM
+        run: npm sbom --sbom-format cyclonedx > /tmp/gitvan-sbom.cdx.json
+      - name: Validate publish artifact
+        run: npm pack --dry-run --json > /tmp/gitvan-pack.json

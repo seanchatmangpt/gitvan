@@ -1,11 +1,7 @@
-// src/workflow/step-handlers/FileStepHandler.mjs
-// File operation step handler
+// src/workflow/step-handlers/file-step-handler.mjs
 
 import { BaseStepHandler } from "./base-step-handler.mjs";
 
-/**
- * Handler for file operation steps
- */
 export class FileStepHandler extends BaseStepHandler {
   getStepType() {
     return "file";
@@ -15,36 +11,31 @@ export class FileStepHandler extends BaseStepHandler {
     if (!step.config || !step.config.operation) {
       throw new Error("File step missing operation configuration");
     }
-
     const validOperations = ["read", "write", "copy", "move", "delete"];
     if (!validOperations.includes(step.config.operation)) {
       throw new Error(`Invalid file operation: ${step.config.operation}`);
     }
-
     return true;
   }
 
-  /**
-   * Execute file operation step
-   * @param {object} step - Step definition
-   * @param {object} inputs - Step inputs
-   * @param {object} context - Execution context
-   * @returns {Promise<object>} Step execution result
-   */
   async execute(step, inputs, context) {
-    const { operation, filePath, content, sourcePath, targetPath } =
-      step.config;
+    const { operation, filePath, content, sourcePath, targetPath } = step.config;
+    const enterprise =
+      context.enterprisePolicy?.enabled === true ||
+      process.env.GITVAN_ENTERPRISE_MODE === "1";
+
+    if (enterprise && !context.actuationBroker) {
+      return this.createResult(
+        null,
+        false,
+        "Enterprise file actuation requires an admitted actuation broker"
+      );
+    }
 
     this.logger.info(`📁 Executing file operation: ${operation}`);
-
     try {
-      // Use context's file system if available, otherwise fall back to Node.js fs
-      const fs =
-        context.files || (await import("node:fs").then((m) => m.promises));
-      const { dirname } = await import("node:path");
-
+      const fs = context.files || (await import("node:fs").then((m) => m.promises));
       let result;
-
       switch (operation) {
         case "read":
           result = await this.executeRead(fs, filePath);
@@ -64,220 +55,98 @@ export class FileStepHandler extends BaseStepHandler {
         default:
           throw new Error(`Unknown file operation: ${operation}`);
       }
-
-      return this.createResult(result);
+      const success = result?.success !== false;
+      return this.createResult(result, success, success ? null : result?.error);
     } catch (error) {
       this.logger.error(`❌ File operation failed: ${error.message}`);
       return this.createResult(null, false, error.message);
     }
   }
 
-  /**
-   * Execute file read operation
-   * @param {object} fs - File system promises
-   * @param {string} filePath - File path to read
-   * @returns {Promise<object>} Read result
-   */
   async executeRead(fs, filePath) {
-    // Check if this is the test environment's files API
     if (fs.read && typeof fs.read === "function") {
-      // Test environment files API
-      const content = fs.read(filePath);
-
+      const content = await fs.read(filePath);
       return {
         operation: "read",
         filePath,
         content,
         contentLength: content.length,
       };
-    } else {
-      // Node.js fs.promises API
-      const content = await fs.readFile(filePath, "utf8");
-      const stats = await fs.stat(filePath);
-
-      return {
-        operation: "read",
-        filePath,
-        content,
-        size: stats.size,
-        modified: stats.mtime,
-      };
     }
+    const content = await fs.readFile(filePath, "utf8");
+    const stats = await fs.stat(filePath);
+    return {
+      operation: "read",
+      filePath,
+      content,
+      size: stats.size,
+      modified: stats.mtime,
+    };
   }
 
-  /**
-   * Execute file write operation
-   * @param {object} fs - File system promises
-   * @param {string} filePath - File path to write
-   * @param {string} content - Content to write
-   * @param {object} inputs - Input values for template substitution
-   * @returns {Promise<object>} Write result
-   */
   async executeWrite(fs, filePath, content, inputs) {
-    // Check if this is the test environment's files API
-    if (fs.mkdir && fs.write && fs.read) {
-      // Test environment files API
-      const { dirname } = await import("node:path");
-      const dir = dirname(filePath);
-      if (dir !== "." && dir !== filePath) {
-        await fs.mkdir(dir);
-      }
-
-      // Check if content contains template syntax and render it
-      let finalContent = content;
-      if (content && content.includes("{{")) {
-        const { useTemplate } = await import("../../composables/template.mjs");
-        const templateEngine = await useTemplate();
-        finalContent = await templateEngine.renderString(content, inputs);
-      }
-
-      await fs.write(filePath, finalContent);
-
-      return {
-        operation: "write",
-        filePath,
-        contentLength: finalContent.length,
-        rendered: content !== finalContent,
-      };
-    } else {
-      // Node.js fs.promises API
-      const { dirname } = await import("node:path");
-      await fs.mkdir(dirname(filePath), { recursive: true });
-
-      // Check if content contains template syntax and render it
-      let finalContent = content;
-      if (content && content.includes("{{")) {
-        const { useTemplate } = await import("../../composables/template.mjs");
-        const templateEngine = await useTemplate();
-        finalContent = await templateEngine.renderString(content, inputs);
-      }
-
-      await fs.writeFile(filePath, finalContent, "utf8");
-
-      return {
-        operation: "write",
-        filePath,
-        contentLength: finalContent.length,
-        rendered: content !== finalContent,
-      };
+    const { dirname } = await import("node:path");
+    const dir = dirname(filePath);
+    const testFs = fs.mkdir && fs.write && fs.read;
+    if (dir !== "." && dir !== filePath) {
+      if (testFs) await fs.mkdir(dir);
+      else await fs.mkdir(dir, { recursive: true });
     }
+
+    let finalContent = content;
+    if (content && content.includes("{{")) {
+      const { useTemplate } = await import("../../composables/template.mjs");
+      const templateEngine = await useTemplate();
+      finalContent = await templateEngine.renderString(content, inputs);
+    }
+
+    if (testFs) await fs.write(filePath, finalContent);
+    else await fs.writeFile(filePath, finalContent, "utf8");
+
+    return {
+      operation: "write",
+      filePath,
+      contentLength: finalContent.length,
+      rendered: content !== finalContent,
+    };
   }
 
-  /**
-   * Execute file copy operation
-   * @param {object} fs - File system promises
-   * @param {string} sourcePath - Source file path
-   * @param {string} targetPath - Target file path
-   * @returns {Promise<object>} Copy result
-   */
   async executeCopy(fs, sourcePath, targetPath) {
-    // Check if this is the test environment's files API
+    const { dirname } = await import("node:path");
+    const dir = dirname(targetPath);
     if (fs.read && typeof fs.read === "function") {
-      // Test environment files API
-      const content = fs.read(sourcePath);
-      const { dirname } = await import("node:path");
-      const dir = dirname(targetPath);
-      if (dir !== "." && dir !== targetPath) {
-        fs.mkdir(dir);
-      }
-      fs.write(targetPath, content);
-
-      return {
-        operation: "copy",
-        sourcePath,
-        targetPath,
-      };
+      const content = await fs.read(sourcePath);
+      if (dir !== "." && dir !== targetPath) await fs.mkdir(dir);
+      await fs.write(targetPath, content);
     } else {
-      // Node.js fs.promises API
-      const { dirname } = await import("node:path");
-      await fs.mkdir(dirname(targetPath), { recursive: true });
+      await fs.mkdir(dir, { recursive: true });
       await fs.copyFile(sourcePath, targetPath);
-
-      return {
-        operation: "copy",
-        sourcePath,
-        targetPath,
-      };
     }
+    return { operation: "copy", sourcePath, targetPath };
   }
 
-  /**
-   * Execute file move operation
-   * @param {object} fs - File system promises
-   * @param {string} sourcePath - Source file path
-   * @param {string} targetPath - Target file path
-   * @returns {Promise<object>} Move result
-   */
   async executeMove(fs, sourcePath, targetPath) {
-    // Check if this is the test environment's files API
+    const { dirname } = await import("node:path");
+    const dir = dirname(targetPath);
     if (fs.read && typeof fs.read === "function") {
-      // Test environment files API - simulate move by copy + delete
-      const content = fs.read(sourcePath);
-      const { dirname } = await import("node:path");
-      const dir = dirname(targetPath);
-      if (dir !== "." && dir !== targetPath) {
-        fs.mkdir(dir);
-      }
-      fs.write(targetPath, content);
-
-      // Attempt to delete source if delete method is available
+      const content = await fs.read(sourcePath);
+      if (dir !== "." && dir !== targetPath) await fs.mkdir(dir);
+      await fs.write(targetPath, content);
       if (fs.delete && typeof fs.delete === "function") {
-        try {
-          fs.delete(sourcePath);
-        } catch (error) {
-          this.logger.warn(`⚠️ Could not delete source after move: ${error.message}`);
-        }
+        await fs.delete(sourcePath);
+      } else {
+        this.logger.warn("⚠️ Delete operation not supported in test environment");
       }
-
-      return {
-        operation: "move",
-        sourcePath,
-        targetPath,
-        deleteSupported: fs.delete !== undefined,
-      };
     } else {
-      // Node.js fs.promises API
-      const { dirname } = await import("node:path");
-      await fs.mkdir(dirname(targetPath), { recursive: true });
+      await fs.mkdir(dir, { recursive: true });
       await fs.rename(sourcePath, targetPath);
-
-      return {
-        operation: "move",
-        sourcePath,
-        targetPath,
-      };
     }
+    return { operation: "move", sourcePath, targetPath };
   }
 
-  /**
-   * Execute file delete operation
-   * @param {object} fs - File system promises
-   * @param {string} filePath - File path to delete
-   * @returns {Promise<object>} Delete result
-   */
   async executeDelete(fs, filePath) {
-    // Check if this is the test environment's files API
     if (fs.read && typeof fs.read === "function") {
-      // Test environment files API
-      if (fs.delete && typeof fs.delete === "function") {
-        try {
-          fs.delete(filePath);
-          return {
-            operation: "delete",
-            filePath,
-            success: true,
-          };
-        } catch (error) {
-          return {
-            operation: "delete",
-            filePath,
-            success: false,
-            error: error.message,
-          };
-        }
-      } else {
-        // Delete not supported in test environment
-        this.logger.warn(`⚠️ Delete operation not supported in test environment`);
+      if (!fs.delete || typeof fs.delete !== "function") {
         return {
           operation: "delete",
           filePath,
@@ -285,15 +154,10 @@ export class FileStepHandler extends BaseStepHandler {
           error: "Delete operation not supported in test environment",
         };
       }
-    } else {
-      // Node.js fs.promises API
-      await fs.unlink(filePath);
-
-      return {
-        operation: "delete",
-        filePath,
-        success: true,
-      };
+      await fs.delete(filePath);
+      return { operation: "delete", filePath, success: true };
     }
+    await fs.unlink(filePath);
+    return { operation: "delete", filePath, success: true };
   }
 }

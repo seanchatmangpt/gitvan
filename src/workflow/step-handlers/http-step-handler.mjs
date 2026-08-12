@@ -1,110 +1,94 @@
 // src/workflow/step-handlers/http-step-handler.mjs
-// HTTP request step handler with proper variable replacement and response handling
 
 import { BaseStepHandler } from "./base-step-handler.mjs";
-import { useLog } from "../../composables/log.mjs";
 import { useTemplate } from "../../composables/template.mjs";
 
-/**
- * Handler for HTTP request steps
- */
 export class HttpStepHandler extends BaseStepHandler {
   getStepType() {
     return "http";
   }
 
   validate(step) {
-    if (!step.config) {
-      throw new Error("HTTP step missing configuration");
-    }
-
-    if (!step.config.url) {
-      throw new Error("HTTP step missing URL");
-    }
-
-    if (!step.config.method) {
-      throw new Error("HTTP step missing method");
-    }
-
+    if (!step.config) throw new Error("HTTP step missing configuration");
+    if (!step.config.url) throw new Error("HTTP step missing URL");
+    if (!step.config.method) throw new Error("HTTP step missing method");
     return true;
   }
 
-  /**
-   * Execute HTTP request step
-   * @param {object} step - Step definition
-   * @param {object} inputs - Step inputs
-   * @param {object} context - Execution context
-   * @returns {Promise<object>} Step execution result
-   */
   async execute(step, inputs, context) {
+    let timeoutId = null;
     try {
-      // Validate step configuration
       this.validate(step);
-
       const {
         url,
         method = "GET",
         headers = {},
         body,
-        timeout = 30000, // Default 30 second timeout
+        timeout = 30000,
       } = step.config;
+      const enterprise =
+        context.enterprisePolicy?.enabled === true ||
+        process.env.GITVAN_ENTERPRISE_MODE === "1";
 
-      this.logger.info(`🌐 Executing HTTP request: ${method} ${url}`);
-      // Use useTemplate for proper variable replacement
+      if (enterprise && !context.actuationBroker) {
+        throw new Error("Enterprise HTTP actuation requires an admitted actuation broker");
+      }
+
       const template = await useTemplate();
-
-      // Replace variables in URL, headers, and body
       const processedUrl = template.renderString(url, inputs);
       const processedHeaders = this._processHeaders(headers, inputs, template);
       const processedBody = body
         ? this._processBody(body, inputs, template)
         : undefined;
 
-      // Create abort controller for timeout
+      const safeLogUrl = enterprise
+        ? new URL(processedUrl).origin
+        : processedUrl;
+      this.logger.info(`🌐 Executing HTTP request: ${method} ${safeLogUrl}`);
+
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeout);
+      timeoutId = setTimeout(() => controller.abort(), timeout);
 
       const fetchOptions = {
         method,
         headers: processedHeaders,
         signal: controller.signal,
+        // A redirect is a second destination and therefore a second actuation.
+        // Enterprise mode refuses implicit redirects instead of escaping the
+        // destination admitted by the broker.
+        redirect: enterprise ? "manual" : "follow",
       };
-
-      if (processedBody) {
-        fetchOptions.body = processedBody;
-      }
+      if (processedBody) fetchOptions.body = processedBody;
 
       const response = await fetch(processedUrl, fetchOptions);
-      clearTimeout(timeoutId);
-
-      // Process response data
       const responseData = await this._processResponse(response);
 
-      // Check if response is successful
       if (!response.ok) {
         return this.createResult(
           {
-            url: processedUrl,
+            url: enterprise ? safeLogUrl : processedUrl,
             method,
             status: response.status,
             statusText: response.statusText,
             headers: Object.fromEntries(response.headers.entries()),
-            responseData: responseData,
+            responseData,
             success: false,
             timestamp: new Date().toISOString(),
           },
           false,
-          `HTTP ${response.status}: ${response.statusText}`
+          response.status >= 300 && response.status < 400 && enterprise
+            ? "Enterprise HTTP redirects require explicit re-admission"
+            : `HTTP ${response.status}: ${response.statusText}`
         );
       }
 
       return this.createResult({
-        url: processedUrl,
+        url: enterprise ? safeLogUrl : processedUrl,
         method,
         status: response.status,
         statusText: response.statusText,
         headers: Object.fromEntries(response.headers.entries()),
-        responseData: responseData, // Use responseData to match test expectations
+        responseData,
         success: true,
         timestamp: new Date().toISOString(),
       });
@@ -115,63 +99,38 @@ export class HttpStepHandler extends BaseStepHandler {
         false,
         `HTTP request failed: ${error.message}`
       );
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
     }
   }
 
-  /**
-   * Process headers with variable replacement
-   * @param {object} headers - Headers object
-   * @param {object} inputs - Input variables
-   * @param {object} template - Template engine
-   * @returns {object} Processed headers
-   */
   _processHeaders(headers, inputs, template) {
     const processedHeaders = {};
     for (const [key, value] of Object.entries(headers)) {
-      if (typeof value === "string") {
-        processedHeaders[key] = template.renderString(value, inputs);
-      } else {
-        processedHeaders[key] = value;
-      }
+      processedHeaders[key] = typeof value === "string"
+        ? template.renderString(value, inputs)
+        : value;
     }
     return processedHeaders;
   }
 
-  /**
-   * Process body with variable replacement
-   * @param {string|object} body - Request body
-   * @param {object} inputs - Input variables
-   * @param {object} template - Template engine
-   * @returns {string} Processed body
-   */
   _processBody(body, inputs, template) {
-    if (typeof body === "string") {
-      return template.renderString(body, inputs);
-    } else if (typeof body === "object") {
-      // For objects, render as JSON string with variable replacement
-      const jsonString = JSON.stringify(body);
-      return template.renderString(jsonString, inputs);
+    if (typeof body === "string") return template.renderString(body, inputs);
+    if (typeof body === "object") {
+      return template.renderString(JSON.stringify(body), inputs);
     }
     return body;
   }
 
-  /**
-   * Process response data based on content type
-   * @param {Response} response - Fetch response object
-   * @returns {Promise<any>} Processed response data
-   */
   async _processResponse(response) {
     const contentType = response.headers.get("content-type") || "";
-
     if (contentType.includes("application/json")) {
       try {
         return await response.json();
-      } catch (error) {
-        // Fallback to text if JSON parsing fails
+      } catch {
         return await response.text();
       }
-    } else {
-      return await response.text();
     }
+    return await response.text();
   }
 }

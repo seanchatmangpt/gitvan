@@ -32,20 +32,22 @@ jobs:
         run: |
           pnpm pkg set packageManager="pnpm@11.21.0"
           pnpm pkg set engines.node=">=22.0.0"
-          CI=false pnpm remove --save-dev eslint-config-unjs
-          CI=false pnpm add --save-dev --save-exact eslint@10.4.0
+          pnpm pkg delete devDependencies.eslint-config-unjs
+          pnpm pkg set devDependencies.eslint="10.4.0"
           pnpm install --lockfile-only --no-frozen-lockfile
       - name: Replay manufactured dependency capsule
         run: |
           rm -rf node_modules
-          pnpm install --frozen-lockfile --ignore-scripts
+          pnpm install --frozen-lockfile
           test "$(node -p 'require("./package.json").packageManager')" = "pnpm@11.21.0"
           test "$(node -p 'require("./package.json").engines.node')" = ">=22.0.0"
+          test "$(node -p 'require("protobufjs/package.json").version')" = "7.5.5"
       - name: Bind artifact identity
         run: |
           mkdir -p /tmp/gitvan-dependency-capsule
           cp package.json pnpm-lock.yaml /tmp/gitvan-dependency-capsule/
-          sha256sum package.json pnpm-lock.yaml | tee /tmp/gitvan-dependency-capsule/SHA256SUMS
+          sha256sum package.json pnpm-lock.yaml pnpm-workspace.yaml | tee /tmp/gitvan-dependency-capsule/SHA256SUMS
+          cp pnpm-workspace.yaml /tmp/gitvan-dependency-capsule/
           printf '%s\n' "${{ github.event.pull_request.head.sha }}" > /tmp/gitvan-dependency-capsule/SOURCE_SHA
       - name: Upload dependency capsule
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

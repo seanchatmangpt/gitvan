@@ -1,0 +1,56 @@
+name: Dependency Capsule
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  manufacture-lock:
+    name: Manufacture canonical pnpm capsule
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact PR head
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Set up Node 22
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+          package-manager-cache: false
+      - name: Pin Corepack and pnpm
+        run: |
+          npm install --global corepack@0.35.0
+          corepack enable
+          corepack install --global pnpm@11.21.0
+          test "$(pnpm --version)" = "11.21.0"
+      - name: Manufacture package identity and lock
+        run: |
+          pnpm pkg set packageManager="pnpm@11.21.0"
+          pnpm pkg set engines.node=">=22.0.0"
+          pnpm remove --save-dev eslint-config-unjs --no-frozen-lockfile
+          pnpm add --save-dev --save-exact eslint@10.4.0 --no-frozen-lockfile
+          pnpm install --lockfile-only --no-frozen-lockfile
+      - name: Replay manufactured dependency capsule
+        run: |
+          rm -rf node_modules
+          pnpm install --frozen-lockfile --ignore-scripts
+          test "$(node -p 'require("./package.json").packageManager')" = "pnpm@11.21.0"
+          test "$(node -p 'require("./package.json").engines.node')" = ">=22.0.0"
+      - name: Bind artifact identity
+        run: |
+          mkdir -p /tmp/gitvan-dependency-capsule
+          cp package.json pnpm-lock.yaml /tmp/gitvan-dependency-capsule/
+          sha256sum package.json pnpm-lock.yaml | tee /tmp/gitvan-dependency-capsule/SHA256SUMS
+          printf '%s\n' "${{ github.event.pull_request.head.sha }}" > /tmp/gitvan-dependency-capsule/SOURCE_SHA
+      - name: Upload dependency capsule
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: gitvan-dependency-capsule-${{ github.event.pull_request.head.sha }}
+          path: /tmp/gitvan-dependency-capsule
+          if-no-files-found: error
+          retention-days: 7

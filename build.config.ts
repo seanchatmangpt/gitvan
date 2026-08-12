@@ -1,54 +1,17 @@
 import { defineBuildConfig } from "unbuild";
-import { existsSync } from "node:fs";
-import { resolve } from "node:path";
-
-// Pre-build verification: Ensure vendor/unrdf submodule is initialized
-const vendorUnrdfPath = resolve(process.cwd(), "vendor/unrdf");
-if (!existsSync(vendorUnrdfPath)) {
-  console.error("\n❌ ERROR: vendor/unrdf submodule not found!");
-  console.error("Please initialize the git submodule:");
-  console.error("  git submodule update --init --recursive\n");
-  process.exit(1);
-}
-
-// Verify unrdf build artifacts exist
-const unrdfDistPath = resolve(vendorUnrdfPath, "dist");
-if (!existsSync(unrdfDistPath)) {
-  console.error("\n⚠️  WARNING: vendor/unrdf/dist not found!");
-  console.error("The unrdf submodule may need to be built.");
-  console.error("Navigate to vendor/unrdf and run: npm install && npm run build\n");
-}
 
 export default defineBuildConfig({
-  // Main CLI entry point
   entries: ["./src/cli.mjs", "./bin/gitvan.mjs"],
-
-  // Output directory
   outDir: "dist",
-
-  // Generate TypeScript declarations
   declaration: false,
-
-  // Clean output directory before build
   clean: true,
-
-  // Don't fail on warnings
   failOnWarn: false,
-
-  // Enable bundling to minimize dependencies
   bundleless: false,
 
-  // Rollup configuration
   rollup: {
-    // Alias configuration to resolve unrdf from vendor submodule
-    alias: {
-      // Map 'unrdf' imports to the vendor submodule
-      // This ensures all imports of 'unrdf' resolve to vendor/unrdf/dist
-      unrdf: resolve(vendorUnrdfPath, "dist/index.mjs"),
-    },
-    // External dependencies (don't bundle these)
+    // UNRDF is a normal package dependency. The historical vendor/unrdf
+    // submodule was deliberately removed; build identity follows the lockfile.
     external: [
-      // Node.js built-ins
       "node:fs",
       "node:path",
       "node:child_process",
@@ -77,7 +40,6 @@ export default defineBuildConfig({
       "node:fs/promises",
       "node:path/posix",
       "node:path/win32",
-      // GitVan dependencies that should remain external
       "citty",
       "consola",
       "unctx",
@@ -99,6 +61,14 @@ export default defineBuildConfig({
       "prompts",
       "minimatch",
       "semver",
+      "n3",
+      "@unrdf/core",
+      "@unrdf/hooks",
+      "@unrdf/kgn",
+      "@unrdf/knowledge-engine",
+      "@unrdf/observability",
+      "@unrdf/streaming",
+      "@unrdf/validation",
       "@babel/parser",
       "@babel/traverse",
       "fuse.js",
@@ -113,10 +83,8 @@ export default defineBuildConfig({
       "brace-expansion",
       "concat-map",
       "balanced-match",
-      // Type definitions (exclude from build)
       "@types/semver",
       "@types/node",
-      // AI and additional dependencies
       "@ai-sdk/anthropic",
       "ollama",
       "ollama-ai-provider-v2",
@@ -126,28 +94,15 @@ export default defineBuildConfig({
       "ai/openai",
       "ai/anthropic",
     ],
-
-    // Output configuration
     output: {
-      // Preserve modules for better tree-shaking
       preserveModules: false,
-
-      // Format configuration
       format: "esm",
-
-      // Entry file names
       entryFileNames: "[name].mjs",
-
-      // Chunk file names
       chunkFileNames: "[name]-[hash].mjs",
-
-      // Asset file names
       assetFileNames: "[name]-[hash][extname]",
     },
-
-    // ESBuild configuration for better performance
     esbuild: {
-      target: "node18",
+      target: "node22",
       minify: process.env.NODE_ENV === "production",
       sourcemap: process.env.NODE_ENV !== "production",
       treeShaking: true,
@@ -156,37 +111,12 @@ export default defineBuildConfig({
     },
   },
 
-  // Copy additional files
   externals: [
-    // Copy templates directory
-    {
-      input: "./templates",
-      outDir: "./dist/templates",
-    },
-    // Copy packs directory
-    {
-      input: "./packs",
-      outDir: "./dist/packs",
-    },
-    // Copy types directory
-    {
-      input: "./types",
-      outDir: "./dist/types",
-    },
-    // Copy RDF ontologies (All Phases)
-    {
-      input: "./src/rdf/ontologies",
-      outDir: "./dist/rdf/ontologies",
-    },
-    // Copy SPARQL query libraries (All Phases)
-    {
-      input: "./src/git-native/queries",
-      outDir: "./dist/git-native/queries",
-    },
-    // Copy N3 rules (All Phases)
-    {
-      input: "./src/rdf/rules",
-      outDir: "./dist/rdf/rules",
-    },
+    { input: "./templates", outDir: "./dist/templates" },
+    { input: "./packs", outDir: "./dist/packs" },
+    { input: "./types", outDir: "./dist/types" },
+    { input: "./src/rdf/ontologies", outDir: "./dist/rdf/ontologies" },
+    { input: "./src/git-native/queries", outDir: "./dist/git-native/queries" },
+    { input: "./src/rdf/rules", outDir: "./dist/rdf/rules" },
   ],
 });

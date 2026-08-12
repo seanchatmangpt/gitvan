@@ -2,92 +2,87 @@ name: Dependency Capsule
 
 on:
   pull_request:
+    branches: [main]
+    paths:
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '.github/workflows/dependency-capsule.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '.github/workflows/dependency-capsule.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: dependency-capsule-${{ github.event.pull_request.number }}
+  group: dependency-capsule-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  manufacture-lock:
-    name: Manufacture canonical pnpm capsule
+  verify-lock:
+    name: Verify canonical pnpm capsule
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
-      - name: Checkout exact PR head
+      - name: Checkout exact subject
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+      - name: Refuse competing package-manager identity
+        run: |
+          test ! -e package-lock.json
+          if git ls-files --error-unmatch package-lock.json >/dev/null 2>&1; then
+            echo 'Tracked package-lock.json competes with canonical pnpm identity' >&2
+            exit 1
+          fi
+          test "$(node -p 'require("./package.json").packageManager')" = 'pnpm@11.21.0'
+          test "$(node -p 'require("./package.json").engines.node')" = '>=22.0.0'
       - name: Set up Node 22
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 22
           package-manager-cache: false
-      - name: Pin Corepack and pnpm
+      - name: Pin pnpm toolchain
         run: |
           npm install --global corepack@0.35.0
           corepack enable
           corepack install --global pnpm@11.21.0
-          test "$(pnpm --version)" = "11.21.0"
-      - name: Manufacture package identity and lock
+          test "$(pnpm --version)" = '11.21.0'
+      - name: Verify lock closure without lifecycle execution
         run: |
-          pnpm pkg set packageManager="pnpm@11.21.0"
-          pnpm pkg set engines.node=">=22.0.0"
-          pnpm pkg set scripts.prepublishOnly="pnpm run build"
-          pnpm pkg set scripts.test="vitest run"
-          pnpm pkg delete 'devDependencies["eslint-config-unjs"]'
-          pnpm pkg set devDependencies.eslint="10.4.0"
-          pnpm install --lockfile-only --no-frozen-lockfile
-      - name: Bind manufactured artifact identity
-        run: |
-          rm -rf /tmp/gitvan-dependency-capsule
-          mkdir -p /tmp/gitvan-dependency-capsule
-          cp package.json pnpm-lock.yaml pnpm-workspace.yaml /tmp/gitvan-dependency-capsule/
-          sha256sum package.json pnpm-lock.yaml pnpm-workspace.yaml | tee /tmp/gitvan-dependency-capsule/SHA256SUMS
-          printf '%s\n' "${{ github.event.pull_request.head.sha }}" > /tmp/gitvan-dependency-capsule/SOURCE_SHA
-      - name: Upload manufactured dependency capsule
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: gitvan-dependency-capsule-${{ github.event.pull_request.head.sha }}
-          path: /tmp/gitvan-dependency-capsule
-          if-no-files-found: error
-          retention-days: 7
-      - name: Inspect protobufjs lifecycle without executing it
-        run: |
-          rm -rf node_modules
           pnpm install --frozen-lockfile --ignore-scripts
           PROTOBUF_PACKAGE="$(find node_modules/.pnpm -path '*/node_modules/protobufjs/package.json' -print -quit)"
           test -n "$PROTOBUF_PACKAGE"
-          PROTOBUF_PACKAGE="$PROTOBUF_PACKAGE" node - <<'NODE'
-          const { dirname, join } = require('node:path');
-          const { existsSync, readFileSync } = require('node:fs');
-          const packagePath = process.env.PROTOBUF_PACKAGE;
-          const pkg = JSON.parse(readFileSync(packagePath, 'utf8'));
-          if (pkg.version !== '7.5.5') {
-            throw new Error(`Expected protobufjs 7.5.5, got ${pkg.version}`);
-          }
-          console.log(JSON.stringify({ packagePath, version: pkg.version, scripts: pkg.scripts }, null, 2));
-          const root = dirname(packagePath);
-          for (const candidate of ['scripts/postinstall.js', 'scripts/postinstall.cjs', 'scripts/postinstall.mjs']) {
-            const path = join(root, candidate);
-            if (existsSync(path)) {
-              console.log(`--- ${candidate} ---`);
-              console.log(readFileSync(path, 'utf8'));
-            }
-          }
-          NODE
+          PROTOBUF_VERSION="$(PROTOBUF_PACKAGE="$PROTOBUF_PACKAGE" node -p "JSON.parse(require('node:fs').readFileSync(process.env.PROTOBUF_PACKAGE, 'utf8')).version")"
+          test "$PROTOBUF_VERSION" = '7.5.5'
           rm -rf node_modules
-      - name: Replay manufactured dependency capsule
+      - name: Replay admitted dependency lifecycle
         run: |
           pnpm install --frozen-lockfile
-          test "$(node -p 'require("./package.json").packageManager')" = "pnpm@11.21.0"
-          test "$(node -p 'require("./package.json").engines.node')" = ">=22.0.0"
-          test "$(node -p 'require("./package.json").scripts.prepublishOnly')" = "pnpm run build"
-          test "$(node -p 'require("./package.json").scripts.test')" = "vitest run"
-          PROTOBUF_PACKAGE="$(find node_modules/.pnpm -path '*/node_modules/protobufjs/package.json' -print -quit)"
-          test -n "$PROTOBUF_PACKAGE"
-          PROTOBUF_VERSION="$(PROTOBUF_PACKAGE="$PROTOBUF_PACKAGE" node -p "JSON.parse(require('node:fs').readFileSync(process.env.PROTOBUF_PACKAGE, 'utf8')).version")"
-          test "$PROTOBUF_VERSION" = "7.5.5"
+          pnpm list --depth Infinity --json > /tmp/dependency-tree.json
+          pnpm audit --prod --audit-level high
+      - name: Prove install did not mutate dependency identity
+        run: |
+          git diff --exit-code -- package.json pnpm-lock.yaml pnpm-workspace.yaml
+      - name: Bind dependency receipt
+        run: |
+          rm -rf /tmp/gitvan-dependency-receipt
+          mkdir -p /tmp/gitvan-dependency-receipt
+          cp package.json pnpm-lock.yaml pnpm-workspace.yaml /tmp/gitvan-dependency-receipt/
+          cp /tmp/dependency-tree.json /tmp/gitvan-dependency-receipt/
+          sha256sum package.json pnpm-lock.yaml pnpm-workspace.yaml > /tmp/gitvan-dependency-receipt/SHA256SUMS
+          printf '%s\n' "${{ github.event.pull_request.head.sha || github.sha }}" > /tmp/gitvan-dependency-receipt/SOURCE_SHA
+      - name: Upload dependency receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: gitvan-dependency-receipt-${{ github.event.pull_request.head.sha || github.sha }}
+          path: /tmp/gitvan-dependency-receipt/
+          if-no-files-found: error
+          retention-days: 30

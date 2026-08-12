@@ -35,9 +35,32 @@ jobs:
           pnpm pkg delete 'devDependencies["eslint-config-unjs"]'
           pnpm pkg set devDependencies.eslint="10.4.0"
           pnpm install --lockfile-only --no-frozen-lockfile
-      - name: Replay manufactured dependency capsule
+      - name: Inspect protobufjs lifecycle without executing it
         run: |
           rm -rf node_modules
+          pnpm install --frozen-lockfile --ignore-scripts
+          node - <<'NODE'
+          const { dirname, join } = require('node:path');
+          const { existsSync, readFileSync } = require('node:fs');
+          const packagePath = require.resolve('protobufjs/package.json');
+          const pkg = require(packagePath);
+          console.log(JSON.stringify({
+            packagePath,
+            version: pkg.version,
+            scripts: pkg.scripts,
+          }, null, 2));
+          const root = dirname(packagePath);
+          for (const candidate of ['scripts/postinstall.js', 'scripts/postinstall.cjs', 'scripts/postinstall.mjs']) {
+            const path = join(root, candidate);
+            if (existsSync(path)) {
+              console.log(`--- ${candidate} ---`);
+              console.log(readFileSync(path, 'utf8'));
+            }
+          }
+          NODE
+          rm -rf node_modules
+      - name: Replay manufactured dependency capsule
+        run: |
           pnpm install --frozen-lockfile
           test "$(node -p 'require("./package.json").packageManager')" = "pnpm@11.21.0"
           test "$(node -p 'require("./package.json").engines.node')" = ">=22.0.0"

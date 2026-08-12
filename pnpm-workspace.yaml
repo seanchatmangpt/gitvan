@@ -9,8 +9,10 @@ overrides:
   protobufjs: 7.5.5
 
 # Build-script authority is exact-version, not package-name ambient authority.
-# esbuild's postinstall selects/validates its platform binary.
+# esbuild's postinstall selects/validates its platform binary. Protobufjs's
+# postinstall only emits compatibility warnings and is explicitly denied.
 allowBuilds:
   'esbuild@0.25.12': true
   'esbuild@0.27.2': true
   'esbuild@0.28.2': true
+  'protobufjs@7.5.5': false

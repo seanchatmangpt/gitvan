@@ -87,10 +87,16 @@ export class GitNativeIO {
       this._workerPool.initialize(),
     ]);
 
-    // Reconcile state on startup
-    await this.reconcile();
-
+    // Mark initialized before reconciliation so reconcile() cannot recursively
+    // re-enter initialize() through _ensureInitialized(). Roll back on failure.
     this._initialized = true;
+    try {
+      await this.reconcile();
+    } catch (error) {
+      this._initialized = false;
+      throw error;
+    }
+
     this.logger.info("GitNativeIO initialized successfully");
   }
 

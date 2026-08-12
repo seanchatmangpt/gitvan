@@ -1,22 +1,18 @@
 #!/usr/bin/env node
 
-/**
- * GitVan CLI - Unified Entry Point (Citty Implementation)
- *
- * This is the corrected main CLI entry point using Citty framework
- * following the C4 model architecture. All commands are properly
- * implemented using Citty's defineCommand pattern.
- */
-
+import { readFileSync } from "node:fs";
 import { defineCommand, runMain } from "citty";
 import { createLogger } from "./utils/logger.mjs";
 import { exitWithError } from "./core/error-handler.mjs";
 
 const logger = createLogger("cli");
+const packageJson = JSON.parse(
+  readFileSync(new URL("../package.json", import.meta.url), "utf8")
+);
+const enterpriseMode = process.env.GITVAN_ENTERPRISE_MODE === "1";
 
-// Setup global error handlers
 process.on("uncaughtException", async (error) => {
-  logger.error("Uncaught Exception", { error: error.message, stack: error.stack });
+  logger.error("Uncaught Exception", { error: error.message, stack: error.stack, code: error.code });
   await exitWithError(error, 1);
 });
 
@@ -26,147 +22,163 @@ process.on("unhandledRejection", async (reason) => {
   await exitWithError(error, 1);
 });
 
-// Import all Citty-based commands
-import { daemonCommand } from "./cli/commands/daemon.mjs";
-import { eventCommand } from "./cli/commands/event.mjs";
-import { cronCommand } from "./cli/commands/cron.mjs";
-import { auditCommand } from "./cli/commands/audit.mjs";
-import { hooksCommand } from "./cli/commands/hooks.mjs";
-import { workflowCommand } from "./cli/commands/workflow.mjs";
-import { jtbdCommand } from "./cli/commands/jtbd.mjs";
-import { cleanroomCommand } from "./cli/commands/cleanroom.mjs";
-import { jobCommand } from "./cli/commands/job.mjs";
-import { scheduleCommand } from "./cli/commands/schedule.mjs";
-import { worktreeCommand } from "./cli/commands/worktree.mjs";
-import { llmCommand } from "./cli/commands/llm.mjs";
-import { revopsCommand } from "./cli/commands/revops.mjs";
-import { submoduleCommand } from "./cli/commands/submodule.mjs";
+async function load(path, exportName) {
+  return (await import(path))[exportName];
+}
 
-// Import existing Citty commands that are already properly implemented
-import { setupCommand } from "./cli/setup.mjs";
-import { packCommand } from "./cli/pack.mjs";
-import { marketplaceCommand } from "./cli/marketplace.mjs";
-import { scaffoldCommand } from "./cli/scaffold.mjs";
-import { composeCommand } from "./cli/compose.mjs";
-import { saveCommand } from "./cli/save.mjs";
-import { ensureCommand } from "./cli/ensure.mjs";
-import { initCommand } from "./cli/init.mjs";
+function refusedCommand(name) {
+  return defineCommand({
+    meta: {
+      name,
+      description: `${name} is outside the Fortune-5 enterprise runtime profile`,
+    },
+    async run() {
+      const error = new Error(
+        `Command '${name}' is not admitted while GITVAN_ENTERPRISE_MODE=1`
+      );
+      error.code = "CLI_ROUTE_REFUSED";
+      logger.error(error.message, { code: error.code, command: name });
+      process.exitCode = 64;
+      return { standing: "REFUSED", code: error.code, command: name };
+    },
+  });
+}
 
-// Import legacy commands that need to be migrated (temporary)
-import { chatCommand } from "./cli/chat.mjs";
+const restrictedNames = [
+  "daemon",
+  "event",
+  "cron",
+  "audit",
+  "hooks",
+  "jtbd",
+  "cleanroom",
+  "job",
+  "schedule",
+  "worktree",
+  "submodule",
+  "init",
+  "setup",
+  "save",
+  "ensure",
+  "pack",
+  "marketplace",
+  "scaffold",
+  "compose",
+  "chat",
+  "llm",
+  "revops",
+  "studio",
+];
 
-// Import Studio command for NextJS integration
-import { studioCommand } from "./cli/commands/studio.mjs";
+let subCommands;
+if (enterpriseMode) {
+  const workflow = await load(
+    "./enterprise/workflow-command.mjs",
+    "enterpriseWorkflowCommand"
+  );
+  subCommands = {
+    workflow,
+    ...Object.fromEntries(restrictedNames.map((name) => [name, refusedCommand(name)])),
+  };
+} else {
+  const [
+    daemon,
+    event,
+    cron,
+    audit,
+    hooks,
+    workflow,
+    jtbd,
+    cleanroom,
+    job,
+    schedule,
+    worktree,
+    llm,
+    revops,
+    submodule,
+    setup,
+    pack,
+    marketplace,
+    scaffold,
+    compose,
+    save,
+    ensure,
+    init,
+    chat,
+    studio,
+  ] = await Promise.all([
+    load("./cli/commands/daemon.mjs", "daemonCommand"),
+    load("./cli/commands/event.mjs", "eventCommand"),
+    load("./cli/commands/cron.mjs", "cronCommand"),
+    load("./cli/commands/audit.mjs", "auditCommand"),
+    load("./cli/commands/hooks.mjs", "hooksCommand"),
+    load("./cli/commands/workflow.mjs", "workflowCommand"),
+    load("./cli/commands/jtbd.mjs", "jtbdCommand"),
+    load("./cli/commands/cleanroom.mjs", "cleanroomCommand"),
+    load("./cli/commands/job.mjs", "jobCommand"),
+    load("./cli/commands/schedule.mjs", "scheduleCommand"),
+    load("./cli/commands/worktree.mjs", "worktreeCommand"),
+    load("./cli/commands/llm.mjs", "llmCommand"),
+    load("./cli/commands/revops.mjs", "revopsCommand"),
+    load("./cli/commands/submodule.mjs", "submoduleCommand"),
+    load("./cli/setup.mjs", "setupCommand"),
+    load("./cli/pack.mjs", "packCommand"),
+    load("./cli/marketplace.mjs", "marketplaceCommand"),
+    load("./cli/scaffold.mjs", "scaffoldCommand"),
+    load("./cli/compose.mjs", "composeCommand"),
+    load("./cli/save.mjs", "saveCommand"),
+    load("./cli/ensure.mjs", "ensureCommand"),
+    load("./cli/init.mjs", "initCommand"),
+    load("./cli/chat.mjs", "chatCommand"),
+    load("./cli/commands/studio.mjs", "studioCommand"),
+  ]);
 
-/**
- * Main GitVan CLI using Citty framework
- *
- * This follows the C4 model architecture:
- * - Level 1: Developer → GitVan CLI → File System
- * - Level 2: CLI Runner → Command Registry → Module System
- * - Level 3: Commands → Composables → Engines
- * - Level 4: Specific operations and data flow
- */
+  subCommands = {
+    daemon,
+    event,
+    cron,
+    audit,
+    hooks,
+    workflow,
+    jtbd,
+    cleanroom,
+    job,
+    schedule,
+    worktree,
+    submodule,
+    init,
+    setup,
+    save,
+    ensure,
+    pack,
+    marketplace,
+    scaffold,
+    compose,
+    chat,
+    llm,
+    revops,
+    studio,
+  };
+}
+
 export const cli = defineCommand({
   meta: {
     name: "gitvan",
-    version: "3.1.0",
-    description: "Git-native development automation platform",
+    version: packageJson.version,
+    description: enterpriseMode
+      ? "Git-native automation platform — Fortune-5 enterprise runtime profile"
+      : "Git-native development automation platform",
     usage: "gitvan <command> [options]",
-    examples: [
-      "gitvan init",
-      "gitvan daemon start --worktrees all",
-      'gitvan event simulate commit --files "src/**"',
-      "gitvan cron list --verbose",
-      "gitvan audit build --output audit.json",
-      "gitvan hooks list",
-      "gitvan hooks evaluate --dry-run",
-      "gitvan jtbd list",
-      "gitvan jtbd evaluate --category core-development-lifecycle",
-      "gitvan cleanroom build",
-      "gitvan cleanroom test --suite core",
-      "gitvan workflow list",
-      "gitvan workflow run my-workflow --dry-run",
-      "gitvan workflow cursor my-workflow --interactive",
-      "gitvan job list",
-      "gitvan job run my-job",
-      "gitvan job chain build test deploy",
-      'gitvan schedule apply my-job "*/5 * * * *"',
-      "gitvan schedule list --enabled-only",
-      "gitvan worktree list",
-      "gitvan worktree create ../feature feature/new",
-      'gitvan llm generate "create a backup job"',
-      'gitvan llm job "run tests on push" --save',
-      "gitvan revops metrics",
-      "gitvan revops report monthly",
-      "gitvan revops health",
-      "gitvan revops forecast --growth-rate=15 --months=12",
-      "gitvan revops customers --at-risk",
-      "gitvan setup",
-      "gitvan pack install react-pack",
-      'gitvan marketplace search "react"',
-      "gitvan scaffold component MyComponent",
-      "gitvan compose up --detach",
-      "gitvan save",
-      "gitvan ensure",
-      'gitvan chat "help me with my workflow"',
-      "gitvan submodule status",
-      "gitvan submodule check",
-      "gitvan submodule init",
-      "gitvan submodule update",
-      "gitvan submodule verify --list-methods",
-    ],
   },
-  subCommands: {
-    // Core GitVan commands (properly implemented with Citty)
-    daemon: daemonCommand,
-    event: eventCommand,
-    cron: cronCommand,
-    audit: auditCommand,
-    hooks: hooksCommand,
-    workflow: workflowCommand,
-    jtbd: jtbdCommand,
-    cleanroom: cleanroomCommand,
-
-    // Job and schedule management commands
-    job: jobCommand,
-    schedule: scheduleCommand,
-    worktree: worktreeCommand,
-    submodule: submoduleCommand,
-
-    // Project management commands
-    init: initCommand,
-    setup: setupCommand,
-    save: saveCommand,
-    ensure: ensureCommand,
-
-    // Package and marketplace commands
-    pack: packCommand,
-    marketplace: marketplaceCommand,
-    scaffold: scaffoldCommand,
-    compose: composeCommand,
-
-    // AI and automation commands
-    chat: chatCommand,
-    llm: llmCommand,
-
-    // RevOps analytics and reporting
-    revops: revopsCommand,
-
-    // Studio and NextJS integration
-    studio: studioCommand,
-  },
+  subCommands,
 });
 
-// Export for programmatic usage
 export default cli;
 
-// Export main function for bin/gitvan.mjs compatibility
 export async function main() {
   return runMain(cli);
 }
 
-// Run CLI if this is the main module
 if (import.meta.url === `file://${process.argv[1]}`) {
   runMain(cli);
 }

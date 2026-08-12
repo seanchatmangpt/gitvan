@@ -32,8 +32,8 @@ jobs:
         run: |
           pnpm pkg set packageManager="pnpm@11.21.0"
           pnpm pkg set engines.node=">=22.0.0"
-          pnpm remove --save-dev eslint-config-unjs --no-frozen-lockfile
-          pnpm add --save-dev --save-exact eslint@10.4.0 --no-frozen-lockfile
+          CI=false pnpm remove --save-dev eslint-config-unjs
+          CI=false pnpm add --save-dev --save-exact eslint@10.4.0
           pnpm install --lockfile-only --no-frozen-lockfile
       - name: Replay manufactured dependency capsule
         run: |

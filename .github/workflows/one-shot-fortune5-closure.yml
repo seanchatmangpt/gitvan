@@ -1,0 +1,249 @@
+name: One-shot Fortune-5 closure repair
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/one-shot-fortune5-closure.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  repair:
+    if: >-
+      github.actor == 'seanchatmangpt' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/fortune5-enterprise-hardening-20260812'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout exact admitted branch head
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Set up Node 22
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+          package-manager-cache: false
+      - name: Pin pnpm toolchain
+        run: |
+          npm install --global corepack@0.35.0
+          corepack enable
+          corepack install --global pnpm@11.21.0
+          test "$(pnpm --version)" = '11.21.0'
+      - name: Apply bounded source and package repair
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected exactly one match, got {count}: {old!r}')
+              p.write_text(text.replace(old, new, 1))
+
+          package_path = Path('package.json')
+          package = json.loads(package_path.read_text())
+          deps = package['dependencies']
+          dev = package['devDependencies']
+          dev['@types/node'] = '22.20.1'
+          for dead in ['@unrdf/knowledge-engine', '@unrdf/streaming', 'tar']:
+              deps.pop(dead, None)
+          if 'unbuild' in deps:
+              dev['unbuild'] = deps.pop('unbuild')
+          deps['defu'] = '^6.1.5'
+          deps['js-yaml'] = '^4.3.1'
+          deps['minimatch'] = '^10.2.3'
+          package['dependencies'] = dict(sorted(deps.items()))
+          package['devDependencies'] = dict(sorted(dev.items()))
+          package_path.write_text(json.dumps(package, indent=2) + '\n')
+
+          replace_once(
+              'src/unrdf-hooks/core/state.ts',
+              "    const newValue = isFunction(setter) ? setter(this.value) : setter;\n",
+              "    const newValue = typeof setter === 'function'\n      ? (setter as (prev: T) => T)(this.value)\n      : setter;\n",
+          )
+          replace_once(
+              'src/unrdf-hooks/events/hooks.ts',
+              "): AsyncGenerator<T, void, unknown> {\n",
+              "): AsyncIterableIterator<T> {\n",
+          )
+          replace_once(
+              'src/unrdf-hooks/examples/advanced-patterns.ts',
+              "    return () => subscribers.delete(callback);\n",
+              "    return () => {\n      subscribers.delete(callback);\n    };\n",
+          )
+          replace_once(
+              'src/unrdf-hooks/repository/hooks.ts',
+              "import { DEFAULT_REPOSITORY_STATE_OPTIONS } from './types.js';\n\nconst execFileAsync = promisify(execFile);\n",
+              "import { DEFAULT_REPOSITORY_STATE_OPTIONS } from './types.js';\n\ntype MutableRemoteInfo = { -readonly [K in keyof RemoteInfo]?: RemoteInfo[K] };\ntype MutableWorktreeInfo = { -readonly [K in keyof WorktreeInfo]?: WorktreeInfo[K] };\n\nconst execFileAsync = promisify(execFile);\n",
+          )
+          replace_once(
+              'src/unrdf-hooks/repository/hooks.ts',
+              "        const remotes: Map<string, Partial<RemoteInfo>> = new Map();\n",
+              "        const remotes: Map<string, MutableRemoteInfo> = new Map();\n",
+          )
+          replace_once(
+              'src/unrdf-hooks/repository/hooks.ts',
+              "        let current: Partial<WorktreeInfo> = {};\n",
+              "        let current: MutableWorktreeInfo = {};\n",
+          )
+
+          hooks_build = Path('.github/workflows/hooks-build.yml')
+          hooks_text = hooks_build.read_text()
+          for dead in ["            '@unrdf/knowledge-engine',\n", "            '@unrdf/streaming',\n"]:
+              if dead not in hooks_text:
+                  raise SystemExit(f'hooks-build missing expected probe: {dead.strip()}')
+              hooks_text = hooks_text.replace(dead, '', 1)
+          hooks_build.write_text(hooks_text)
+
+          workspace = Path('pnpm-workspace.yaml')
+          workspace_text = workspace.read_text()
+          workspace_text = workspace_text.replace('protobufjs: 7.5.5', 'protobufjs: 7.6.1')
+          workspace_text = workspace_text.replace("'protobufjs@7.5.5': false", "'protobufjs@7.6.1': false")
+          workspace_text = workspace_text.replace('patched in protobufjs 7.5.5', 'patched in protobufjs 7.6.1')
+          workspace_text = workspace_text.replace('vulnerable 7.5.4', 'vulnerable protobufjs releases')
+          workspace.write_text(workspace_text)
+
+          telemetry = Path('src/telemetry/index.mjs')
+          telemetry_text = telemetry.read_text()
+          telemetry_text = telemetry_text.replace('SEMRESATTRS_SERVICE_NAME', 'ATTR_SERVICE_NAME')
+          telemetry_text = telemetry_text.replace('SEMRESATTRS_SERVICE_VERSION', 'ATTR_SERVICE_VERSION')
+          telemetry_text = telemetry_text.replace('SEMRESATTRS_DEPLOYMENT_ENVIRONMENT', 'ATTR_DEPLOYMENT_ENVIRONMENT_NAME')
+          telemetry_text = telemetry_text.replace("serviceVersion: '2.1.0'", "serviceVersion: '4.0.1'")
+          telemetry.write_text(telemetry_text)
+          PY
+      - name: Upgrade coherent OpenTelemetry runtime line
+        run: >-
+          pnpm update --latest
+          @opentelemetry/api
+          @opentelemetry/auto-instrumentations-node
+          @opentelemetry/exporter-metrics-otlp-http
+          @opentelemetry/exporter-trace-otlp-http
+          @opentelemetry/resources
+          @opentelemetry/sdk-metrics
+          @opentelemetry/sdk-node
+          @opentelemetry/sdk-trace-base
+          @opentelemetry/semantic-conventions
+      - name: Manufacture patched production graph
+        shell: bash
+        run: |
+          pnpm install --lockfile-only --no-frozen-lockfile
+          set +e
+          pnpm audit --fix --prod
+          fix_status=$?
+          set -e
+          echo "pnpm audit --fix exit=$fix_status; final audit is authoritative"
+          pnpm install --lockfile-only --no-frozen-lockfile
+      - name: Format manufactured source projection
+        run: >-
+          pnpm exec prettier --write
+          package.json
+          pnpm-workspace.yaml
+          src/telemetry/index.mjs
+          src/unrdf-hooks/core/state.ts
+          src/unrdf-hooks/events/hooks.ts
+          src/unrdf-hooks/examples/advanced-patterns.ts
+          src/unrdf-hooks/repository/hooks.ts
+          .github/workflows/hooks-build.yml
+      - name: Replay frozen graph
+        run: pnpm install --frozen-lockfile
+      - name: Refuse HIGH or CRITICAL production advisories
+        run: pnpm audit --prod --audit-level high
+      - name: Verify strict hooks type boundary
+        run: >-
+          pnpm exec tsc --noEmit --skipLibCheck --strict --allowJs false
+          --target esnext --module nodenext --moduleResolution nodenext
+          src/unrdf-hooks/index.ts
+      - name: Verify JavaScript lint boundary
+        run: pnpm exec eslint --max-warnings=0 src/integrations src/jobs/hooks.mjs src/cli/commands/hooks.mjs src/telemetry/index.mjs
+      - name: Verify surviving UNRDF packages
+        run: |
+          node --input-type=module <<'NODE'
+          for (const name of ['@unrdf/core', '@unrdf/hooks', '@unrdf/kgc-4d', '@unrdf/kgn', '@unrdf/validation']) {
+            await import(name);
+            console.log(`ADMITTED ${name}`);
+          }
+          NODE
+      - name: Verify OpenTelemetry compatibility
+        run: |
+          node --input-type=module <<'NODE'
+          const { GitVanTelemetry } = await import('./src/telemetry/index.mjs');
+          const telemetry = new GitVanTelemetry({ enableAutoInstrumentation: false, exportToFile: false });
+          await telemetry.initialize();
+          telemetry.recordCommand('fortune5-smoke', 1, true);
+          await telemetry.shutdown();
+          console.log('TELEMETRY_ALIVE');
+          NODE
+      - name: Verify Excel output compatibility
+        run: |
+          node --input-type=module <<'NODE'
+          import { stat, rm } from 'node:fs/promises';
+          import { OutputStepHandler } from './src/workflow/step-handlers/output-step-handler.mjs';
+          const path = '/tmp/gitvan-enterprise-output.xlsx';
+          const handler = new OutputStepHandler({ logger: { info() {}, warn() {}, error() {} } });
+          await handler._generateExcel({ records: [{ name: 'GitVan', status: 'ALIVE' }] }, {}, path);
+          const info = await stat(path);
+          if (info.size <= 0) throw new Error('Excel output is empty');
+          await rm(path);
+          console.log('EXCEL_ALIVE');
+          NODE
+      - name: Verify focused hooks behavior
+        run: >-
+          pnpm exec vitest run
+          tests/knowledge-hooks-simple-verification.test.mjs
+          tests/knowledge-hooks-system.test.mjs
+          --reporter=verbose
+      - name: Verify enterprise authority boundary
+        run: pnpm test:enterprise
+      - name: Verify active documentation contract
+        run: pnpm test:docs
+      - name: Full regression suite
+        run: pnpm test
+      - name: Build package
+        run: pnpm build
+      - name: Verify formatted repair
+        run: >-
+          pnpm exec prettier --check
+          package.json
+          pnpm-workspace.yaml
+          src/telemetry/index.mjs
+          src/unrdf-hooks/core/state.ts
+          src/unrdf-hooks/events/hooks.ts
+          src/unrdf-hooks/examples/advanced-patterns.ts
+          src/unrdf-hooks/repository/hooks.ts
+          .github/workflows/hooks-build.yml
+      - name: Verify bounded mutation scope
+        shell: bash
+        run: |
+          git diff --check
+          mapfile -t changed < <(git status --short | awk '{print $2}')
+          allowed='package.json pnpm-lock.yaml pnpm-workspace.yaml src/telemetry/index.mjs src/unrdf-hooks/core/state.ts src/unrdf-hooks/events/hooks.ts src/unrdf-hooks/examples/advanced-patterns.ts src/unrdf-hooks/repository/hooks.ts .github/workflows/hooks-build.yml docs-test-report.json'
+          for path in "${changed[@]}"; do
+            case " $allowed " in
+              *" $path "*) ;;
+              *) echo "Unexpected mutation: $path" >&2; exit 1 ;;
+            esac
+          done
+          rm -f docs-test-report.json
+          test "$(node -p 'require("./package.json").devDependencies["@types/node"]')" = '22.20.1'
+          test "$(node -p 'Boolean(require("./package.json").dependencies["@unrdf/knowledge-engine"])')" = 'false'
+          test "$(node -p 'Boolean(require("./package.json").dependencies["@unrdf/streaming"])')" = 'false'
+          test "$(node -p 'Boolean(require("./package.json").dependencies.unbuild)')" = 'false'
+          test "$(node -p 'Boolean(require("./package.json").devDependencies.unbuild)')" = 'true'
+      - name: Commit and push verified closure repair
+        run: |
+          git add package.json pnpm-lock.yaml pnpm-workspace.yaml src/telemetry/index.mjs src/unrdf-hooks/core/state.ts src/unrdf-hooks/events/hooks.ts src/unrdf-hooks/examples/advanced-patterns.ts src/unrdf-hooks/repository/hooks.ts .github/workflows/hooks-build.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'close dependency and strict type blockers'
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}

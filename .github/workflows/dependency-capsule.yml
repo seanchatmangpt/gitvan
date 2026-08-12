@@ -41,15 +41,34 @@ jobs:
           pnpm pkg delete 'devDependencies["eslint-config-unjs"]'
           pnpm pkg set devDependencies.eslint="10.4.0"
           pnpm install --lockfile-only --no-frozen-lockfile
+      - name: Bind manufactured artifact identity
+        run: |
+          rm -rf /tmp/gitvan-dependency-capsule
+          mkdir -p /tmp/gitvan-dependency-capsule
+          cp package.json pnpm-lock.yaml pnpm-workspace.yaml /tmp/gitvan-dependency-capsule/
+          sha256sum package.json pnpm-lock.yaml pnpm-workspace.yaml | tee /tmp/gitvan-dependency-capsule/SHA256SUMS
+          printf '%s\n' "${{ github.event.pull_request.head.sha }}" > /tmp/gitvan-dependency-capsule/SOURCE_SHA
+      - name: Upload manufactured dependency capsule
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: gitvan-dependency-capsule-${{ github.event.pull_request.head.sha }}
+          path: /tmp/gitvan-dependency-capsule
+          if-no-files-found: error
+          retention-days: 7
       - name: Inspect protobufjs lifecycle without executing it
         run: |
           rm -rf node_modules
           pnpm install --frozen-lockfile --ignore-scripts
-          node - <<'NODE'
+          PROTOBUF_PACKAGE="$(find node_modules/.pnpm -path '*/node_modules/protobufjs/package.json' -print -quit)"
+          test -n "$PROTOBUF_PACKAGE"
+          PROTOBUF_PACKAGE="$PROTOBUF_PACKAGE" node - <<'NODE'
           const { dirname, join } = require('node:path');
           const { existsSync, readFileSync } = require('node:fs');
-          const packagePath = require.resolve('protobufjs/package.json');
-          const pkg = require(packagePath);
+          const packagePath = process.env.PROTOBUF_PACKAGE;
+          const pkg = JSON.parse(readFileSync(packagePath, 'utf8'));
+          if (pkg.version !== '7.5.5') {
+            throw new Error(`Expected protobufjs 7.5.5, got ${pkg.version}`);
+          }
           console.log(JSON.stringify({ packagePath, version: pkg.version, scripts: pkg.scripts }, null, 2));
           const root = dirname(packagePath);
           for (const candidate of ['scripts/postinstall.js', 'scripts/postinstall.cjs', 'scripts/postinstall.mjs']) {
@@ -61,26 +80,14 @@ jobs:
           }
           NODE
           rm -rf node_modules
-      - name: Bind artifact identity
-        run: |
-          mkdir -p /tmp/gitvan-dependency-capsule
-          cp package.json pnpm-lock.yaml /tmp/gitvan-dependency-capsule/
-          sha256sum package.json pnpm-lock.yaml pnpm-workspace.yaml | tee /tmp/gitvan-dependency-capsule/SHA256SUMS
-          cp pnpm-workspace.yaml /tmp/gitvan-dependency-capsule/
-          printf '%s\n' "${{ github.event.pull_request.head.sha }}" > /tmp/gitvan-dependency-capsule/SOURCE_SHA
-      - name: Upload dependency capsule
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: gitvan-dependency-capsule-${{ github.event.pull_request.head.sha }}
-          path: /tmp/gitvan-dependency-capsule
-          if-no-files-found: error
-          retention-days: 7
       - name: Replay manufactured dependency capsule
         run: |
-          rm -rf node_modules
           pnpm install --frozen-lockfile
           test "$(node -p 'require("./package.json").packageManager')" = "pnpm@11.21.0"
           test "$(node -p 'require("./package.json").engines.node')" = ">=22.0.0"
           test "$(node -p 'require("./package.json").scripts.prepublishOnly')" = "pnpm run build"
           test "$(node -p 'require("./package.json").scripts.test')" = "vitest run"
-          test "$(node -p 'require("protobufjs/package.json").version')" = "7.5.5"
+          PROTOBUF_PACKAGE="$(find node_modules/.pnpm -path '*/node_modules/protobufjs/package.json' -print -quit)"
+          test -n "$PROTOBUF_PACKAGE"
+          PROTOBUF_VERSION="$(PROTOBUF_PACKAGE="$PROTOBUF_PACKAGE" node -p "JSON.parse(require('node:fs').readFileSync(process.env.PROTOBUF_PACKAGE, 'utf8')).version")"
+          test "$PROTOBUF_VERSION" = "7.5.5"

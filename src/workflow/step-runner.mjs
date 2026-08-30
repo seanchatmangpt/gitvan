@@ -1,148 +1,146 @@
 // src/workflow/step-runner.mjs
-// Refactored step execution engine using modular step handlers
+// Step execution engine. Enterprise mode admits actuation before handler execution.
 
 import { StepHandlerRegistry } from "./step-handlers/step-handler-registry.mjs";
+import { createActuationBroker } from "../enterprise/actuation-broker.mjs";
 
-/**
- * Step runner that executes individual workflow steps using modular handlers
- *
- * The StepRunner is responsible for executing individual workflow steps
- * by delegating to specialized step handlers. It manages the execution
- * context, handles input/output mapping, and provides comprehensive
- * error handling and logging.
- *
- * ## Step Execution Flow
- *
- * 1. Validate step configuration using registered handler
- * 2. Gather step inputs from context manager
- * 3. Prepare execution context with graph, turtle, and options
- * 4. Execute step using appropriate handler
- * 5. Store step outputs in context manager
- * 6. Return standardized execution result
- *
- * ## Handler Registry
- *
- * Step types are mapped to handlers via StepHandlerRegistry:
- * - `sparql` → SparqlStepHandler
- * - `template` → TemplateStepHandler
- * - `file` → FileStepHandler
- * - `http` → HttpStepHandler
- * - `cli` → CliStepHandler
- * - `output` → OutputStepHandler
- *
- * @example
- * ```javascript
- * const runner = new StepRunner({ logger: console });
- *
- * const result = await runner.executeStep(
- *   stepDefinition,
- *   contextManager,
- *   graphInstance,
- *   turtleInstance,
- *   { verbose: true }
- * );
- * ```
- */
 export class StepRunner {
-  /**
-   * @param {object} options
-   * @param {object} [options.logger] - Logger instance
-   * @param {number} [options.defaultTimeout] - Default timeout for steps
-   */
   constructor(options = {}) {
     this.logger = options.logger || console;
-    this.defaultTimeout = options.defaultTimeout || 30000; // 30 seconds
+    this.defaultTimeout = options.defaultTimeout || 30000;
+    this.enterprisePolicy = options.enterprisePolicy || {};
     this.handlerRegistry = new StepHandlerRegistry({ logger: this.logger });
   }
 
-  /**
-   * Execute a single workflow step using the appropriate handler
-   * @param {object} step - Step definition
-   * @param {object} contextManager - Context manager instance
-   * @param {object} graph - useGraph instance
-   * @param {object} turtle - useTurtle instance
-   * @param {object} [options] - Execution options
-   * @returns {Promise<object>} Step execution result
-   */
   async executeStep(step, contextManager, graph, turtle, options = {}) {
     const startTime = performance.now();
+    let broker = null;
+    let actuationStarted = false;
+
     if (options.verbose) {
       this.logger.info(`⚡ Executing step: ${step.id} (${step.type})`);
     }
 
     try {
-      // Validate step using handler
       this.handlerRegistry.validateStep(step);
-
-      // Get step inputs from context
       const inputs = await this._getStepInputs(step, contextManager);
 
-      // Prepare execution context
+      broker = createActuationBroker(step, {
+        ...this.enterprisePolicy,
+        ...(options.enterprisePolicy || {}),
+      });
+      const admission = broker.admit();
+
+      if (!admission.admitted) {
+        const duration = performance.now() - startTime;
+        this.logger.error(
+          `⛔ Step refused: ${step.id} - ${admission.error.message}`
+        );
+        return {
+          stepId: step.id,
+          success: false,
+          standing: "REFUSED",
+          duration,
+          error: admission.error.message,
+          errorCode: admission.error.code,
+          timestamp: new Date().toISOString(),
+          stepType: step.type,
+          handlerUsed: step.type,
+          receipts: broker.receipts(),
+        };
+      }
+
+      const admittedStep = admission.step;
       const context = {
         graph,
         turtle,
         contextManager,
         logger: this.logger,
         options,
-        files: options.files, // Pass files from options if available
+        files: options.files,
+        actuationBroker: broker,
+        enterpriseEnvironment: admission.runtime?.environment,
+        enterprisePolicy: broker.policy,
       };
 
-      // Execute step using appropriate handler
+      actuationStarted = true;
       const result = await this.handlerRegistry.executeStep(
-        step,
+        admittedStep,
         inputs,
         context
       );
+      const success = result?.success !== false;
 
-      // Store step outputs in context
-      await this._storeStepOutputs(step, result, contextManager);
+      await this._storeStepOutputs(admittedStep, result, contextManager);
 
-      const endTime = performance.now();
-      const duration = endTime - startTime;
+      const duration = performance.now() - startTime;
+      broker.complete({
+        success,
+        error: success ? null : result?.error,
+        errorCode: success ? null : result?.errorCode,
+        exitCode: result?.data?.exitCode ?? null,
+        duration,
+      });
 
       if (options.verbose) {
+        const icon = success ? "✅" : "❌";
         this.logger.info(
-          `✅ Step completed: ${step.id} (${duration.toFixed(2)}ms)`
+          `${icon} Step ${success ? "completed" : "failed"}: ${admittedStep.id} (${duration.toFixed(2)}ms)`
         );
       }
 
       return {
-        stepId: step.id,
-        success: true,
+        stepId: admittedStep.id,
+        success,
+        standing: success ? "EXECUTED" : "FAILED",
         duration,
-        outputs: result.data || {},
+        outputs: result?.data || {},
+        ...(success
+          ? {}
+          : { error: result?.error || result?.data?.stderr || "Step handler reported failure" }),
         timestamp: new Date().toISOString(),
-        stepType: step.type,
-        handlerUsed: step.type,
+        stepType: admittedStep.type,
+        handlerUsed: admittedStep.type,
+        receipts: broker.receipts(),
       };
     } catch (error) {
-      const endTime = performance.now();
-      const duration = endTime - startTime;
+      const duration = performance.now() - startTime;
+
+      if (broker && actuationStarted) {
+        try {
+          broker.complete({
+            success: false,
+            error: error.message,
+            errorCode: error.code,
+            exitCode: error.exitCode ?? null,
+            duration,
+          });
+        } catch (receiptError) {
+          this.logger.error(
+            `❌ Failed to persist execution receipt for ${step.id}: ${receiptError.message}`
+          );
+        }
+      }
 
       this.logger.error(`❌ Step failed: ${step.id} - ${error.message}`);
 
       return {
         stepId: step.id,
         success: false,
+        standing: "FAILED",
         duration,
         error: error.message,
+        errorCode: error.code,
         timestamp: new Date().toISOString(),
         stepType: step.type,
         handlerUsed: step.type,
+        receipts: broker?.receipts?.() || [],
       };
     }
   }
 
-  /**
-   * Get step inputs from context manager
-   * @param {object} step - Step definition
-   * @param {object} contextManager - Context manager instance
-   * @returns {Promise<object>} Step inputs
-   */
   async _getStepInputs(step, contextManager) {
-    if (!step.inputMapping) {
-      return {};
-    }
+    if (!step.inputMapping) return {};
 
     const inputs = {};
     for (const [inputKey, contextKey] of Object.entries(step.inputMapping)) {
@@ -155,21 +153,11 @@ export class StepRunner {
         inputs[inputKey] = null;
       }
     }
-
     return inputs;
   }
 
-  /**
-   * Store step outputs in context manager
-   * @param {object} step - Step definition
-   * @param {object} result - Step execution result
-   * @param {object} contextManager - Context manager instance
-   * @returns {Promise<void>}
-   */
   async _storeStepOutputs(step, result, contextManager) {
-    if (!step.outputMapping || !result.success) {
-      return;
-    }
+    if (!step.outputMapping || !result?.success) return;
 
     for (const [contextKey, outputKey] of Object.entries(step.outputMapping)) {
       try {
@@ -183,36 +171,18 @@ export class StepRunner {
     }
   }
 
-  /**
-   * Register a custom step handler
-   * @param {string} stepType - Step type name
-   * @param {object} handler - Step handler instance
-   */
   registerHandler(stepType, handler) {
     this.handlerRegistry.register(stepType, handler);
   }
 
-  /**
-   * Get registered step types
-   * @returns {string[]} Array of registered step types
-   */
   getRegisteredStepTypes() {
     return this.handlerRegistry.getRegisteredTypes();
   }
 
-  /**
-   * Check if a step type is supported
-   * @param {string} stepType - Step type name
-   * @returns {boolean} True if step type is supported
-   */
   isStepTypeSupported(stepType) {
     return this.handlerRegistry.hasHandler(stepType);
   }
 
-  /**
-   * Get handler registry for advanced operations
-   * @returns {StepHandlerRegistry} Handler registry instance
-   */
   getHandlerRegistry() {
     return this.handlerRegistry;
   }

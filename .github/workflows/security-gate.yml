@@ -1,0 +1,173 @@
+name: Security Checks
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  TZ: UTC
+  LANG: C
+
+jobs:
+  workflow-integrity:
+    name: Workflow supply-chain integrity
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact subject
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Refuse floating third-party action identities
+        shell: bash
+        run: |
+          failed=0
+          while IFS= read -r line; do
+            ref="$(printf '%s\n' "$line" | sed -E 's/^[[:space:]]*uses:[[:space:]]*([^[:space:]#]+).*/\1/')"
+            if [[ "$ref" == ./* ]]; then
+              continue
+            fi
+            if ! [[ "$ref" =~ @[0-9a-f]{40}$ ]]; then
+              echo "Unpinned action reference: $ref" >&2
+              failed=1
+            fi
+          done < <(grep -R -h -E '^[[:space:]]*uses:' .github/workflows --include='*.yml' --include='*.yaml' || true)
+          test "$failed" = 0
+      - name: Refuse obsolete dependency topologies
+        run: |
+          test ! -e package-lock.json
+          test ! -e .gitmodules
+          if grep -R --line-number -E 'vendor/unrdf|package-lock\.json|node-version:[[:space:]]*["'"']?(18|20)(["'"']|$)' .github/workflows --include='*.yml' --include='*.yaml'; then
+            echo 'Obsolete runtime or dependency topology remains in workflow authority.' >&2
+            exit 1
+          fi
+
+  dependency-review:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact PR head
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Review dependency delta
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: high
+
+  secrets:
+    name: Verified secret detection
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact subject and history
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install checksum-bound TruffleHog 3.96.0
+        run: |
+          curl --proto '=https' --tlsv1.2 -fsSL \
+            https://github.com/trufflesecurity/trufflehog/releases/download/v3.96.0/trufflehog_3.96.0_linux_amd64.tar.gz \
+            -o /tmp/trufflehog.tar.gz
+          echo '7105f1cd6577f058a9e39d0578f1a99c8a1e481e4d3512cd8a09acfe22a0fdc0  /tmp/trufflehog.tar.gz' | sha256sum --check
+          tar -xzf /tmp/trufflehog.tar.gz -C /tmp trufflehog
+          /tmp/trufflehog --version
+      - name: Scan admitted Git range for verified secrets
+        shell: bash
+        env:
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_AFTER: ${{ github.event.after }}
+        run: |
+          args=(git "file://$PWD" --fail --no-update --only-verified)
+          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
+            args+=(--since-commit "$PR_BASE" --branch "$PR_HEAD")
+          elif [[ "$GITHUB_EVENT_NAME" == push && "$PUSH_BEFORE" != 0000000000000000000000000000000000000000 ]]; then
+            args+=(--since-commit "$PUSH_BEFORE" --branch "$PUSH_AFTER")
+          fi
+          /tmp/trufflehog "${args[@]}"
+
+  codeql:
+    name: CodeQL security-extended
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout exact subject
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@c4dd10e44af883a891fe31ced449bcb4a6728b9b # v3, 2026-08-04
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+      - name: Analyze source
+        uses: github/codeql-action/analyze@c4dd10e44af883a891fe31ced449bcb4a6728b9b # v3, 2026-08-04
+        with:
+          category: /language:javascript-typescript
+
+  license-inventory:
+    name: Production license inventory
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact subject
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Set up Node 22
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+          package-manager-cache: false
+      - name: Pin pnpm toolchain
+        run: |
+          npm install --global corepack@0.35.0
+          corepack enable
+          corepack install --global pnpm@11.21.0
+          test "$(pnpm --version)" = '11.21.0'
+      - name: Install frozen dependency graph
+        run: pnpm install --frozen-lockfile
+      - name: Manufacture production license receipt
+        run: |
+          pnpm licenses list --prod --json > /tmp/production-licenses.json
+          test -s /tmp/production-licenses.json
+          sha256sum /tmp/production-licenses.json > /tmp/production-licenses.sha256
+          printf '%s\n' "${{ github.event.pull_request.head.sha || github.sha }}" > /tmp/SOURCE_SHA
+      - name: Upload license receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: production-licenses-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            /tmp/production-licenses.json
+            /tmp/production-licenses.sha256
+            /tmp/SOURCE_SHA
+          if-no-files-found: error
+          retention-days: 90

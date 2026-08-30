@@ -5,323 +5,158 @@ on:
     tags:
       - 'v*.*.*'
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version to release (e.g., 1.2.3)'
-        required: true
-        type: string
-      dry_run:
-        description: 'Dry run (do not publish)'
-        required: false
-        type: boolean
-        default: false
 
 permissions:
-  contents: write
-  packages: write
-  id-token: write
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 env:
+  TZ: UTC
+  LANG: C
   NODE_ENV: production
 
 jobs:
-  # ============================================================================
-  # Validate Release
-  # ============================================================================
-  validate:
-    name: Validate Release
+  manufacture:
+    name: Manufacture release capsule
     runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.version.outputs.version }}
-      is_prerelease: ${{ steps.version.outputs.is_prerelease }}
+    timeout-minutes: 45
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout exact release subject
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          submodules: recursive
+          ref: ${{ github.sha }}
           fetch-depth: 0
-
-      - name: Initialize and update submodules
+          persist-credentials: false
+      - name: Set up Node 22
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+          package-manager-cache: false
+      - name: Pin pnpm toolchain
         run: |
-          git submodule init
-          git submodule update --recursive
-
-      - name: Extract version
-        id: version
+          npm install --global corepack@0.35.0
+          corepack enable
+          corepack install --global pnpm@11.21.0
+          test "$(pnpm --version)" = "11.21.0"
+      - name: Admit release identity
+        shell: bash
         run: |
-          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            VERSION=${GITHUB_REF#refs/tags/v}
-          else
-            VERSION="${{ github.event.inputs.version }}"
+          PACKAGE_VERSION="$(node -p 'require("./package.json").version')"
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+            test "$TAG_VERSION" = "$PACKAGE_VERSION" || {
+              echo "Tag version $TAG_VERSION does not match package version $PACKAGE_VERSION" >&2
+              exit 1
+            }
           fi
-
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-          # Check if prerelease (contains -, alpha, beta, rc)
-          if [[ "$VERSION" =~ (alpha|beta|rc|-) ]]; then
-            echo "is_prerelease=true" >> $GITHUB_OUTPUT
-          else
-            echo "is_prerelease=false" >> $GITHUB_OUTPUT
-          fi
-
-          echo "Version: $VERSION"
-          echo "Prerelease: $(cat $GITHUB_OUTPUT | grep is_prerelease)"
-
-      - name: Validate version format
+          printf '%s\n' "$PACKAGE_VERSION" > /tmp/gitvan-release-version
+          printf '%s\n' "$GITHUB_SHA" > /tmp/gitvan-release-subject
+      - name: Install frozen dependency graph
+        run: pnpm install --frozen-lockfile
+      - name: Enterprise actuation contract
+        run: pnpm test:enterprise
+      - name: Lint
+        run: pnpm lint
+      - name: Full regression suite
+        run: pnpm test
+      - name: Documentation contract
+        run: pnpm test:docs
+      - name: Build
+        run: pnpm build
+      - name: High-severity production dependency audit
+        run: pnpm audit --prod --audit-level high
+      - name: Manufacture exact npm artifact
         run: |
-          VERSION=${{ steps.version.outputs.version }}
-          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
-            echo "Invalid version format: $VERSION"
-            echo "Expected format: X.Y.Z or X.Y.Z-prerelease"
-            exit 1
-          fi
+          rm -rf /tmp/gitvan-release
+          mkdir -p /tmp/gitvan-release
+          pnpm pack --pack-destination /tmp/gitvan-release
+          TARBALL="$(find /tmp/gitvan-release -maxdepth 1 -type f -name 'gitvan-*.tgz' -print -quit)"
+          test -n "$TARBALL"
+          sha256sum "$TARBALL" > /tmp/gitvan-release/SHA256SUMS
+          cp /tmp/gitvan-release-version /tmp/gitvan-release/VERSION
+          cp /tmp/gitvan-release-subject /tmp/gitvan-release/SOURCE_SHA
+      - name: Consumer smoke test exact artifact
+        run: |
+          TARBALL="$(find /tmp/gitvan-release -maxdepth 1 -type f -name 'gitvan-*.tgz' -print -quit)"
+          rm -rf /tmp/gitvan-consumer
+          mkdir -p /tmp/gitvan-consumer
+          cd /tmp/gitvan-consumer
+          npm init -y
+          npm install "$TARBALL"
+          npx --no-install gitvan --version
+          npx --no-install gitvan --help
+      - name: Upload release capsule
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: gitvan-release-${{ github.sha }}
+          path: /tmp/gitvan-release/
+          if-no-files-found: error
+          retention-days: 30
 
-  # ============================================================================
-  # Run Tests
-  # ============================================================================
-  test:
-    name: Run Full Test Suite
+  publish:
+    name: Publish admitted release
     runs-on: ubuntu-latest
-    needs: validate
+    needs: manufacture
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      id-token: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Set up Node 22 for npm
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          submodules: recursive
-          fetch-depth: 0
-
-      - name: Initialize and update submodules
-        run: |
-          git submodule init
-          git submodule update --recursive
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - name: Download exact release capsule
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run tests
-        run: npm test -- --coverage
-
-      - name: Check coverage thresholds
+          name: gitvan-release-${{ github.sha }}
+          path: release/
+      - name: Verify release capsule identity
+        working-directory: release
         run: |
-          if [ -f coverage/coverage-summary.json ]; then
-            cat coverage/coverage-summary.json
-          fi
-
-  # ============================================================================
-  # Build Package
-  # ============================================================================
-  build:
-    name: Build Release Package
-    runs-on: ubuntu-latest
-    needs: [validate, test]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 0
-
-      - name: Initialize and update submodules
+          test "$(cat SOURCE_SHA)" = "$GITHUB_SHA"
+          test "v$(cat VERSION)" = "$GITHUB_REF_NAME"
+          sha256sum --check SHA256SUMS
+      - name: Publish the tested tarball
+        working-directory: release
         run: |
-          git submodule init
-          git submodule update --recursive
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build package
-        run: npm run build
-        env:
-          NODE_ENV: production
-
-      - name: Verify build output
-        run: |
-          if [ ! -d "dist" ]; then
-            echo "Build failed: dist directory not found"
-            exit 1
-          fi
-          echo "Build successful!"
-          ls -la dist/
-
-      - name: Test package installation
-        run: |
-          npm pack --dry-run
-          PACKAGE_SIZE=$(npm pack --json | jq -r '.[0].size')
-          echo "Package size: $PACKAGE_SIZE bytes"
-
-          # Warn if package is larger than 5MB
-          if [ "$PACKAGE_SIZE" -gt 5242880 ]; then
-            echo "Warning: Package size exceeds 5MB"
-          fi
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-build
-          path: dist/
-          retention-days: 7
-
-  # ============================================================================
-  # Publish to npm
-  # ============================================================================
-  publish-npm:
-    name: Publish to npm Registry
-    runs-on: ubuntu-latest
-    needs: [validate, test, build]
-    if: github.event.inputs.dry_run != 'true'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 0
-
-      - name: Initialize and update submodules
-        run: |
-          git submodule init
-          git submodule update --recursive
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          registry-url: 'https://registry.npmjs.org'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: release-build
-          path: dist/
-
-      - name: Update version in package.json
-        run: |
-          npm version ${{ needs.validate.outputs.version }} --no-git-tag-version
-
-      - name: Publish to npm
-        run: |
-          if [[ "${{ needs.validate.outputs.is_prerelease }}" == "true" ]]; then
-            echo "Publishing prerelease version..."
-            npm publish --tag next --access public
-          else
-            echo "Publishing stable version..."
-            npm publish --access public
-          fi
+          TARBALL="$(find . -maxdepth 1 -type f -name 'gitvan-*.tgz' -print -quit)"
+          test -n "$TARBALL"
+          npm publish "$TARBALL" --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Verify publication
+      - name: Verify registry consequence
+        working-directory: release
+        shell: bash
         run: |
-          sleep 10
-          npm view gitvan@${{ needs.validate.outputs.version }} || echo "Package not yet available"
-
-  # ============================================================================
-  # Create GitHub Release
-  # ============================================================================
-  github-release:
-    name: Create GitHub Release
-    runs-on: ubuntu-latest
-    needs: [validate, publish-npm]
-    if: always() && (needs.publish-npm.result == 'success' || github.event.inputs.dry_run == 'true')
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 0
-
-      - name: Initialize and update submodules
-        run: |
-          git submodule init
-          git submodule update --recursive
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: release-build
-          path: dist/
-
-      - name: Generate release notes
-        id: notes
-        run: |
-          LATEST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-
-          {
-            echo "## 🚀 Release v${{ needs.validate.outputs.version }}"
-            echo ""
-            echo "### 📦 Installation"
-            echo '```bash'
-            echo "npm install gitvan@${{ needs.validate.outputs.version }}"
-            echo '```'
-            echo ""
-            echo "### 📝 What's Changed"
-            echo ""
-
-            if [ -z "$LATEST_TAG" ]; then
-              git log --pretty=format:"- %s (%h)" --no-merges | head -20
-            else
-              git log $LATEST_TAG..HEAD --pretty=format:"- %s (%h)" --no-merges
+          VERSION="$(cat VERSION)"
+          OBSERVED=''
+          for attempt in {1..12}; do
+            OBSERVED="$(npm view "gitvan@$VERSION" version 2>/dev/null || true)"
+            if [[ "$OBSERVED" == "$VERSION" ]]; then
+              break
             fi
-
-            echo ""
-            echo ""
-            if [ -n "$LATEST_TAG" ]; then
-              echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/$LATEST_TAG...v${{ needs.validate.outputs.version }}"
-            fi
-          } > release-notes.md
-
-      - name: Create package tarball
-        run: npm pack
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: v${{ needs.validate.outputs.version }}
-          name: Release v${{ needs.validate.outputs.version }}
-          body_path: release-notes.md
-          draft: false
-          prerelease: ${{ needs.validate.outputs.is_prerelease == 'true' }}
-          files: |
-            gitvan-*.tgz
-            dist/**/*
+            sleep 5
+          done
+          test "$OBSERVED" = "$VERSION"
+          rm -rf /tmp/gitvan-registry-consumer
+          mkdir -p /tmp/gitvan-registry-consumer
+          cd /tmp/gitvan-registry-consumer
+          npm init -y
+          npm install "gitvan@$VERSION"
+          test "$(node -p 'require("gitvan/package.json").version')" = "$VERSION"
+          npx --no-install gitvan --version
+          npx --no-install gitvan --help
+      - name: Create GitHub release for exact tag
+        working-directory: release
+        run: |
+          TARBALL="$(find . -maxdepth 1 -type f -name 'gitvan-*.tgz' -print -quit)"
+          gh release create "$GITHUB_REF_NAME" "$TARBALL" --verify-tag --generate-notes --title "GitVan $GITHUB_REF_NAME"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # ============================================================================
-  # Post-Release Tasks
-  # ============================================================================
-  post-release:
-    name: Post-Release Tasks
-    runs-on: ubuntu-latest
-    needs: [validate, github-release]
-    steps:
-      - name: Create release summary
-        run: |
-          echo "## 🎉 Release Published!" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version**: v${{ needs.validate.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Prerelease**: ${{ needs.validate.outputs.is_prerelease }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **npm**: https://www.npmjs.com/package/gitvan/v/${{ needs.validate.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **GitHub Release**: https://github.com/${{ github.repository }}/releases/tag/v${{ needs.validate.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-
-      - name: Notify on failure
-        if: failure()
-        run: |
-          echo "## ❌ Release Failed" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "The release process encountered an error. Please check the workflow logs." >> $GITHUB_STEP_SUMMARY
+          GH_TOKEN: ${{ github.token }}

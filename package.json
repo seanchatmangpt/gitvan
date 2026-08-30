@@ -5,27 +5,20 @@
   "author": "GitVan Team",
   "license": "MIT",
   "type": "module",
-  "exports": {
-    ".": {
-      "import": "./dist/cli.mjs"
-    }
-  },
+  "exports": {".": {"import": "./dist/cli.mjs"}},
   "main": "./dist/cli.mjs",
-  "bin": {
-    "gitvan": "./dist/bin/gitvan.mjs"
-  },
-  "files": [
-    "dist",
-    "LICENSE",
-    "README.md",
-    "CHANGELOG.md"
-  ],
+  "bin": {"gitvan": "./dist/bin/gitvan.mjs"},
+  "files": ["dist", "LICENSE", "README.md", "CHANGELOG.md"],
   "scripts": {
     "start": "node src/cli.mjs",
-    "test": "vitest",
+    "test": "vitest run",
+    "test:docs": "node scripts/test-docs.mjs",
+    "test:docs:verbose": "node scripts/test-docs.mjs --verbose",
+    "test:docs:dry-run": "node scripts/test-docs.mjs --dry-run",
+    "test:enterprise": "node --test tests/enterprise/actuation-broker.test.mjs && node scripts/verify-enterprise-readiness.mjs",
     "build": "unbuild",
     "lint": "eslint src/",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.9",
@@ -127,34 +120,19 @@
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^4.0.16",
-    "eslint-config-unjs": "^0.2.1",
+    "eslint": "10.4.0",
     "h3": "^2.0.0",
+    "jsdoc": "4.0.4",
     "nitropack": "^2.13.0",
+    "prettier": "3.9.6",
     "typescript": "^5.3.3",
     "vitest": "4.0.16"
   },
-  "overrides": {
-    "@inrupt/universal-fetch": "1.0.3"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/seanchatmangpt/gitvan.git"
-  },
-  "bugs": {
-    "url": "https://github.com/seanchatmangpt/gitvan/issues"
-  },
+  "overrides": {"@inrupt/universal-fetch": "1.0.3"},
+  "engines": {"node": ">=22.0.0"},
+  "packageManager": "pnpm@11.21.0",
+  "repository": {"type": "git", "url": "git+https://github.com/seanchatmangpt/gitvan.git"},
+  "bugs": {"url": "https://github.com/seanchatmangpt/gitvan/issues"},
   "homepage": "https://github.com/seanchatmangpt/gitvan#readme",
-  "keywords": [
-    "git",
-    "automation",
-    "rdf",
-    "sparql",
-    "knowledge-graph",
-    "hooks",
-    "workflow",
-    "cli"
-  ]
+  "keywords": ["git", "automation", "rdf", "sparql", "knowledge-graph", "hooks", "workflow", "cli"]
 }

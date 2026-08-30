@@ -1,0 +1,171 @@
+name: Enterprise Readiness
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: enterprise-readiness-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  TZ: UTC
+  LANG: C
+
+jobs:
+  actuation-contract:
+    name: Actuation contract / Node ${{ matrix.node }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+    steps:
+      - name: Checkout exact subject
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Set up Node ${{ matrix.node }}
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: ${{ matrix.node }}
+          package-manager-cache: false
+      - name: Parse hardened execution surfaces
+        run: |
+          node --check src/cli.mjs
+          node --check src/enterprise/workflow-command.mjs
+          node --check src/enterprise/actuation-broker.mjs
+          node --check src/workflow/workflow-engine.mjs
+          node --check src/workflow/step-runner.mjs
+          node --check src/workflow/step-handlers/cli-step-handler.mjs
+          node --check src/workflow/step-handlers/http-step-handler.mjs
+          node --check src/workflow/step-handlers/file-step-handler.mjs
+          node --check src/utils/shell.mjs
+      - name: Verify broker refusal and receipt laws
+        run: node --test tests/enterprise/actuation-broker.test.mjs
+      - name: Emit machine-readable enterprise verifier
+        run: node scripts/verify-enterprise-readiness.mjs
+
+  repository-regression:
+    name: Repository regression / Node 22
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact subject
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Set up Node 22
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+          package-manager-cache: false
+      - name: Pin pnpm toolchain
+        run: |
+          npm install --global corepack@0.35.0
+          corepack enable
+          corepack install --global pnpm@11.21.0
+          test "$(pnpm --version)" = '11.21.0'
+      - name: Install canonical dependency capsule
+        run: pnpm install --frozen-lockfile
+      - name: Enterprise integration tests
+        run: >-
+          pnpm exec vitest run
+          tests/enterprise/step-runner-enterprise.test.mjs
+          tests/enterprise/workflow-engine-enterprise.test.mjs
+          tests/step-handlers/cli-step-handler.test.mjs
+          tests/step-handlers/http-step-handler.test.mjs
+          tests/step-handlers/file-step-handler.test.mjs
+      - name: Lint
+        run: pnpm lint
+      - name: Full test suite
+        run: pnpm test
+      - name: Documentation contract
+        run: pnpm test:docs
+      - name: Build package
+        run: pnpm build
+      - name: High-severity production dependency audit
+        run: pnpm audit --prod --audit-level high
+      - name: Manufacture evidence bundle
+        run: |
+          rm -rf /tmp/gitvan-enterprise-evidence /tmp/gitvan-pack
+          mkdir -p /tmp/gitvan-enterprise-evidence /tmp/gitvan-pack
+          pnpm list --prod --depth Infinity --json > /tmp/gitvan-enterprise-evidence/production-dependencies.json
+          pnpm pack --pack-destination /tmp/gitvan-pack
+          TARBALL="$(find /tmp/gitvan-pack -maxdepth 1 -type f -name 'gitvan-*.tgz' -print -quit)"
+          test -n "$TARBALL"
+          cp "$TARBALL" /tmp/gitvan-enterprise-evidence/
+          sha256sum "$TARBALL" > /tmp/gitvan-enterprise-evidence/PACKAGE_SHA256
+          sha256sum package.json pnpm-lock.yaml pnpm-workspace.yaml > /tmp/gitvan-enterprise-evidence/DEPENDENCY_SHA256
+          printf '%s\n' "${{ github.event.pull_request.head.sha || github.sha }}" > /tmp/gitvan-enterprise-evidence/SOURCE_SHA
+      - name: Upload exact-head enterprise evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: gitvan-enterprise-evidence-${{ github.event.pull_request.head.sha || github.sha }}
+          path: /tmp/gitvan-enterprise-evidence/
+          if-no-files-found: error
+          retention-days: 30
+
+  container-contract:
+    name: Container contract / Node 22.23.1
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact subject
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Build immutable production image
+        run: |
+          SUBJECT="${{ github.event.pull_request.head.sha || github.sha }}"
+          docker build --tag "gitvan-enterprise:$SUBJECT" .
+      - name: Verify runtime identity and least privilege
+        shell: bash
+        run: |
+          SUBJECT="${{ github.event.pull_request.head.sha || github.sha }}"
+          IMAGE="gitvan-enterprise:$SUBJECT"
+          EXPECTED_VERSION="$(node -p 'require("./package.json").version')"
+          test "$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.version" }}' "$IMAGE")" = "$EXPECTED_VERSION"
+          docker run --rm "$IMAGE" --version
+          docker run --rm "$IMAGE" --help >/dev/null
+          docker run --rm --entrypoint /bin/sh "$IMAGE" -c '
+            test "$(id -u)" = "1000"
+            test "$(node --version)" = "v22.23.1"
+            git --version
+            ! command -v npm
+            ! command -v npx
+            ! command -v yarn
+            ! command -v corepack
+          '
+      - name: Scan image for HIGH and CRITICAL vulnerabilities
+        id: trivy
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: gitvan-enterprise:${{ github.event.pull_request.head.sha || github.sha }}
+          format: json
+          output: /tmp/trivy-image.json
+          severity: HIGH,CRITICAL
+          ignore-unfixed: false
+          exit-code: '1'
+      - name: Upload container security receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: gitvan-container-security-${{ github.event.pull_request.head.sha || github.sha }}
+          path: /tmp/trivy-image.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Refuse vulnerable production image
+        if: always()
+        run: test '${{ steps.trivy.outcome }}' = 'success'

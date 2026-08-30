@@ -1,244 +1,143 @@
 /**
- * RDF Config Adapter - Converts gitvan.config.js → RDF triples
+ * RDF configuration adapter.
  *
- * Transforms flat configuration into semantic RDF representation:
- * - gitvan.config.jobsPath → rdf:gitvan:hasJobsDirectory
- * - gitvan.config.hooks.pre → rdf:gitvan:hasPreHook
- * - etc.
- *
- * All configs stored in refs/rdf/config as Turtle
- * SHACL validation ensures schema compliance
+ * The canonical configuration ontology and quad manufacture live in
+ * config-parser.mjs. This module owns persistence/reconstruction only; it must
+ * not manufacture a second configuration graph vocabulary.
  */
 
-import { createLogger } from '../utils/logger.mjs';
-import { unrdfStore } from '../core/unrdf-store.mjs';
+import { createLogger } from "../utils/logger.mjs";
+import { unrdfStore } from "../core/unrdf-store.mjs";
+import {
+  configToQuads,
+  CONFIG_NS,
+  CONFIG_PROPERTY_MAP,
+} from "./config-parser.mjs";
 
-const logger = createLogger('config:rdf-adapter');
+const logger = createLogger("config:rdf-adapter");
 
-// RDF namespace definitions
-const NAMESPACES = {
-  gitvan: 'http://gitvan.local/ontology/',
-  rdf: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
-  rdfs: 'http://www.w3.org/2000/01/rdf-schema#',
-  xsd: 'http://www.w3.org/2001/XMLSchema#',
-};
+const NAMESPACES = Object.freeze({
+  gitvan: CONFIG_NS,
+  rdf: "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+  rdfs: "http://www.w3.org/2000/01/rdf-schema#",
+  xsd: "http://www.w3.org/2001/XMLSchema#",
+});
+
+export const CONFIG_BASE_IRI = CONFIG_NS;
 
 /**
- * Create named node from namespace and local name
+ * Convert GitVan configuration to canonical RDF quads.
+ * @param {Object} configObj
+ * @param {string} configUri
+ * @returns {Array<Object>}
  */
-function createIRI(ns, localName) {
-  return `${NAMESPACES[ns]}${localName}`;
+export function configToRdf(configObj, configUri = "urn:gitvan:config") {
+  return configToQuads(configObj, configUri);
 }
 
-/**
- * Convert JavaScript value to RDF literal
- */
-function valueToLiteral(value) {
-  if (typeof value === 'string') {
-    return { value, type: NAMESPACES.xsd + 'string' };
-  }
-  if (typeof value === 'number') {
-    return { value: String(value), type: NAMESPACES.xsd + 'decimal' };
-  }
-  if (typeof value === 'boolean') {
-    return { value: String(value), type: NAMESPACES.xsd + 'boolean' };
-  }
-  return { value: JSON.stringify(value), type: NAMESPACES.xsd + 'string' };
-}
+/** Historical capitalization retained as a compatibility alias. */
+export const configToRDF = configToRdf;
 
 /**
- * Recursively convert config object to RDF triples
- */
-function configToQuads(config, subjectIRI, path = []) {
-  const quads = [];
-
-  for (const [key, value] of Object.entries(config)) {
-    const predicate = createIRI('gitvan', `has${capitalize(key)}`);
-
-    if (value === null || value === undefined) {
-      continue;
-    }
-
-    if (typeof value === 'object' && !Array.isArray(value)) {
-      // Nested object: create blank node
-      const objectIRI = `${subjectIRI}#${path.concat(key).join('_')}`;
-      quads.push({
-        subject: { type: 'NamedNode', value: subjectIRI },
-        predicate: { type: 'NamedNode', value: predicate },
-        object: { type: 'NamedNode', value: objectIRI },
-      });
-
-      // Recurse
-      quads.push(
-        ...configToQuads(value, objectIRI, path.concat(key))
-      );
-    } else if (Array.isArray(value)) {
-      // Array: create RDF list or individual properties
-      for (let i = 0; i < value.length; i++) {
-        const item = value[i];
-        const indexedPredicate = createIRI('gitvan', `${key}[${i}]`);
-
-        if (typeof item === 'object') {
-          const objectIRI = `${subjectIRI}#${path.concat(key, i).join('_')}`;
-          quads.push({
-            subject: { type: 'NamedNode', value: subjectIRI },
-            predicate: { type: 'NamedNode', value: indexedPredicate },
-            object: { type: 'NamedNode', value: objectIRI },
-          });
-          quads.push(...configToQuads(item, objectIRI, path.concat(key, i)));
-        } else {
-          const literal = valueToLiteral(item);
-          quads.push({
-            subject: { type: 'NamedNode', value: subjectIRI },
-            predicate: { type: 'NamedNode', value: indexedPredicate },
-            object: {
-              type: 'Literal',
-              value: literal.value,
-              datatype: { type: 'NamedNode', value: literal.type },
-            },
-          });
-        }
-      }
-    } else {
-      // Scalar value: create literal
-      const literal = valueToLiteral(value);
-      quads.push({
-        subject: { type: 'NamedNode', value: subjectIRI },
-        predicate: { type: 'NamedNode', value: predicate },
-        object: {
-          type: 'Literal',
-          value: literal.value,
-          datatype: { type: 'NamedNode', value: literal.type },
-        },
-      });
-    }
-  }
-
-  return quads;
-}
-
-/**
- * Capitalize first letter
- */
-function capitalize(str) {
-  return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
-/**
- * Convert gitvan config to RDF quads
- */
-export function configToRdf(configObj) {
-  const configIRI = createIRI('gitvan', 'Configuration');
-
-  // Root triple
-  const quads = [
-    {
-      subject: { type: 'NamedNode', value: configIRI },
-      predicate: { type: 'NamedNode', value: NAMESPACES.rdf + 'type' },
-      object: { type: 'NamedNode', value: createIRI('gitvan', 'Config') },
-    },
-    {
-      subject: { type: 'NamedNode', value: configIRI },
-      predicate: { type: 'NamedNode', value: NAMESPACES.rdfs + 'label' },
-      object: {
-        type: 'Literal',
-        value: 'GitVan Configuration',
-      },
-    },
-  ];
-
-  // Add config properties
-  quads.push(...configToQuads(configObj, configIRI));
-
-  return quads;
-}
-
-/**
- * Convert RDF quads back to config object
+ * Reconstruct scalar configuration values from canonical config quads.
+ * RDF collections are intentionally not guessed here; the c12 configuration
+ * remains authoritative for complete reconstruction.
  */
 export function rdfToConfig(quads) {
   const config = {};
+  const predicateToPath = new Map(
+    Object.entries(CONFIG_PROPERTY_MAP).map(([path, predicate]) => [predicate, path])
+  );
 
-  // Group quads by subject
-  const bySubject = {};
-  for (const quad of quads) {
-    const subject = quad.subject.value;
-    if (!bySubject[subject]) {
-      bySubject[subject] = [];
-    }
-    bySubject[subject].push(quad);
-  }
-
-  // Process root config
-  for (const quads of Object.values(bySubject)) {
-    for (const quad of quads) {
-      const predicateName = quad.predicate.value.split('/').pop();
-
-      // Skip RDF type declarations
-      if (predicateName === 'type' || predicateName === 'label') {
-        continue;
-      }
-
-      // Convert RDF property back to config key
-      if (predicateName.startsWith('has')) {
-        const key = predicateName.slice(3).charAt(0).toLowerCase() +
-          predicateName.slice(4);
-
-        if (quad.object.type === 'Literal') {
-          config[key] = quad.object.value;
-        }
-      }
-    }
+  for (const item of quads || []) {
+    if (item?.object?.termType !== "Literal") continue;
+    const path = predicateToPath.get(item.predicate?.value);
+    if (!path) continue;
+    _setPath(config, path, _literalToValue(item.object));
   }
 
   return config;
 }
 
 /**
- * Persist config to RDF store
+ * Persist canonical config quads to the RDF store.
  */
-export async function persistConfigToRdf(configObj) {
+export async function persistConfigToRdf(
+  configObj,
+  { configUri = "urn:gitvan:config", refPath = "refs/rdf/config/main" } = {}
+) {
   try {
-    if (!unrdfStore.initialized) {
-      await unrdfStore.initialize();
-    }
-
-    const quads = configToRdf(configObj);
-    await unrdfStore.insert(quads, 'refs/rdf/config/main');
-
+    if (!unrdfStore.initialized) await unrdfStore.initialize();
+    const quads = configToRdf(configObj, configUri);
+    await unrdfStore.insert(quads, refPath);
     logger.info(`Persisted ${quads.length} config quads to RDF store`);
     return quads;
   } catch (error) {
-    logger.error('Failed to persist config to RDF:', error);
+    logger.error("Failed to persist config to RDF:", error);
     throw error;
   }
 }
 
 /**
- * Load config from RDF store
+ * Load scalar configuration values from the canonical RDF subject.
+ * Failure is non-fatal because c12 is the configuration source of truth.
  */
-export async function loadConfigFromRdf() {
+export async function loadConfigFromRdf(configUri = "urn:gitvan:config") {
   try {
-    if (!unrdfStore.initialized) {
-      await unrdfStore.initialize();
-    }
+    if (!unrdfStore.initialized) await unrdfStore.initialize();
 
-    // Query configuration
-    const sparqlQuery = `
-      PREFIX gitvan: <http://gitvan.local/ontology/>
-      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-      DESCRIBE ?config
+    const results = await unrdfStore.sparql(`
+      SELECT ?predicate ?value
       WHERE {
-        ?config rdf:type gitvan:Config .
+        <${configUri}> ?predicate ?value .
+        FILTER(isLiteral(?value))
       }
-    `;
+    `);
 
-    const results = await unrdfStore.sparql(sparqlQuery);
-    return rdfToConfig(results || []);
+    return rdfToConfig(_bindingsToQuads(results, configUri));
   } catch (error) {
-    logger.warn('Could not load config from RDF:', error);
+    logger.warn("Could not load config from RDF:", error);
     return {};
   }
 }
 
-export { NAMESPACES, createIRI };
+function _bindingsToQuads(results, configUri) {
+  if (!Array.isArray(results)) return [];
+  return results
+    .map((binding) => {
+      const predicate = binding?.predicate || binding?.get?.("predicate");
+      const value = binding?.value || binding?.get?.("value");
+      if (!predicate || !value) return null;
+      return {
+        subject: { termType: "NamedNode", value: configUri },
+        predicate,
+        object: value,
+      };
+    })
+    .filter(Boolean);
+}
+
+function _literalToValue(term) {
+  const datatype = term.datatype?.value || "";
+  if (datatype.endsWith("#boolean")) return term.value === "true";
+  if (datatype.endsWith("#integer")) return Number.parseInt(term.value, 10);
+  if (datatype.endsWith("#decimal") || datatype.endsWith("#double")) {
+    return Number.parseFloat(term.value);
+  }
+  return term.value;
+}
+
+function _setPath(target, path, value) {
+  const parts = path.split(".");
+  let current = target;
+  for (const key of parts.slice(0, -1)) {
+    current[key] ||= {};
+    current = current[key];
+  }
+  current[parts.at(-1)] = value;
+}
+
+export { NAMESPACES, CONFIG_NS };
+
+// Backward-compatible public projection; implementation remains owned by loader.mjs.
+export { loadWithRDFSupport } from "./loader.mjs";

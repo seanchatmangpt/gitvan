@@ -2,22 +2,35 @@ name: Hooks System Build
 
 on:
   push:
-    branches: [main, develop, 'claude/**']
-    paths:
-      - 'hooks/**'
-      - 'src/unrdf-hooks/**'
-      - 'src/integrations/unrdf-hooks-bridge.mjs'
-      - 'src/jobs/hooks.mjs'
-      - 'vendor/unrdf/**'
-      - 'build.config.ts'
-      - '.github/workflows/hooks-build.yml'
-  pull_request:
     branches: [main, develop]
     paths:
       - 'hooks/**'
       - 'src/unrdf-hooks/**'
-      - 'vendor/unrdf/**'
+      - 'src/integrations/**'
+      - 'src/jobs/hooks.mjs'
+      - 'build.config.ts'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/hooks-build.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'hooks/**'
+      - 'src/unrdf-hooks/**'
+      - 'src/integrations/**'
+      - 'src/jobs/hooks.mjs'
+      - 'build.config.ts'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/hooks-build.yml'
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hooks-build-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 env:
   TZ: UTC
@@ -25,352 +38,60 @@ env:
   NODE_ENV: production
 
 jobs:
-  # ============================================================================
-  # Build unrdf Submodule
-  # ============================================================================
-  build-unrdf:
-    name: Build unrdf Submodule
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 0
-
-      - name: Initialize and update submodules
-        run: |
-          git submodule init
-          git submodule update --recursive --remote
-
-      - name: Verify unrdf submodule
-        run: |
-          if [ ! -d "vendor/unrdf" ]; then
-            echo "❌ ERROR: vendor/unrdf submodule not found!"
-            exit 1
-          fi
-          echo "✅ vendor/unrdf submodule found"
-          ls -la vendor/unrdf/
-
-      - name: Check for pnpm in unrdf
-        id: check-pnpm
-        run: |
-          if [ -f "vendor/unrdf/pnpm-lock.yaml" ]; then
-            echo "has_pnpm=true" >> $GITHUB_OUTPUT
-          else
-            echo "has_pnpm=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Setup pnpm
-        if: steps.check-pnpm.outputs.has_pnpm == 'true'
-        run: |
-          npm i -g corepack
-          corepack enable
-
-      - name: Setup Node.js (with pnpm)
-        if: steps.check-pnpm.outputs.has_pnpm == 'true'
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-          cache-dependency-path: vendor/unrdf/pnpm-lock.yaml
-
-      - name: Setup Node.js (without pnpm)
-        if: steps.check-pnpm.outputs.has_pnpm == 'false'
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Build unrdf submodule (pnpm)
-        if: steps.check-pnpm.outputs.has_pnpm == 'true'
-        run: |
-          cd vendor/unrdf
-          pnpm install
-          pnpm build || echo "Build script not available"
-        continue-on-error: true
-
-      - name: Build unrdf submodule (npm)
-        if: steps.check-pnpm.outputs.has_pnpm == 'false'
-        run: |
-          cd vendor/unrdf
-          npm install
-          npm run build || echo "Build script not available"
-        continue-on-error: true
-
-      - name: Verify unrdf build artifacts
-        run: |
-          echo "Checking for build artifacts in vendor/unrdf..."
-          find vendor/unrdf -name "dist" -o -name "build" -o -name "*.d.ts" || echo "Build artifacts check complete"
-
-      - name: Upload unrdf build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: unrdf-build
-          path: vendor/unrdf/
-          retention-days: 7
-
-  # ============================================================================
-  # Build Hooks System
-  # ============================================================================
   build-hooks:
-    name: Build Hooks System
+    name: Build hooks against package-managed UNRDF
     runs-on: ubuntu-latest
-    needs: build-unrdf
+    timeout-minutes: 20
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout exact subject
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          submodules: recursive
-          fetch-depth: 0
-
-      - name: Initialize and update submodules
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Set up Node 22
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+          package-manager-cache: false
+      - name: Pin pnpm toolchain
         run: |
-          git submodule init
-          git submodule update --recursive
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Cache node_modules
-        id: cache-node-modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-modules-
-
-      - name: Install dependencies
-        if: steps.cache-node-modules.outputs.cache-hit != 'true'
-        run: npm ci
-
-      - name: Download unrdf build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: unrdf-build
-          path: vendor/unrdf/
-
-      - name: Verify submodule dependencies
+          npm install --global corepack@0.35.0
+          corepack enable
+          corepack install --global pnpm@11.21.0
+          test "$(pnpm --version)" = "11.21.0"
+      - name: Install frozen dependency graph
+        run: pnpm install --frozen-lockfile
+      - name: Verify package-managed UNRDF imports
         run: |
-          npm run verify-deps || echo "Verification skipped"
-        continue-on-error: true
-
-      - name: Build hooks system
-        run: npm run build
-        env:
-          NODE_ENV: production
-
-      - name: Verify build output
+          node --input-type=module <<'NODE'
+          const packages = [
+            '@unrdf/core',
+            '@unrdf/hooks',
+            '@unrdf/kgc-4d',
+            '@unrdf/kgn',
+            '@unrdf/knowledge-engine',
+            '@unrdf/streaming',
+            '@unrdf/validation',
+          ];
+          for (const name of packages) {
+            await import(name);
+            console.log(`ADMITTED ${name}`);
+          }
+          NODE
+      - name: Build package
+        run: pnpm build
+      - name: Verify hooks build output
         run: |
-          if [ -d "dist" ]; then
-            echo "✅ Build directory exists"
-            ls -la dist/
-          else
-            echo "❌ Build directory not found"
+          test -d dist
+          test -f dist/bin/gitvan.mjs
+          if grep -R --line-number 'vendor/unrdf' dist; then
+            echo 'Built artifact still references removed vendor/unrdf topology' >&2
             exit 1
           fi
-
-      - name: Check for hooks in build
-        run: |
-          echo "Checking for hooks-related files in build output..."
-          find dist -name "*hooks*" -o -name "*unrdf*" || echo "Check complete"
-
-      - name: Upload hooks build artifacts
-        uses: actions/upload-artifact@v4
+      - name: Upload exact hooks build
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: hooks-build
+          name: hooks-build-${{ github.event.pull_request.head.sha || github.sha }}
           path: dist/
+          if-no-files-found: error
           retention-days: 7
-
-  # ============================================================================
-  # Verify Imports
-  # ============================================================================
-  verify-imports:
-    name: Verify All Imports Work
-    runs-on: ubuntu-latest
-    needs: build-hooks
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 0
-
-      - name: Initialize and update submodules
-        run: |
-          git submodule init
-          git submodule update --recursive
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Restore node_modules cache
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-modules-
-
-      - name: Download hooks build
-        uses: actions/download-artifact@v4
-        with:
-          name: hooks-build
-          path: dist/
-
-      - name: Test hooks imports
-        run: |
-          node -e "
-            import('./hooks/pre-commit.mjs')
-              .then(() => console.log('✅ pre-commit.mjs imports work'))
-              .catch(err => { console.error('❌ pre-commit.mjs import failed:', err); process.exit(1); });
-          "
-        continue-on-error: false
-
-      - name: Test unrdf-hooks bridge import
-        run: |
-          node -e "
-            import('./src/integrations/unrdf-hooks-bridge.mjs')
-              .then(() => console.log('✅ unrdf-hooks-bridge.mjs imports work'))
-              .catch(err => { console.error('❌ unrdf-hooks-bridge.mjs import failed:', err); process.exit(1); });
-          "
-        continue-on-error: false
-
-      - name: Test CLI hooks import
-        run: |
-          node -e "
-            import('./src/cli/commands/hooks.mjs')
-              .then(() => console.log('✅ hooks CLI imports work'))
-              .catch(err => { console.error('❌ hooks CLI import failed:', err); process.exit(1); });
-          "
-        continue-on-error: false
-
-  # ============================================================================
-  # Circular Dependency Check
-  # ============================================================================
-  circular-deps:
-    name: Check for Circular Dependencies
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install madge
-        run: npm install -g madge
-
-      - name: Check circular dependencies in hooks
-        run: |
-          madge --circular --extensions mjs hooks/ || echo "Circular dependency check complete"
-        continue-on-error: true
-
-      - name: Check circular dependencies in unrdf-hooks
-        run: |
-          madge --circular --extensions mjs src/unrdf-hooks/ || echo "Circular dependency check complete"
-        continue-on-error: true
-
-      - name: Generate dependency graph
-        run: |
-          madge --image deps-graph.svg --extensions mjs src/unrdf-hooks/ src/integrations/unrdf-hooks-bridge.mjs || echo "Graph generation skipped"
-        continue-on-error: true
-
-      - name: Upload dependency graph
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: hooks-dependency-graph
-          path: deps-graph.svg
-          retention-days: 30
-        continue-on-error: true
-
-  # ============================================================================
-  # Bundle Size Analysis
-  # ============================================================================
-  bundle-size:
-    name: Bundle Size Analysis
-    runs-on: ubuntu-latest
-    needs: build-hooks
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Download hooks build
-        uses: actions/download-artifact@v4
-        with:
-          name: hooks-build
-          path: dist/
-
-      - name: Analyze bundle size
-        run: |
-          echo "## Bundle Size Analysis" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          du -sh dist/ >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          find dist -name "*hooks*" -o -name "*unrdf*" | xargs ls -lh >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-
-      - name: Check bundle size limits
-        run: |
-          TOTAL_SIZE=$(du -sb dist/ | cut -f1)
-          MAX_SIZE=$((10 * 1024 * 1024))  # 10MB limit
-
-          if [ $TOTAL_SIZE -gt $MAX_SIZE ]; then
-            echo "⚠️ Bundle size ($TOTAL_SIZE bytes) exceeds limit ($MAX_SIZE bytes)"
-          else
-            echo "✅ Bundle size ($TOTAL_SIZE bytes) is within limits"
-          fi
-
-  # ============================================================================
-  # Build Summary
-  # ============================================================================
-  build-summary:
-    name: Build Summary
-    runs-on: ubuntu-latest
-    needs: [build-unrdf, build-hooks, verify-imports, circular-deps, bundle-size]
-    if: always()
-    steps:
-      - name: Check results
-        run: |
-          echo "## Hooks Build Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- Build unrdf: ${{ needs.build-unrdf.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Build Hooks: ${{ needs.build-hooks.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Verify Imports: ${{ needs.verify-imports.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Circular Deps: ${{ needs.circular-deps.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Bundle Size: ${{ needs.bundle-size.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          if [[ "${{ needs.build-hooks.result }}" == "failure" ]] ||
-             [[ "${{ needs.verify-imports.result }}" == "failure" ]]; then
-            echo "❌ Critical build checks failed!" >> $GITHUB_STEP_SUMMARY
-            exit 1
-          fi
-
-          echo "✅ All critical build checks passed!" >> $GITHUB_STEP_SUMMARY
-
-      - name: Create notification comment
-        if: github.event_name == 'pull_request' && failure()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '❌ **Hooks Build Failed**\n\nPlease check the build errors before merging.'
-            })

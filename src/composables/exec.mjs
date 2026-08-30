@@ -2,55 +2,112 @@ import { spawnSync } from "node:child_process";
 import { useGitVan } from "./ctx.mjs";
 import { useTemplate } from "./template.mjs";
 import { join as joinPath } from "pathe";
+import {
+  ActuationPolicyRefusal,
+  createActuationBroker,
+} from "../enterprise/actuation-broker.mjs";
 
 /**
- * Execution composable for running commands, scripts, and jobs
- * Provides CLI execution, JavaScript module execution, template rendering,
- * LLM integration, and job execution capabilities
+ * Execution composable for running commands, scripts, and jobs.
  *
- * @returns {Object} Execution interface
- * @returns {Function} cli - Execute CLI commands
- * @returns {Function} js - Execute JavaScript modules
- * @returns {Function} tmpl - Render templates
- * @returns {Function} llm - Execute LLM requests
- * @returns {Function} job - Execute jobs
+ * In enterprise mode every externally consequential operation exposed by this
+ * composable either routes through the actuation broker or fails closed.
  */
 export function useExec() {
   const gv = useGitVan();
+  const rootDir = gv.root || gv.cwd || process.cwd();
+  const enterprise =
+    gv.enterprisePolicy?.enabled === true ||
+    process.env.GITVAN_ENTERPRISE_MODE === "1";
+  const enterprisePolicy = enterprise
+    ? {
+        ...(gv.enterprisePolicy || {}),
+        enabled: true,
+        rootDir,
+      }
+    : null;
+
+  function brokerStep(step) {
+    const broker = createActuationBroker(step, enterprisePolicy || {});
+    const admission = broker.admit();
+    if (!admission.admitted) throw admission.error;
+    return { broker, admission };
+  }
 
   /**
-   * Execute a CLI command synchronously
-   * @param {string} cmd - Command to execute
-   * @param {Array<string>} args - Command arguments
-   * @param {Object} env - Additional environment variables
-   * @returns {Object} Result object with ok, code, stdout, stderr
+   * Execute a CLI command synchronously.
    */
   function cli(cmd, args = [], env = {}) {
-    const res = spawnSync(cmd, args, {
-      cwd: gv.root,
+    let command = [String(cmd), ...args.map(String)];
+    let cwd = rootDir;
+    let executionEnv = { ...process.env, ...gv.env, ...env };
+    let broker = null;
+
+    if (enterprise) {
+      const admitted = brokerStep({
+        id: `useExec.cli:${command[0]}`,
+        type: "cli",
+        config: {
+          command,
+          cwd: rootDir,
+          env: { ...(gv.env || {}), ...env },
+        },
+      });
+      broker = admitted.broker;
+      command = admitted.admission.step.config.command;
+      cwd = admitted.admission.step.config.cwd;
+      executionEnv = admitted.admission.runtime.environment;
+    }
+
+    const [executable, ...commandArgs] = command;
+    const startedAt = performance.now();
+    const res = spawnSync(executable, commandArgs, {
+      cwd,
       stdio: "pipe",
-      env: { ...process.env, ...gv.env, ...env },
+      env: executionEnv,
+      shell: false,
     });
+    const ok = res.status === 0 && !res.error;
+
+    if (broker) {
+      broker.complete({
+        success: ok,
+        error: res.error?.message || null,
+        exitCode: res.status,
+        duration: performance.now() - startedAt,
+      });
+    }
+
     return {
-      ok: res.status === 0,
+      ok,
+      standing: ok ? "EXECUTED" : "FAILED",
       code: res.status,
       stdout: s(res.stdout),
-      stderr: s(res.stderr),
+      stderr: s(res.stderr) || res.error?.message || "",
+      ...(broker ? { receipts: broker.receipts() } : {}),
     };
   }
 
   /**
-   * Execute a JavaScript module
-   * @param {string} modulePath - Path to module (relative or absolute with file://)
-   * @param {string} exportName - Export name to call (default: "default")
-   * @param {Object} input - Input data to pass to module
-   * @returns {Promise<Object>} Result with ok, stdout, meta
+   * Execute a JavaScript module.
+   *
+   * Dynamic module execution is intentionally excluded from the Fortune-5
+   * runtime profile. A module is executable code, not data, so file-path
+   * admission is insufficient authority to call an exported function.
    */
   async function js(modulePath, exportName = "default", input = {}) {
+    if (enterprise) {
+      throw new ActuationPolicyRefusal(
+        "DYNAMIC_MODULE_EXECUTION_REFUSED",
+        "Enterprise mode does not admit dynamic JavaScript module execution",
+        { exportName }
+      );
+    }
+
     const mod = await import(
       modulePath.startsWith("file:")
         ? modulePath
-        : "file://" + joinPath(gv.root, modulePath)
+        : "file://" + joinPath(rootDir, modulePath)
     );
     const fn = exportName === "default" ? mod.default : mod[exportName];
     const out = await fn(input);
@@ -58,34 +115,54 @@ export function useExec() {
   }
 
   /**
-   * Render a template to string or file
-   * @param {Object} options - Template options
-   * @param {string} options.template - Template name or content
-   * @param {string} [options.out] - Output file path (optional)
-   * @param {Object|Function} options.data - Template data or function returning data
-   * @param {boolean} [options.autoescape] - Auto-escape HTML
-   * @param {Array<string>} [options.paths] - Template search paths
-   * @returns {Object} Result with ok, stdout or artifact
+   * Render a template to string or file.
    */
   function tmpl({ template, out, data, autoescape, paths }) {
     const t = useTemplate({ autoescape, paths });
-    if (out) {
-      const r = t.renderToFile(template, out, v(data, gv));
-      return { ok: true, artifact: r.path, meta: { bytes: r.bytes } };
+    if (!out) {
+      const text = t.render(template, v(data, gv));
+      return { ok: true, stdout: text };
     }
-    const text = t.render(template, v(data, gv));
-    return { ok: true, stdout: text };
+
+    let broker = null;
+    if (enterprise) {
+      const admitted = brokerStep({
+        id: "useExec.tmpl:write",
+        type: "file",
+        config: { operation: "write", filePath: out },
+      });
+      broker = admitted.broker;
+      out = admitted.admission.step.config.filePath;
+    }
+
+    const startedAt = performance.now();
+    try {
+      const r = t.renderToFile(template, out, v(data, gv));
+      if (broker) {
+        broker.complete({ success: true, duration: performance.now() - startedAt });
+      }
+      return {
+        ok: true,
+        artifact: r.path,
+        meta: {
+          bytes: r.bytes,
+          ...(broker ? { receipts: broker.receipts() } : {}),
+        },
+      };
+    } catch (error) {
+      if (broker) {
+        broker.complete({
+          success: false,
+          error: error.message,
+          duration: performance.now() - startedAt,
+        });
+      }
+      throw error;
+    }
   }
 
   /**
-   * Execute an LLM request
-   * @param {Object} options - LLM options
-   * @param {string} [options.model] - Model name (default: "llama2")
-   * @param {string|Function} options.prompt - Prompt string or function
-   * @param {string} [options.system] - System prompt
-   * @param {number} [options.temperature=0.7] - Temperature
-   * @param {number} [options.maxTokens=1000] - Max tokens
-   * @returns {Promise<Object>} Result with ok, stdout, meta
+   * Manufacture an LLM request record.
    */
   async function llm({
     model,
@@ -94,7 +171,6 @@ export function useExec() {
     temperature = 0.7,
     maxTokens = 1000,
   }) {
-    // Simple JSON-based LLM execution - no external dependencies
     const llmData = {
       model: model || "llama2",
       prompt: typeof prompt === "function" ? prompt({ git: gv }) : prompt,
@@ -104,20 +180,50 @@ export function useExec() {
       timestamp: Date.now(),
     };
 
-    // Write LLM request to JSON file for processing
-    const requestFile = joinPath(
-      gv.root,
+    let requestFile = joinPath(
+      rootDir,
       ".gitvan",
       "llm-requests",
       `${Date.now()}.json`
     );
-    const fs = await import("node:fs/promises");
-    await fs.mkdir(joinPath(gv.root, ".gitvan", "llm-requests"), {
-      recursive: true,
-    });
-    await fs.writeFile(requestFile, JSON.stringify(llmData, null, 2));
+    const serialized = JSON.stringify(llmData, null, 2);
+    let broker = null;
 
-    // For now, return a simple response - can be enhanced with actual LLM integration
+    if (enterprise) {
+      const admitted = brokerStep({
+        id: "useExec.llm:queue",
+        type: "file",
+        config: {
+          operation: "write",
+          filePath: requestFile,
+          content: serialized,
+        },
+      });
+      broker = admitted.broker;
+      requestFile = admitted.admission.step.config.filePath;
+    }
+
+    const fs = await import("node:fs/promises");
+    const startedAt = performance.now();
+    try {
+      await fs.mkdir(joinPath(rootDir, ".gitvan", "llm-requests"), {
+        recursive: true,
+      });
+      await fs.writeFile(requestFile, serialized);
+      if (broker) {
+        broker.complete({ success: true, duration: performance.now() - startedAt });
+      }
+    } catch (error) {
+      if (broker) {
+        broker.complete({
+          success: false,
+          error: error.message,
+          duration: performance.now() - startedAt,
+        });
+      }
+      throw error;
+    }
+
     const response = {
       content: `LLM request saved to ${requestFile}`,
       model: llmData.model,
@@ -128,18 +234,18 @@ export function useExec() {
     return {
       ok: true,
       stdout: response.content,
-      meta: { response, requestFile },
+      meta: {
+        response,
+        requestFile,
+        ...(broker ? { receipts: broker.receipts() } : {}),
+      },
     };
   }
 
   /**
-   * Execute a job
-   * @param {string} jobName - Job name
-   * @param {Object|Function} input - Job input data or function returning data
-   * @returns {Promise<Object>} Result with ok, stdout, meta
+   * Queue a job by manufacturing its state record.
    */
   async function job(jobName, input = {}) {
-    // Simple JSON-based job execution - no external dependencies
     const jobData = {
       name: jobName,
       input: typeof input === "function" ? input({ git: gv }) : input,
@@ -147,25 +253,63 @@ export function useExec() {
       status: "pending",
     };
 
-    // Write job to JSON file for processing
-    const jobFile = joinPath(
-      gv.root,
+    let jobFile = joinPath(
+      rootDir,
       ".gitvan",
       "jobs",
       `${jobName}-${Date.now()}.json`
     );
-    const fs = await import("node:fs/promises");
-    await fs.mkdir(joinPath(gv.root, ".gitvan", "jobs"), { recursive: true });
-    await fs.writeFile(jobFile, JSON.stringify(jobData, null, 2));
+    const serialized = JSON.stringify(jobData, null, 2);
+    let broker = null;
 
-    // For now, return a simple response - can be enhanced with actual job processing
+    if (enterprise) {
+      const admitted = brokerStep({
+        id: "useExec.job:queue",
+        type: "file",
+        config: {
+          operation: "write",
+          filePath: jobFile,
+          content: serialized,
+        },
+      });
+      broker = admitted.broker;
+      jobFile = admitted.admission.step.config.filePath;
+    }
+
+    const fs = await import("node:fs/promises");
+    const startedAt = performance.now();
+    try {
+      await fs.mkdir(joinPath(rootDir, ".gitvan", "jobs"), { recursive: true });
+      await fs.writeFile(jobFile, serialized);
+      if (broker) {
+        broker.complete({ success: true, duration: performance.now() - startedAt });
+      }
+    } catch (error) {
+      if (broker) {
+        broker.complete({
+          success: false,
+          error: error.message,
+          duration: performance.now() - startedAt,
+        });
+      }
+      throw error;
+    }
+
     const response = {
       jobId: Date.now().toString(),
       status: "queued",
       message: `Job ${jobName} queued for execution`,
     };
 
-    return { ok: true, stdout: response.message, meta: { response, jobFile } };
+    return {
+      ok: true,
+      stdout: response.message,
+      meta: {
+        response,
+        jobFile,
+        ...(broker ? { receipts: broker.receipts() } : {}),
+      },
+    };
   }
 
   return { cli, js, tmpl, llm, job };

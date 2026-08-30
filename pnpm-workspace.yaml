@@ -1,0 +1,18 @@
+# Canonical pnpm project policy for GitVan.
+# Unlisted dependency lifecycle scripts are refused by pnpm's strictDepBuilds.
+
+strictDepBuilds: true
+
+# GHSA-xq3m-2v4x-88gg is patched in protobufjs 7.5.5 on the 7.x line.
+# Force compatible transitive consumers away from vulnerable 7.5.4.
+overrides:
+  protobufjs: 7.5.5
+
+# Build-script authority is exact-version, not package-name ambient authority.
+# esbuild's postinstall selects/validates its platform binary. Protobufjs's
+# postinstall only emits compatibility warnings and is explicitly denied.
+allowBuilds:
+  'esbuild@0.25.12': true
+  'esbuild@0.27.2': true
+  'esbuild@0.28.2': true
+  'protobufjs@7.5.5': false

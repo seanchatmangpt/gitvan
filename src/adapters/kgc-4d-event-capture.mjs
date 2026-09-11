@@ -9,7 +9,12 @@
 
 import { createHash } from 'node:crypto';
 import { createLogger } from '../utils/logger.mjs';
-import { unrdfStore } from '../core/unrdf-store.mjs';
+import {
+  unrdfStore,
+  namedNode,
+  literal,
+  quad,
+} from '../core/unrdf-store.mjs';
 
 const logger = createLogger('adapters:kgc-4d-event-capture');
 
@@ -42,16 +47,14 @@ function canonicalize(value) {
   return value;
 }
 
-function namedNode(value) {
-  return { type: 'NamedNode', value };
+function typedLiteral(value, datatype) {
+  return datatype
+    ? literal(String(value), namedNode(datatype))
+    : literal(String(value));
 }
 
-function literal(value, datatype) {
-  const term = { type: 'Literal', value: String(value) };
-  if (datatype) {
-    term.datatype = namedNode(datatype);
-  }
-  return term;
+function eventQuad(subject, predicate, object, graph) {
+  return quad(subject, predicate, object, graph);
 }
 
 /**
@@ -97,30 +100,31 @@ export async function captureHookEventWithReceipt(hookData, options = {}) {
     const eventId = createEventIdentity(hookData, eventTime);
     const eventGraph = createEventGraph(eventTime, eventId);
     const eventClass = EVENT_CLASSES[hookName] || 'GitHookEvent';
+    const eventSubject = namedNode(eventId);
 
     logger.debug(`Capturing hook event: ${hookName} @ ${eventTime}`);
 
     const quads = [
-      {
-        subject: namedNode(eventId),
-        predicate: namedNode(`${EVENT_NAMESPACES.rdf}type`),
-        object: namedNode(`${EVENT_NAMESPACES.gitvan}${eventClass}`),
-        graph: eventGraph,
-      },
-      {
-        subject: namedNode(eventId),
-        predicate: namedNode(`${EVENT_NAMESPACES.dct}created`),
-        object: literal(eventTime, `${EVENT_NAMESPACES.xsd}dateTime`),
-        graph: eventGraph,
-      },
+      eventQuad(
+        eventSubject,
+        namedNode(`${EVENT_NAMESPACES.rdf}type`),
+        namedNode(`${EVENT_NAMESPACES.gitvan}${eventClass}`),
+        eventGraph
+      ),
+      eventQuad(
+        eventSubject,
+        namedNode(`${EVENT_NAMESPACES.dct}created`),
+        typedLiteral(eventTime, `${EVENT_NAMESPACES.xsd}dateTime`),
+        eventGraph
+      ),
     ];
 
     switch (hookName) {
       case 'pre-commit':
-        quads.push(...captureStagingEvents(gitContext, eventId, eventGraph));
+        quads.push(...captureStagingEvents(gitContext, eventSubject, eventGraph));
         break;
       case 'commit-msg':
-        quads.push(...captureCommitMessageEvent(gitContext, eventId, eventGraph));
+        quads.push(...captureCommitMessageEvent(gitContext, eventSubject, eventGraph));
         break;
       case 'post-commit':
         quads.push(...captureCommitCreationEvent(gitContext, eventTime, eventGraph));
@@ -171,69 +175,75 @@ export async function captureHookEventWithReceipt(hookData, options = {}) {
   }
 }
 
-function captureStagingEvents(gitContext, eventId, eventGraph) {
+function captureStagingEvents(gitContext, eventSubject, eventGraph) {
   const quads = [];
 
   for (const file of gitContext.stagedFiles || []) {
-    quads.push({
-      subject: namedNode(eventId),
-      predicate: namedNode(`${EVENT_NAMESPACES.prov}wasAssociatedWith`),
-      object: literal(file),
-      graph: eventGraph,
-    });
+    quads.push(
+      eventQuad(
+        eventSubject,
+        namedNode(`${EVENT_NAMESPACES.prov}wasAssociatedWith`),
+        typedLiteral(file),
+        eventGraph
+      )
+    );
   }
 
   for (const file of gitContext.unstagedFiles || []) {
-    quads.push({
-      subject: namedNode(eventId),
-      predicate: namedNode(`${EVENT_NAMESPACES.gitvan}hasUnstagedChange`),
-      object: literal(file),
-      graph: eventGraph,
-    });
+    quads.push(
+      eventQuad(
+        eventSubject,
+        namedNode(`${EVENT_NAMESPACES.gitvan}hasUnstagedChange`),
+        typedLiteral(file),
+        eventGraph
+      )
+    );
   }
 
   return quads;
 }
 
-function captureCommitMessageEvent(gitContext, eventId, eventGraph) {
+function captureCommitMessageEvent(gitContext, eventSubject, eventGraph) {
   if (!gitContext.message) return [];
 
   return [
-    {
-      subject: namedNode(eventId),
-      predicate: namedNode(`${EVENT_NAMESPACES.dct}description`),
-      object: literal(gitContext.message.substring(0, 500)),
-      graph: eventGraph,
-    },
+    eventQuad(
+      eventSubject,
+      namedNode(`${EVENT_NAMESPACES.dct}description`),
+      typedLiteral(gitContext.message.substring(0, 500)),
+      eventGraph
+    ),
   ];
 }
 
 function captureCommitCreationEvent(gitContext, eventTime, eventGraph) {
   if (!gitContext.commitSHA) return [];
 
-  const commitUri = `urn:git:commit:${gitContext.commitSHA}`;
+  const commitSubject = namedNode(`urn:git:commit:${gitContext.commitSHA}`);
   const quads = [
-    {
-      subject: namedNode(commitUri),
-      predicate: namedNode(`${EVENT_NAMESPACES.rdf}type`),
-      object: namedNode(`${EVENT_NAMESPACES.gitvan}Commit`),
-      graph: eventGraph,
-    },
-    {
-      subject: namedNode(commitUri),
-      predicate: namedNode(`${EVENT_NAMESPACES.dct}created`),
-      object: literal(eventTime, `${EVENT_NAMESPACES.xsd}dateTime`),
-      graph: eventGraph,
-    },
+    eventQuad(
+      commitSubject,
+      namedNode(`${EVENT_NAMESPACES.rdf}type`),
+      namedNode(`${EVENT_NAMESPACES.gitvan}Commit`),
+      eventGraph
+    ),
+    eventQuad(
+      commitSubject,
+      namedNode(`${EVENT_NAMESPACES.dct}created`),
+      typedLiteral(eventTime, `${EVENT_NAMESPACES.xsd}dateTime`),
+      eventGraph
+    ),
   ];
 
   if (gitContext.author) {
-    quads.push({
-      subject: namedNode(commitUri),
-      predicate: namedNode(`${EVENT_NAMESPACES.dct}creator`),
-      object: literal(gitContext.author),
-      graph: eventGraph,
-    });
+    quads.push(
+      eventQuad(
+        commitSubject,
+        namedNode(`${EVENT_NAMESPACES.dct}creator`),
+        typedLiteral(gitContext.author),
+        eventGraph
+      )
+    );
   }
 
   return quads;
@@ -243,12 +253,12 @@ function captureRefUpdateEvent(gitContext, eventGraph) {
   if (!gitContext.ref || !gitContext.commitSHA) return [];
 
   return [
-    {
-      subject: namedNode(`urn:git:ref:${gitContext.ref}`),
-      predicate: namedNode(`${EVENT_NAMESPACES.gitvan}pointsTo`),
-      object: namedNode(`urn:git:commit:${gitContext.commitSHA}`),
-      graph: eventGraph,
-    },
+    eventQuad(
+      namedNode(`urn:git:ref:${gitContext.ref}`),
+      namedNode(`${EVENT_NAMESPACES.gitvan}pointsTo`),
+      namedNode(`urn:git:commit:${gitContext.commitSHA}`),
+      eventGraph
+    ),
   ];
 }
 
@@ -258,7 +268,9 @@ function captureRefUpdateEvent(gitContext, eventGraph) {
  */
 function createEventGraph(validTime, eventId) {
   const digest = eventId.split(':').pop();
-  return namedNode(`urn:gitvan:event-graph:${encodeURIComponent(validTime)}:${digest}`);
+  return namedNode(
+    `urn:gitvan:event-graph:${encodeURIComponent(validTime)}:${digest}`
+  );
 }
 
 export async function queryEvents(startTime, endTime) {

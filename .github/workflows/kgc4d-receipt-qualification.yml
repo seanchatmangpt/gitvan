@@ -1,0 +1,33 @@
+name: KGC-4D Receipt Qualification
+
+on:
+  push:
+    branches:
+      - feat/kgc4d-native-event-receipts
+  pull_request:
+    paths:
+      - "src/core/unrdf-store.mjs"
+      - "src/adapters/kgc-4d-event-capture.mjs"
+      - "tests/foundation-spike.test.mjs"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/kgc4d-receipt-qualification.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: npm i -fg corepack && corepack enable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: pnpm
+      - name: Frozen dependency admission
+        run: pnpm install --frozen-lockfile
+      - name: Qualify native temporal receipt boundary
+        run: pnpm exec vitest run tests/foundation-spike.test.mjs

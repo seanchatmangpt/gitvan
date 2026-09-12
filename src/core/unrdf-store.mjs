@@ -256,18 +256,19 @@ class UnrdfStore {
       return this.kgcStore.getEventLogStats();
     }
 
-    const eventCount =
+    const rawEventCount =
       typeof this.kgcStore.getEventCount === 'function'
         ? this.kgcStore.getEventCount()
         : null;
     const vectorClock = this.kgcStore.vectorClock;
 
-    if (eventCount === null || !vectorClock?.nodeId) {
+    if (rawEventCount === null || !vectorClock?.nodeId) {
       return null;
     }
 
     return {
-      eventCount,
+      eventCount:
+        typeof rawEventCount === 'bigint' ? Number(rawEventCount) : rawEventCount,
       nodeId: vectorClock.nodeId,
       vectorClock:
         typeof vectorClock.toJSON === 'function' ? vectorClock.toJSON() : null,

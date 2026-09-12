@@ -1,16 +1,17 @@
 /**
  * Foundation Spike Tests - Validate v5.0 core components
  *
- * Tests the 5 critical foundation files:
- * 1. @unrdf/core store wrapper
- * 2. SPARQL endpoint
- * 3. RDF config adapter
- * 4. Nitro store plugin
- * 5. Event capture bridge
+ * Tests the critical foundation files, including the GitVan ↔ KGC-4D seam.
  */
 
-import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
-import { unrdfStore, UnrdfStore } from '../src/core/unrdf-store.mjs';
+import { describe, it, expect } from 'vitest';
+import {
+  unrdfStore,
+  UnrdfStore,
+  namedNode,
+  literal,
+  quad,
+} from '../src/core/unrdf-store.mjs';
 import {
   configToRdf,
   rdfToConfig,
@@ -19,8 +20,10 @@ import {
 } from '../src/config/rdf-adapter.mjs';
 import {
   captureHookEvent,
+  captureHookEventWithReceipt,
   EVENT_NAMESPACES,
   createEventGraph,
+  createEventIdentity,
 } from '../src/adapters/kgc-4d-event-capture.mjs';
 
 /**
@@ -51,6 +54,45 @@ describe('UnRDF Store', () => {
       queriesExecuted: expect.any(Number),
       initialized: true,
     });
+  });
+
+  it('should return native KGC-4D receipts for admitted mutations', async () => {
+    const store = new UnrdfStore();
+    await store.initialize({ kgcNodeId: 'gitvan-foundation-test' });
+
+    const testQuad = quad(
+      namedNode('urn:gitvan:test:subject'),
+      namedNode('urn:gitvan:test:predicate'),
+      literal('value')
+    );
+
+    const inserted = await store.insert([testQuad], null, {
+      eventData: {
+        type: 'FOUNDATION_TEST',
+        payload: { boundary: 'gitvan-kgc4d' },
+        git_ref: null,
+      },
+    });
+
+    expect(inserted.receipt).toEqual(
+      expect.objectContaining({
+        id: expect.any(String),
+        t_ns: expect.any(String),
+      })
+    );
+    expect(store.getTemporalStats()).toMatchObject({
+      nodeId: 'gitvan-foundation-test',
+      eventCount: 1,
+    });
+
+    const deleted = await store.delete([testQuad]);
+    expect(deleted.receipt).toEqual(
+      expect.objectContaining({
+        id: expect.any(String),
+        t_ns: expect.any(String),
+      })
+    );
+    expect(store.getTemporalStats().eventCount).toBe(2);
   });
 });
 
@@ -88,8 +130,6 @@ describe('RDF Config Adapter', () => {
 
   it('should convert nested objects to separate quads', () => {
     const quads = configToRdf(sampleConfig);
-
-    // Should have more than just simple scalar quads due to nested ai object
     expect(quads.length).toBeGreaterThan(4);
   });
 
@@ -109,9 +149,6 @@ describe('RDF Config Adapter', () => {
   it('should round-trip config through RDF', () => {
     const quads = configToRdf(sampleConfig);
     const restored = rdfToConfig(quads);
-
-    // Note: Round-trip won't be 100% perfect due to nested object flattening
-    // but basic properties should be preserved
     expect(restored.jobsPath).toBe('./jobs');
   });
 });
@@ -120,16 +157,51 @@ describe('RDF Config Adapter', () => {
  * Test: Event Capture Bridge
  */
 describe('Event Capture Bridge', () => {
-  it('should create event graph URIs with 4D semantics', () => {
-    const validTime = '2026-01-11T12:00:00Z';
-    const transactionTime = '2026-01-11T12:00:01Z';
+  const FIXED_TIME = '2026-09-11T21:25:00.000Z';
 
-    const graph = createEventGraph(validTime, transactionTime);
+  it('should create deterministic event graph URIs while KGC-4D owns transaction-time', () => {
+    const eventId = 'urn:gitvan:event:sha256:abc123';
+    const graph = createEventGraph(FIXED_TIME, eventId);
 
-    expect(graph.type).toBe('NamedNode');
-    expect(graph.value).toContain('urn:gitvan:event:');
-    expect(graph.value).toContain(validTime);
-    expect(graph.value).toContain(transactionTime);
+    expect(graph.termType).toBe('NamedNode');
+    expect(graph.value).toContain('urn:gitvan:event-graph:');
+    expect(graph.value).toContain(encodeURIComponent(FIXED_TIME));
+    expect(graph.value).toContain('abc123');
+  });
+
+  it('should derive stable event identity independent of object key order', () => {
+    const left = {
+      hookName: 'post-commit',
+      git: {
+        commitSHA: 'abc123def456',
+        author: 'test@example.com',
+      },
+      timestamp: FIXED_TIME,
+    };
+    const right = {
+      timestamp: FIXED_TIME,
+      git: {
+        author: 'test@example.com',
+        commitSHA: 'abc123def456',
+      },
+      hookName: 'post-commit',
+    };
+
+    expect(createEventIdentity(left, FIXED_TIME)).toBe(
+      createEventIdentity(right, FIXED_TIME)
+    );
+  });
+
+  it('should reject observations without valid-time instead of inventing a timestamp', async () => {
+    await expect(
+      captureHookEvent(
+        {
+          hookName: 'pre-commit',
+          git: { stagedFiles: ['src/main.mjs'] },
+        },
+        { persist: false }
+      )
+    ).rejects.toThrow('timestamp is required');
   });
 
   it('should capture pre-commit events', async () => {
@@ -139,17 +211,19 @@ describe('Event Capture Bridge', () => {
         stagedFiles: ['src/main.mjs', 'tests/main.test.mjs'],
         unstagedFiles: ['docs/README.md'],
       },
-      timestamp: new Date().toISOString(),
+      timestamp: FIXED_TIME,
     };
 
-    const quads = await captureHookEvent(hookData);
+    const quads = await captureHookEvent(hookData, { persist: false });
 
     expect(Array.isArray(quads)).toBe(true);
     expect(quads.length).toBeGreaterThan(0);
 
-    // Should have event type
     const typeQuad = quads.find((q) => q.predicate.value.includes('type'));
     expect(typeQuad).toBeDefined();
+    expect(typeQuad.object.value).toBe(
+      'http://gitvan.local/ontology/PreCommitEvent'
+    );
   });
 
   it('should capture post-commit events with author', async () => {
@@ -160,14 +234,11 @@ describe('Event Capture Bridge', () => {
         author: 'test@example.com',
         message: 'Initial commit',
       },
-      timestamp: new Date().toISOString(),
+      timestamp: FIXED_TIME,
     };
 
-    const quads = await captureHookEvent(hookData);
+    const quads = await captureHookEvent(hookData, { persist: false });
 
-    expect(quads.length).toBeGreaterThan(0);
-
-    // Should have commit creation facts
     const commitQuads = quads.filter((q) =>
       q.subject.value.includes('urn:git:commit:')
     );
@@ -181,38 +252,39 @@ describe('Event Capture Bridge', () => {
         ref: 'refs/heads/main',
         commitSHA: 'abc123def456',
       },
-      timestamp: new Date().toISOString(),
+      timestamp: FIXED_TIME,
     };
 
-    const quads = await captureHookEvent(hookData);
+    const quads = await captureHookEvent(hookData, { persist: false });
 
-    expect(quads.length).toBeGreaterThan(0);
-
-    // Should link ref to commit
     const refQuads = quads.filter((q) =>
       q.subject.value.includes('urn:git:ref:')
     );
     expect(refQuads.length).toBeGreaterThan(0);
   });
 
-  it('should encode valid-time and transaction-time in graph', async () => {
-    const now = new Date().toISOString();
-    const hookData = {
-      hookName: 'post-commit',
-      git: {
-        commitSHA: 'abc123def456',
-        author: 'test@example.com',
+  it('should encode valid-time as RDF and keep receipt optional before admission', async () => {
+    const result = await captureHookEventWithReceipt(
+      {
+        hookName: 'post-commit',
+        git: {
+          commitSHA: 'abc123def456',
+          author: 'test@example.com',
+        },
+        timestamp: FIXED_TIME,
       },
-      timestamp: now,
-    };
+      { persist: false }
+    );
 
-    const quads = await captureHookEvent(hookData);
-    const firstQuad = quads[0];
+    const validTimeQuad = result.quads.find(
+      (q) =>
+        q.subject.value === result.eventId &&
+        q.predicate.value === `${EVENT_NAMESPACES.dct}created`
+    );
 
-    expect(firstQuad.graph).toBeDefined();
-    // Graph URI should contain event identifier with timestamps
-    expect(firstQuad.graph.value).toMatch(/event:/);
-    expect(firstQuad.graph.value).toContain(now);
+    expect(validTimeQuad.object.value).toBe(FIXED_TIME);
+    expect(result.receipt).toBeNull();
+    expect(result.refPath).toBeNull();
   });
 });
 
@@ -245,27 +317,25 @@ describe('RDF Namespaces', () => {
  * Test: Quad Structure Validation
  */
 describe('Quad Structure Validation', () => {
-  it('should create properly formed quads', () => {
+  it('should create properly formed config quads', () => {
     const quads = configToRdf({ test: 'value' });
 
-    for (const quad of quads) {
-      expect(quad.subject).toBeDefined();
-      expect(quad.predicate).toBeDefined();
-      expect(quad.object).toBeDefined();
-
-      // Subject and predicate must be NamedNodes
-      expect(quad.subject.type).toBe('NamedNode');
-      expect(quad.predicate.type).toBe('NamedNode');
-
-      // Object can be NamedNode or Literal
-      expect(['NamedNode', 'Literal']).toContain(quad.object.type);
+    for (const rdfQuad of quads) {
+      expect(rdfQuad.subject).toBeDefined();
+      expect(rdfQuad.predicate).toBeDefined();
+      expect(rdfQuad.object).toBeDefined();
+      expect(rdfQuad.subject.type).toBe('NamedNode');
+      expect(rdfQuad.predicate.type).toBe('NamedNode');
+      expect(['NamedNode', 'Literal']).toContain(rdfQuad.object.type);
     }
   });
 
   it('should preserve literal datatype information', () => {
     const quads = configToRdf({ count: 42 });
 
-    const numberQuad = quads.find((q) => q.object.type === 'Literal' && q.object.value === '42');
+    const numberQuad = quads.find(
+      (q) => q.object.type === 'Literal' && q.object.value === '42'
+    );
 
     expect(numberQuad).toBeDefined();
     expect(numberQuad.object.datatype).toBeDefined();

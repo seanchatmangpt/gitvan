@@ -123,6 +123,46 @@ describe('GitVanSupervisor', () => {
 
       await supervisor.stop();
     });
+
+    it('should not double-DO a restart when a second crash for the same child arrives while the first restart is in flight', async () => {
+      // Real collaborator: a supervisor whose restart() is genuinely slow,
+      // so both handleChildCrash calls are actually concurrent (in flight
+      // at the same time), not merely called twice sequentially.
+      let restartCallCount = 0;
+      class SlowRestartingSupervisor extends MockWorkflowSupervisor {
+        async restart() {
+          restartCallCount++;
+          await new Promise(resolve => setTimeout(resolve, 50));
+          this.started = true;
+        }
+      }
+
+      const child = new SlowRestartingSupervisor({ id: 'child-1' });
+      supervisor.addChild(child);
+      await supervisor.start();
+
+      const error = new Error('ECONNREFUSED');
+      error.code = 'ECONNREFUSED';
+
+      // Simulate a duplicate crash notification for the same child arriving
+      // before the first restart has completed (e.g. a restart observed
+      // twice on process restart).
+      const [first, second] = await Promise.all([
+        supervisor.handleChildCrash('child-1', error),
+        supervisor.handleChildCrash('child-1', error)
+      ]);
+
+      const results = [first, second];
+      const restarted = results.filter(r => r.action === 'restarted');
+      const skipped = results.filter(r => r.action === 'unknown' && r.reason === 'restart_already_in_flight');
+
+      // Exactly one actuation happened (real DO), the other is an honest
+      // UNKNOWN (attempted-but-not-actuated), never a second false success.
+      assert.equal(restartCallCount, 1);
+      assert.equal(restarted.length, 1);
+      assert.equal(skipped.length, 1);
+      assert.equal(supervisor.getRestartCount('child-1'), 1);
+    });
   });
 
   describe('system health', () => {

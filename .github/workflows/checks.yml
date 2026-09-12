@@ -17,6 +17,7 @@ jobs:
         with: { node-version: lts/*, cache: "pnpm" }
       - run: pnpm install
       - run: pnpm test
-      - run: pnpm test:docs
+      - name: Documentation verifier
+        run: node scripts/test-docs.mjs
       # - uses: codecov/codecov-action@v5
       #   with: { token: "${{ secrets.CODECOV_TOKEN }}" }

@@ -248,10 +248,30 @@ class UnrdfStore {
   }
 
   getTemporalStats() {
-    if (!this.kgcStore || typeof this.kgcStore.getEventLogStats !== 'function') {
+    if (!this.kgcStore) {
       return null;
     }
-    return this.kgcStore.getEventLogStats();
+
+    if (typeof this.kgcStore.getEventLogStats === 'function') {
+      return this.kgcStore.getEventLogStats();
+    }
+
+    const eventCount =
+      typeof this.kgcStore.getEventCount === 'function'
+        ? this.kgcStore.getEventCount()
+        : null;
+    const vectorClock = this.kgcStore.vectorClock;
+
+    if (eventCount === null || !vectorClock?.nodeId) {
+      return null;
+    }
+
+    return {
+      eventCount,
+      nodeId: vectorClock.nodeId,
+      vectorClock:
+        typeof vectorClock.toJSON === 'function' ? vectorClock.toJSON() : null,
+    };
   }
 
   async persistToGit(quads, refPath, message) {

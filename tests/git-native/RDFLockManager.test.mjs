@@ -65,8 +65,15 @@ class MockKnowledgeSubstrate {
   }
 
   async delete(subject, predicate, object, graph) {
+    // object === null/undefined means "match any object" (wildcard delete by
+    // subject+predicate only) -- callers that don't know the current object
+    // value (e.g. deleting all triples for a lock by predicate name) rely on
+    // this. A strict `t.object === object` comparison would never match a
+    // real stored triple when object is null, so delete() would silently
+    // remove nothing.
     this.triples = this.triples.filter(t =>
-      !(t.subject === subject && t.predicate === predicate && t.object === object)
+      !(t.subject === subject && t.predicate === predicate &&
+        (object === null || object === undefined || t.object === object))
     );
   }
 
@@ -121,6 +128,24 @@ class RDFLockManager {
 
   async acquireLock(lockName, options = {}) {
     await this._ensureInitialized();
+
+    // Mutual exclusion: refuse to grant a new lock while a non-expired lock
+    // with this name already exists. Without this check, git update-ref
+    // creating/overwriting the same ref never fails, so a duplicate
+    // acquisition would always succeed instead of being refused.
+    if (!options._retried) {
+      const lockRef = `${this.lockPrefix}/${lockName}`;
+      const existingOid = await this._getRefOid(lockRef).catch(() => null);
+      if (existingOid) {
+        const isExpired = await this._isLockExpired(lockName);
+        if (!isExpired) {
+          this.logger.debug(`Lock already held: ${lockName}`);
+          return false;
+        }
+        // Existing lock is expired -- release it before granting a new one.
+        await this.releaseLock(lockName);
+      }
+    }
 
     const timeout = options.timeout || this.defaultTimeout;
     const fingerprint = options.fingerprint || randomUUID();

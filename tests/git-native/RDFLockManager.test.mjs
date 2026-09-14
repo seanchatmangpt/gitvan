@@ -151,11 +151,24 @@ class RDFLockManager {
       this.logger.debug(`Acquired lock: ${lockName} (${lockId})`);
       return true;
     } catch (error) {
-      // Check if expired and retry
-      const isExpired = await this._isLockExpired(lockName);
-      if (isExpired) {
-        await this.releaseLock(lockName);
-        return this.acquireLock(lockName, options);
+      // Retry exactly once, and only when a lock actually exists and is
+      // genuinely expired. `_isLockExpired()` returns true both for a real
+      // stale lock AND for a lock ref that doesn't exist at all (e.g. the
+      // update-ref above failed because lockName is invalid, empty, or a
+      // path-traversal string) -- retrying unconditionally on that signal
+      // reproduces the exact same failure and retries forever. Guard with
+      // options._retried plus an explicit ref-existence check so a
+      // permanently-failing acquire (bad lock name, no such lock) fails
+      // once instead of looping.
+      if (!options._retried) {
+        const lockRef = `${this.lockPrefix}/${lockName}`;
+        const existingOid = await this._getRefOid(lockRef).catch(() => null);
+        const isExpired = existingOid && await this._isLockExpired(lockName);
+
+        if (isExpired) {
+          await this.releaseLock(lockName);
+          return this.acquireLock(lockName, { ...options, _retried: true });
+        }
       }
 
       this.logger.debug(`Failed to acquire lock ${lockName}: ${error.message}`);
@@ -462,11 +475,29 @@ class RDFLockManager {
   }
 
   async _isLockExpired(lockName) {
-    const lockInfo = await this.getLockInfo(lockName);
-    if (!lockInfo) return true;
+    // NOTE: this must NOT call getLockInfo(). getLockInfo()'s JSON-fallback
+    // branch calls _isLockExpired() to decide whether to auto-release a
+    // stale lock, so _isLockExpired() -> getLockInfo() -> _isLockExpired()
+    // is unconditional infinite async recursion (every real call reaches
+    // this same fallback branch since the mock SPARQL layer returns no
+    // bindings) -- it hangs the caller forever instead of overflowing the
+    // stack, because each recursive call happens after an `await`. Read the
+    // raw git-stored lock data directly instead of going back through
+    // getLockInfo().
+    const lockRef = `${this.lockPrefix}/${lockName}`;
 
-    const expiresAt = new Date(lockInfo.expiresAt).getTime();
-    return Date.now() > expiresAt;
+    try {
+      const oid = await this._getRefOid(lockRef);
+      if (!oid) return true;
+
+      const lockData = await this._getBlobContent(oid);
+      const parsed = JSON.parse(lockData);
+
+      const expiresAt = new Date(parsed.expiresAt).getTime();
+      return Date.now() > expiresAt;
+    } catch (error) {
+      return true;
+    }
   }
 
   async _ensureInitialized() {
@@ -476,11 +507,23 @@ class RDFLockManager {
   }
 
   async _createBlob(content) {
-    const { stdout } = await execAsync(`git hash-object -w --stdin`, {
-      cwd: this.cwd,
-      input: content
+    // NOTE: child_process.exec() (and its promisified form) has no "input"
+    // option -- that option only exists on the *Sync variants. Passing
+    // { input: content } here is silently ignored, so `git hash-object
+    // --stdin` blocks forever waiting on stdin that nothing ever writes to
+    // or closes, hanging the test. Fix: invoke exec() directly (not the
+    // promisified execAsync) so we can write to and close child.stdin.
+    return new Promise((resolve, reject) => {
+      const child = exec(`git hash-object -w --stdin`, { cwd: this.cwd }, (error, stdout) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve(stdout.trim());
+      });
+      child.stdin.write(content);
+      child.stdin.end();
     });
-    return stdout.trim();
   }
 
   async _getBlobContent(oid) {

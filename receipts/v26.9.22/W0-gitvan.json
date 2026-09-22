@@ -1,0 +1,49 @@
+{
+  "repo": "gitvan",
+  "path": "/Users/sac/gitvan",
+  "wave": "v26.9.22",
+  "lane": "L10-consumers-w0",
+  "base_sha_before": {
+    "found_branch": "main",
+    "found_head": "c81e3acf39cd565ae1b8944cf34fb5e1bb34e28b"
+  },
+  "preserve_branches": [
+    {"branch": "preserve/v26.9.22/main", "sha": "491329c3e8a93f167ea1defc3261b4670793e1b8", "covers": "dirty main checkout at c81e3ac: M pnpm-lock.yaml, D memory/agents/README.md, untracked .claude/ralph-loop.local.md, docs/jira/v26.9.19 (000-009), pnpm-workspace.yaml"},
+    {"branch": "preserve/v26.9.22/stash-0", "sha": "49a02c123e04a1fdd9d83acc228882d972327753", "covers": "stash@{0} 'On main: Stashing local changes before pull'"},
+    {"branch": "preserve/v26.9.22/stash-1", "sha": "5bb262cbe4f751355062a59be5cccbe895e72dc3", "covers": "stash@{1} 'On main: Stashing changes before merging remote main'"},
+    {"branch": "preserve/v26.9.22/stash-2", "sha": "95fe16482c02e614e7fb9ec4ab2d4f77d0adf117", "covers": "stash@{2} 'WIP on v3-rewrite: 99af803'"},
+    {"branch": "preserve/v26.9.22/stash-3", "sha": "64f108d3d9b4d0865071b0d41cb79c5ae674a2e8", "covers": "stash@{3} 'On main: WIP: unrdf migration work'"}
+  ],
+  "stashes_preserved": {
+    "count": 4,
+    "disposition": "all 4 stash entries KEPT in stash list AND committed to preserve/v26.9.22/stash-{0..3}; nothing dropped"
+  },
+  "merge": {
+    "target": "main",
+    "merged": "origin/main 8bfff10b11d172c3886bc3c2f4808d9e31798ce1",
+    "merge_sha": "b6d6ea9b4f8f8d389d7d8de3f1cf05a66daff0e6",
+    "parents": ["c81e3acf39cd565ae1b8944cf34fb5e1bb34e28b", "8bfff10b11d172c3886bc3c2f4808d9e31798ce1"],
+    "conflicts": "none (ort strategy; CHANGELOG.md +167, FORWARD_DEPLOYMENT.md +7)",
+    "tree_sha": "3c6cf0ff1b6c355f3362b530c76155cae2229d3d",
+    "note": "tree(main after merge) == tree(release/v26.9.22) — identity verified"
+  },
+  "integration_worktree": {
+    "path": "/Users/sac/wt/v26922/gitvan/int",
+    "branch": "release/v26.9.22",
+    "head": "d1b75ae12b7e4c0eaf7cff955f3bf9c75c264425",
+    "note": "created by earlier same-wave pass; its merge commit d1b75ae (parents 8bfff10 + c81e3ac) has tree 3c6cf0ff, identical to post-merge main; worktree verified clean, not recreated"
+  },
+  "baseline_gate": {
+    "command": "pnpm install --frozen-lockfile (pnpm 9.15.9, node v20.13.0)",
+    "exit": 1,
+    "excerpt": "ERR_PNPM_OUTDATED_LOCKFILE: specifiers in the lockfile do not match specs in package.json (lockfile lacks @noble/hashes, @unrdf/* 5.x, h3, nitropack, opossum ^8.1.0 etc. that package.json requires)",
+    "corroboration": "prior same-wave pass logs (npm-based): pnpm-unbuild build failed 'vendor/unrdf submodule not found'; 'pnpm lint' failed 'eslint: command not found' — scratchpad build.log/lint.log, 2026-09-22T14:54",
+    "verdict": "BUILD_BROKEN at the documented install step; fix is GITVAN-26922-02 (later wave), not attempted here"
+  },
+  "standing": "PARTIAL_ALIVE",
+  "notes": [
+    "An earlier partial W0 pass (same wave, same parent session) preserved dirty state non-destructively via temporary-index snapshots, built release worktrees, then stopped before receipts, default-branch sync and gates; this receipt's run verified its preserves byte-level and completed the remaining law.",
+    ".claude/ralph-loop.local.md was stale (mtime 2026-03-24, no live ralph process) when removed from the worktree; content preserved in preserve/v26.9.22/main.",
+    "No push performed (consumer pushes are a later-wave action)."
+  ]
+}

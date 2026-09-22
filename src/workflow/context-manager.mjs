@@ -128,6 +128,14 @@ export class ContextManager {
   }
 
   /**
+   * Get the context manager instance (for compatibility with supervision)
+   * @returns {ContextManager} This context manager instance
+   */
+  getContext() {
+    return this;
+  }
+
+  /**
    * Get all inputs
    * @returns {object} All inputs
    */

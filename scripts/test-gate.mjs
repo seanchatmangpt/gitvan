@@ -54,6 +54,7 @@ function runChunk(files, dir, index) {
     "run",
     "--silent",
     "--reporter=dot",
+    "--reporter=json",
     `--outputFile.json=${jsonOut}`,
     ...files,
   ];
@@ -67,7 +68,7 @@ function runChunk(files, dir, index) {
   const out = `${res.stdout ?? ""}\n${res.stderr ?? ""}`;
   const oom = OOM_SIGNATURES.some((re) => re.test(out));
   let summary = null;
-  if (res.status === 0 && existsSync(jsonOut)) {
+  if (existsSync(jsonOut)) {
     try {
       summary = JSON.parse(readFileSync(jsonOut, "utf8"));
     } catch {

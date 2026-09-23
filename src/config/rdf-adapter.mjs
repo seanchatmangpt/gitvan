@@ -241,4 +241,23 @@ export async function loadConfigFromRdf() {
   }
 }
 
+/**
+ * Load config with RDF support - loads standard config then enriches from RDF store
+ * Restored from 98fe408: loader.mjs imports this re-export, but the export was
+ * lost from this module, breaking `pnpm build` (rollup missing-export error).
+ * @param {Object} overrides - Configuration overrides
+ * @param {Object} opts - Loader options
+ * @returns {Promise<Object>} Merged configuration
+ */
+export async function loadWithRDFSupport(overrides = {}, opts = {}) {
+  try {
+    const rdfConfig = await loadConfigFromRdf();
+    // Merge RDF config as defaults (overrides take precedence)
+    return { ...rdfConfig, ...overrides };
+  } catch (error) {
+    logger.warn('RDF config load failed, using overrides only:', error);
+    return overrides;
+  }
+}
+
 export { NAMESPACES, createIRI };

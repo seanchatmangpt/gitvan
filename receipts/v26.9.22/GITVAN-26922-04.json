@@ -6,7 +6,7 @@
   "output_excerpt": [
     "gate built and committed: 249d8c8 + 42304c0 (scripts/test-gate.mjs; pnpm test -> gate; test:docs scripts restored; docs verifier now requires zero failures - the 95% success-rate threshold allowed 262 failures to pass)",
     "scratch-copy injection proof: one failing assertion injected in /tmp/gitvan-scratch (worktree at 249d8c8) -> gate exit 1, failed test named (tests/zz-gate-injection.test.mjs :: gate injection fails); clean real-tree chunk -> exit 0",
-    "real tree is NOT green: full census (30 chunks x 12 files) shows every completed chunk failing, hundreds of pre-existing failures (e.g. tests/git-atomic.test.mjs 80 failed; useGit.unit 64; e2e git-lifecycle 115 at W0) and a worker heap-OOM in chunk 9 that vitest masked as exit 0 with no summary (gate caught both)",
+    "real tree is NOT green: census run killed by an external actor mid-chunk-19 (performance/benchmarks chunk, ~25 min in) after 18/30 chunks completed; ALL 18 completed chunks failing, hundreds of pre-existing failures (e.g. tests/git-atomic.test.mjs 80 failed; useGit.unit 64; e2e git-lifecycle 115 at W0) and a worker heap-OOM in chunk 9 that vitest masked as exit 0 with no summary (gate caught both)",
     "observed on 2026-09-23: full unchunked `pnpm exec vitest run` died with 'FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory' and exited 0 - the exact masking this WO removes",
     "'on the real tree it prints 0' is NOT met: fixing hundreds of behavioral failures across all chunks is out of scope for this lane; WO-05/06 branch around"
   ],

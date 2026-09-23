@@ -52,7 +52,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
       - name: Audit main dependencies
         run: |
@@ -291,10 +290,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npx --yes pnpm@9 install --frozen-lockfile
 
       - name: Check licenses
         run: |
@@ -333,10 +331,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npx --yes pnpm@9 install --frozen-lockfile
 
       - name: Test hooks in sandboxed environment
         run: |

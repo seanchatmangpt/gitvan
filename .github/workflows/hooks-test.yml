@@ -62,20 +62,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
 
       - name: Cache node_modules
         id: cache-node-modules
         uses: actions/cache@v4
         with:
           path: node_modules
-          key: ${{ runner.os }}-node${{ matrix.node-version }}-modules-${{ hashFiles('package-lock.json') }}
+          key: ${{ runner.os }}-node${{ matrix.node-version }}-modules-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-node${{ matrix.node-version }}-modules-
 
       - name: Install dependencies
         if: steps.cache-node-modules.outputs.cache-hit != 'true'
-        run: npm ci
+        run: npx --yes pnpm@9 install --frozen-lockfile
 
       - name: Verify unrdf installation
         run: npm run verify-deps || echo "Verification skipped"
@@ -138,13 +137,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
       - name: Restore node_modules cache
         uses: actions/cache@v4
         with:
           path: node_modules
-          key: ${{ runner.os }}-node20-modules-${{ hashFiles('package-lock.json') }}
+          key: ${{ runner.os }}-node20-modules-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-node20-modules-
 
@@ -186,13 +184,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
       - name: Restore node_modules cache
         uses: actions/cache@v4
         with:
           path: node_modules
-          key: ${{ runner.os }}-node20-modules-${{ hashFiles('package-lock.json') }}
+          key: ${{ runner.os }}-node20-modules-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-node20-modules-
 

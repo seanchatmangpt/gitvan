@@ -22,10 +22,14 @@
   ],
   "scripts": {
     "start": "node src/cli.mjs",
-    "test": "vitest",
+    "test": "node scripts/test-gate.mjs",
     "build": "unbuild",
     "lint": "eslint src/",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "test:direct": "vitest",
+    "test:docs": "node scripts/test-docs.mjs",
+    "test:docs:verbose": "node scripts/test-docs.mjs --verbose",
+    "test:docs:dry-run": "node scripts/test-docs.mjs --dry-run"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.9",

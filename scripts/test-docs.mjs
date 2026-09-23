@@ -455,7 +455,10 @@ function generateTestReport() {
     });
   }
 
-  if (successRate >= 95) {
+  // GITVAN-26922-04: the verifier must not pass while any documented example
+  // fails. A 95% success-rate threshold allowed hundreds of failing examples
+  // (262 observed) to pass on a large corpus; any failure now fails the gate.
+  if (testResults.total > 0 && testResults.failed === 0) {
     console.log("\n✅ Documentation tests passed!");
     process.exit(0);
   } else {

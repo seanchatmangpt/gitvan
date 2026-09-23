@@ -1,0 +1,16 @@
+{
+  "wo": "GITVAN-26922-01",
+  "base_sha": "a905abdb0baad27357b7a5c46ca31253a10c1fb9",
+  "command": "cd /Users/sac/gitvan && git status --porcelain | wc -l",
+  "exit": 0,
+  "output_excerpt": [
+    "gate: porcelain = 0",
+    "docs/jira/v26.9.19 (10 tickets) restored from preserve/v26.9.22/main (491329c) and committed: 8ff3e56",
+    "local pnpm-lock.yaml + placeholder pnpm-workspace.yaml stashed (apply of stash content used later by WO-02 lockfile fix; stash entry kept): stash@{0} 'GITVAN-26922-01: ... do not discard'",
+    ".claude/ralph-loop.local.md deactivated out of tree -> /Users/sac/wt/v26922/gitvan/deactivated/ralph-loop.local.md",
+    "memory/agents/README.md deletion resolved: file kept at HEAD state",
+    "4 pre-existing stashes triaged KEEP (preserved by W0 as preserve/v26.9.22/stash-0..3): 1=claude-flow metrics noise; 2=bulk .claude/ deletion WIP (-70k lines, do not apply); 3=v3-rewrite WIP; 4=unrdf migration WIP with real code (package.json, RdfEngine.mjs, RDFToZodConverter.mjs)",
+    "commits by seanchatmangpt; repo-config identity 'Test User' deliberately not used"
+  ],
+  "standing": "ALIVE"
+}

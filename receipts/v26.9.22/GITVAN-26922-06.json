@@ -1,0 +1,13 @@
+{
+  "wo": "GITVAN-26922-06",
+  "base_sha": "a905abdb0baad27357b7a5c46ca31253a10c1fb9",
+  "command": "ls scripts/emit-frontier-evidence.mjs",
+  "exit": 1,
+  "output_excerpt": [
+    "blocked by GITVAN-26922-05: the emitter's dependencies are not at main HEAD - src/adapters/frontier-evidence.mjs (frontierEvidenceFromKgc) and tests/frontier-evidence.test.mjs exist only on origin/feat/frontier-evidence-v1 (#24, unmerged draft stacked on #23)",
+    "scripts/emit-frontier-evidence.mjs does not exist anywhere yet; it is to be manufactured at main HEAD after #23/#24 land",
+    "xaas side pre-condition also unmet: test/xaas/frontier_evidence_test.exs has a pre-existing failure (xaas W0 baseline, line 106 causal certificate binds supporting bundle) and the fixture 6e5dee0 -> live-artifact rebinding needs the emitter first",
+    "awaited exact refs: merge of seanchatmangpt/gitvan PR #24 (commit lineage a9b5ae7/3b78742/feat/frontier-evidence-v1 tip) then emitter manufacture at main HEAD"
+  ],
+  "standing": "BLOCKED"
+}

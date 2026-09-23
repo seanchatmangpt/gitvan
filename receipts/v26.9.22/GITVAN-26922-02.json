@@ -1,0 +1,13 @@
+{
+  "wo": "GITVAN-26922-02",
+  "base_sha": "a905abdb0baad27357b7a5c46ca31253a10c1fb9",
+  "command": "pnpm install --frozen-lockfile && pnpm build",
+  "exit": 0,
+  "output_excerpt": [
+    "pnpm install --frozen-lockfile => 0 (42.3s, pnpm 9.15.9)",
+    "pnpm build => 0 (unbuild; 1.17 MB dist; warnings: implicit bundling of n3)",
+    "cherry-picks: aabbb82 -> f7b7d50 (-x), d645b6e -> f76b79f (-x), both clean",
+    "required companions (narrows found by real builds): ea30f9c lockfile matching package.json (committed HEAD lockfile predated unrdf v4->v5 split; stashed local lockfile applied); 7fe6bb1 src/chat.mjs 3-line re-export (imported by src/cli/commands/llm.mjs, existed only on #23/#24 branches); af2b5bf src/enterprise/actuation-broker.mjs (479 lines, node-builtins-only deps, from origin/agent/fortune5-enterprise-hardening-20260812); c818a37 loadWithRDFSupport export restored in src/config/rdf-adapter.mjs (loader.mjs imports it; present at 98fe408, lost on main)"
+  ],
+  "standing": "ALIVE"
+}

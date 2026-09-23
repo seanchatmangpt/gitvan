@@ -1,0 +1,14 @@
+{
+  "wo": "GITVAN-26922-08",
+  "base_sha": "a905abdb0baad27357b7a5c46ca31253a10c1fb9",
+  "command": "test \"$(cat VERSION)\" = \"$(jq -r .version package.json)\" && ! grep -n 'npm ci' .github/workflows/*.yml",
+  "exit": 0,
+  "output_excerpt": [
+    "gate passes: VERSION=4.0.1 matches package.json (commit 639858e)",
+    "npm ci eliminated from all 10 workflow files (20 occurrences -> npx --yes pnpm@9 install --frozen-lockfile; hashFiles('package-lock.json') -> pnpm-lock.yaml; setup-node cache:'npm' lines removed); YAML validated",
+    "NOT DONE: tag v4.0.1. Release action requires the tag on a GREEN main; main's test gate is red (see GITVAN-26922-04 census), so tagging was withheld rather than faked green",
+    "upstream changelog bot landed b3be498 'docs: update CHANGELOG.md for v4.0.1' during the wave, confirming the 4.0.1 identity is live",
+    "awaited: green main (WO-04) -> push tag v4.0.1 at or after 7346a62"
+  ],
+  "standing": "PARTIAL_ALIVE"
+}

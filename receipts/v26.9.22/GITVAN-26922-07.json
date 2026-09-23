@@ -1,0 +1,14 @@
+{
+  "wo": "GITVAN-26922-07",
+  "base_sha": "a905abdb0baad27357b7a5c46ca31253a10c1fb9",
+  "command": "git fetch --prune origin && git branch -r --no-merged origin/main | grep -cE 'manufacture-capability-system|complete-project-DHPYa|refactor-job-system-xMn9W|validate-project-01NW3'",
+  "exit": 0,
+  "output_excerpt": [
+    "gate = 0",
+    "#22 decided: CLOSED as harvested (comment lists the landed cherry-picks + companions); branch origin/agent/fortune5-enterprise-hardening-20260812 kept (remaining enterprise surface)",
+    "4 PR-less/unmerged remote heads deleted after local preservation as preserve/v26.9.22/remote-* branches: agent/manufacture-capability-system (closed PR #20), claude/refactor-job-system-xMn9W (closed PR #9), claude/validate-project-01NW3LQHUZYteUNx712LkRpB (closed PR #4), claude/complete-project-DHPYa (never had a PR)",
+    "13 merged claude/* heads + brand/forward-deployment-os-2026-08 deleted (commits contained in origin/main; zero loss)",
+    "remaining remote branches: main, #23, #24 heads, #22 branch (5 total)"
+  ],
+  "standing": "ALIVE"
+}

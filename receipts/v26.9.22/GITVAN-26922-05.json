@@ -1,0 +1,14 @@
+{
+  "wo": "GITVAN-26922-05",
+  "base_sha": "a905abdb0baad27357b7a5c46ca31253a10c1fb9",
+  "command": "gh pr checks 23 -R seanchatmangpt/gitvan",
+  "exit": 1,
+  "output_excerpt": [
+    "blocked by GITVAN-26922-04: checks.yml runs `pnpm test` (now the real gate) and the suite is red on every chunk of the census; merging #23/#24 now would violate the exact-head-CI-green rule",
+    "#23 (feat/kgc4d-native-event-receipts, base main): checks stale-fail from Nov runs; will re-run on merge-ref after suite green",
+    "#24 (feat/frontier-evidence-v1) is a DRAFT stacked on #23; its checks.yml 'fix' (pnpm test:docs -> node scripts/test-docs.mjs) is already satisfied on main by restored test:docs scripts + zero-failure verifier",
+    "kgc4d-receipt-qualification.yml trigger extension (main + frontier-evidence paths) is prepared on the branch and applies when the PR lands",
+    "awaited: GITVAN-26922-04 real-tree green, then retarget #24 to main, undraft, merge both"
+  ],
+  "standing": "BLOCKED"
+}

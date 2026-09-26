@@ -177,8 +177,12 @@ jobs:
       - name: Enable pnpm for test-gate
         run: npm i -fg corepack && corepack enable
 
+      # Full install with the corepack pnpm, matching checks.yml's proven path:
+      # the pnpm@9 + restored-cache node_modules cannot start vitest (chunks
+      # exit 1 in <100ms with no summary), while a fresh `pnpm install` runs
+      # the suite (observed at the same commits in the checks workflow).
       - name: Install dependencies
-        run: npx --yes pnpm@9 install --frozen-lockfile
+        run: pnpm install
 
       - name: Run tests (shard ${{ matrix.shard }}/3)
         run: npm test -- --shard=${{ matrix.shard }}/3 --reporter=verbose
@@ -233,8 +237,12 @@ jobs:
       - name: Enable pnpm for test-gate
         run: npm i -fg corepack && corepack enable
 
+      # Full install with the corepack pnpm, matching checks.yml's proven path:
+      # the pnpm@9 + restored-cache node_modules cannot start vitest (chunks
+      # exit 1 in <100ms with no summary), while a fresh `pnpm install` runs
+      # the suite (observed at the same commits in the checks workflow).
       - name: Install dependencies
-        run: npx --yes pnpm@9 install --frozen-lockfile
+        run: pnpm install
 
       - name: Run tests with coverage
         run: npm test -- --coverage --reporter=verbose
@@ -361,8 +369,12 @@ jobs:
       - name: Enable pnpm for test-gate
         run: npm i -fg corepack && corepack enable
 
+      # Full install with the corepack pnpm, matching checks.yml's proven path:
+      # the pnpm@9 + restored-cache node_modules cannot start vitest (chunks
+      # exit 1 in <100ms with no summary), while a fresh `pnpm install` runs
+      # the suite (observed at the same commits in the checks workflow).
       - name: Install dependencies
-        run: npx --yes pnpm@9 install --frozen-lockfile
+        run: pnpm install
 
       - name: Validate RDF Ontologies
         run: |

@@ -46,7 +46,9 @@ jobs:
         run: |
           cd /tmp/test-package
           npx gitvan --version
-          npx gitvan help
+          # `help` is not a registered subcommand of the shipped citty CLI (src/cli.mjs)
+          # and exits 1 after printing usage; `--help` is the framework-native form.
+          npx gitvan --help
 
       - name: Test basic functionality
         run: |

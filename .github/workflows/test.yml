@@ -171,6 +171,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-modules-
 
+      # scripts/test-gate.mjs spawns `pnpm` directly; without corepack enabled the
+      # spawn fails with ENOENT on hosted runners, and the restored node_modules
+      # cache alone is not a substitute for a verified install.
+      - name: Enable pnpm for test-gate
+        run: npm i -fg corepack && corepack enable
+
+      - name: Install dependencies
+        run: npx --yes pnpm@9 install --frozen-lockfile
+
       - name: Run tests (shard ${{ matrix.shard }}/3)
         run: npm test -- --shard=${{ matrix.shard }}/3 --reporter=verbose
         env:
@@ -218,6 +227,14 @@ jobs:
           key: ${{ runner.os }}-node-modules-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-node-modules-
+
+      # scripts/test-gate.mjs spawns `pnpm` directly; enable it and install
+      # deterministically instead of trusting the restored cache.
+      - name: Enable pnpm for test-gate
+        run: npm i -fg corepack && corepack enable
+
+      - name: Install dependencies
+        run: npx --yes pnpm@9 install --frozen-lockfile
 
       - name: Run tests with coverage
         run: npm test -- --coverage --reporter=verbose
@@ -338,6 +355,14 @@ jobs:
           key: ${{ runner.os }}-node-modules-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-node-modules-
+
+      # scripts/test-gate.mjs spawns `pnpm` directly; enable it and install
+      # deterministically instead of trusting the restored cache.
+      - name: Enable pnpm for test-gate
+        run: npm i -fg corepack && corepack enable
+
+      - name: Install dependencies
+        run: npx --yes pnpm@9 install --frozen-lockfile
 
       - name: Validate RDF Ontologies
         run: |

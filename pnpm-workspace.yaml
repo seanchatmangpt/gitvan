@@ -3,6 +3,12 @@
 # the pnpm 12.x that CI runs via corepack (no packageManager pin -> corepack
 # default, observed 12.5.1). Every dependency build script needs an explicit
 # decision here or `pnpm install` fails with ERR_PNPM_IGNORED_BUILDS.
+# default (see pnpm crates/workspace/src/manifest.rs: pattern default is ["."]
+# when packages: is absent). Explicit here because pnpm 9 (used by some
+# workflows via npx pnpm@9) errors with "packages field missing or empty"
+# when the field is absent.
+packages:
+  - .
 allowBuilds:
   # postinstall (`node install.js`) materializes/validates the platform binary used
   # by unbuild (`npm run build`), vite (vitest), nitropack and mkdist. Locked at

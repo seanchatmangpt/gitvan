@@ -69,6 +69,8 @@ export default defineBuildConfig({
       "@unrdf/observability",
       "@unrdf/streaming",
       "@unrdf/validation",
+      "@modelcontextprotocol/sdk/server/mcp.js",
+      "@modelcontextprotocol/sdk/server/stdio.js",
       "@babel/parser",
       "@babel/traverse",
       "fuse.js",

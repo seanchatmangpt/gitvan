@@ -41,6 +41,7 @@ import { worktreeCommand } from "./cli/commands/worktree.mjs";
 import { llmCommand } from "./cli/commands/llm.mjs";
 import { revopsCommand } from "./cli/commands/revops.mjs";
 import { submoduleCommand } from "./cli/commands/submodule.mjs";
+import { swarmCommand } from "./cli/commands/swarm.mjs";
 
 // Import existing Citty commands that are already properly implemented
 import { setupCommand } from "./cli/setup.mjs";
@@ -133,6 +134,7 @@ export const cli = defineCommand({
     schedule: scheduleCommand,
     worktree: worktreeCommand,
     submodule: submoduleCommand,
+    swarm: swarmCommand,
 
     // Project management commands
     init: initCommand,

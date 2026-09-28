@@ -1,0 +1,15 @@
+{
+  "schema": "https://gitvan.dev/swarm-receipt-conformance/v1",
+  "id": "GSR-028",
+  "category": "authority",
+  "name": "reject-working-tree-authority",
+  "expected": "REFUSED",
+  "mutation": "reject-working-tree-authority",
+  "invariants": [
+    "exact-subject",
+    "least-authority",
+    "append-only-receipt",
+    "deterministic-replay"
+  ],
+  "notesRef": "refs/notes/gitvan/ocel"
+}

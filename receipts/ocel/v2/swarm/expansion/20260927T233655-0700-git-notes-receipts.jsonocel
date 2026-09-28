@@ -1,0 +1,85 @@
+{
+  "objectTypes": [
+    {
+      "name": "repository"
+    },
+    {
+      "name": "commit"
+    },
+    {
+      "name": "task"
+    }
+  ],
+  "eventTypes": [
+    {
+      "name": "research.expansion.authored"
+    },
+    {
+      "name": "rail.refused"
+    }
+  ],
+  "objects": [
+    {
+      "id": "repo:seanchatmangpt/gitvan",
+      "type": "repository",
+      "attributes": [
+        {
+          "name": "base",
+          "value": "2e2e658c91c9d7e37a01b0d242f35e6b2aab27b5"
+        }
+      ]
+    },
+    {
+      "id": "commit:218d4011097b13a5f0fdb5d8f7ced4453329e5d9",
+      "type": "commit",
+      "attributes": [
+        {
+          "name": "qualifying_files",
+          "value": 68
+        }
+      ]
+    },
+    {
+      "id": "task:RUN_200",
+      "type": "task",
+      "attributes": [
+        {
+          "name": "family",
+          "value": "Git Notes least-authority swarm receipts"
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "id": "event:authored",
+      "type": "research.expansion.authored",
+      "time": "2026-09-28T06:36:55Z",
+      "relationships": [
+        {
+          "objectId": "repo:seanchatmangpt/gitvan",
+          "qualifier": "repository"
+        },
+        {
+          "objectId": "commit:218d4011097b13a5f0fdb5d8f7ced4453329e5d9",
+          "qualifier": "head"
+        },
+        {
+          "objectId": "task:RUN_200",
+          "qualifier": "task"
+        }
+      ]
+    },
+    {
+      "id": "event:ref-update-refused",
+      "type": "rail.refused",
+      "time": "2026-09-28T06:36:55Z",
+      "relationships": [
+        {
+          "objectId": "task:RUN_200",
+          "qualifier": "task"
+        }
+      ]
+    }
+  ]
+}

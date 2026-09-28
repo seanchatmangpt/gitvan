@@ -1,0 +1,15 @@
+{
+  "schema": "https://gitvan.dev/swarm-receipt-conformance/v1",
+  "id": "GSR-045",
+  "category": "replay",
+  "name": "reject-missing-prior-digest",
+  "expected": "REFUSED",
+  "mutation": "reject-missing-prior-digest",
+  "invariants": [
+    "exact-subject",
+    "least-authority",
+    "append-only-receipt",
+    "deterministic-replay"
+  ],
+  "notesRef": "refs/notes/gitvan/ocel"
+}

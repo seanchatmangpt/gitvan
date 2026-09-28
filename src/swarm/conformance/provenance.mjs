@@ -1,0 +1,1 @@
+export function admitProvenance(p={}){for(const key of ['repo','base','head','tool','task'])if(!p[key])return {ok:false,reason:`${key}_required`};if(!/^[0-9a-f]{40}$/.test(p.base)||!/^[0-9a-f]{40}$/.test(p.head))return {ok:false,reason:'exact_sha_required'};return {ok:true,provenance:Object.freeze({...p})};}

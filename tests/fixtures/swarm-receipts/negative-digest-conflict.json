@@ -1,0 +1,13 @@
+{
+  "case": "negative-digest-conflict",
+  "expected": "REFUSED",
+  "subject": {
+    "repo": "seanchatmangpt/gitvan",
+    "commit": "0123456789abcdef",
+    "task": "T121-T130"
+  },
+  "notesRef": "refs/notes/gitvan/ocel",
+  "authority": {
+    "ceiling": "RECEIPT"
+  }
+}

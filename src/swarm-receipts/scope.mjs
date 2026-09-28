@@ -1,0 +1,1 @@
+import {refuse} from './errors.mjs';export function admitScope(scope,subject){if(scope?.repo!==subject.repo)refuse('repo_scope_mismatch','Principal scope does not match subject repo');if(scope?.task&&scope.task!==subject.task)refuse('task_scope_mismatch','Principal task scope mismatch');return scope;}

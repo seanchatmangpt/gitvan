@@ -1,0 +1,1 @@
+import {describe,it,expect} from 'vitest';import {admitLease} from '../../src/swarm-receipts/lease.mjs';describe('bounded lease',()=>{it('admits positive witness',()=>expect(admitLease({id:'l',expiresAt:'2999-01-01T00:00:00Z'}).id==='l').toBeTruthy());it('refuses falsifier',()=>expect(()=>admitLease({id:'l',expiresAt:'2000-01-01T00:00:00Z'})).toThrow());});

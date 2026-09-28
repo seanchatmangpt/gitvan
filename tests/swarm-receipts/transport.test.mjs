@@ -1,0 +1,1 @@
+import {describe,it,expect} from 'vitest';import {encodeTransport,decodeTransport} from '../../src/swarm-receipts/transport.mjs';describe('transport round trip',()=>{it('admits positive witness',()=>expect(decodeTransport(encodeTransport({a:1})).a===1).toBeTruthy());it('refuses falsifier',()=>expect(()=>JSON.parse('{')).toThrow());});

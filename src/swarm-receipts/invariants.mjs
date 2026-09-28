@@ -1,0 +1,1 @@
+export const invariants={exactSubject:r=>Boolean(r.subject?.repo&&r.subject?.commit&&r.subject?.task),receiptOnly:r=>r.authority?.ceiling==='RECEIPT',contentAddressed:r=>typeof r.digest==='string'&&r.digest.startsWith('sha256:'),noDo:r=>r.authority?.do!==true};export const evaluate=r=>Object.fromEntries(Object.entries(invariants).map(([k,f])=>[k,f(r)]));

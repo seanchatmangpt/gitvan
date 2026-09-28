@@ -1,0 +1,1 @@
+import {NOTES_ROOT} from './constants.mjs';import {refuse} from './errors.mjs';export function admitNotesRef(ref=NOTES_ROOT){if(ref!==NOTES_ROOT&&!ref.startsWith(NOTES_ROOT+'/'))refuse('ref_outside_namespace','Receipt ref outside bounded namespace',{ref});return ref;}

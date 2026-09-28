@@ -1,0 +1,1 @@
+import {describe,it,expect} from 'vitest';import {replay} from '../../src/swarm-receipts/replay.mjs';describe('deterministic replay',()=>{it('admits positive witness',()=>expect(replay([{digest:'b'},{digest:'a'}]).count===2).toBeTruthy());it('refuses falsifier',()=>expect(()=>replay([{digest:'a'},{digest:'a'}])).toThrow());});

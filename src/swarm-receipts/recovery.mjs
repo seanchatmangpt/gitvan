@@ -1,0 +1,1 @@
+export function recoveryPlan({commit,ref,error}){return {kind:'receipt-recovery',commit,ref,code:error?.code??'transport_error',actions:['resolve-exact-commit','read-existing-note','replay-canonical-receipt','append-if-absent']};}

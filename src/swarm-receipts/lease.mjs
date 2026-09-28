@@ -1,0 +1,1 @@
+import {refuse} from './errors.mjs';export function admitLease(lease,now=Date.now()){if(!lease?.id||!lease.expiresAt)refuse('lease_missing','Bounded lease required');if(Date.parse(lease.expiresAt)<=now)refuse('lease_expired','Receipt-write lease expired');return lease;}

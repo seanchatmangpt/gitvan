@@ -1,0 +1,1 @@
+import {describe,it,expect} from 'vitest';import {admitNotesRef} from '../../src/swarm-receipts/namespace.mjs';describe('bounded notes namespace',()=>{it('admits positive witness',()=>expect(admitNotesRef('refs/notes/gitvan/ocel/x').includes('/ocel')).toBeTruthy());it('refuses falsifier',()=>expect(()=>admitNotesRef('refs/heads/main')).toThrow());});

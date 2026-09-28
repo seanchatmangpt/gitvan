@@ -1,0 +1,1 @@
+import {sha256} from './digest.mjs';export function chain(receipts){let previous=null;return receipts.map(r=>{const link=sha256({previous,current:r.digest});previous=link;return {...r,chain:{previous:previous===link?null:previous,link}};});}

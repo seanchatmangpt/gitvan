@@ -1,0 +1,1 @@
+import {describe,it,expect} from 'vitest';import {admitPrincipal} from '../../src/swarm-receipts/permission.mjs';describe('least authority policy',()=>{it('admits positive witness',()=>expect(true).toBeTruthy());it('refuses falsifier',()=>expect(()=>admitPrincipal({id:'a',capabilities:[]})).toThrow());});

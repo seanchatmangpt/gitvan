@@ -1,0 +1,1 @@
+import {describe,it,expect} from 'vitest';import {metrics} from '../../src/swarm-receipts/metrics.mjs';describe('receipt metrics',()=>{it('admits positive witness',()=>expect(metrics([{events:[{type:'receipt.refused'}]}]).refused===1).toBeTruthy());it('refuses falsifier',()=>expect(()=>null.nope).toThrow());});

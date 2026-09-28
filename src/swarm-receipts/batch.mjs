@@ -1,0 +1,1 @@
+import {persistReceipt} from './gateway.mjs';export async function persistBatch(items,git){const out=[];for(const item of items){try{out.push({ok:true,value:await persistReceipt(item,git)});}catch(error){out.push({ok:false,error:{code:error.code??'error',message:error.message}});}}return out;}

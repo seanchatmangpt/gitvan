@@ -1,0 +1,1 @@
+import {envelope} from './envelope.mjs';export function migrateLegacy(legacy,subject){const events=(legacy.events??[]).map(e=>({type:e.type??'legacy.event',subject:subject.task,attributes:e.attributes??e}));return envelope({subject,events,objects:legacy.objects??[],authority:{migrated:true}});}

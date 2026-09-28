@@ -1,0 +1,1 @@
+import {describe,it,expect} from 'vitest';import {admitScope} from '../../src/swarm-receipts/scope.mjs';describe('repo scope',()=>{it('admits positive witness',()=>expect(admitScope({repo:'r'},{repo:'r'}).repo==='r').toBeTruthy());it('refuses falsifier',()=>expect(()=>admitScope({repo:'x'},{repo:'r'})).toThrow());});

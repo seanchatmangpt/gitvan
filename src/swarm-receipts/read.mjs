@@ -1,0 +1,1 @@
+import {admitNotesRef} from './namespace.mjs';import {admitReceipt} from './schema.mjs';export async function readReceipts(git,{commit,ref}){const exact=await git.resolve(commit);const bounded=admitNotesRef(ref);try{return String(await git.show(bounded,exact)).split('\n').filter(Boolean).map(x=>admitReceipt(JSON.parse(x)));}catch{return [];}}

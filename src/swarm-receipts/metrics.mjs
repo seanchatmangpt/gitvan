@@ -1,0 +1,1 @@
+export function metrics(receipts){const events=receipts.reduce((n,r)=>n+(r.events?.length??0),0);const refused=receipts.reduce((n,r)=>n+(r.events??[]).filter(e=>e.type==='receipt.refused').length,0);return {receipts:receipts.length,events,refused,refusalRate:events?refused/events:0};}

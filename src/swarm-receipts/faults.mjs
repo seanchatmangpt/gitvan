@@ -1,0 +1,1 @@
+export const FAULTS=Object.freeze(['missing_identity','ref_outside_namespace','authority_exceeds_receipt_only','schema_mismatch','subject_conflict','principal_missing','capability_missing','repo_scope_mismatch','task_scope_mismatch','lease_missing','lease_expired','dangling_ocel_object']);

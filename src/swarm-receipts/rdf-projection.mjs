@@ -1,0 +1,1 @@
+const esc=s=>String(s).replaceAll('\\','\\\\').replaceAll('"','\\"');export function receiptTurtle(r){return ['@prefix gv: <urn:gitvan:receipt:> .',`<urn:sha256:${r.digest.replace('sha256:','')}> a gv:Receipt ;`,` gv:repo "${esc(r.subject.repo)}" ;`,` gv:commit "${esc(r.subject.commit)}" ;`,` gv:task "${esc(r.subject.task)}" .`].join('\n');}

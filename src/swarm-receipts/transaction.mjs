@@ -1,0 +1,1 @@
+import {sha256} from './digest.mjs';export function transaction(receipts){const subjects=receipts.map(r=>r.subject.id);return {id:sha256({subjects,digests:receipts.map(r=>r.digest)}),subjects,digests:receipts.map(r=>r.digest),authority:'receipt-only'};}

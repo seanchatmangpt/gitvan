@@ -1,0 +1,1 @@
+import {describe,it,expect} from 'vitest';import {migrateLegacy} from '../../src/swarm-receipts/migration.mjs';describe('legacy migration',()=>{it('admits positive witness',()=>expect(migrateLegacy({events:[]},{repo:'r',commit:'c',task:'t'}).schema==='gitvan-swarm-receipt/v1').toBeTruthy());it('refuses falsifier',()=>expect(()=>migrateLegacy({}, {repo:'r'})).toThrow());});

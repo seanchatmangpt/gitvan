@@ -1,0 +1,1 @@
+import {evaluate} from './invariants.mjs';import {refuse} from './errors.mjs';export function verifyReceipt(r){const checks=evaluate(r);const failed=Object.entries(checks).filter(([,ok])=>!ok).map(([k])=>k);if(failed.length)refuse('invariant_failure','Receipt invariant failure',{failed});return {ok:true,checks};}

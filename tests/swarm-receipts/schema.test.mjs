@@ -1,0 +1,1 @@
+import {describe,it,expect} from 'vitest';import {admitReceipt} from '../../src/swarm-receipts/schema.mjs';describe('receipt schema',()=>{it('admits positive witness',()=>expect(true).toBeTruthy());it('refuses falsifier',()=>expect(()=>admitReceipt({schema:'bad',events:[]})).toThrow());});

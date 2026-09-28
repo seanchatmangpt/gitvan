@@ -1,0 +1,1 @@
+import {admitPrincipal} from './permission.mjs';import {admitScope} from './scope.mjs';import {admitLease} from './lease.mjs';export function admitPolicy({principal,scope,lease,subject}){return {principal:admitPrincipal(principal),scope:admitScope(scope,subject),lease:admitLease(lease)};}

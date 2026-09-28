@@ -1,0 +1,1 @@
+import {useGit} from '../composables/git/index.mjs';export function gitAdapter(){const git=useGit();return {resolve:async r=>(await git.run(['rev-parse',r])).trim(),append:(ref,text,sha)=>git.noteAppend(ref,text,sha),show:(ref,sha)=>git.noteShow(ref,sha)};}

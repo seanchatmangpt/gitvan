@@ -1,0 +1,1 @@
+import {refuse} from './errors.mjs';export function admitPrincipal(p){if(!p?.id)refuse('principal_missing','Principal identity required');if(!p.capabilities?.includes('git-notes:append'))refuse('capability_missing','git-notes:append required',{principal:p.id});return {id:p.id,capability:'git-notes:append'};}

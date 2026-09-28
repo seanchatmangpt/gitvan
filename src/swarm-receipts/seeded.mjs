@@ -1,0 +1,1 @@
+export function seeded(seed=1){let x=seed>>>0;return ()=>((x=(1664525*x+1013904223)>>>0)/2**32);}export function mutateDigest(digest,seed=1){const r=seeded(seed);const i=Math.floor(r()*digest.length);return digest.slice(0,i)+(digest[i]==='a'?'b':'a')+digest.slice(i+1);}

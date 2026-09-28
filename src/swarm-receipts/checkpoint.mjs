@@ -1,0 +1,1 @@
+import {sha256} from './digest.mjs';export function checkpoint({repo,branch,commit,receipts}){return {repo,branch,commit,receiptCount:receipts.length,digest:sha256({repo,branch,commit,receipts:receipts.map(r=>r.digest)})};}

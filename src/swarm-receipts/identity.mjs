@@ -1,0 +1,1 @@
+import {sha256} from './digest.mjs';import {refuse} from './errors.mjs';export function subjectIdentity(x){for(const k of ['repo','commit','task'])if(!x?.[k])refuse('missing_identity','Missing '+k,{field:k});return {...x,id:sha256({repo:x.repo,commit:x.commit,task:x.task,branch:x.branch??null})};}

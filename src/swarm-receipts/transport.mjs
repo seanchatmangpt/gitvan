@@ -1,0 +1,1 @@
+export function encodeTransport(receipt){return Buffer.from(JSON.stringify(receipt)).toString('base64url');}export function decodeTransport(text){return JSON.parse(Buffer.from(text,'base64url').toString('utf8'));}

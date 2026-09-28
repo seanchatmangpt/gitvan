@@ -1,0 +1,1 @@
+import {describe,it,expect} from 'vitest';import {FAULTS} from '../../src/swarm-receipts/faults.mjs';describe('typed fault catalog',()=>{it('admits positive witness',()=>expect(FAULTS.includes('subject_conflict')).toBeTruthy());it('refuses falsifier',()=>expect(()=>null.nope).toThrow());});

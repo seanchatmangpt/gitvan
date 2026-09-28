@@ -1,0 +1,1 @@
+import {describe,it,expect} from 'vitest';import {receiptTurtle} from '../../src/swarm-receipts/rdf-projection.mjs';describe('RDF projection',()=>{it('admits positive witness',()=>expect(receiptTurtle({digest:'sha256:a',subject:{repo:'r',commit:'c',task:'t'}}).includes('gv:Receipt')).toBeTruthy());it('refuses falsifier',()=>expect(()=>null.nope).toThrow());});

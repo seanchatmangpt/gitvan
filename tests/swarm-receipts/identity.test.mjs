@@ -1,0 +1,1 @@
+import {describe,it,expect} from 'vitest';import {subjectIdentity} from '../../src/swarm-receipts/identity.mjs';describe('exact subject identity',()=>{it('admits positive witness',()=>expect(subjectIdentity({repo:'r',commit:'c',task:'t'}).id.startsWith('sha256:')).toBeTruthy());it('refuses falsifier',()=>expect(()=>subjectIdentity({repo:'r',commit:'c'})).toThrow());});

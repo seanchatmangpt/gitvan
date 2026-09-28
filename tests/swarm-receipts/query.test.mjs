@@ -1,0 +1,1 @@
+import {describe,it,expect} from 'vitest';import {byTask} from '../../src/swarm-receipts/query.mjs';describe('receipt query',()=>{it('admits positive witness',()=>expect(byTask([{subject:{task:'t'}}],'t').length===1).toBeTruthy());it('refuses falsifier',()=>expect(()=>null.nope).toThrow());});

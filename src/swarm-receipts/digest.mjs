@@ -1,0 +1,1 @@
+import {createHash} from 'node:crypto';import {canonicalJson} from './canonical-json.mjs';export const sha256=v=>'sha256:'+createHash('sha256').update(typeof v==='string'?v:canonicalJson(v)).digest('hex');

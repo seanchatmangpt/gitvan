@@ -1,0 +1,1 @@
+import {describe,it,expect} from 'vitest';import {admitAuthority} from '../../src/swarm-receipts/authority.mjs';describe('receipt-only authority',()=>{it('admits positive witness',()=>expect(admitAuthority({}).receiptWrite).toBeTruthy());it('refuses falsifier',()=>expect(()=>admitAuthority({sourceWrite:true})).toThrow());});

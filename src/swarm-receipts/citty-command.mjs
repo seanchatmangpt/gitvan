@@ -1,0 +1,1 @@
+import {defineCommand} from 'citty';import {persistReceipt} from './gateway.mjs';export const receiptAppendCommand=defineCommand({meta:{name:'receipt-append'},args:{commit:{type:'positional',required:true},json:{type:'positional',required:true}},async run({args}){return persistReceipt({commit:args.commit,receipt:JSON.parse(args.json)});}});

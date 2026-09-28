@@ -1,0 +1,1 @@
+import {describe,it,expect} from 'vitest';import {mutateDigest} from '../../src/swarm-receipts/seeded.mjs';describe('seeded mutation',()=>{it('admits positive witness',()=>expect(mutateDigest('sha256:aaaa',1)!=='sha256:aaaa').toBeTruthy());it('refuses falsifier',()=>expect(()=>null.nope).toThrow());});

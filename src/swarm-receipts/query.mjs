@@ -1,0 +1,1 @@
+export const byTask=(receipts,task)=>receipts.filter(r=>r.subject?.task===task);export const byCommit=(receipts,commit)=>receipts.filter(r=>r.subject?.commit===commit);export const refusals=receipts=>receipts.flatMap(r=>r.events??[]).filter(e=>e.type==='receipt.refused');

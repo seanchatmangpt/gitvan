@@ -1,0 +1,1 @@
+import {refuse} from './errors.mjs';export function admitAuthority(a={}){if(a.sourceWrite||a.refWrite||a.shell)refuse('authority_exceeds_receipt_only','Gateway may only mutate bounded Git Notes',{a});return {receiptWrite:true,sourceWrite:false,refWrite:false,shell:false};}

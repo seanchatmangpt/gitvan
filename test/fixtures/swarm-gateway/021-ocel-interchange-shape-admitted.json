@@ -1,0 +1,10 @@
+{
+  "operation": "ocel",
+  "document": {
+    "objectTypes": [],
+    "eventTypes": [],
+    "objects": [],
+    "events": []
+  },
+  "expect": "ok"
+}

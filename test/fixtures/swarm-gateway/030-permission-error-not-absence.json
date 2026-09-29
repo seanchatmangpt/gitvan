@@ -1,0 +1,5 @@
+{
+  "operation": "transport",
+  "message": "fatal: could not read Username for https://github.com",
+  "expectCode": "git_note_read_failed"
+}

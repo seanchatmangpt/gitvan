@@ -1,0 +1,7 @@
+{
+  "operation": "provenance_append",
+  "patch": {
+    "head": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "expectCode": "provenance_subject_mismatch"
+}

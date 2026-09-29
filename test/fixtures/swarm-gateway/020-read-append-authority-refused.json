@@ -1,0 +1,6 @@
+{
+  "operation": "service_authority",
+  "action": "read",
+  "authority": "RECEIPT_APPEND",
+  "expectCode": "authority_refused"
+}

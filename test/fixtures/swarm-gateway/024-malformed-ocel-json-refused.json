@@ -1,0 +1,5 @@
+{
+  "operation": "ocel",
+  "rawJson": "{broken",
+  "expectCode": "malformed_ocel_json"
+}

@@ -1,0 +1,5 @@
+{
+  "operation": "subject_resolution",
+  "resolvedCommit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "expectCode": "commit_identity_mismatch"
+}

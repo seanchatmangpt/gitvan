@@ -1,0 +1,2 @@
+export const EXACT_COMMIT=/^[0-9a-f]{40}$/;
+export function admitSubject({repository,commit,receiptSubject}={}){if(!repository)return {ok:false,reason:'repository_required'};if(!EXACT_COMMIT.test(commit||''))return {ok:false,reason:'exact_commit_required'};const expected=`${repository}@${commit}`;return receiptSubject===expected?{ok:true,subject:expected}:{ok:false,reason:'subject_drift',expected};}

@@ -1,0 +1,1 @@
+export function admitOcelShape(doc){if(!doc||typeof doc!=='object'||Array.isArray(doc))return {ok:false,reason:'object_root_required'};for(const key of ['objectTypes','eventTypes','objects','events'])if(!Array.isArray(doc[key]))return {ok:false,reason:`${key}_required`};return {ok:true,eventCount:doc.events.length,objectCount:doc.objects.length};}

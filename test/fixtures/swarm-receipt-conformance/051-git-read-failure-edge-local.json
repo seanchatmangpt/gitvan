@@ -1,0 +1,15 @@
+{
+  "schema": "https://gitvan.dev/swarm-receipt-conformance/v1",
+  "id": "GSR-051",
+  "category": "recovery",
+  "name": "git-read-failure-edge-local",
+  "expected": "REFUSED",
+  "mutation": "git-read-failure-edge-local",
+  "invariants": [
+    "exact-subject",
+    "least-authority",
+    "append-only-receipt",
+    "deterministic-replay"
+  ],
+  "notesRef": "refs/notes/gitvan/ocel"
+}

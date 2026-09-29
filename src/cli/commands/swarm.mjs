@@ -7,7 +7,6 @@ import {
   readSwarmOcelReceipts,
 } from "../../swarm/receipt-service.mjs";
 import { admitGatewayToolInput } from "../../swarm/gateway/tool-contract.mjs";
-import { runSwarmMcpServer } from "../../mcp/swarm-server.mjs";
 
 async function readStdin() {
   const chunks = [];
@@ -97,6 +96,7 @@ const mcpCommand = defineCommand({
     description: "Run the least-authority GitVan swarm MCP server over stdio",
   },
   async run() {
+    const { runSwarmMcpServer } = await import("../../mcp/swarm-server.mjs");
     await runSwarmMcpServer();
   },
 });

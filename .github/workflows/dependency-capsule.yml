@@ -32,9 +32,12 @@ jobs:
         run: |
           pnpm pkg set packageManager="pnpm@11.21.0"
           pnpm pkg set engines.node=">=22.0.0"
-          pnpm remove --save-dev eslint-config-unjs --no-frozen-lockfile
-          pnpm add --save-dev --save-exact eslint@10.4.0 --no-frozen-lockfile
-          pnpm install --lockfile-only --no-frozen-lockfile
+          # pnpm 11 removed the `--no-frozen-lockfile` alias flag on mutation
+          # commands ("Unknown option: 'frozen-lockfile'"); the documented escape
+          # hatch for unknown options is --config.<key>=<value>.
+          pnpm remove --save-dev eslint-config-unjs --config.frozen-lockfile=false
+          pnpm add --save-dev --save-exact eslint@10.4.0 --config.frozen-lockfile=false
+          pnpm install --lockfile-only --config.frozen-lockfile=false
       - name: Replay manufactured dependency capsule
         run: |
           rm -rf node_modules

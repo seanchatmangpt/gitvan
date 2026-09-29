@@ -42,9 +42,18 @@ export function assertRepository(repository) {
 export async function resolveExactSubject(git, commit, requestedRepository) {
   assertExactCommitSyntax(commit);
 
-  const resolved = String(
-    await git.run(["rev-parse", "--verify", commit + "^{commit}"]),
-  ).trim();
+  let resolved;
+  try {
+    resolved = String(
+      await git.run(["rev-parse", "--verify", commit + "^{commit}"]),
+    ).trim();
+  } catch (cause) {
+    throw new SwarmGatewayError(
+      "commit_identity_unresolved",
+      "Exact commit does not resolve to a local commit object",
+      { cause, details: { commit } },
+    );
+  }
 
   if (resolved !== commit) {
     throw new SwarmGatewayError(
@@ -54,11 +63,20 @@ export async function resolveExactSubject(git, commit, requestedRepository) {
     );
   }
 
-  const remote = String(
-    await git.run(["config", "--get", "remote.origin.url"]),
-  ).trim();
-  const repository = normalizeRepositoryRemote(remote);
+  let remote;
+  try {
+    remote = String(
+      await git.run(["config", "--get", "remote.origin.url"]),
+    ).trim();
+  } catch (cause) {
+    throw new SwarmGatewayError(
+      "repository_identity_unresolved",
+      "Cannot read remote.origin.url for the admitted commit subject",
+      { cause },
+    );
+  }
 
+  const repository = normalizeRepositoryRemote(remote);
   if (!repository) {
     throw new SwarmGatewayError(
       "repository_identity_unresolved",

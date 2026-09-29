@@ -32,14 +32,23 @@ export function makeGit({
   note = makeEnvelopeLine(),
   noteError,
   appendError,
+  resolvedCommit,
+  revParseError,
+  remoteError,
 } = {}) {
   const calls = [];
   return {
     calls,
     async run(args) {
       calls.push(["run", args]);
-      if (args[0] === "rev-parse") return args[2].replace("^{commit}", "");
-      if (args.join(" ") === "config --get remote.origin.url") return remote;
+      if (args[0] === "rev-parse") {
+        if (revParseError) throw revParseError;
+        return resolvedCommit || args[2].replace("^{commit}", "");
+      }
+      if (args.join(" ") === "config --get remote.origin.url") {
+        if (remoteError) throw remoteError;
+        return remote;
+      }
       throw new Error("unexpected git.run: " + args.join(" "));
     },
     async noteShow(ref, commit) {

@@ -1,0 +1,5 @@
+{
+  "operation": "subject_resolution",
+  "revParseError": "fatal: Needed a single revision",
+  "expectCode": "commit_identity_unresolved"
+}

@@ -10,6 +10,7 @@ import {
 } from "../../src/swarm/gateway/envelope.mjs";
 import {
   normalizeRepositoryRemote,
+  resolveExactSubject,
 } from "../../src/swarm/gateway/subject.mjs";
 import { admitGatewayToolInput } from "../../src/swarm/gateway/tool-contract.mjs";
 import { classifyReadFailure } from "../../src/swarm/gateway/transport.mjs";
@@ -66,6 +67,15 @@ async function execute(fixture) {
     }
     case "transport":
       return classifyReadFailure(new Error(fixture.message), SHA_A);
+    case "subject_resolution": {
+      const git = makeGit({
+        remote: fixture.remote,
+        resolvedCommit: fixture.resolvedCommit,
+        revParseError: fixture.revParseError ? new Error(fixture.revParseError) : undefined,
+        remoteError: fixture.remoteError ? new Error(fixture.remoteError) : undefined,
+      });
+      return resolveExactSubject(git, SHA_A, REPOSITORY);
+    }
     case "provenance_append": {\n      const provenance = { ...PROVENANCE_A, ...(fixture.patch || {}) };\n      if (fixture.omit) delete provenance[fixture.omit];\n      return appendSwarmOcelReceipt({\n        git: makeGit(),\n        document: OCEL_EMPTY,\n        repository: REPOSITORY,\n        commit: SHA_A,\n        provenance,\n      });\n    }\n    case "service_authority": {
       const git = makeGit();
       if (fixture.action === "append") {
@@ -89,12 +99,12 @@ async function execute(fixture) {
   }
 }
 
-describe("swarm gateway 36-case composed court", async () => {
+describe("swarm gateway 40-case composed court", async () => {
   const cases = await loadCases();
 
   it("materializes exactly 32 distinct gateway cases", () => {
-    expect(cases).toHaveLength(36);
-    expect(new Set(cases.map(({ name }) => name)).size).toBe(36);
+    expect(cases).toHaveLength(40);
+    expect(new Set(cases.map(({ name }) => name)).size).toBe(40);
   });
 
   for (const { name, value } of cases) {

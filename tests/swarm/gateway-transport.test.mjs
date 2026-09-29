@@ -9,7 +9,7 @@ describe("swarm gateway Git transport classification", () => {
   it("recognizes only Git's note-absence result as absence", () => {
     const error = new Error("error: No note found for object " + SHA_A + ".");
     expect(isMissingNoteError(error, SHA_A)).toBe(true);
-    expect(classifyReadFailure(error, SHA_A)).toBe("note_absent");
+    expect(classifyReadFailure(error, SHA_A)).toBe("note_absent");\n\n    const mixed = { stderr: error.message + "\\nfatal: permission denied" };\n    expect(isMissingNoteError(mixed, SHA_A)).toBe(false);
   });
 
   it("does not collapse permission, repository, or transport failure to absence", () => {

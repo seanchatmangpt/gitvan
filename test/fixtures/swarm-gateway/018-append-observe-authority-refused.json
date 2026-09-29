@@ -1,0 +1,6 @@
+{
+  "operation": "service_authority",
+  "action": "append",
+  "authority": "OBSERVE",
+  "expectCode": "authority_refused"
+}

@@ -1,0 +1,15 @@
+{
+  "schema": "https://gitvan.dev/swarm-receipt-conformance/v1",
+  "id": "GSR-004",
+  "category": "identity",
+  "name": "reject-nonhex-commit",
+  "expected": "REFUSED",
+  "mutation": "reject-nonhex-commit",
+  "invariants": [
+    "exact-subject",
+    "least-authority",
+    "append-only-receipt",
+    "deterministic-replay"
+  ],
+  "notesRef": "refs/notes/gitvan/ocel"
+}

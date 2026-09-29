@@ -1,0 +1,15 @@
+{
+  "schema": "https://gitvan.dev/swarm-receipt-conformance/v1",
+  "id": "GSR-030",
+  "category": "authority",
+  "name": "allow-receipt-append",
+  "expected": "ADMITTED",
+  "mutation": "allow-receipt-append",
+  "invariants": [
+    "exact-subject",
+    "least-authority",
+    "append-only-receipt",
+    "deterministic-replay"
+  ],
+  "notesRef": "refs/notes/gitvan/ocel"
+}

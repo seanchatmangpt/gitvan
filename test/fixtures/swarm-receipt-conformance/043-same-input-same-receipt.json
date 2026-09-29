@@ -1,0 +1,15 @@
+{
+  "schema": "https://gitvan.dev/swarm-receipt-conformance/v1",
+  "id": "GSR-043",
+  "category": "replay",
+  "name": "same-input-same-receipt",
+  "expected": "ADMITTED",
+  "mutation": "same-input-same-receipt",
+  "invariants": [
+    "exact-subject",
+    "least-authority",
+    "append-only-receipt",
+    "deterministic-replay"
+  ],
+  "notesRef": "refs/notes/gitvan/ocel"
+}

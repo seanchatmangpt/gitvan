@@ -1,0 +1,5 @@
+{
+  "operation": "envelope",
+  "mutation": "documentDigest",
+  "expectCode": "receipt_document_digest_mismatch"
+}

@@ -1,0 +1,40 @@
+name: Materialize swarm gateway lockfile
+
+on:
+  push:
+    branches:
+      - expansion/v26.9.28/swarm-gateway-current-default-r16
+    paths:
+      - package.json
+  pull_request:
+    paths:
+      - package.json
+
+permissions:
+  contents: write
+
+jobs:
+  lockfile:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref_name }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Generate canonical pnpm lockfile
+        run: npx --yes pnpm@9 install --lockfile-only --ignore-scripts
+      - name: Commit generated lockfile
+        run: |
+          if git diff --quiet -- pnpm-lock.yaml; then
+            echo "pnpm-lock.yaml already canonical"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pnpm-lock.yaml
+          git commit -m "chore(lock): materialize MCP server dependency"
+          target_branch="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"\n          git push origin HEAD:"$target_branch"

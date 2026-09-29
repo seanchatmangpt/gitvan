@@ -1,0 +1,8 @@
+{
+  "operation": "tool_input",
+  "input": {
+    "repository": "other/repo",
+    "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "expect": "ok"
+}

@@ -1,0 +1,15 @@
+{
+  "schema": "https://gitvan.dev/swarm-receipt-conformance/v1",
+  "id": "GSR-031",
+  "category": "authority",
+  "name": "reject-arbitrary-git",
+  "expected": "REFUSED",
+  "mutation": "reject-arbitrary-git",
+  "invariants": [
+    "exact-subject",
+    "least-authority",
+    "append-only-receipt",
+    "deterministic-replay"
+  ],
+  "notesRef": "refs/notes/gitvan/ocel"
+}

@@ -1,0 +1,5 @@
+{
+  "operation": "provenance_append",
+  "omit": "task",
+  "expectCode": "provenance_refused"
+}

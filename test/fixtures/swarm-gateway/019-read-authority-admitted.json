@@ -1,0 +1,6 @@
+{
+  "operation": "service_authority",
+  "action": "read",
+  "authority": "OBSERVE",
+  "expect": "ok"
+}

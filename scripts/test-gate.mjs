@@ -48,9 +48,9 @@ function listTestFiles() {
 
 function runChunk(files, dir, index) {
   const jsonOut = join(dir, `chunk-${index}.json`);
+  const vitestEntry = join(projectRoot, "node_modules", "vitest", "vitest.mjs");
   const args = [
-    "exec",
-    "vitest",
+    vitestEntry,
     "run",
     "--silent",
     "--reporter=dot",
@@ -58,7 +58,7 @@ function runChunk(files, dir, index) {
     `--outputFile.json=${jsonOut}`,
     ...files,
   ];
-  const res = spawnSync("pnpm", args, {
+  const res = spawnSync(process.execPath, args, {
     cwd: projectRoot,
     encoding: "utf8",
     env: { ...process.env, CI: "1" },

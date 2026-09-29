@@ -1,0 +1,5 @@
+{
+  "operation": "subject_resolution",
+  "remoteError": "fatal: unable to read config",
+  "expectCode": "repository_identity_unresolved"
+}

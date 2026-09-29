@@ -68,7 +68,7 @@ export default defineBuildConfig({
       "@unrdf/knowledge-engine",
       "@unrdf/observability",
       "@unrdf/streaming",
-      "@unrdf/validation",
+      "@unrdf/validation",\n      "@modelcontextprotocol/server",\n      "@modelcontextprotocol/server/stdio",
       "@babel/parser",
       "@babel/traverse",
       "fuse.js",

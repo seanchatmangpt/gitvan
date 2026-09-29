@@ -1,0 +1,7 @@
+{
+  "operation": "provenance_append",
+  "patch": {
+    "repo": "other/repo"
+  },
+  "expectCode": "provenance_subject_mismatch"
+}

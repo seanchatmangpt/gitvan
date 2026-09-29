@@ -1,0 +1,5 @@
+{
+  "operation": "transport",
+  "message": "error: No note found for object aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.",
+  "expect": "note_absent"
+}

@@ -1,0 +1,5 @@
+{
+  "operation": "remote",
+  "remote": "https://example.com/seanchatmangpt/gitvan.git",
+  "expect": null
+}

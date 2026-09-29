@@ -1,0 +1,5 @@
+{
+  "operation": "namespace",
+  "ref": "refs/notes/gitvan/ocel-evil",
+  "expect": "refused"
+}

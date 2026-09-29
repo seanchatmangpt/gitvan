@@ -12,11 +12,12 @@ jobs:
         run: |
           git submodule init
           git submodule update --recursive
-      - run: npm i -fg corepack && corepack enable
       - uses: actions/setup-node@v4
-        with: { node-version: lts/*, cache: "pnpm" }
-      - run: pnpm install
-      - run: pnpm test
-      - run: pnpm test:docs
+        with:
+          node-version: lts/*
+      - name: Install dependencies with repository-pinned pnpm major
+        run: npx --yes pnpm@9 install --frozen-lockfile
+      - run: npm test
+      - run: npm run test:docs
       # - uses: codecov/codecov-action@v5
       #   with: { token: "${{ secrets.CODECOV_TOKEN }}" }

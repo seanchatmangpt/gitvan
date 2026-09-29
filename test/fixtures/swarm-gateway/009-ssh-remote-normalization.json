@@ -1,0 +1,5 @@
+{
+  "operation": "remote",
+  "remote": "git@github.com:seanchatmangpt/gitvan.git",
+  "expect": "seanchatmangpt/gitvan"
+}

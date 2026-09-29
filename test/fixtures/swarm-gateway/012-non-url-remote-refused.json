@@ -1,0 +1,5 @@
+{
+  "operation": "remote",
+  "remote": "not-a-remote",
+  "expect": null
+}

@@ -14,6 +14,20 @@ const repositorySchema = z
 const commitSchema = z.string().regex(EXACT_COMMIT);
 const refSchema = z.string().default(SWARM_OCEL_NOTES_REF);
 
+export const swarmMcpInputSchemas = Object.freeze({
+  append: z.object({
+    document: z.string(),
+    repository: repositorySchema,
+    commit: commitSchema,
+    ref: refSchema.optional(),
+  }),
+  show: z.object({
+    repository: repositorySchema,
+    commit: commitSchema,
+    ref: refSchema.optional(),
+  }),
+});
+
 function textResult(value) {
   return {
     content: [{ type: "text", text: JSON.stringify(value) }],
@@ -46,12 +60,7 @@ export function createSwarmMcpServer() {
     {
       description:
         "Append one OCEL interchange receipt to an exact repository+commit using receipt-only Git Notes authority.",
-      inputSchema: z.object({
-        document: z.string(),
-        repository: repositorySchema,
-        commit: commitSchema,
-        ref: refSchema.optional(),
-      }),
+      inputSchema: swarmMcpInputSchemas.append,
     },
     async (input) => {
       try {
@@ -72,11 +81,7 @@ export function createSwarmMcpServer() {
     {
       description:
         "Read OCEL interchange receipts from one exact repository+commit subject.",
-      inputSchema: z.object({
-        repository: repositorySchema,
-        commit: commitSchema,
-        ref: refSchema.optional(),
-      }),
+      inputSchema: swarmMcpInputSchemas.show,
     },
     async (input) => {
       try {

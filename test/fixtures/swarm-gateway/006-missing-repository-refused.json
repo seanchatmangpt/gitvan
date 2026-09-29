@@ -1,0 +1,7 @@
+{
+  "operation": "tool_input",
+  "input": {
+    "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "expectCode": "repository_identity_required"
+}

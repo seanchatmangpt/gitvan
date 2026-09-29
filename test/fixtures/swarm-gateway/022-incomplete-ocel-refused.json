@@ -1,0 +1,7 @@
+{
+  "operation": "ocel",
+  "document": {
+    "events": []
+  },
+  "expectCode": "ocel_interchange_refused"
+}

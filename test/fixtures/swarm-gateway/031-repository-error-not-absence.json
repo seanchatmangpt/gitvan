@@ -1,0 +1,5 @@
+{
+  "operation": "transport",
+  "message": "fatal: not a git repository (or any of the parent directories): .git",
+  "expectCode": "git_note_read_failed"
+}

@@ -11,12 +11,12 @@ import {
 
 describe("swarm gateway receipt envelope", () => {
   it("round-trips a subject-bound deterministic envelope", () => {
-    const envelope = createEnvelope({ subject: SUBJECT_A, document: OCEL_EMPTY });
+    const envelope = createEnvelope({ subject: SUBJECT_A, document: OCEL_EMPTY, provenance: PROVENANCE_A });
     expect(verifyEnvelope(envelope, SUBJECT_A)).toEqual(envelope);
   });
 
   it("refuses subject and digest drift", () => {
-    const envelope = createEnvelope({ subject: SUBJECT_A, document: OCEL_EMPTY });
+    const envelope = createEnvelope({ subject: SUBJECT_A, document: OCEL_EMPTY, provenance: PROVENANCE_A });
     expect(() => verifyEnvelope(envelope, "other/repo@" + "b".repeat(40))).toThrowError(
       expect.objectContaining({ code: "receipt_subject_drift" }),
     );

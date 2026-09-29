@@ -18,7 +18,7 @@ describe("swarm gateway least authority", () => {
         document: OCEL_EMPTY,
         repository: REPOSITORY,
         commit: SHA_A,
-        authority: "OBSERVE",
+        authority: "OBSERVE",\n        provenance: PROVENANCE_A,
       }),
     ).rejects.toMatchObject({ code: "authority_refused" });
   });

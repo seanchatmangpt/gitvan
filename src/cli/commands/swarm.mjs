@@ -50,6 +50,21 @@ export const swarmReceiptAppendCommand = defineCommand({
       required: true,
     },
     ...exactArgs(),
+    base: {
+      type: "string",
+      description: "Exact lowercase 40-hex base commit SHA for provenance",
+      required: true,
+    },
+    tool: {
+      type: "string",
+      description: "Tool edge that produced the receipt",
+      required: true,
+    },
+    task: {
+      type: "string",
+      description: "Task identity that produced the receipt",
+      required: true,
+    },
   },
   async run({ args }) {
     const exact = admitGatewayToolInput(args);
@@ -57,6 +72,13 @@ export const swarmReceiptAppendCommand = defineCommand({
     const result = await appendSwarmOcelReceipt({
       document,
       ...exact,
+      provenance: {
+        repo: exact.repository,
+        base: args.base,
+        head: exact.commit,
+        tool: args.tool,
+        task: args.task,
+      },
       authority: "RECEIPT_APPEND",
     });
     process.stdout.write(JSON.stringify(result) + "\n");

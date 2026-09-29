@@ -19,6 +19,9 @@ export const swarmMcpInputSchemas = Object.freeze({
     document: z.string(),
     repository: repositorySchema,
     commit: commitSchema,
+    base: commitSchema,
+    tool: z.string().min(1),
+    task: z.string().min(1),
     ref: refSchema.optional(),
   }),
   show: z.object({
@@ -64,9 +67,17 @@ export function createSwarmMcpServer() {
     },
     async (input) => {
       try {
+        const { base, tool, task, ...gateway } = input;
         return textResult(
           await appendSwarmOcelReceipt({
-            ...input,
+            ...gateway,
+            provenance: {
+              repo: input.repository,
+              base,
+              head: input.commit,
+              tool,
+              task,
+            },
             authority: "RECEIPT_APPEND",
           }),
         );

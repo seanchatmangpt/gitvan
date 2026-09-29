@@ -4,6 +4,13 @@ export const SHA_A = "a".repeat(40);
 export const SHA_B = "b".repeat(40);
 export const REPOSITORY = "seanchatmangpt/gitvan";
 export const SUBJECT_A = REPOSITORY + "@" + SHA_A;
+export const PROVENANCE_A = Object.freeze({
+  repo: REPOSITORY,
+  base: SHA_B,
+  head: SHA_A,
+  tool: "gitvan-test",
+  task: "gateway-fixture",
+});
 
 export const OCEL_EMPTY = Object.freeze({
   objectTypes: [],
@@ -12,8 +19,12 @@ export const OCEL_EMPTY = Object.freeze({
   events: [],
 });
 
-export function makeEnvelopeLine(document = OCEL_EMPTY, subject = SUBJECT_A) {
-  return JSON.stringify(createEnvelope({ subject, document }));
+export function makeEnvelopeLine(
+  document = OCEL_EMPTY,
+  subject = SUBJECT_A,
+  provenance = PROVENANCE_A,
+) {
+  return JSON.stringify(createEnvelope({ subject, document, provenance }));
 }
 
 export function makeGit({

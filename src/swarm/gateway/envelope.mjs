@@ -1,5 +1,6 @@
 import { digestReceipt } from "../conformance/replay.mjs";
 import { admitOcelShape } from "../conformance/ocel.mjs";
+import { admitProvenance } from "../conformance/provenance.mjs";
 import { SwarmGatewayError } from "./errors.mjs";
 
 export const SWARM_RECEIPT_ENVELOPE =
@@ -28,12 +29,37 @@ export function parseOcelDocument(value) {
   return document;
 }
 
-export function createEnvelope({ subject, document }) {
+function requireEnvelopeProvenance(provenance, subject) {
+  const admitted = admitProvenance(provenance);
+  if (!admitted.ok) {
+    throw new SwarmGatewayError(
+      "provenance_refused",
+      "Receipt envelope requires exact repo/base/head/tool/task provenance",
+      { details: admitted },
+    );
+  }
+
+  const exactSubject =
+    admitted.provenance.repo + "@" + admitted.provenance.head;
+  if (exactSubject !== subject) {
+    throw new SwarmGatewayError(
+      "provenance_subject_mismatch",
+      "Receipt provenance repo/head does not match the receipt subject",
+      { details: { exactSubject, subject } },
+    );
+  }
+
+  return admitted.provenance;
+}
+
+export function createEnvelope({ subject, document, provenance }) {
   const parsed = parseOcelDocument(document);
+  const admittedProvenance = requireEnvelopeProvenance(provenance, subject);
   const documentDigest = digestReceipt(parsed);
   const body = {
     schema: SWARM_RECEIPT_ENVELOPE,
     subject,
+    provenance: admittedProvenance,
     documentDigest,
     document: parsed,
   };
@@ -62,6 +88,10 @@ export function verifyEnvelope(value, expectedSubject) {
     );
   }
 
+  const provenance = requireEnvelopeProvenance(
+    value.provenance,
+    expectedSubject,
+  );
   const document = parseOcelDocument(value.document);
   if (digestReceipt(document) !== value.documentDigest) {
     throw new SwarmGatewayError(
@@ -73,6 +103,7 @@ export function verifyEnvelope(value, expectedSubject) {
   const body = {
     schema: value.schema,
     subject: value.subject,
+    provenance,
     documentDigest: value.documentDigest,
     document,
   };
@@ -83,5 +114,5 @@ export function verifyEnvelope(value, expectedSubject) {
     );
   }
 
-  return Object.freeze({ ...value, document });
+  return Object.freeze({ ...value, provenance, document });
 }

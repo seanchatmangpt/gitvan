@@ -1,5 +1,6 @@
 import { useGit } from "../composables/git/index.mjs";
 import { admitAuthority } from "./conformance/authority.mjs";
+import { admitProvenance } from "./conformance/provenance.mjs";
 import {
   CANONICAL_NOTES_REF,
   admitNotesRef,
@@ -37,6 +38,35 @@ function requireNotesRef(ref) {
   return result.ref;
 }
 
+function requireProvenance(provenance, exact) {
+  const result = admitProvenance(provenance);
+  if (!result.ok) {
+    throw new SwarmGatewayError(
+      "provenance_refused",
+      "Append requires exact repo/base/head/tool/task provenance",
+      { details: result },
+    );
+  }
+  if (
+    result.provenance.repo !== exact.repository ||
+    result.provenance.head !== exact.commit
+  ) {
+    throw new SwarmGatewayError(
+      "provenance_subject_mismatch",
+      "Provenance repo/head must equal the admitted receipt subject",
+      {
+        details: {
+          expectedRepo: exact.repository,
+          expectedHead: exact.commit,
+          actualRepo: result.provenance.repo,
+          actualHead: result.provenance.head,
+        },
+      },
+    );
+  }
+  return result.provenance;
+}
+
 function parseNoteLines(raw, subject) {
   return String(raw)
     .split("\n")
@@ -61,6 +91,7 @@ export async function appendSwarmOcelReceipt({
   document,
   commit,
   repository,
+  provenance,
   ref = SWARM_OCEL_NOTES_REF,
   authority = "RECEIPT_APPEND",
   git = useGit(),
@@ -68,9 +99,11 @@ export async function appendSwarmOcelReceipt({
   requireAuthority(authority, "RECEIPT_APPEND");
   const notesRef = requireNotesRef(ref);
   const exact = await resolveExactSubject(git, commit, repository);
+  const admittedProvenance = requireProvenance(provenance, exact);
   const envelope = createEnvelope({
     subject: exact.subject,
     document,
+    provenance: admittedProvenance,
   });
 
   try {
@@ -86,6 +119,7 @@ export async function appendSwarmOcelReceipt({
     commit: exact.commit,
     subject: exact.subject,
     ref: notesRef,
+    provenance: admittedProvenance,
     documentDigest: envelope.documentDigest,
     envelopeDigest: envelope.envelopeDigest,
     eventCount: envelope.document.events.length,

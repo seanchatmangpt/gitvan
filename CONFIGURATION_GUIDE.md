@@ -212,6 +212,17 @@ export GITVAN_DEBUG=true
 export GITVAN_VERBOSE=true
 ```
 
+### Enterprise
+
+```bash
+# Enterprise actuation (fail-closed mode)
+export GITVAN_ENTERPRISE_MODE=1        # "1" enables fail-closed enterprise actuation
+```
+
+When enabled, non-admitted `cli`/`js`/`tmpl`/`llm`/`job` operations route through the
+enterprise actuation broker or throw. Also configurable per context as
+`gv.enterprisePolicy.enabled = true`.
+
 ---
 
 ## AI Provider Configuration

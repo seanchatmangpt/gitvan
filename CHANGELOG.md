@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- swarm command surface closing the exact-subject Git Notes gateway (#28): `gitvan swarm receipt append|show` attach and read OCEL receipts bound to one exact repository+commit subject in Git Notes under `refs/notes/gitvan/ocel`, and `gitvan swarm mcp` runs the least-authority swarm MCP server over stdio (`swarm_receipt_append`, `swarm_receipt_show`)
+
 ## [4.0.1] - 2026-09-29
 
 ### Added

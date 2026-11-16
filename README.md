@@ -1,4 +1,4 @@
-# GitVan v4.0.0
+# GitVan v4.0.1
 
 **Git-native workflow automation. Simple to use. Powerful underneath.**
 
@@ -456,11 +456,11 @@ npm run build
 ### Common Development Tasks
 
 ```bash
-# Run tests
+# Run tests (full chunked test gate; npm test takes no arguments)
 npm test
 
-# Run tests with coverage
-npm test -- --coverage
+# Run tests with coverage (vitest directly)
+npm run test:direct -- --coverage
 
 # Build
 npm run build

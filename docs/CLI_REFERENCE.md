@@ -18,6 +18,7 @@
 8. [LLM Commands](#llm-commands)
 9. [RevOps Commands](#revops-commands)
 10. [Administrative Commands](#administrative-commands)
+11. [Swarm Commands](#swarm-commands)
 
 ---
 
@@ -97,6 +98,7 @@ GitVan commands are organized by feature:
 5. **LLM Commands** - AI/LLM integration
 6. **RevOps Commands** - Revenue operations automation
 7. **Admin Commands** - System administration
+8. **Swarm Commands** - Bounded Git-native interfaces for coding swarms
 
 ---
 
@@ -953,6 +955,70 @@ gitvan jtbd "help developers commit code"
 
 # Show scenarios
 gitvan jtbd "ci/cd pipeline" --scenarios
+```
+
+---
+
+## Swarm Commands
+
+Bounded Git-native interfaces for coding swarms. OCEL receipts attach to one
+exact repository+commit subject using receipt-only Git Notes authority under
+`refs/notes/gitvan/ocel`.
+
+### swarm receipt append
+
+Attach an OCEL receipt to one exact repository+commit subject.
+
+```bash
+gitvan swarm receipt append <file> --repository <owner/name> --commit <sha> --base <sha> --tool <tool> --task <task>
+```
+
+**Arguments:**
+- `<file>` - OCEL JSON path, or `-` for stdin
+
+**Options:**
+- `--repository` - Exact GitHub owner/name repository identity (required)
+- `--commit` - Exact lowercase 40-hex commit SHA (required)
+- `--ref` - Bounded Git notes ref under `refs/notes/gitvan/ocel` (default: `refs/notes/gitvan/ocel`)
+- `--base` - Exact lowercase 40-hex base commit SHA for provenance (required)
+- `--tool` - Tool edge that produced the receipt (required)
+- `--task` - Task identity that produced the receipt (required)
+
+**Examples:**
+```bash
+# Append a receipt from a file
+gitvan swarm receipt append receipt.json --repository acme/app --commit 8f14e45fceea167a5a36dedd4bea2543579d0c4d --base 7902699be42c8a8e46fbbb4501726517e87b2deb --tool claude --task SJ-002
+
+# Append from stdin
+cat receipt.json | gitvan swarm receipt append - --repository acme/app --commit 8f14e45fceea167a5a36dedd4bea2543579d0c4d --base 7902699be42c8a8e46fbbb4501726517e87b2deb --tool claude --task SJ-002
+```
+
+### swarm receipt show
+
+Read OCEL receipts from one exact repository+commit subject.
+
+```bash
+gitvan swarm receipt show --repository <owner/name> --commit <sha>
+```
+
+**Options:**
+- `--repository` - Exact GitHub owner/name repository identity (required)
+- `--commit` - Exact lowercase 40-hex commit SHA (required)
+- `--ref` - Bounded Git notes ref under `refs/notes/gitvan/ocel` (default: `refs/notes/gitvan/ocel`)
+
+**Examples:**
+```bash
+# Show receipts for one commit
+gitvan swarm receipt show --repository acme/app --commit 8f14e45fceea167a5a36dedd4bea2543579d0c4d
+```
+
+### swarm mcp
+
+Run the least-authority GitVan swarm MCP server over stdio. Exposes the
+`swarm_receipt_append` and `swarm_receipt_show` tools.
+
+```bash
+gitvan swarm mcp
 ```
 
 ---

@@ -236,12 +236,9 @@ npm run build:watch        # Build with watch mode
 
 ### Test Scripts
 ```bash
-npm test                   # Run tests
-npm run test:watch         # Watch mode
-npm run test:coverage      # With coverage
-npm run test:ui            # UI mode
-npm run test:bdd           # BDD tests
-npm run test:citty         # Citty CLI tests
+npm test                   # Run tests (chunked CI gate; takes no arguments)
+npm run test:direct -- <file>      # Run a specific test file (vitest directly; use for watch-style iteration)
+npm run test:direct -- --coverage  # With coverage (vitest directly)
 ```
 
 ### Code Quality Scripts
@@ -381,7 +378,7 @@ Metrics tracked:
 **Tests failing:**
 1. Check test logs in GitHub Actions
 2. Run tests locally: `npm test`
-3. Check coverage: `npm run test:coverage`
+3. Check coverage: `npm run test:direct -- --coverage`
 
 **Build failing:**
 1. Check build logs
@@ -438,7 +435,7 @@ Follow semantic versioning:
 - Write tests before implementation (TDD)
 - Maintain 80%+ coverage
 - Run tests locally before pushing
-- Use `npm run test:watch` during development
+- Use `npm run test:direct -- <file>` during development (vitest runs via test:direct; `npm test` accepts no arguments)
 
 ### Security
 

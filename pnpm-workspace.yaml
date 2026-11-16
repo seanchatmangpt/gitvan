@@ -1,0 +1,29 @@
+# pnpm 11+ build-script policy. `allowBuilds` replaced `onlyBuiltDependencies` /
+# `ignoredBuiltDependencies` in pnpm 11; the legacy keys are silently ignored by
+# the pnpm 12.x that CI runs via corepack (no packageManager pin -> corepack
+# default, observed 12.5.1). Every dependency build script needs an explicit
+# decision here or `pnpm install` fails with ERR_PNPM_IGNORED_BUILDS.
+# default (see pnpm crates/workspace/src/manifest.rs: pattern default is ["."]
+# when packages: is absent). Explicit here because pnpm 9 (used by some
+# workflows via npx pnpm@9) errors with "packages field missing or empty"
+# when the field is absent.
+packages:
+  - .
+allowBuilds:
+  # postinstall (`node install.js`) materializes/validates the platform binary used
+  # by unbuild (`npm run build`), vite (vitest), nitropack and mkdist. Locked at
+  # 0.25.12 / 0.27.2 / 0.28.0 in pnpm-lock.yaml; all three carry the same script.
+  esbuild: true
+  # `install` script is a node-gyp build-from-source FALLBACK; the prebuilt binding
+  # ships as optionalDependencies (@parcel/watcher-linux-x64-glibc, present in
+  # pnpm-lock.yaml). Script is unnecessary on linux-x64 CI.
+  '@parcel/watcher': false
+  # postinstall is advisory-only: prints a version-scheme warning to stderr for
+  # direct dependents and builds nothing (read from protobufjs-7.5.4
+  # scripts/postinstall.js).
+  protobufjs: false
+  # postinstall is `napi-postinstall unrs-resolver 1.11.1 check` (verify-only); the
+  # napi binding ships prebuilt as optionalDependencies
+  # (@unrs/resolver-binding-linux-x64-gnu). Consumer is
+  # eslint-import-resolver-typescript (lint-only path).
+  unrs-resolver: false

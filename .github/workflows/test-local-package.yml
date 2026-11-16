@@ -32,7 +32,7 @@ jobs:
       - name: Create test directory
         run: |
           mkdir -p /tmp/test-package
-          cp gitvan-2.0.0.tgz /tmp/test-package/
+          cp gitvan-*.tgz /tmp/test-package/
           cd /tmp/test-package
           echo "Test directory: $(pwd)"
 
@@ -40,13 +40,15 @@ jobs:
         run: |
           cd /tmp/test-package
           npm init -y
-          npm install gitvan-2.0.0.tgz
+          npm install gitvan-*.tgz
 
       - name: Test installation
         run: |
           cd /tmp/test-package
           npx gitvan --version
-          npx gitvan help
+          # `help` is not a registered subcommand of the shipped citty CLI (src/cli.mjs)
+          # and exits 1 after printing usage; `--help` is the framework-native form.
+          npx gitvan --help
 
       - name: Test basic functionality
         run: |
@@ -60,4 +62,4 @@ jobs:
         if: always()
         run: |
           rm -rf /tmp/test-package
-          rm -f gitvan-2.0.0.tgz
+          rm -f gitvan-*.tgz

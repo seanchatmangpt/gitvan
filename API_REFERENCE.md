@@ -1,4 +1,4 @@
-# GitVan v4.0.0 API Reference
+# GitVan v4.0.1 API Reference
 
 Complete API reference for GitVan composables, commands, and configuration.
 
@@ -12,6 +12,7 @@ Complete API reference for GitVan composables, commands, and configuration.
 6. [CLI Commands](#cli-commands)
 7. [Configuration](#configuration)
 8. [Events & Hooks](#events--hooks)
+9. [Enterprise Actuation Broker](#enterprise-actuation-broker)
 
 ---
 
@@ -600,6 +601,21 @@ gitvan cron enable
 gitvan cron disable
 ```
 
+### Swarm Commands
+
+```bash
+# Attach an OCEL receipt to one exact repository+commit subject
+gitvan swarm receipt append <file> --repository <owner/name> --commit <sha> --base <sha> --tool <tool> --task <task>
+# <file> is an OCEL JSON path, or - for stdin; notes ref defaults to refs/notes/gitvan/ocel
+
+# Read OCEL receipts from one exact repository+commit subject
+gitvan swarm receipt show --repository <owner/name> --commit <sha>
+
+# Run the least-authority swarm MCP server over stdio
+# (tools: swarm_receipt_append, swarm_receipt_show)
+gitvan swarm mcp
+```
+
 ---
 
 ## Configuration
@@ -838,6 +854,41 @@ const packs = await pack.list();
 // Remove pack
 await pack.remove("@gitvan/pack-ci");
 ```
+
+### `useExec()`
+
+Command, template, LLM, and job execution.
+
+```javascript
+const exec = useExec();
+
+// Run a CLI command (processes spawn with shell: false)
+const res = exec.cli("git", ["status"]);
+
+// ok = (res.code === 0 && !res.error)
+if (res.ok) {
+  console.log(res.standing);   // "EXECUTED" | "FAILED"
+}
+
+// When the enterprise actuation broker is active, res also carries
+// a receipts array from the broker: res.receipts
+```
+
+---
+
+## Enterprise Actuation Broker
+
+Fail-closed actuation for enterprise mode. When enabled
+(`GITVAN_ENTERPRISE_MODE=1` or `enterprisePolicy.enabled = true`), non-admitted
+`cli`/`js`/`tmpl`/`llm`/`job` operations route through the actuation broker or
+throw. Source: `src/enterprise/actuation-broker.mjs`.
+
+Exports:
+
+- `ActuationPolicyRefusal` - Thrown when an operation is not admitted by policy.
+- `createReceipt(kind, payload, parentDigest)` - Creates a hash-chained receipt (each receipt links to its parent digest).
+- `verifyReceipt(receipt)` - Verifies a receipt's digest (timing-safe comparison).
+- `createActuationBroker(step, policy)` - Admits a step against the policy (env allowlist + command rules) and records receipts.
 
 ---
 

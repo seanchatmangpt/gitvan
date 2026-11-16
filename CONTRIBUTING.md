@@ -22,8 +22,14 @@ Be respectful, inclusive, and professional in all interactions. We are committed
 ### Prerequisites
 
 - Node.js 18.0.0 or higher
-- npm or pnpm package manager
+- npm or pnpm package manager (local development with pnpm requires **pnpm ≥ 11**; CI runs corepack-enabled pnpm 12.x — there is no `packageManager` pin, so corepack's default applies)
 - Git
+
+> **pnpm version note:** `pnpm-workspace.yaml` allow-lists every dependency build
+> script via `allowBuilds` (esbuild, @parcel/watcher, protobufjs, unrs-resolver).
+> `allowBuilds` replaced `onlyBuiltDependencies` in pnpm 11; pnpm ≤ 10 silently
+> ignores it, so esbuild's postinstall never materializes its platform binary and
+> `npm run build` / tests break opaquely. Use pnpm ≥ 11.
 
 ### Setup Development Environment
 
@@ -173,21 +179,34 @@ await git.status(); // Fails!
 ### Running Tests
 
 ```bash
-# Run all tests
+# Run all tests (chunked test gate; npm test takes no arguments)
 npm test
 
-# Run with coverage
-npm run test:coverage
+# Run with coverage (vitest directly)
+npm run test:direct -- --coverage
 
-# Run specific test file
-npm test tests/composables/git.test.mjs
+# Run specific test file (vitest directly)
+npm run test:direct -- tests/composables/git.test.mjs
 
-# Watch mode
-npm run test:watch
+# Watch-style iteration — rerun one file directly (vitest via test:direct;
+# npm test accepts no arguments)
+npm run test:direct -- <file>
 
-# BDD tests
-npm run test:bdd
+# Documentation tests (verifies every documented example)
+npm run test:docs
+
+# Documentation tests with per-example output
+npm run test:docs:verbose
+
+# List what the documentation tests would run, without running them
+npm run test:docs:dry-run
 ```
+
+`npm test` is the CI gate: it runs the suite in chunks and **fails on any
+test failure or heap OOM** (previously both exited 0 and were invisible to
+CI). `scripts/test-docs.mjs` verifies every example in the documentation and
+refuses to pass while any of them fails — `--dry-run` lists what would run
+without executing it, `--verbose` prints per-example output.
 
 ### Writing Tests
 

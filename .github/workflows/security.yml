@@ -200,7 +200,10 @@ jobs:
         run: |
           if [ -f package-lock.json ]; then
             echo "Verifying package-lock.json integrity..."
-            npx --yes pnpm@9 install --frozen-lockfile --dry-run
+            # package-lock.json is npm's lockfile; pnpm (any version) has no
+            # `install --dry-run` ("Unknown option: 'dry-run'"). npm ci --dry-run
+            # validates the npm lockfile against package.json without installing.
+            npm ci --dry-run
           fi
 
   # ============================================================================
